@@ -1,0 +1,30 @@
+**************************
+* HBL TODO (OR NOT) LIST *
+**************************
+
+- Make syscall estimation better:
+	- How do we estimate user-mode jumps?
+	
+- Run PRX
+
+- Copy all MoHH stubs instead of the used ones (simplify stuff, but more memory used)
+
+- Using external configuration files (to make HBL port to other game exploits faster & easier)
+	1) All constants relative to the game should be on config files
+	2) HBL loader should use a config file for imports used by HBL
+	
+- Search for more libraries in user modules to be able to estimate more syscalls
+
+- Change the searching for relocation sections from ".rel." to ¿ES? value of 08
+
+- Change the searching for stub table section from ".lib.stub" to ??
+
+- Support for sceKernelLoadModule() and sceKernelLoadExec() (possible without kxploit?)
+
+- Make a function that searches through memory for a valid .lib.stub section (not)
+
+- Make NID Table dynamic instead of static
+
+- Replace PSPSDK libc code with own
+
+- Late linking (only link when import called)

@@ -1,0 +1,24 @@
+2010/03/19
+- Added code for stopping and unloading the game module, but it crashes on sceKernelStopModule
+
+﻿2010/03/13
+- Attempt at fixing misaligned relocations
+
+2010/03/07
+- Fixed issue with relocated EBOOT.PBP :)
+
+2010/03/07
+- fixed the return value of prx_load_program in elf.c.
+--> prx loading now works. To try, add BUILD_PRX=1 to the hello/Makefile, and copy eboot.prx to eboot.elf on the root of the memstick
+--> Still doesn't work from EBOOT, there's a problem with the offset, needs investigation
+
+04/03/2010
+- Added a new config file (file structure on config.h) to move there some game information
+- Implemented a library for easy interfacing with config file
+- Added code for loader to handle the config file, thus resolving HBL imports that exist on game
+- Added code for HBL to handle the config file, thus estimating own imports that the loader couldn't resolve
+
+Last changes:
+- Added a loader that loads HBL on scratchpad instead of game region
+- HBL loader now also copies stubs used by HBL to scratchpad
+- Added a new data structure (tSceLibrary) and subsituted estimate_syscall() with a new implementation
