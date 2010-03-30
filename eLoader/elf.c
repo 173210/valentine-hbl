@@ -84,7 +84,7 @@ unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 // Loads relocatable executable in memory using fixed address
 // Loads address of first stub header in pstub_entry
 // Returns number of stubs
-unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, u32 PRX_LOAD_ADDRESS )
+unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size )
 {
 	Elf32_Phdr program_header;
 	int excess;

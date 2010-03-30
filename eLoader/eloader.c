@@ -807,7 +807,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 
    
 		// Load program section into memory and also get stub headers
-		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, PRX_LOAD_ADDRESS);
+		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize);
 		
 		/*
 		#ifdef DEBUG
