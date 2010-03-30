@@ -58,7 +58,7 @@ config.o: config.c
 	$(CC) $(CFLAGS) -S config.c -o config.s
 	$(ASM) config.s -o config.o
 	
-hbl: eloader.o elf.o thread.o syscall.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o linker_hbl.x
+hbl: eloader.o elf.o thread.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o linker_hbl.x
 	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib eloader.o elf.o thread.o syscall.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o -o eloader.elf
 	$(PSPDEV)/bin/psp-strip -s eloader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary eloader.elf hbl.bin
