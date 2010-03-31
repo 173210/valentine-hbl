@@ -1,3 +1,11 @@
+2010/03/31
+- Added sceKernelReferEventFlagStatus
+- Added sceKernelDeleteEventFlag
+--> imports.config and loader are changed, so remember to use the new ones when testing!
+- Added find_evflag (thread.c)
+- Added event flags, remaining semaphores and UserSbrk address to memory.c
+--> Now we have 0x1410400 free bytes (20 Megabytes) :-)
+
 2010/03/19
 - Added code for stopping and unloading the game module, but it crashes on sceKernelStopModule
 

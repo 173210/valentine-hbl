@@ -7,8 +7,8 @@
 #define JR_RA_OPCODE 0x03E00008
 #define NOP_OPCODE 0x00000000
 
-// GAME addresses (should move to external configuration files
-#define MEMORY_PARTITION_POINTER 0x08D75370
+// GAME addresses (should move to external configuration files)
+#define MEMORY_PARTITION_POINTER 0x08B3C11C
 
 // Fixed loading address for relocatables
 #define PRX_LOAD_ADDRESS 0x08900000
@@ -31,7 +31,7 @@
 #define LIB_EXTENSION ".nids"
 
 // Size of NID-to-call table
-#define NID_TABLE_SIZE 0x150
+#define NID_TABLE_SIZE 0x120
 
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
 typedef struct

@@ -95,3 +95,50 @@ SceUID find_sema(const char *name) {
 	
 	return -1;
 }
+
+/* Find an event flag by name */
+SceUID find_evflag(const char *name) {
+	SceUID readbuf[256];
+	int idcount;
+	SceKernelEventFlagInfo info;
+	
+	/*
+	#ifdef DEBUG
+		SceUID fd;
+	#endif
+	
+	#ifdef DEBUG
+		fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
+		if (fd >= 0)
+		{
+			sceIoWrite(fd, " GET ID LIST ", strlen(" GET ID LIST "));
+			sceIoClose(fd);
+		}
+	#endif
+	*/
+	
+	sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_EventFlag, &readbuf, sizeof(readbuf)/sizeof(SceUID), &idcount);
+	
+	/*
+	#ifdef DEBUG
+		fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
+		if (fd >= 0)
+		{
+			sceIoWrite(fd, " GOT ID LIST, COUNT ", strlen(" GOT ID LIST, COUNT "));
+			sceIoWrite(fd, &idcount, sizeof(idcount));
+			sceIoClose(fd);
+		}
+	#endif
+	*/
+
+	for(info.size=sizeof(info);idcount>0;idcount--)
+	{
+		
+		if(sceKernelReferEventFlagStatus(readbuf[idcount-1], &info) < 0)
+			return -1;
+		if(strcmp(info.name, name) == 0)
+			return readbuf[idcount-1];
+	}
+	
+	return -1;
+}

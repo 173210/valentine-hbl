@@ -30,7 +30,7 @@
 # UtilsForUser(1)
 	AddNid sceKernelDcacheWritebackInvalidateAll, 0x13f40 # 0xb435dec5
 
-# ThreadManForUser(13)
+# ThreadManForUser(15)
 	AddNid sceKernelDelayThread, 0x13f48           # 0xceadeb47
 	AddNid sceKernelStartThread, 0x13f50           # 0xf475845d
 	AddNid sceKernelCreateThread, 0x13f58          # 0x446d8de6
@@ -42,15 +42,17 @@
 	AddNid sceKernelGetThreadmanIdList, 0x13f88    # 0x94416130
 	AddNid sceKernelReferSemaStatus, 0x13f90       # 0xbc6febc5
 	AddNid sceKernelReferFplStatus, 0x13f98        # 0xd8199e4c
-	AddNid sceKernelDeleteSema, 0x13fa0            # 0x28b6489c
-	AddNid sceKernelDeleteFpl, 0x13fa8             # 0xed1410e0
+	AddNid sceKernelReferEventFlagStatus, 0x13fa0  # 0xa66b0120
+	AddNid sceKernelDeleteSema, 0x13fa8            # 0x28b6489c
+	AddNid sceKernelDeleteFpl, 0x13fb0             # 0xed1410e0
+	AddNid sceKernelDeleteEventFlag, 0x13fb8       # 0xef9e4c70
 
 # LoadExecForUser(1)
-	AddNid sceKernelExitGame, 0x13fb0 # 0x5572a5f
+	AddNid sceKernelExitGame, 0x13fc0 # 0x5572a5f
 
 # SysMemUserForUser(2)
-	AddNid sceKernelFreePartitionMemory, 0x13fb8 # 0xb6d61d02
-	AddNid sceKernelTotalFreeMemSize, 0x13fc0    # 0xf919f628
+	AddNid sceKernelFreePartitionMemory, 0x13fc8 # 0xb6d61d02
+	AddNid sceKernelTotalFreeMemSize, 0x13fd0    # 0xf919f628
 
 
 

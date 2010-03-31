@@ -43,8 +43,10 @@ config = [
             [0x94416130, "sceKernelGetThreadmanIdList"], 
             [0xBC6FEBC5, "sceKernelReferSemaStatus"], 
             [0xD8199E4C, "sceKernelReferFplStatus"],
+            [0xA66B0120, "sceKernelReferEventFlagStatus"],
             [0x28B6489C, "sceKernelDeleteSema"],
             [0xED1410E0, "sceKernelDeleteFpl"],
+            [0xEF9E4C70, "sceKernelDeleteEventFlag"],
         ],
     }   , 
     { 

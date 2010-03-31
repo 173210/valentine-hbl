@@ -63,8 +63,14 @@ void free_game_memory()
 	"sgx-ao-sema", "sgx-psp-sas-attrsema", "sgx-psp-at3-slotsema", "sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema", "sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema", "sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema",
 	"sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema"};
 	
+	const char* const loop_semas[] = {"Semaphore.cpp"};
+	
+	const char* const evflags[] = {"sgx-ao-evf", "sgx-psp-freq-wait-evf", "loadEndCallbackEventId"};
+	
 	int nb_threads = sizeof(threads) / sizeof(threads[0]);
 	int nb_semas = sizeof(semas) / sizeof(semas[0]);
+	int nb_loop_semas = sizeof(loop_semas) / sizeof(loop_semas[0]);
+	int nb_evflags = sizeof(evflags) / sizeof(evflags[0]);
 	int i, ret, status = 0;
 
 #ifdef DEBUG
@@ -105,11 +111,30 @@ void free_game_memory()
 			sceKernelDeleteSema(id);
 			sceKernelDelayThread(100000);
 		}
-	}	
+	}
+	
+	for(i = 0; i < nb_loop_semas; ++i)
+	{
+		while((id = find_sema(loop_semas[i])) >= 0)
+		{
+			sceKernelDeleteSema(id);
+			sceKernelDelayThread(100000);
+		}
+	}
+	
+	// Freeing event flags
+	for (i = 0; i < nb_evflags; ++i)
+	{
+		id = find_evflag(evflags[i]);
+		if(id >= 0)
+		{
+			sceKernelDeleteEventFlag(id);
+			sceKernelDelayThread(100000);
+		}
+	}
 
-	/* Free memory partition created by the GAME */
-	// TODO Find the Value MEMORY_PARTITION_POINTER for Valentine (exists?)
-	//sceKernelFreePartitionMemory(*((SceUID *) MEMORY_PARTITION_POINTER));
+	/* Free memory partition created by the GAME (UserSbrk) */
+	sceKernelFreePartitionMemory(*((SceUID *) MEMORY_PARTITION_POINTER));
 	
 	//sceKernelDelayThread(100000);
 
