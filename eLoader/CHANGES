@@ -1,4 +1,12 @@
 2010/04/03
+- Still doesn't work!!!
+--> It crashes in sgx-psp-freq-thr thread when freeing memory
+--> Threads aren't found (why???) and aren't terminated
+--> So when HBL frees semaphores/event flags the thread crashes
+- Now AddNID in sdk_hbl.S use $v0 instead of $fp
+--> This fixes sceSystemMemoryManager crash in revision 10 :)
+
+2010/04/03
 - This revision doesn't work!!!
 --> Crash in sceSystemMemoryManager (???) when resolving homebrew imports
 - Added sceKernelAllocPartitionMemory

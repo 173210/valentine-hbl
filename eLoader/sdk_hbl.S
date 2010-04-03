@@ -3,11 +3,11 @@
 	.globl  \funcname
 	.ent	\funcname
 \funcname:
-	lui $fp, 0x1
-	lw $fp, 24($fp) # 0x00010018, see eloader.c or loader.c for more info
-	addi $fp, $fp, \offset
-	jr $fp
-	nop
+	lui $v0, 0x1 # Put 0x10000 in $v0, $v0 is return value so there's no need to backup it
+	lw $v0, 24($v0) # Get HBL stubs address, see eloader.c or loader.c for more info
+	addi $v0, $v0, \offset # Add offset
+	jr $v0 # Jump to stub
+	nop # Leave this delay slot empty!
 	.end	\funcname
 
 .endm

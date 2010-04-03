@@ -239,7 +239,6 @@ void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.star
 void _start(unsigned long arglen, unsigned long *argp)
 {
 	SceUID hbl_file;
-	unsigned long *param;
 
 	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
 
@@ -257,7 +256,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 		sceKernelDcacheWritebackInvalidateAll();
 
 		// DEBUG_PRINT(" PASSING TO HBL ", NULL, 0);
-		run_eloader(sizeof(param), param);		
+		run_eloader(0, NULL);		
 	}	
 
 	while(1)
