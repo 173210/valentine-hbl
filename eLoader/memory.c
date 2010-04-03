@@ -98,7 +98,7 @@ void free_game_memory()
                 sceKernelDelayThread(100000);
             }
 		} else {
-            exit_with_log("CANNOT FIND THREAD TO DELETE", threads[i], strlen(threads[i]) + 1);
+            DEBUG_PRINT("CANNOT FIND THREAD TO DELETE", threads[i], strlen(threads[i]) + 1);
         }
 	}
 

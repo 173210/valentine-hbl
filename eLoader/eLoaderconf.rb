@@ -58,6 +58,7 @@ config = [
     { 
         :lib => "SysMemUserForUser",
         :functions => [
+            [0x237DBD4F, "sceKernelAllocPartitionMemory"],
             [0xB6D61D02, "sceKernelFreePartitionMemory"],
             [0xF919F628, "sceKernelTotalFreeMemSize"],
         ],
@@ -80,7 +81,7 @@ class Integer
 end      
 
 
-curr_addr = 0x00013F00 #0x0880FF00 # 0x00013F00
+curr_addr = 0 #0x0880FF00 # 0x00013F00
 nb_nids = 0;
 nids_offset = 12
 config.each {|libinfo | 
@@ -95,12 +96,17 @@ out_conf.write(stub_addr.mips(4));
 out_conf.write(nb_nids.mips(4));
 out_conf.write(config.size.mips(4));
 
-out.puts %Q{.macro AddNID funcname, nid
+out.puts %Q{.macro AddNID funcname, offset
 
 	.globl  \\funcname
-	.ent    \\funcname
-\\funcname = \\nid
-	.end    \\funcname
+	.ent	\\funcname
+\\funcname:
+	lui $fp, 0x1
+	lw $fp, 24($fp) # 0x00010018, see eloader.c or loader.c for more info
+	addi $fp, $fp, \\offset
+	jr $fp
+	nop
+	.end	\\funcname
 
 .endm
 

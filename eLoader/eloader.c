@@ -31,10 +31,19 @@ tNIDResolver nid_table[NID_TABLE_SIZE];
 // Auxiliary structure to help with syscall estimation
 tSceLibrary library_table[MAX_GAME_LIBRARIES];
 
+/* Values in scratchpad:
+	0x00010004: HBL memory block UID
+	0x00010008: HBL stubs memory block UID
+	0x00010014: HBL memory block head address
+	0x00010018: HBL stubs memory block head address
+*/
+
 // Jumps to ELF's entry point
 void runThread(SceSize args, void *argp)
 {
-	void (*start_entry)(SceSize, void*) = entry_point;	
+	void (*start_entry)(SceSize, void*) = entry_point;
+	sceKernelFreePartitionMemory(*((SceUID*)0x00010004));
+	sceKernelFreePartitionMemory(*((SceUID*)0x00010008));	
 	start_entry(args, argp);
 }
 // This function can be used to catch up the import calls when the ELF is up and running
@@ -102,7 +111,7 @@ void resolve_missing_stubs()
 {
 	int i, ret;
 	unsigned int num_nids;
-	u32* cur_stub = (u32*)SCRATCHPAD_STUBS_START;
+	u32* cur_stub = *((u32*)0x00010018);
 	u32 nid = 0, syscall = 0;
 	char lib_name[MAX_LIBRARY_NAME_LENGTH];
 
@@ -399,23 +408,6 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 	*/
 }
 
-int  _hook_sceKernelMaxFreeMemSize () {
- return 0x09E00000 - PRX_LOAD_ADDRESS - hbsize;
-}
-
-void *  _hook_sceKernelGetBlockHeadAddr (SceUID mid) {
-    if (mid == 0x05B8923F)
-        return PRX_LOAD_ADDRESS + hbsize;
-    return 0;
-}
-
-SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
-{
-	SceUID ret = 0x05B8923F;
-
-	return ret;
-}
-
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
                              int stackSize, SceUInt attr, SceKernelThreadOptParam *option){
  
@@ -468,18 +460,6 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
             
             switch (*cur_nid) {
-                case 0xA291F107:
-                    DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(_hook_sceKernelMaxFreeMemSize);
-                    break;
-                case 0x9D9A5BA1:
-                    DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(_hook_sceKernelGetBlockHeadAddr);
-                    break;
-                case 0x237DBD4F:
-                    DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break; 
                 case 0x446D8DE6:
                     real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
                     break;    
@@ -748,6 +728,17 @@ void execute_elf(SceSize args, void *argp)
 	start_elf(args, argp);
 }
 
+// Allocates memory for homebrew so it doesn't overwrite itself
+void allocate_memory(u32 size, void* addr)
+{
+	SceUID mem;
+	
+	DEBUG_PRINT(" ALLOC EXECUTABLE MEMORY ", NULL, 0);
+	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
+	if(mem < 0)
+		DEBUG_PRINT(" sceKernelAllocPartitionMemory FAILED ", &mem, sizeof(mem));
+}
+
 // HBL entry point
 // Needs path to ELF or EBOOT
 void start_eloader(char *eboot_path, int is_eboot)
@@ -782,7 +773,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 		
 
 		// Load ELF program section into memory
-		hbsize = elf_load_program(elf_file, offset, &elf_header);
+		hbsize = elf_load_program(elf_file, offset, &elf_header, allocate_memory);
 		
 	
 		// Locate ELF's .lib.stubs section */
@@ -807,7 +798,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 
    
 		// Load program section into memory and also get stub headers
-		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize);
+		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, allocate_memory);
 		
 		/*
 		#ifdef DEBUG

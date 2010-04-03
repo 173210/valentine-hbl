@@ -55,7 +55,7 @@ int elf_check_stub_entry(tStubEntry* pentry)
 
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
-unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header)
+unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, void (*alloc)(u32, void*))
 {
 	Elf32_Phdr program_header;
 	int excess;
@@ -68,6 +68,7 @@ unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 	// Loads program segment at virtual address
 	sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
 	buffer = (void *) program_header.p_vaddr;
+	alloc(program_header.p_memsz, buffer);
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
@@ -84,7 +85,7 @@ unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 // Loads relocatable executable in memory using fixed address
 // Loads address of first stub header in pstub_entry
 // Returns number of stubs
-unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size )
+unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void (*alloc)(u32, void*))
 {
 	Elf32_Phdr program_header;
 	int excess;
@@ -117,6 +118,7 @@ unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
 	buffer = (void *) PRX_LOAD_ADDRESS;
+	alloc(program_header.p_memsz, buffer);
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 	// Sets the buffer pointer to end of program segment

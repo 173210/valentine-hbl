@@ -31,7 +31,7 @@
 #define LIB_EXTENSION ".nids"
 
 // Size of NID-to-call table
-#define NID_TABLE_SIZE 0x120
+#define NID_TABLE_SIZE 0x200
 
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
 typedef struct

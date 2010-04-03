@@ -1,3 +1,16 @@
+2010/04/03
+- This revision doesn't work!!!
+--> Crash in sceSystemMemoryManager (???) when resolving homebrew imports
+- Added sceKernelAllocPartitionMemory
+- Now the loader allocates memory for HBL
+- Now HBL allocates memory for the homebrew
+- Removed hooks from sceKernelAllocPartitionMemory, sceKernelGetBlockHeadAddr and sceKernelGetMaxFreeMemSize
+--> Now the homebrew can use the whole free memory :-)
+- Fixed a bug in loader.c that was causing crashes
+--> In search_game_stubs, stub_list wasn't completely zeroed
+- Fixed "CANNOT FIND THREAD TO DELETE" bug (HBL now doesn't exit)
+--> We still need a proper fix!
+
 2010/03/31
 - Added sceKernelReferEventFlagStatus
 - Added sceKernelDeleteEventFlag
