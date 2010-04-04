@@ -13,13 +13,6 @@ void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 // HBL intermediate buffer
 int hbl_buffer[MAX_ELOADER_SIZE];
 
-/* Values in scratchpad:
-	0x00010004: HBL memory block UID
-	0x00010008: HBL stubs memory block UID
-	0x00010014: HBL memory block head address
-	0x00010018: HBL stubs memory block head address
-*/
-
 // Loads HBL to memory
 void load_hbl(SceUID hbl_file)
 {	
@@ -42,8 +35,8 @@ void load_hbl(SceUID hbl_file)
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
 	
 	// Write HBL memory block info to scratchpad
-	*((SceUID*)0x00010004) = HBL_block;
-	*((SceUID*)0x00010014) = run_eloader;
+	*((SceUID*)ADDR_HBL_BLOCK_UID) = HBL_block;
+	*((SceUID*)ADDR_HBL_BLOCK_ADDR) = run_eloader;
 
 	// Load HBL to buffer
 	if ((bytes_read = sceIoRead(hbl_file, (void*)hbl_buffer, file_size)) < 0)
@@ -210,14 +203,14 @@ void copy_hbl_stubs(void)
 		exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
 	
 	// Allocate memory for HBL stubs
-	HBL_stubs_block = sceKernelAllocPartitionMemory(2, "ValentineStubs", PSP_SMEM_Low, sizeof(u32) * 2 * NUM_HBL_IMPORTS, NULL);
+	HBL_stubs_block = sceKernelAllocPartitionMemory(2, "ValentineStubs", PSP_SMEM_High, sizeof(u32) * 2 * NUM_HBL_IMPORTS, NULL);
 	if(HBL_stubs_block < 0)
 		exit_with_log(" ERROR ALLOCATING STUB MEMORY ", &HBL_stubs_block, sizeof(HBL_stubs_block));
 	stub_addr = sceKernelGetBlockHeadAddr(HBL_stubs_block);
 	
 	// Write HBL stubs memory block info to scratchpad
-	*((SceUID*)0x00010008) = HBL_stubs_block;
-	*((SceUID*)0x00010018) = stub_addr;
+	*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID) = HBL_stubs_block;
+	*((SceUID*)ADDR_HBL_STUBS_BLOCK_ADDR) = stub_addr;
 
 	// DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
 	for (i=0; i<NUM_HBL_IMPORTS; i++)

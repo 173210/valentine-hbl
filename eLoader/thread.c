@@ -5,7 +5,7 @@
 /* Find a thread by name */
 SceUID find_thread(const char *name) {
 	SceUID readbuf[256];
-	int idcount;
+	int idcount, ret;
 	SceKernelThreadInfo info;
 	
 	
@@ -40,8 +40,12 @@ SceUID find_thread(const char *name) {
 	for(info.size=sizeof(info);idcount>0;idcount--)
 	{
 		
-		if(sceKernelReferThreadStatus(readbuf[idcount-1], &info) < 0)
+		ret = sceKernelReferThreadStatus(readbuf[idcount-1], &info);
+		if(ret < 0)
+		{
+			DEBUG_PRINT(" sceKernelReferThreadStatus FAILED ", &ret, sizeof(ret));
 			return -1;
+		}
 		if(strcmp(info.name, name) == 0)
 			return readbuf[idcount-1];
 	}

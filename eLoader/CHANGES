@@ -1,3 +1,18 @@
+2010/04/04
+- Still very unstable (Wagic crashes and T.O.M.E. gives "core() error")
+- Added malloc.c and malloc.h
+- Now relocate_sections reads the whole section in a dinamically allocated buffer
+--> Now relocation is A LOT faster! :)
+--> T.O.M.E. takes about 15 seconds to start (debug enabled)
+--> Wagic takes about 1 minute to start (debug enabled)
+- Now loader allocates HBL stubs using PSP_SMEM_High because homebrew was overwriting them
+--> We need to unload Labo and use PSP_SMEM_Low so they'll be BEFORE the homebrew!
+--> We also need to make HBL relocatable!
+- Added a bit of debug to find_thread
+- Added a bit of debug to relocate_sections
+- Moved hardcoded scratchpad addresses to scratchpad.h
+--> They are still hardcoded in sdk_hbl.S, someone knows how to use a C defines in ASM?
+
 2010/04/03
 - Still doesn't work!!!
 --> It crashes in sgx-psp-freq-thr thread when freeing memory

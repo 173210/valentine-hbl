@@ -3,8 +3,8 @@
 	.globl  \funcname
 	.ent	\funcname
 \funcname:
-	lui $v0, 0x1 # Put 0x10000 in $v0, $v0 is return value so there's no need to backup it
-	lw $v0, 24($v0) # Get HBL stubs address, see eloader.c or loader.c for more info
+	lui $v0, 0x1 # Load 0x00010000 in $v0, $v0 is return value so there's no need to backup it
+	lw $v0, 24($v0) # Get HBL stubs address (check scratchpad.h for more info)
 	addi $v0, $v0, \offset # Add offset
 	jr $v0 # Jump to stub
 	nop # Leave this delay slot empty!
@@ -55,10 +55,11 @@
 # LoadExecForUser(1)
 	AddNid sceKernelExitGame, 0x00c0 # 0x5572a5f
 
-# SysMemUserForUser(3)
+# SysMemUserForUser(4)
 	AddNid sceKernelAllocPartitionMemory, 0x00c8 # 0x237dbd4f
-	AddNid sceKernelFreePartitionMemory, 0x00d0  # 0xb6d61d02
-	AddNid sceKernelTotalFreeMemSize, 0x00d8     # 0xf919f628
+	AddNid sceKernelGetBlockHeadAddr, 0x00d0     # 0x9d9a5ba1
+	AddNid sceKernelFreePartitionMemory, 0x00d8  # 0xb6d61d02
+	AddNid sceKernelTotalFreeMemSize, 0x00e0     # 0xf919f628
 
 
 

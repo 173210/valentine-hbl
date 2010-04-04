@@ -59,6 +59,7 @@ config = [
         :lib => "SysMemUserForUser",
         :functions => [
             [0x237DBD4F, "sceKernelAllocPartitionMemory"],
+            [0x9D9A5BA1, "sceKernelGetBlockHeadAddr"],
             [0xB6D61D02, "sceKernelFreePartitionMemory"],
             [0xF919F628, "sceKernelTotalFreeMemSize"],
         ],
@@ -101,8 +102,8 @@ out.puts %Q{.macro AddNID funcname, offset
 	.globl  \\funcname
 	.ent	\\funcname
 \\funcname:
-	lui $v0, 0x1 # Put 0x10000 in $v0, $v0 is return value so there's no need to backup it
-	lw $v0, 24($v0) # Get HBL stubs address, see eloader.c or loader.c for more info
+	lui $v0, 0x1 # Load 0x00010000 in $v0, $v0 is return value so there's no need to backup it
+	lw $v0, 24($v0) # Get HBL stubs address (check scratchpad.h for more info)
 	addi $v0, $v0, \\offset # Add offset
 	jr $v0 # Jump to stub
 	nop # Leave this delay slot empty!

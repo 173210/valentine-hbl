@@ -15,7 +15,6 @@
 u32 gp = 0;
 u32* entry_point = 0;
 u32 hbsize = 4000000; //default value roughly 4MB
-    
    
 // Globals for debugging
 #ifdef DEBUG
@@ -31,19 +30,12 @@ tNIDResolver nid_table[NID_TABLE_SIZE];
 // Auxiliary structure to help with syscall estimation
 tSceLibrary library_table[MAX_GAME_LIBRARIES];
 
-/* Values in scratchpad:
-	0x00010004: HBL memory block UID
-	0x00010008: HBL stubs memory block UID
-	0x00010014: HBL memory block head address
-	0x00010018: HBL stubs memory block head address
-*/
-
 // Jumps to ELF's entry point
 void runThread(SceSize args, void *argp)
 {
 	void (*start_entry)(SceSize, void*) = entry_point;
-	sceKernelFreePartitionMemory(*((SceUID*)0x00010004));
-	sceKernelFreePartitionMemory(*((SceUID*)0x00010008));	
+	sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_BLOCK_UID));
+	sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID));	
 	start_entry(args, argp);
 }
 // This function can be used to catch up the import calls when the ELF is up and running
@@ -111,7 +103,7 @@ void resolve_missing_stubs()
 {
 	int i, ret;
 	unsigned int num_nids;
-	u32* cur_stub = *((u32*)0x00010018);
+	u32* cur_stub = *((u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
 	u32 nid = 0, syscall = 0;
 	char lib_name[MAX_LIBRARY_NAME_LENGTH];
 
@@ -381,7 +373,7 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 		*(++call_to_resolve) = call_resolved;
 	}
 	
-	// JUMP
+	// JUMPLIBRARY NOT FOUND ON TABLE
 	else
 	{
 		/*
@@ -651,10 +643,10 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 	Elf32_Half i;
 	Elf32_Shdr sec_header;
 	Elf32_Off strtab_offset;
-	Elf32_Off cur_offset, cur_reloc_entry;	
+	Elf32_Off cur_offset;	
 	char section_name[40];
-	unsigned int j, section_name_size, entries_relocated = 0;
-	tRelEntry reloc_entry;
+	unsigned int j, section_name_size, entries_relocated = 0, num_entries;
+	tRelEntry* reloc_entry;
 	
 	// Seek string table
 	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
@@ -688,26 +680,32 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 		if(sec_header.sh_type == LOPROC)
 		{
 			DEBUG_PRINT(" RELOCATING SECTION ", NULL, 0);
-
-			// Relocate all entries from section
-			cur_reloc_entry = sec_header.sh_offset;
-
-			for(j=0; j<sec_header.sh_size; j+=sizeof(tRelEntry))
+			
+			// Allocate memory for section
+			num_entries = sec_header.sh_size / sizeof(tRelEntry);
+			reloc_entry = malloc(sec_header.sh_size);
+			if(!reloc_entry)
 			{
-                u32 pos = start_offset + cur_reloc_entry;
-                    
-				sceIoLseek(elf_file, start_offset + cur_reloc_entry, PSP_SEEK_SET);
-				sceIoRead(elf_file, &reloc_entry, sizeof(tRelEntry));
+				DEBUG_PRINT(" CANNOT ALLOCATE MEMORY FOR SECTION ", NULL, 0);
+				continue;
+			}
+			
+			// Read section
+			sceIoLseek(elf_file, start_offset + sec_header.sh_offset, PSP_SEEK_SET);
+			sceIoRead(elf_file, reloc_entry, sec_header.sh_size);
+
+			for(j=0; j<num_entries; j++)
+			{
+				//DEBUG_PRINT(" RELOC_ENTRY ", &(reloc_entry[j]), sizeof(tRelEntry));
 				
-				//DEBUG_PRINT(" RELOC_ENTRY ", &reloc_entry, sizeof(tRelEntry));
-
-
-				if(relocate_entry(reloc_entry) < 0)
-					DEBUG_PRINT(" RELOCATION TYPE UNKNOWN ",NULL, 0);
-					
-				cur_reloc_entry += sizeof(tRelEntry);
+				if(relocate_entry(reloc_entry[j]) < 0)
+					DEBUG_PRINT(" RELOCATION TYPE UNKNOWN ", &(reloc_entry[j]), sizeof(reloc_entry[j]));
+				
 				entries_relocated++;
 			}
+			
+			// Free section memory
+			free(reloc_entry);
 		}
 
 		// Next section header

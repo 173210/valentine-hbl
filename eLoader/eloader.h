@@ -2,6 +2,7 @@
 #define ELOADER
 
 #include "sdk.h"
+#include "scratchpad.h"
 
 // MIPS opcodes
 #define JR_RA_OPCODE 0x03E00008
