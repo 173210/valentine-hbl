@@ -98,7 +98,7 @@ void free_game_memory()
                 sceKernelDelayThread(100000);
             }
 		} else {
-            DEBUG_PRINT("CANNOT FIND THREAD TO DELETE", threads[i], strlen(threads[i]) + 1);
+            exit_with_log("CANNOT FIND THREAD TO DELETE", threads[i], strlen(threads[i]) + 1);
         }
 	}
 
@@ -150,35 +150,6 @@ void free_game_memory()
 	free = sceKernelTotalFreeMemSize();
 	write_debug(" FREE MEM AFTER NORMAL CLEANUP", &free, sizeof(free));
 #endif
-/*
-    ret = sceKernelSelfStopUnloadModule(0, 0, NULL);
-    if (ret < 0)
-        DEBUG_PRINT(" ERROR UNLOADING GAME MODULE ", &ret, sizeof(ret));
 
-	// Stop & Unload game module
-
-	id = find_module("sceMpeg_library");
-	if (id >= 0)
-	{
-		DEBUG_PRINT(" GAME MODULE ID ", &id, sizeof(id));
-
-		ret = sceKernelStopModule(id, 0, NULL, &status, NULL);
-		if (ret >= 0)
-		{
-            DEBUG_PRINT(" MODULE Stopped", &id, sizeof(id));
-			ret = sceKernelUnloadModule(id);
-			if (ret < 0)
-				exit_with_log(" ERROR UNLOADING GAME MODULE ", &ret, sizeof(ret));
-		}
-		else
-			exit_with_log(" ERROR STOPPING GAME MODULE ", &ret, sizeof(ret));
-	}
-	else
-		exit_with_log(" ERROR: GAME MODULE NOT FOUND ", &id, sizeof(id));
-#ifdef DEBUG
-	free = sceKernelTotalFreeMemSize();
-	write_debug(" FREE MEM AFTER MODULE UNLOADING ", &free, sizeof(free));
-#endif
-*/
 
 }

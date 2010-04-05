@@ -4,6 +4,9 @@
 #include "thread.h"
 #include "debug.h"
 #include "config.h"
+#include "menu.h"
+
+#define ENABLE_MENU 1
 
 /* eLoader */
 /* Entry point: _start() */
@@ -15,6 +18,9 @@
 u32 gp = 0;
 u32* entry_point = 0;
 u32 hbsize = 4000000; //default value roughly 4MB
+u32 * isSet = EBOOT_SET_ADDRESS;
+u32 * ebootPath = EBOOT_PATH_ADDRESS;  
+u32 * menu_pointer = MENU_LOAD_ADDRESS;     
    
 // Globals for debugging
 #ifdef DEBUG
@@ -95,6 +101,46 @@ int get_lib_nid(int index, char* lib_name, u32* pnid)
 	strcpy(lib_name, cur_lib.library_name);
 
 	return strlen(lib_name);
+}
+
+/* This doesn't really work, it's just here to be actually made into something that works */
+u32 reestimate_syscall(u32 nid) {
+	int i, ret;
+	unsigned int num_nids;
+	u32* cur_stub = *((u32*)0x00010018);
+	u32 mNid = 0, syscall = 0;
+	char lib_name[MAX_LIBRARY_NAME_LENGTH];
+/*
+	ret = config_initialize();
+
+	if (ret < 0)
+		exit_with_log("**CONFIG INIT FAILED**", &ret, sizeof(ret));
+
+	ret = config_num_nids_total(&num_nids);
+	
+	for (i=0; i<num_nids; i++)
+	{
+        DEBUG_PRINT("**CURRENT STUB**", &cur_stub, sizeof(u32));
+
+        ret = get_lib_nid(i, lib_name, &mNid);
+
+        if (mNid != nid){
+            cur_stub += 2;
+            continue;
+        }
+        
+        syscall = GET_SYSCALL_NUMBER(*cur_stub);
+        syscall++;
+
+        resolve_call(cur_stub, syscall);
+        
+        sceKernelDcacheWritebackInvalidateAll();
+        break;
+	}
+    
+	config_close();
+*/    
+    return syscall;
 }
 
 // Autoresolves HBL missing stubs
@@ -400,6 +446,19 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 	*/
 }
 
+
+void main_loop() {
+    isSet[0] = 0;
+    loadMenu();
+    while(! isSet[0]) {
+        sceKernelDelayThread(5000);
+    }      
+
+    
+    start_eloader((char *)ebootPath, 1);
+}
+
+/* Hooks for some functions used by Homebrews */
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
                              int stackSize, SceUInt attr, SceKernelThreadOptParam *option){
  
@@ -416,7 +475,11 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
     return res;
 }
 
-
+#ifdef ENABLE_MENU
+void  _hook_sceKernelExitGame () {
+    main_loop();
+}
+#endif
 
 /* Resolves imports in ELF's program section already loaded in memory */
 /* Uses game's imports to do the resolving (this can be further improved) */
@@ -452,9 +515,14 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
             
             switch (*cur_nid) {
-                case 0x446D8DE6:
+                case 0x446D8DE6: //sceKernelCreateThread
                     real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
-                    break;    
+                    break;   
+#ifdef ENABLE_MENU                    
+                case 0x05572A5F: //sceKernelExitGame
+                    real_call = MAKE_JUMP(_hook_sceKernelExitGame);
+                    break;
+#endif                    
             }
             
 			/* If NID not found in MoHH imports */
@@ -742,6 +810,7 @@ void allocate_memory(u32 size, void* addr)
 void start_eloader(char *eboot_path, int is_eboot)
 {
 
+    DEBUG_PRINT("EBOOT:", eboot_path, strlen(eboot_path));
 	unsigned int num_nids, stubs_size, stubs_resolved;	
 	tStubEntry* pstub_entry;		
 	SceUID elf_file;
@@ -856,6 +925,68 @@ void start_eloader(char *eboot_path, int is_eboot)
     }
 }
 
+/* Loads a Basic menu as a thread
+* In the future, we might want the menu to be an actual homebrew
+*/
+void loadMenu(){
+
+    // Just trying the basic functions used by the menu
+    SceUID id = -1;
+    int attempts = 0;
+    while (id < 0 && attempts < 10){
+        attempts++;
+        id = sceIoDopen("ms0:");
+        if (id <=0){
+            DEBUG_PRINT("sceIoDopen syscall estimation failed, attempt to reestimate",NULL, 0);
+            reestimate_syscall(0xB29DDF9C); //sceIoDopen TODO move to config ?
+        }
+    }
+    if (id < 0) {
+        DEBUG_PRINT("FATAL, sceIoDopen syscall estimation failed",NULL, 0);
+    } else {
+        attempts = 0;
+        SceIoDirent entry;
+        memset(&entry, 0, sizeof(SceIoDirent)); 
+        while (sceIoDread(id, &entry) <= 0 && attempts < 10) {
+            attempts++;
+            DEBUG_PRINT("sceIoDread syscall estimation failed, attempt to reestimate",NULL, 0);
+            reestimate_syscall(0xE3EB004C); //sceIoDread TODO move to config ?
+            memset(&entry, 0, sizeof(SceIoDirent));
+        }
+    }
+    sceIoDclose(id);
+
+
+	SceUID menu_file;
+    SceOff file_size;
+	int bytes_read;
+
+	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
+
+	if ((menu_file = sceIoOpen("ms0:/menu.bin", PSP_O_RDONLY, 0777)) < 0)
+		exit_with_log(" FAILED TO LOAD MENU ", &menu_file, sizeof(menu_file));
+
+
+	// Get MENU size
+	file_size = sceIoLseek(menu_file, 0, PSP_SEEK_END);
+	sceIoLseek(menu_file, 0, PSP_SEEK_SET);    
+    
+	// Load MENU to buffer
+	if ((bytes_read = sceIoRead(menu_file, (void*)menu_pointer, file_size)) < 0)
+		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
+        
+    void (*start_entry)(SceSize, void*) = menu_pointer;	 
+    SceUID thid;
+	thid = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
+
+	if(thid >= 0)
+	{
+		thid = sceKernelStartThread(thid, 0, NULL);
+    } else {
+        exit_with_log("Menu Launch failed", NULL, 0);
+    }        
+}
+
 // HBL main thread
 int start_thread(SceSize args, void *argp)
 {
@@ -872,9 +1003,12 @@ int start_thread(SceSize args, void *argp)
 	
 		// Free memory
 		free_game_memory();
-
-		write_debug(" START HBL ", NULL, 0);
-		start_eloader(EBOOT_PATH, 1);
+        write_debug(" START HBL ", NULL, 0);
+#ifdef ENABLE_MENU    
+        main_loop();
+#else
+        start_eloader(EBOOt_PATH, 1);
+#endif        
 		// uncomment the following to load eboot.elf instead of eboot.pbp
 		// start_eloader(ELF_PATH, 0);
 
