@@ -1007,7 +1007,7 @@ int start_thread(SceSize args, void *argp)
 #ifdef ENABLE_MENU    
         main_loop();
 #else
-        start_eloader(EBOOt_PATH, 1);
+        start_eloader(EBOOT_PATH, 1);
 #endif        
 		// uncomment the following to load eboot.elf instead of eboot.pbp
 		// start_eloader(ELF_PATH, 0);
