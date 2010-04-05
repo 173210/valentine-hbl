@@ -1,5 +1,7 @@
-Half Byte Loader by m0skit0, ab5000 and n00b81
-EBOOT loader for kgsws MoHH exploit
+Half Byte Loader Beta v1.0
+Original idea: n00b81
+Developers: m0skit0, ab5000, wololo
+Contributors: n00b81
 
 	This license applies if not stated otherwise:
 	
@@ -18,3 +20,4 @@ EBOOT loader for kgsws MoHH exploit
     You should have received a copy of the GNU General Public License
     along with Half Byte Loader.  If not, see <http://www.gnu.org/licenses/>.
 
+You can get the source code at http://code.google.com/p/valentine-hbl/
