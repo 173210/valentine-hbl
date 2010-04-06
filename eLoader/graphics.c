@@ -7,6 +7,16 @@
 
 Color* g_vram_base = (Color*) (0x40000000 | 0x04000000);
 
+typedef union {
+	int rgba;
+	struct {
+		char r;
+		char g;
+		char b;
+		char a;
+	} c;
+} color_t;
+
 typedef struct
 {
 	unsigned short u, v;
@@ -62,6 +72,8 @@ Color getPixelImage(int x, int y, Image* image)
 	return image->data[x + y * image->textureWidth];
 }
 
+int gY = 0;
+
 void printTextScreen(int x, int y, char text[], u32 color)
 {
 	int c, i, j, l;
@@ -89,3 +101,23 @@ void printTextScreen(int x, int y, char text[], u32 color)
 	}
 }
 
+void DebugPrint(char text[]) {
+  if (gY > 272) {
+    SetColor(0);
+  }
+  printTextScreen(0, gY, text, 0x00FFFFFF);
+  gY += 12;
+}  
+
+void *fb = (void *)0x44000000;
+
+void SetColor(int col)
+{
+    gY = 0;
+	int i;
+	color_t *pixel = (color_t *)fb;
+	for(i = 0; i < 512*272; i++) {
+		pixel->rgba = col;
+		pixel++;
+	}
+}

@@ -49,6 +49,8 @@ extern Color getPixelScreen(int x, int y);
 
 extern void printTextScreen(int x, int y, char text[], u32 color);
 
+extern void DebugPrint(char text[]);
+
 /**
  * Print a text (pixels out of the screen or image are clipped).
  *

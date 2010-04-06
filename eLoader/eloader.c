@@ -5,8 +5,13 @@
 #include "debug.h"
 #include "config.h"
 #include "menu.h"
+#include "graphics.h"
 
+//Comment the following line if you want to load the EBOOT directly from ms0:/EBOOT.PBP
 #define ENABLE_MENU 1
+
+//Comment the following line if you don't want wololo's crappy Fake Ram mechanism
+#define FAKEMEM 1
 
 /* eLoader */
 /* Entry point: _start() */
@@ -17,7 +22,7 @@
 //Any way to have those non globals ?
 u32 gp = 0;
 u32* entry_point = 0;
-u32 hbsize = 4000000; //default value roughly 4MB
+u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
 u32 * isSet = EBOOT_SET_ADDRESS;
 u32 * ebootPath = EBOOT_PATH_ADDRESS;  
 u32 * menu_pointer = MENU_LOAD_ADDRESS;     
@@ -481,6 +486,25 @@ void  _hook_sceKernelExitGame () {
 }
 #endif
 
+#ifdef FAKEMEM
+int  _hook_sceKernelMaxFreeMemSize () {
+ return 0x09EC8000 - PRX_LOAD_ADDRESS - hbsize;
+}
+
+void *  _hook_sceKernelGetBlockHeadAddr (SceUID mid) {
+    if (mid == 0x05B8923F)
+        return PRX_LOAD_ADDRESS + hbsize;
+    return 0;
+}
+
+SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
+{
+	SceUID ret = 0x05B8923F;
+
+	return ret;
+}
+#endif
+
 /* Resolves imports in ELF's program section already loaded in memory */
 /* Uses game's imports to do the resolving (this can be further improved) */
 /* Returns number of resolves */
@@ -522,6 +546,20 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                 case 0x05572A5F: //sceKernelExitGame
                     real_call = MAKE_JUMP(_hook_sceKernelExitGame);
                     break;
+#endif   
+#ifdef FAKEMEM    
+                case 0xA291F107:
+                    DEBUG_PRINT("mem trick", NULL, 0);
+                    real_call = MAKE_JUMP(_hook_sceKernelMaxFreeMemSize);
+                    break;
+                case 0x9D9A5BA1:
+                    DEBUG_PRINT("mem trick", NULL, 0);
+                    real_call = MAKE_JUMP(_hook_sceKernelGetBlockHeadAddr);
+                    break;
+                case 0x237DBD4F:
+                    DEBUG_PRINT("mem trick", NULL, 0);
+                    real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
+                    break;                 
 #endif                    
             }
             
@@ -618,7 +656,6 @@ int relocate_entry(tRelEntry reloc_entry)
 	// Load word to be relocated into buffer
     u32 misalign = offset_target%4;
     if (misalign) {
-        DEBUG_PRINT("Misaligned Reloc entry :", &reloc_entry, sizeof(tRelEntry));
         u32 array[2];
         array[0] = *(u32*)(offset_target - misalign);
         array[1] = *(u32*)(offset_target + 4 - misalign);
@@ -627,7 +664,6 @@ int relocate_entry(tRelEntry reloc_entry)
         for (i = 3 + misalign; i >= misalign; --i){
             buffer8[i-misalign] = array8[i];
         }
-        DEBUG_PRINT("buffer value:", &buffer, sizeof(u32));
     } else {
         buffer = *(u32*)offset_target;
     }
@@ -764,11 +800,8 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 
 			for(j=0; j<num_entries; j++)
 			{
-				//DEBUG_PRINT(" RELOC_ENTRY ", &(reloc_entry[j]), sizeof(tRelEntry));
-				
-				if(relocate_entry(reloc_entry[j]) < 0)
-					DEBUG_PRINT(" RELOCATION TYPE UNKNOWN ", &(reloc_entry[j]), sizeof(reloc_entry[j]));
-				
+				//DEBUG_PRINT(" RELOC_ENTRY ", &(reloc_entry[j]), sizeof(tRelEntry));	
+                relocate_entry(reloc_entry[j]);
 				entries_relocated++;
 			}
 			
@@ -797,12 +830,14 @@ void execute_elf(SceSize args, void *argp)
 // Allocates memory for homebrew so it doesn't overwrite itself
 void allocate_memory(u32 size, void* addr)
 {
+#ifndef FAKEMEM
 	SceUID mem;
 	
 	DEBUG_PRINT(" ALLOC EXECUTABLE MEMORY ", NULL, 0);
 	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
 	if(mem < 0)
 		DEBUG_PRINT(" sceKernelAllocPartitionMemory FAILED ", &mem, sizeof(mem));
+#endif
 }
 
 // HBL entry point
@@ -930,6 +965,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 */
 void loadMenu(){
 
+    DebugPrint("Loading Menu");
     // Just trying the basic functions used by the menu
     SceUID id = -1;
     int attempts = 0;
@@ -942,6 +978,7 @@ void loadMenu(){
         }
     }
     if (id < 0) {
+        DebugPrint("Loading Menu Failed (syscall ?)");
         DEBUG_PRINT("FATAL, sceIoDopen syscall estimation failed",NULL, 0);
     } else {
         attempts = 0;
@@ -993,15 +1030,18 @@ int start_thread(SceSize args, void *argp)
 	int num_nids;
 	
 	// Build NID table
+    DebugPrint("Build Nids table");
 	num_nids = build_nid_table(nid_table);
     write_debug(" NUM NIDS", &num_nids, sizeof(int));
 	
 	if(num_nids > 0)
 	{	
 		// FIRST THING TO DO!!!
+        DebugPrint("Resolving Missing Stubs");
 		resolve_missing_stubs();
 	
 		// Free memory
+        DebugPrint("Free memory");
 		free_game_memory();
         write_debug(" START HBL ", NULL, 0);
 #ifdef ENABLE_MENU    
@@ -1015,6 +1055,7 @@ int start_thread(SceSize args, void *argp)
 	}
 	
 	// Exit thread
+    DebugPrint("Exiting HBL Thread");
 	sceKernelExitDeleteThread(0);
 	
 	return 0;
@@ -1025,6 +1066,11 @@ void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.star
 void _start(unsigned long arglen, unsigned long *argp)
 {	
 	SceUID thid;
+    
+    void *fb = (void *)0x44000000;
+    sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+    SetColor(0);
+    DebugPrint("Starting HBL -- http://code.google.com/p/valentine-hbl");
 	
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
@@ -1057,7 +1103,6 @@ void _start(unsigned long arglen, unsigned long *argp)
 		#endif
 		*/
 	}
-	
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)

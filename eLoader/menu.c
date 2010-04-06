@@ -14,28 +14,7 @@ u32 * isSet;
 void * ebootPath;
 int nbFiles;
 
-typedef union {
-	int rgba;
-	struct {
-		byte r;
-		byte g;
-		byte b;
-		byte a;
-	} c;
-} color_t;
-
-void *fb = (void *)0x44000000;
-
-void SetColor(int col)
-{
-	int i;
-	color_t *pixel = (color_t *)fb;
-	for(i = 0; i < 512*272; i++) {
-		pixel->rgba = col;
-		pixel++;
-	}
-}
-
+void *frameBuffer = (void *)0x44000000;
 
 /* Yes. This reads the memory stick EVERY time
 the user presses a key.
@@ -107,7 +86,7 @@ void _start()
     nbFiles = 0;
 
     DEBUG_PRINT("MENU Sets display", NULL, 0);
-    sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+    sceDisplaySetFrameBuf(frameBuffer, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
 
     SetColor(0x00000000);
 

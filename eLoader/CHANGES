@@ -1,3 +1,8 @@
+2010/04/06 (wololo)
+- adding output to the screen while HBL loads
+- putting back my fakemem mechanism so that T.O.M.E runs. To deactivate it, comment out the "define FAKEMEM"
+-- that fakemem system is of course temporary until we can actually free the ram
+
 2010/04/04 (wololo)
 - Adding a very basic menu
 - Put back the exit_with_log if thread not found, feel free to revert that change
