@@ -231,6 +231,8 @@ void copy_hbl_stubs(void)
 void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.start")));
 void _start(unsigned long arglen, unsigned long *argp)
 {
+    //reset the contents of the debug file;
+    init_debug();
 	SceUID hbl_file;
 
 	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	

@@ -10,6 +10,9 @@
 // Macro to make a BREAK instruction
 #define MAKE_BREAK(n) ((((u32)n << 6) & 0x03ffffc0) | 0x0000000d)
 
+//init the debug file
+void init_debug();
+
 // Write a string + data to debug path
 void write_debug(const char* description, void* value, unsigned int size);
 

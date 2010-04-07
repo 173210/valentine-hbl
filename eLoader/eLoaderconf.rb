@@ -50,6 +50,7 @@ config = [
             [0x28B6489C, "sceKernelDeleteSema"],
             [0xED1410E0, "sceKernelDeleteFpl"],
             [0xef9e4c70, "sceKernelDeleteEventFlag"], 
+            [0x293B45B8, "sceKernelGetThreadId"],
         ],
     }   , 
     { 

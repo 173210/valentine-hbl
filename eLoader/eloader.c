@@ -23,9 +23,12 @@
 u32 gp = 0;
 u32* entry_point = 0;
 u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
+
+//Menu variables
 u32 * isSet = EBOOT_SET_ADDRESS;
 u32 * ebootPath = EBOOT_PATH_ADDRESS;  
-u32 * menu_pointer = MENU_LOAD_ADDRESS;     
+u32 * menu_pointer = MENU_LOAD_ADDRESS;
+   
    
 // Globals for debugging
 #ifdef DEBUG
@@ -40,6 +43,7 @@ tNIDResolver nid_table[NID_TABLE_SIZE];
 
 // Auxiliary structure to help with syscall estimation
 tSceLibrary library_table[MAX_GAME_LIBRARIES];
+
 
 // Jumps to ELF's entry point
 void runThread(SceSize args, void *argp)
@@ -96,9 +100,7 @@ int get_lib_nid(int index, char* lib_name, u32* pnid)
 		else
 		{
 			ret = config_seek_nid(--index, pnid);
-#ifdef DEBUG
-			write_debug("**SEEK NID**", pnid, sizeof(u32));
-#endif
+			DEBUG_PRINT("**SEEK NID**", pnid, sizeof(u32));
 			break;
 		}
 	}
@@ -457,9 +459,7 @@ void main_loop() {
     loadMenu();
     while(! isSet[0]) {
         sceKernelDelayThread(5000);
-    }      
-
-    
+    }
     start_eloader((char *)ebootPath, 1);
 }
 
@@ -482,7 +482,13 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
 
 #ifdef ENABLE_MENU
 void  _hook_sceKernelExitGame () {
-    main_loop();
+	SceUID thid = sceKernelCreateThread("HBL", main_loop, 0x18, 0x10000, 0, NULL);
+	
+	if (thid >= 0)
+	{
+		thid = sceKernelStartThread(thid, 0, NULL);
+    }
+    sceKernelExitDeleteThread(0);
 }
 #endif
 
@@ -504,6 +510,13 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 	return ret;
 }
 #endif
+
+/* WIP
+//A function that just returns "ok" but does nothing
+int _hook_ok(){
+    return 1;
+}
+*/
 
 /* Resolves imports in ELF's program section already loaded in memory */
 /* Uses game's imports to do the resolving (this can be further improved) */
@@ -559,8 +572,33 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                 case 0x237DBD4F:
                     DEBUG_PRINT("mem trick", NULL, 0);
                     real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break;                 
-#endif                    
+                    break; 
+#endif   
+/*
+Work in progress, attempt for the mp3 library not to fail                  
+                case 0x07EC321A:	//sceMp3ReserveMp3Handle
+                case 0x0DB149F4:	//sceMp3NotifyAddStreamData
+                case 0x2A368661:	//sceMp3ResetPlayPosition
+                case 0x354D27EA:	//	sceMp3GetSumDecodedSample
+                case 0x35750070:	//	sceMp3InitResource
+                case 0x3C2FA058:	//	sceMp3TermResource
+                case 0x3CEF484F:	//	sceMp3SetLoopNum
+                case 0x44E07129:	//	sceMp3Init
+                case 0x732B042A:	//	sceMp3EndEntry
+                case 0x7F696782:	//	sceMp3GetMp3ChannelNum
+                case 0x87677E40:	//	sceMp3GetBitRate
+                case 0x87C263D1:	//	sceMp3GetMaxOutputSample
+                case 0x8AB81558:	//	sceMp3StartEntry
+                case 0x8F450998:	//	sceMp3GetSamplingRate
+                case 0xA703FE0F:	//	sceMp3GetInfoToAddStreamData
+                case 0xD021C0FB:	//	sceMp3Decode
+                case 0xD0A56296:	//	sceMp3CheckStreamDataNeeded
+                case 0xD8F54A51:	//	sceMp3GetLoopNum
+                case 0xF5478233:	//	sceMp3ReleaseMp3Handle
+                    real_call = MAKE_JUMP(_hook_genericSuccess);
+                    break;
+*/
+                   
             }
             
 			/* If NID not found in MoHH imports */
@@ -964,7 +1002,6 @@ void start_eloader(char *eboot_path, int is_eboot)
 * In the future, we might want the menu to be an actual homebrew
 */
 void loadMenu(){
-
     DebugPrint("Loading Menu");
     // Just trying the basic functions used by the menu
     SceUID id = -1;
@@ -1013,12 +1050,11 @@ void loadMenu(){
 		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
         
     void (*start_entry)(SceSize, void*) = menu_pointer;	 
-    SceUID thid;
-	thid = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
+	SceUID menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
 
-	if(thid >= 0)
+	if(menuThread >= 0)
 	{
-		thid = sceKernelStartThread(thid, 0, NULL);
+		menuThread = sceKernelStartThread(menuThread, 0, NULL);
     } else {
         exit_with_log("Menu Launch failed", NULL, 0);
     }        
@@ -1044,7 +1080,7 @@ int start_thread(SceSize args, void *argp)
         DebugPrint("Free memory");
 		free_game_memory();
         write_debug(" START HBL ", NULL, 0);
-#ifdef ENABLE_MENU    
+#ifdef ENABLE_MENU
         main_loop();
 #else
         start_eloader(EBOOT_PATH, 1);

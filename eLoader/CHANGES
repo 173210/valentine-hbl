@@ -1,3 +1,8 @@
+2010/04/07 (wololo)
+- small menu improvements
+- shortened the delay for free mem ("free memory" step goes faster)
+- dblog is deleted everytime the HBL is started
+
 2010/04/06 (wololo)
 - adding output to the screen while HBL loads
 - putting back my fakemem mechanism so that T.O.M.E runs. To deactivate it, comment out the "define FAKEMEM"

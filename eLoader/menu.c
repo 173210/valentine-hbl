@@ -7,7 +7,12 @@
 #include "debug.h"
 #include "menu.h"
 
+#define FOLDERNAME_SIZE 30
+#define NB_FOLDERS 20
+char folders[NB_FOLDERS][FOLDERNAME_SIZE] ;
+
 char * currentPath = "ms0:/PSP/GAME/";
+char * cacheFile = "ms0:/menu.cache";
 
 int currentFile;;
 u32 * isSet;
@@ -16,74 +21,94 @@ int nbFiles;
 
 void *frameBuffer = (void *)0x44000000;
 
-/* Yes. This reads the memory stick EVERY time
-the user presses a key.
-Yes, I'll fix that
+
+void saveCache(){
+    SceUID id = sceIoOpen(cacheFile, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777);
+    if (id < 0) return;
+    sceIoWrite(id, &folders, FOLDERNAME_SIZE * NB_FOLDERS * sizeof(char));
+    sceIoClose(id);
+}
+/*Loads an alternate cached version of the folders
+* if sceIoDopen failed
 */
-void refreshMenu() {
-  DEBUG_PRINT("MENU Refresh", NULL, 0);
-  DEBUG_PRINT("currentFile ID:", &currentFile, sizeof(int));
+void loadCache(){
+    SceUID id = sceIoOpen(cacheFile, PSP_O_RDONLY, 0777);
+    if (id < 0) return;
+    sceIoRead(id, &folders, FOLDERNAME_SIZE * NB_FOLDERS * sizeof(char));
+    sceIoClose(id);
+    
+    int i;
+    nbFiles = 0;
+    for (i = 0; i < NB_FOLDERS; ++i){
+        if (folders[i][0] == 0) 
+        {
+            break;
+        }
+        nbFiles++;
+    }    
+}
+
+void init(){
+  int i;
+  nbFiles = 0;
+  for (i = 0; i < NB_FOLDERS; ++i){
+    folders[i][0] = 0;
+  }
+    
   SceUID id = sceIoDopen(currentPath);
   if (id <=0) {
     DEBUG_PRINT("FATAL: Menu can't open directory ", NULL, 0);
+    loadCache();
     return;
   }
   SceIoDirent entry;
   memset(&entry, 0, sizeof(SceIoDirent)); 
-  int i = 0;
-  while (sceIoDread(id, &entry) > 0)
+  while (sceIoDread(id, &entry) > 0 && nbFiles < NB_FOLDERS)
   {
     if (strcmp(".", entry.d_name) == 0 || strcmp("..", entry.d_name) == 0) {
         memset(&entry, 0, sizeof(SceIoDirent)); 
         continue;
     }
       
+    strcpy(folders[nbFiles], entry.d_name);
+    nbFiles++;
+    memset(&entry, 0, sizeof(SceIoDirent)); 
+  }
+  sceIoDclose(id); 
+  if (!nbFiles) {
+    loadCache();
+  }
+    
+  saveCache();
+}
+
+void refreshMenu() {
+  int i;
+  for (i = 0; i < nbFiles; ++i) {
     u32 color = 0x00FFFFFF;
     if (i == currentFile)
         color = 0x0000FFFF;
-    printTextScreen(0, 15 + i * 12, entry.d_name, color);
-    i++;
-    memset(&entry, 0, sizeof(SceIoDirent)); 
+    printTextScreen(0, 15 + i * 12, folders[i], color);
   }
-  nbFiles = i;
-  sceIoDclose(id); 
 }
 
 void setEboot() {
-DEBUG_PRINT("MENU SET EBOOT", NULL, 0);
-  SceUID id = sceIoDopen(currentPath);
-  SceIoDirent entry;
-    memset(&entry, 0, sizeof(SceIoDirent)); 
-  int i = 0;
-  while (sceIoDread(id, &entry) > 0)
-  {
-    if (strcmp(".", entry.d_name) == 0 || strcmp("..", entry.d_name) == 0) {
-        memset(&entry, 0, sizeof(SceIoDirent)); 
-        continue;
-    }  
-    if (i == currentFile)
-        break;
-    i++;
-    memset(&entry, 0, sizeof(SceIoDirent)); 
-  }
-  sceIoDclose(id); 
-  if (i != currentFile)
-    return;
   strcpy(ebootPath, currentPath);
-  strcat(ebootPath, &(entry.d_name));
+  strcat(ebootPath, folders[currentFile]);
   strcat(ebootPath, "/EBOOT.PBP");
+  DEBUG_PRINT("MENU SET EBOOT", &ebootPath, strlen(ebootPath));
   isSet[0] = 1;
 }
 
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
+    init();
     currentFile = 0;
     isSet = (u32 *) EBOOT_SET_ADDRESS;
     ebootPath = (void *) EBOOT_PATH_ADDRESS;
     DEBUG_PRINT("START MENU", NULL, 0);
     isSet[0] = 0;
-    nbFiles = 0;
 
     DEBUG_PRINT("MENU Sets display", NULL, 0);
     sceDisplaySetFrameBuf(frameBuffer, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
@@ -100,6 +125,7 @@ void _start()
 
         sceCtrlReadBufferPositive (&pad, 1); // check the input.
         if(pad.Buttons & PSP_CTRL_CROSS) { // if the cross button is pressed
+            DEBUG_PRINT("MENU SET EBOOT", NULL, 0);
             setEboot();
         }else if(pad.Buttons & PSP_CTRL_DOWN && currentFile < nbFiles - 1) {
             currentFile++;
@@ -120,6 +146,7 @@ void _start()
     }
 
     //This point is reached when the value is set
+    sceKernelExitDeleteThread(0);
 }
 
 

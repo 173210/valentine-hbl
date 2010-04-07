@@ -79,4 +79,7 @@ extern tSceLibrary library_table[MAX_GAME_LIBRARIES];
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(char *eboot_path, int is_eboot);
 
+//Number of threads to monitor
+#define MAX_PERMANENT_THREADS 30
+
 #endif

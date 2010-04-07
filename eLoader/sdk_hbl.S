@@ -40,7 +40,7 @@
 # UtilsForUser(1)
 	AddNid sceKernelDcacheWritebackInvalidateAll, 0x0058 # 0xb435dec5
 
-# ThreadManForUser(15)
+# ThreadManForUser(16)
 	AddNid sceKernelDelayThread, 0x0060           # 0xceadeb47
 	AddNid sceKernelStartThread, 0x0068           # 0xf475845d
 	AddNid sceKernelCreateThread, 0x0070          # 0x446d8de6
@@ -56,21 +56,22 @@
 	AddNid sceKernelDeleteSema, 0x00c0            # 0x28b6489c
 	AddNid sceKernelDeleteFpl, 0x00c8             # 0xed1410e0
 	AddNid sceKernelDeleteEventFlag, 0x00d0       # 0xef9e4c70
+	AddNid sceKernelGetThreadId, 0x00d8           # 0x293b45b8
 
 # LoadExecForUser(1)
-	AddNid sceKernelExitGame, 0x00d8 # 0x5572a5f
+	AddNid sceKernelExitGame, 0x00e0 # 0x5572a5f
 
 # SysMemUserForUser(4)
-	AddNid sceKernelAllocPartitionMemory, 0x00e0 # 0x237dbd4f
-	AddNid sceKernelGetBlockHeadAddr, 0x00e8     # 0x9d9a5ba1
-	AddNid sceKernelFreePartitionMemory, 0x00f0  # 0xb6d61d02
-	AddNid sceKernelTotalFreeMemSize, 0x00f8     # 0xf919f628
+	AddNid sceKernelAllocPartitionMemory, 0x00e8 # 0x237dbd4f
+	AddNid sceKernelGetBlockHeadAddr, 0x00f0     # 0x9d9a5ba1
+	AddNid sceKernelFreePartitionMemory, 0x00f8  # 0xb6d61d02
+	AddNid sceKernelTotalFreeMemSize, 0x0100     # 0xf919f628
 
 # sceDisplay(1)
-	AddNid sceDisplaySetFrameBuf, 0x0100 # 0x289d82fe
+	AddNid sceDisplaySetFrameBuf, 0x0108 # 0x289d82fe
 
 # sceCtrl(1)
-	AddNid sceCtrlReadBufferPositive, 0x0108 # 0x1f803938
+	AddNid sceCtrlReadBufferPositive, 0x0110 # 0x1f803938
 
 
 

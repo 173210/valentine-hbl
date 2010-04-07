@@ -77,7 +77,7 @@ void free_game_memory()
 	int free;
 #endif
 
-	sceKernelDelayThread(100000);
+	sceKernelDelayThread(100);
 
 #ifdef DEBUG
 	free = sceKernelTotalFreeMemSize();
@@ -92,13 +92,14 @@ void free_game_memory()
 		{
 			int res = sceKernelTerminateDeleteThread(id);
             if (res < 0) {
+                DebugPrint("  Cannot Terminate thread, probably syscall failure");
                 DEBUG_PRINT("CANNOT TERMINATE:", threads[i], strlen(threads[i]) + 1);
                 DEBUG_PRINT("ERROR:", &res, sizeof(int));
             } else {
-                sceKernelDelayThread(100000);
+                sceKernelDelayThread(100);
             }
 		} else {
-            DebugPrint("Cannot find thread, probably syscall failure");
+            DebugPrint("  Cannot find thread, probably syscall failure");
             DEBUG_PRINT("CANNOT FIND THREAD TO DELETE", threads[i], strlen(threads[i]) + 1);
         }
 	}
@@ -110,7 +111,7 @@ void free_game_memory()
 		if(id >= 0)
 		{
 			sceKernelDeleteSema(id);
-			sceKernelDelayThread(100000);
+			sceKernelDelayThread(100);
 		}
 	}
 	
@@ -119,7 +120,7 @@ void free_game_memory()
 		while((id = find_sema(loop_semas[i])) >= 0)
 		{
 			sceKernelDeleteSema(id);
-			sceKernelDelayThread(100000);
+			sceKernelDelayThread(100);
 		}
 	}
 	
@@ -130,7 +131,7 @@ void free_game_memory()
 		if(id >= 0)
 		{
 			sceKernelDeleteEventFlag(id);
-			sceKernelDelayThread(100000);
+			sceKernelDelayThread(100);
 		}
 	}
 
@@ -144,7 +145,7 @@ void free_game_memory()
 	if(id >= 0)
 	{
 		sceKernelDeleteFpl(id);
-		sceKernelDelayThread(100000);
+		sceKernelDelayThread(100);
 	}
 	
 #ifdef DEBUG

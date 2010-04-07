@@ -1,6 +1,14 @@
 #include "debug.h"
 #include "sdk.h"
 
+void init_debug(){
+ SceUID fd;
+ if ((fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777)) >= 0)
+ {
+    sceIoClose(fd);
+  }
+}
+
 // Debugging log function
 void write_debug(const char* description, void* value, unsigned int size)
 {
