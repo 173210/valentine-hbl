@@ -44,7 +44,6 @@ tNIDResolver nid_table[NID_TABLE_SIZE];
 // Auxiliary structure to help with syscall estimation
 tSceLibrary library_table[MAX_GAME_LIBRARIES];
 
-
 // Jumps to ELF's entry point
 void runThread(SceSize args, void *argp)
 {
@@ -108,46 +107,6 @@ int get_lib_nid(int index, char* lib_name, u32* pnid)
 	strcpy(lib_name, cur_lib.library_name);
 
 	return strlen(lib_name);
-}
-
-/* This doesn't really work, it's just here to be actually made into something that works */
-u32 reestimate_syscall(u32 nid) {
-	int i, ret;
-	unsigned int num_nids;
-	u32* cur_stub = *((u32*)0x00010018);
-	u32 mNid = 0, syscall = 0;
-	char lib_name[MAX_LIBRARY_NAME_LENGTH];
-/*
-	ret = config_initialize();
-
-	if (ret < 0)
-		exit_with_log("**CONFIG INIT FAILED**", &ret, sizeof(ret));
-
-	ret = config_num_nids_total(&num_nids);
-	
-	for (i=0; i<num_nids; i++)
-	{
-        DEBUG_PRINT("**CURRENT STUB**", &cur_stub, sizeof(u32));
-
-        ret = get_lib_nid(i, lib_name, &mNid);
-
-        if (mNid != nid){
-            cur_stub += 2;
-            continue;
-        }
-        
-        syscall = GET_SYSCALL_NUMBER(*cur_stub);
-        syscall++;
-
-        resolve_call(cur_stub, syscall);
-        
-        sceKernelDcacheWritebackInvalidateAll();
-        break;
-	}
-    
-	config_close();
-*/    
-    return syscall;
 }
 
 // Autoresolves HBL missing stubs
@@ -279,99 +238,126 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 int build_nid_table(tNIDResolver *nid_table)
 {
 	int i = 0, j, k = 0;
-	u32 *cur_nid, *cur_call, syscall_num, good_call, aux;
+	unsigned int nlib_stubs;
+	u32 *cur_nid, *cur_call, syscall_num, good_call, aux1, aux2;
 	tSceLibrary *ret;
 	tStubEntry *pentry;
 	
 	// Getting game's .lib.stub address
-	if (config_initialize() < 0)
-		exit_with_log(" ERROR INITIALIZING CONFIG ", NULL, 0);
+	if (aux1 = config_initialize() < 0)
+		exit_with_log(" ERROR INITIALIZING CONFIG ", &aux1, sizeof(aux1));
 
-	if (config_lib_stub(&aux) < 0)
-		exit_with_log(" ERROR GETTING LIBSTUB FROM CONFIG ", NULL, 0);
+	if (aux1 = config_num_lib_stub(&nlib_stubs) < 0)
+	    exit_with_log(" ERROR READING NUMBER OF LIBSTUBS FROM CONFIG ", &aux1, sizeof(aux1));
 
-	config_close();
+	if (nlib_stubs == 0)
+		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);
 
-	pentry = (tStubEntry*) aux;
+	if (aux2 = config_first_lib_stub(&aux1) < 0)
+		exit_with_log(" ERROR GETTING FIRST LIBSTUB FROM CONFIG ", &aux2, sizeof(aux2));
+
+	pentry = (tStubEntry*) aux1;
 	
 	// Zeroing data
 	memset(nid_table, 0, sizeof(nid_table));
 	memset(library_table, 0, sizeof(library_table));
 
-	// While it's a valid stub header
-	while(check_stub_entry(pentry))
+	do
 	{
-		// Even if the stub appears to be valid, we shouldn't overflow the static array
-		// Make sure NID_TABLE_SIZE is set correctly (better have extra space than be sorry)
-		if (i >= NID_TABLE_SIZE)
-			break;
-		
-		strcpy(library_table[k].library_name, pentry->library_name);
-
-		/*
-		#ifdef DEBUG
-			write_debug(" LIBRARY: ", (void*)library_table[k].library_name, strlen(library_table[k].library_name));
-		#endif
-		*/
-		
-		// Get current NID and resolved syscall/jump pointer
-		cur_nid = pentry->nid_pointer;
-		cur_call = pentry->jump_pointer;
-
-		// Initialize lowest syscall on library table
-		good_call = get_good_call(cur_call);
-		library_table[k].lowest_syscall = GET_SYSCALL_NUMBER(good_call);
-		library_table[k].lowest_nid = *cur_nid;
-
-		// Get number of syscalls imported
-		library_table[k].num_known_exports = pentry->stub_size;
-
-		// JUMP call
-		if (good_call & SYSCALL_MASK_RESOLVE)
+		// While it's a valid stub header
+		while (check_stub_entry(pentry))
 		{
-			library_table[k].calling_mode = JUMP_MODE;
-			
-			// Browse all stubs defined by this header
-			for(j=0; j<pentry->stub_size; j++)
-			{
-				// Fill NID table
-				nid_table[i].nid = *cur_nid++;			
-				nid_table[i].call = get_good_call(cur_call);			
-				i++;
-				cur_call += 2;
-			}
-		}
+			// Even if the stub appears to be valid, we shouldn't overflow the static array
+			// Make sure NID_TABLE_SIZE is set correctly (better have extra space than be sorry)
+			if (i >= NID_TABLE_SIZE)
+				break;
+		
+			strcpy(library_table[k].library_name, pentry->library_name);
 
-		// SYSCALL call
-		else
-		{
-			library_table[k].calling_mode = SYSCALL_MODE;
-			
-			// Browse all stubs defined by this header
-			for(j=0; j<pentry->stub_size; j++)
-			{
-				// Fill NID table
-				nid_table[i].nid = *cur_nid++;			
-				nid_table[i].call = get_good_call(cur_call);
+			/*
+			#ifdef DEBUG
+				write_debug(" LIBRARY: ", (void*)library_table[k].library_name, strlen(library_table[k].library_name));
+			#endif
+			*/
+		
+			// Get current NID and resolved syscall/jump pointer
+			cur_nid = pentry->nid_pointer;
+			cur_call = pentry->jump_pointer;
 
-				// Check lowest syscall
-				syscall_num = GET_SYSCALL_NUMBER(nid_table[i].call);
-				if (syscall_num < library_table[k].lowest_syscall)
+			// Initialize lowest syscall on library table
+			good_call = get_good_call(cur_call);
+			library_table[k].lowest_syscall = GET_SYSCALL_NUMBER(good_call);
+			library_table[k].lowest_nid = *cur_nid;
+
+			// Get number of syscalls imported
+			library_table[k].num_known_exports = pentry->stub_size;
+
+			// JUMP call
+			if (good_call & SYSCALL_MASK_RESOLVE)
+			{
+				library_table[k].calling_mode = JUMP_MODE;
+			
+				// Browse all stubs defined by this header
+				for(j=0; j<pentry->stub_size; j++)
 				{
-					library_table[k].lowest_syscall = syscall_num;
-					library_table[k].lowest_nid = nid_table[i].nid;
+					// Fill NID table
+					nid_table[i].nid = *cur_nid++;			
+					nid_table[i].call = get_good_call(cur_call);			
+					i++;
+					cur_call += 2;
 				}
-			
-				i++;
-				cur_call += 2;
 			}
 
-			ret = complete_library(&(library_table[k]));
+			// SYSCALL call
+			else
+			{
+				library_table[k].calling_mode = SYSCALL_MODE;
+			
+				// Browse all stubs defined by this header
+				for(j=0; j<pentry->stub_size; j++)
+				{
+					// Fill NID table
+					nid_table[i].nid = *cur_nid++;			
+					nid_table[i].call = get_good_call(cur_call);
+
+					// Check lowest syscall
+					syscall_num = GET_SYSCALL_NUMBER(nid_table[i].call);
+					if (syscall_num < library_table[k].lowest_syscall)
+					{
+						library_table[k].lowest_syscall = syscall_num;
+						library_table[k].lowest_nid = nid_table[i].nid;
+					}
+			
+					i++;
+					cur_call += 2;
+				}
+
+				// Fill remaining data
+				ret = complete_library(&(library_table[k]));
+			}
+
+			// Next entry
+			pentry++;
+
+			// Next library entry
+			k++;
 		}
 		
-		pentry++;
-		k++;
-	}
+		nlib_stubs--;
+
+		// Next .lib.stub
+		if (nlib_stubs > 0)
+		{
+			aux2 = config_next_lib_stub(&aux1);
+			if (aux2 = config_first_lib_stub(&aux1) < 0)
+				exit_with_log(" ERROR GETTING NEXT LIBSTUB FROM CONFIG ", &aux2, sizeof(aux2));
+		}
+		else
+			break;
+
+		sceKernelDelayThread(100000);
+		
+	} while(1);
 
 	/*
 	#ifdef DEBUG
@@ -388,6 +374,8 @@ int build_nid_table(tNIDResolver *nid_table)
 		}
 	#endif
 	*/
+
+	config_close();
 
 	return i;
 }
@@ -454,18 +442,22 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 }
 
 
-void main_loop() {
+void main_loop() 
+{
     isSet[0] = 0;
+	
     loadMenu();
-    while(! isSet[0]) {
+	
+    while(! isSet[0])
         sceKernelDelayThread(5000);
-    }
+	
     start_eloader((char *)ebootPath, 1);
 }
 
 /* Hooks for some functions used by Homebrews */
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
-                             int stackSize, SceUInt attr, SceKernelThreadOptParam *option){
+                             	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
+{
  
     u32 gp_bak = 0;
     if (gp) {
@@ -481,7 +473,8 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
 }
 
 #ifdef ENABLE_MENU
-void  _hook_sceKernelExitGame () {
+void  _hook_sceKernelExitGame() 
+{
 	SceUID thid = sceKernelCreateThread("HBL", main_loop, 0x18, 0x10000, 0, NULL);
 	
 	if (thid >= 0)
@@ -493,11 +486,13 @@ void  _hook_sceKernelExitGame () {
 #endif
 
 #ifdef FAKEMEM
-int  _hook_sceKernelMaxFreeMemSize () {
+int  _hook_sceKernelMaxFreeMemSize () 
+{
  return 0x09EC8000 - PRX_LOAD_ADDRESS - hbsize;
 }
 
-void *  _hook_sceKernelGetBlockHeadAddr (SceUID mid) {
+void *  _hook_sceKernelGetBlockHeadAddr (SceUID mid) 
+{
     if (mid == 0x05B8923F)
         return PRX_LOAD_ADDRESS + hbsize;
     return 0;
@@ -513,7 +508,8 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 
 /* WIP
 //A function that just returns "ok" but does nothing
-int _hook_ok(){
+int _hook_ok()
+{
     return 1;
 }
 */
@@ -551,15 +547,20 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 
 			DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
             
-            switch (*cur_nid) {
+            switch (*cur_nid) 
+			{
                 case 0x446D8DE6: //sceKernelCreateThread
                     real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
-                    break;   
+                    break;
+
+/*
 #ifdef ENABLE_MENU                    
                 case 0x05572A5F: //sceKernelExitGame
                     real_call = MAKE_JUMP(_hook_sceKernelExitGame);
                     break;
-#endif   
+#endif
+*/
+
 #ifdef FAKEMEM    
                 case 0xA291F107:
                     DEBUG_PRINT("mem trick", NULL, 0);
@@ -573,7 +574,8 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                     DEBUG_PRINT("mem trick", NULL, 0);
                     real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
                     break; 
-#endif   
+#endif
+					
 /*
 Work in progress, attempt for the mp3 library not to fail                  
                 case 0x07EC321A:	//sceMp3ReserveMp3Handle
@@ -909,12 +911,10 @@ void start_eloader(char *eboot_path, int is_eboot)
 	// Static ELF
 	if(elf_header.e_type == (Elf32_Half) ELF_STATIC)
 	{	
-		DEBUG_PRINT("STATIC ELF ", NULL, 0);
-		
+		DEBUG_PRINT("STATIC ELF ", NULL, 0);		
 
 		// Load ELF program section into memory
-		hbsize = elf_load_program(elf_file, offset, &elf_header, allocate_memory);
-		
+		hbsize = elf_load_program(elf_file, offset, &elf_header, allocate_memory);		
 	
 		// Locate ELF's .lib.stubs section */
 		stubs_size = elf_find_imports(elf_file, offset, &elf_header, &pstub_entry);
@@ -934,8 +934,6 @@ void start_eloader(char *eboot_path, int is_eboot)
 		unsigned int sections_relocated;
 		
 		DEBUG_PRINT("PRX ELF ", NULL, 0);
-		
-
    
 		// Load program section into memory and also get stub headers
 		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, allocate_memory);
@@ -1001,45 +999,55 @@ void start_eloader(char *eboot_path, int is_eboot)
 /* Loads a Basic menu as a thread
 * In the future, we might want the menu to be an actual homebrew
 */
-void loadMenu(){
-    DebugPrint("Loading Menu");
+void loadMenu()
+{
     // Just trying the basic functions used by the menu
     SceUID id = -1;
     int attempts = 0;
-    while (id < 0 && attempts < 10){
-        attempts++;
-        id = sceIoDopen("ms0:");
-        if (id <=0){
-            DEBUG_PRINT("sceIoDopen syscall estimation failed, attempt to reestimate",NULL, 0);
-            reestimate_syscall(0xB29DDF9C); //sceIoDopen TODO move to config ?
-        }
-    }
-    if (id < 0) {
-        DebugPrint("Loading Menu Failed (syscall ?)");
-        DEBUG_PRINT("FATAL, sceIoDopen syscall estimation failed",NULL, 0);
-    } else {
-        attempts = 0;
-        SceIoDirent entry;
-        memset(&entry, 0, sizeof(SceIoDirent)); 
-        while (sceIoDread(id, &entry) <= 0 && attempts < 10) {
-            attempts++;
-            DEBUG_PRINT("sceIoDread syscall estimation failed, attempt to reestimate",NULL, 0);
-            reestimate_syscall(0xE3EB004C); //sceIoDread TODO move to config ?
-            memset(&entry, 0, sizeof(SceIoDirent));
-        }
-    }
-    sceIoDclose(id);
-
-
 	SceUID menu_file;
     SceOff file_size;
 	int bytes_read;
+	SceIoDirent entry;
+	SceUID menuThread;
+		
+    DebugPrint("Loading Menu");
+	
+    while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
+	{
+        attempts++;
+        id = sceIoDopen("ms0:");
+        if (id <= 0)
+		{
+            DEBUG_PRINT("sceIoDopen syscall estimation failed, attempt to reestimate",NULL, 0);
+            reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
+        }
+    }
+	
+    if (id < 0) 
+	{
+        DebugPrint("Loading Menu Failed (syscall ?)");
+        exit_with_log(" FATAL, sceIoDopen syscall estimation failed ",NULL, 0);
+    }
+	
+	else 
+	{
+        attempts = 0;        
+        memset(&entry, 0, sizeof(SceIoDirent)); 
+        while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
+		{
+            attempts++;
+            DEBUG_PRINT("sceIoDread syscall estimation failed, attempt to reestimate",NULL, 0);
+            reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
+            memset(&entry, 0, sizeof(SceIoDirent));
+        }
+    }
+	
+    sceIoDclose(id);
 
 	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
 
 	if ((menu_file = sceIoOpen("ms0:/menu.bin", PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD MENU ", &menu_file, sizeof(menu_file));
-
 
 	// Get MENU size
 	file_size = sceIoLseek(menu_file, 0, PSP_SEEK_END);
@@ -1050,12 +1058,15 @@ void loadMenu(){
 		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
         
     void (*start_entry)(SceSize, void*) = menu_pointer;	 
-	SceUID menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
+	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
 
 	if(menuThread >= 0)
 	{
 		menuThread = sceKernelStartThread(menuThread, 0, NULL);
-    } else {
+    } 
+
+	else 
+	{
         exit_with_log("Menu Launch failed", NULL, 0);
     }        
 }
@@ -1080,6 +1091,7 @@ int start_thread(SceSize args, void *argp)
         DebugPrint("Free memory");
 		free_game_memory();
         write_debug(" START HBL ", NULL, 0);
+		
 #ifdef ENABLE_MENU
         main_loop();
 #else

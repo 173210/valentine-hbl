@@ -34,6 +34,9 @@
 // Size of NID-to-call table
 #define NID_TABLE_SIZE 0x200
 
+// Maximum attempts to reestimate a syscall
+#define MAX_REESTIMATE_ATTEMPTS 10
+
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
 typedef struct
 {
@@ -73,13 +76,13 @@ typedef struct
 #define EBOOT_PATH "ms0:/EBOOT.PBP"
 #define ELF_PATH "ms0:/eboot.elf"
 
+// Number of threads to monitor
+#define MAX_PERMANENT_THREADS 30
+
 // Auxiliary structure to help with syscall estimation
 extern tSceLibrary library_table[MAX_GAME_LIBRARIES];
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(char *eboot_path, int is_eboot);
-
-//Number of threads to monitor
-#define MAX_PERMANENT_THREADS 30
 
 #endif

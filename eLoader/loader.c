@@ -7,7 +7,6 @@
 #include "elf.h"
 #include "config.h"
 
-// Scratchpad!
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
 // HBL intermediate buffer
@@ -42,7 +41,7 @@ void load_hbl(SceUID hbl_file)
 	if ((bytes_read = sceIoRead(hbl_file, (void*)hbl_buffer, file_size)) < 0)
 		exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
 	
-	//write_debug(" HBL LOADED ", &bytes_read, sizeof(bytes_read));
+	//DEBUG_PRINT(" HBL LOADED ", &bytes_read, sizeof(bytes_read));
 
 	sceIoClose(hbl_file);
 
@@ -64,11 +63,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 	int i = 0, j, count = 0;
 	u32 *cur_nid, *cur_call;
 
-	/*
-#ifdef DEBUG
-	write_debug(" ENTERING build_stub_list ", &pentry, sizeof(u32));
-#endif
-	*/
+	DEBUG_PRINT(" ENTERING build_stub_list ", &pentry, sizeof(u32));
 
 	// Zeroing data
 	memset(stub_list, 0, list_size * sizeof(u32));
@@ -118,10 +113,14 @@ int load_imports(u32* hbl_imports)
 	u32 nid;
 	int i = 0, ret;
 
+	// DEBUG_PRINT(" LOADING HBL IMPORTS FROM CONFIG ", NULL, 0);
+
 	ret = config_num_nids_total(&num_imports);
 
 	if(ret < 0)
 		exit_with_log(" ERROR READING NUMBER OF IMPORTS ", &ret, sizeof(ret));
+
+	// DEBUG_PRINT(" NUMBER OF IMPORTS ", &num_imports, sizeof(num_imports));
 
 	if(num_imports > NUM_HBL_IMPORTS)
 		exit_with_log(" ERROR FILE CONTAINS MORE IMPORTS THAN BUFFER SIZE ", &num_imports, sizeof(num_imports));
@@ -129,29 +128,29 @@ int load_imports(u32* hbl_imports)
 	// Get NIDs from config
 	ret = config_first_nid(&nid);
 
-	/*
-#ifdef DEBUG
-	write_debug("**READING NIDS: **", NULL, 0);
-#endif
-	*/
+	// DEBUG_PRINT(" FIRST NID RETURN VALUE ", &ret, sizeof(ret));
 	
 	do
 	{
+		if (ret <= 0)
+			exit_with_log(" ERROR READING NEXT NID ", &i, sizeof(i));
+		
 		hbl_imports[i++] = nid;
-		ret = config_next_nid(&nid);
-		if (ret < 0)
-		{
-			write_debug(" ERROR READING NEXT NID ", &i, sizeof(i));
-			break;
-		}
-	} while (i<num_imports);
 
-	return 0;
+		// DEBUG_PRINT(" CURRENT NID ", &(hbl_imports[i]), sizeof(u32));
+
+		if (i >= num_imports)
+			break;
+		
+		ret = config_next_nid(&nid);		
+	} while (1);
+
+	return i;
 }
 
 // Copies stubs used by HBL to scratchpad
-// This function highly depends on sdk_eloader.S contents
-// This behaviour must be modified
+// This function highly depends on sdk_hbl.S and imports.config contents
+// This behaviour must be fixed
 void copy_hbl_stubs(void)
 {
 	// Temp storage
@@ -166,7 +165,7 @@ void copy_hbl_stubs(void)
 	
 	// Stub addresses
 	// The one sets to 0 are not imported by the game, and will be automatically estimated by HBL when loaded
-	// sceIo* are COMPULSORY because they are used before syscall estimation
+	// ALL FUNCTIONS USED BY HBL BEFORE SYSCALL ESTIMATION IS READY MUST BE IMPORTED BY THE GAME
 	u32* stub_list[NUM_HBL_IMPORTS];
 	
 	// Game .lib.stub entry
@@ -180,27 +179,29 @@ void copy_hbl_stubs(void)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
 
 	// Get game's .lib.stub pointer
-	ret = config_lib_stub(&pgame_lib_stub);	
-	// DEBUG_PRINT(" GOT LIB STUB ", &ret, sizeof(ret));
+	ret = config_first_lib_stub(&pgame_lib_stub);
 
 	if (ret < 0)
 		exit_with_log(" ERROR READING LIBSTUB ADDRESS ", &ret, sizeof(ret));
+	
+	//DEBUG_PRINT(" GOT GAME LIB STUB ", &pgame_lib_stub, sizeof(u32));
 
 	//DEBUG_PRINT(" ZEROING STUBS ", NULL, 0);
 	memset(&hbl_imports, 0, sizeof(hbl_imports));
 
 	// Loading HBL imports (NIDs)
 	ret = load_imports(hbl_imports);
-	// DEBUG_PRINT(" HBL IMPORTS LOADED ", &ret, sizeof(ret));	
+	//DEBUG_PRINT(" HBL IMPORTS LOADED ", &ret, sizeof(ret));	
 
 	if (ret < 0)
 		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));
 
 	ret = search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);
-	// DEBUG_PRINT(" STUBS SEARCHED ", NULL, 0);
 
 	if (ret == 0)
 		exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
+
+	//DEBUG_PRINT(" STUBS SEARCHED ", NULL, 0);
 	
 	// Allocate memory for HBL stubs
 	HBL_stubs_block = sceKernelAllocPartitionMemory(2, "ValentineStubs", PSP_SMEM_High, sizeof(u32) * 2 * NUM_HBL_IMPORTS, NULL);
@@ -242,15 +243,15 @@ void _start(unsigned long arglen, unsigned long *argp)
 	
 	else
 	{
-		//write_debug(" LOADING HBL ", NULL, 0);
+		DEBUG_PRINT(" LOADING HBL ", NULL, 0);
 		load_hbl(hbl_file);
 	
-		// DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
+		DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
 		copy_hbl_stubs();
 		
 		sceKernelDcacheWritebackInvalidateAll();
 
-		// DEBUG_PRINT(" PASSING TO HBL ", NULL, 0);
+		DEBUG_PRINT(" PASSING TO HBL ", NULL, 0);
 		run_eloader(0, NULL);		
 	}	
 

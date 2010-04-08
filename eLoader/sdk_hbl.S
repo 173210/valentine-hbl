@@ -5,11 +5,11 @@
 	.globl  \funcname
 	.ent    \funcname
 \funcname:
-	lui $v0, 0x1 # Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
-	lw $v0, 24($v0) # Get HBL stubs address, see eloader.c or loader.c for more info
-	addi $v0, $v0, \offset # Add offset
-	jr $v0 # Jump to stub
-	nop # Leave this delay slot empty!
+	lui $v0, 0x1 			# Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
+	lw $v0, 24($v0) 		# Get HBL stubs address, see eloader.c or loader.c for more info
+	addi $v0, $v0, \offset 	# Add offset
+	jr $v0 					# Jump to stub
+	nop 					# Leave this delay slot empty!
 	.end	\funcname
 
 .endm
@@ -20,7 +20,6 @@
 	.previous
 	.text
 	.align	2
-
 
 # IoFileMgrForUser(8)
 	AddNid sceIoOpen, 0x0000   # 0x109f50bc
@@ -59,20 +58,18 @@
 	AddNid sceKernelGetThreadId, 0x00d8           # 0x293b45b8
 
 # LoadExecForUser(1)
-	AddNid sceKernelExitGame, 0x00e0 # 0x5572a5f
+	AddNid sceKernelExitGame, 0x00e0 			  # 0x5572a5f
 
 # SysMemUserForUser(4)
-	AddNid sceKernelAllocPartitionMemory, 0x00e8 # 0x237dbd4f
-	AddNid sceKernelGetBlockHeadAddr, 0x00f0     # 0x9d9a5ba1
-	AddNid sceKernelFreePartitionMemory, 0x00f8  # 0xb6d61d02
-	AddNid sceKernelTotalFreeMemSize, 0x0100     # 0xf919f628
+	AddNid sceKernelAllocPartitionMemory, 0x00e8  # 0x237dbd4f
+	AddNid sceKernelGetBlockHeadAddr, 0x00f0      # 0x9d9a5ba1
+	AddNid sceKernelFreePartitionMemory, 0x00f8   # 0xb6d61d02
+	AddNid sceKernelTotalFreeMemSize, 0x0100      # 0xf919f628
 
 # sceDisplay(1)
-	AddNid sceDisplaySetFrameBuf, 0x0108 # 0x289d82fe
+	AddNid sceDisplaySetFrameBuf, 0x0108 		  # 0x289d82fe
 
 # sceCtrl(1)
-	AddNid sceCtrlReadBufferPositive, 0x0110 # 0x1f803938
-
-
+	AddNid sceCtrlReadBufferPositive, 0x0110 	  # 0x1f803938
 
 	.ident	"HBL-SDK"

@@ -7,9 +7,11 @@
 
 Color* g_vram_base = (Color*) (0x40000000 | 0x04000000);
 
-typedef union {
+typedef union 
+{
 	int rgba;
-	struct {
+	struct 
+	{
 		char r;
 		char g;
 		char b;
@@ -53,7 +55,6 @@ Color* getVramDisplayBuffer()
 	if (dispBufferNumber == 1) vram += FRAMEBUFFER_SIZE / sizeof(Color);
 	return vram;
 }
-
 
 void putPixelScreen(Color color, int x, int y)
 {
@@ -101,12 +102,15 @@ void printTextScreen(int x, int y, char text[], u32 color)
 	}
 }
 
-void DebugPrint(char text[]) {
-  if (gY > 272) {
-    SetColor(0);
-  }
-  printTextScreen(0, gY, text, 0x00FFFFFF);
-  gY += 12;
+void DebugPrint(char text[]) 
+{
+	if (gY > 272) 
+	{
+    	SetColor(0);
+  	}
+	
+  	printTextScreen(0, gY, text, 0x00FFFFFF);
+  	gY += 12;
 }  
 
 void *fb = (void *)0x44000000;
