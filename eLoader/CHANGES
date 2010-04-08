@@ -2,6 +2,7 @@
 - Changed imports.config structure (check config.h for new structure)
 - Changed config.c library to suit new file structure (also fixed some old bugs)
 - Some code cleaning (i.e. moved reestimate_syscall() to syscall.c)
+- Disabled return to HBL menu on homebrew exit
 
 2010/04/07 (wololo)
 - small menu improvements
