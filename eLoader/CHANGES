@@ -1,3 +1,9 @@
+2010/04/10 (wololo)
+- All files except h.bin now NEED TO BE PUT in a "hbl" folder at the root of the memstick
+-- this can be changed in the code by modifying HBL_ROOT
+- simplified the "menu/no menu" choice from a user's perspective (since the menu seems to be not working for lots of people):
+-- if a "ms0:/hbl/game/EBOOT.PBP" file exists, it will be launched, otherwise the menu is launched
+
 2010/04/08 (m0skit0)
 - Changed imports.config structure (check config.h for new structure)
 - Changed config.c library to suit new file structure (also fixed some old bugs)

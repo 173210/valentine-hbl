@@ -7,11 +7,11 @@
 #include "menu.h"
 #include "graphics.h"
 
-//Comment the following line if you want to load the EBOOT directly from ms0:/EBOOT.PBP
-#define ENABLE_MENU 1
-
 //Comment the following line if you don't want wololo's crappy Fake Ram mechanism
 #define FAKEMEM 1
+
+//uncomment the following line if you want to return to the menu when leaving a game (reported to crash)
+//#define RETURN_TO_MENU_ON_EXIT
 
 /* eLoader */
 /* Entry point: _start() */
@@ -23,6 +23,8 @@
 u32 gp = 0;
 u32* entry_point = 0;
 u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
+int g_menu_enabled = 0; // this is set to 1 at runtime if a menu.bin file exists
+
 
 //Menu variables
 u32 * isSet = EBOOT_SET_ADDRESS;
@@ -472,7 +474,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
     return res;
 }
 
-#ifdef ENABLE_MENU
+#ifdef RETURN_TO_MENU_ON_EXIT
 void  _hook_sceKernelExitGame() 
 {
 	SceUID thid = sceKernelCreateThread("HBL", main_loop, 0x18, 0x10000, 0, NULL);
@@ -553,13 +555,12 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                     real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
                     break;
 
-/*
-#ifdef ENABLE_MENU                    
+#ifdef RETURN_TO_MENU_ON_EXIT                
                 case 0x05572A5F: //sceKernelExitGame
-                    real_call = MAKE_JUMP(_hook_sceKernelExitGame);
+                    if (g_menu_enabled)
+                        real_call = MAKE_JUMP(_hook_sceKernelExitGame);
                     break;
 #endif
-*/
 
 #ifdef FAKEMEM    
                 case 0xA291F107:
@@ -1046,7 +1047,7 @@ void loadMenu()
 
 	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
 
-	if ((menu_file = sceIoOpen("ms0:/menu.bin", PSP_O_RDONLY, 0777)) < 0)
+	if ((menu_file = sceIoOpen(MENU_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD MENU ", &menu_file, sizeof(menu_file));
 
 	// Get MENU size
@@ -1070,6 +1071,16 @@ void loadMenu()
         exit_with_log("Menu Launch failed", NULL, 0);
     }        
 }
+/*
+ * returns 1 if a given file exists, 0 otherwise
+*/
+int file_exists(const char * filename){
+    SceUID id = sceIoOpen(filename, PSP_O_RDONLY, 0777);
+    if (id < 0) 
+		return 0;
+    sceIoClose(id);
+    return 1;
+}
 
 // HBL main thread
 int start_thread(SceSize args, void *argp)
@@ -1091,15 +1102,16 @@ int start_thread(SceSize args, void *argp)
         DebugPrint("Free memory");
 		free_game_memory();
         write_debug(" START HBL ", NULL, 0);
-		
-#ifdef ENABLE_MENU
-        main_loop();
-#else
-        start_eloader(EBOOT_PATH, 1);
-#endif        
-		// uncomment the following to load eboot.elf instead of eboot.pbp
-		// start_eloader(ELF_PATH, 0);
 
+        // Start the menu or run directly the hardcoded eboot      
+        if (file_exists(EBOOT_PATH))
+            start_eloader(EBOOT_PATH, 1);
+        else if (file_exists(ELF_PATH))
+            start_eloader(ELF_PATH, 0);
+        else {
+            g_menu_enabled = 1;
+            main_loop();
+        }
 	}
 	
 	// Exit thread

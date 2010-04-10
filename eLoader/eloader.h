@@ -27,10 +27,6 @@
 // Macro to form syscal instruction
 #define MAKE_SYSCALL(n) (0x03ffffff & (((u32)(n) << 6) | 0x0000000c))
 
-// Path for NID libraries
-#define LIB_PATH "ms0:/libs/"
-#define LIB_EXTENSION ".nids"
-
 // Size of NID-to-call table
 #define NID_TABLE_SIZE 0x200
 
@@ -72,9 +68,19 @@ typedef struct
 	unsigned int lowest_index;					// Lowest NID index in .nids file
 } tSceLibrary;
 
-// Fixed path for EBOOT loading
-#define EBOOT_PATH "ms0:/EBOOT.PBP"
-#define ELF_PATH "ms0:/eboot.elf"
+//
+//Files locations
+//
+#define HBL_ROOT "ms0:/hbl/"
+
+// Fixed path for EBOOT loading (used if no menu available)
+#define EBOOT_PATH HBL_ROOT"GAME/EBOOT.PBP"
+#define ELF_PATH HBL_ROOT"GAMEeboot.elf"
+#define MENU_PATH HBL_ROOT"menu.bin" // menu
+#define ELOADER_PATH HBL_ROOT"hbl.bin"
+// Path for NID libraries
+#define LIB_PATH HBL_ROOT"libs/"
+#define LIB_EXTENSION ".nids"
 
 // Number of threads to monitor
 #define MAX_PERMANENT_THREADS 30

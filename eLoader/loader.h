@@ -1,8 +1,6 @@
 #ifndef ELOADER_LOADER
 #define ELOADER_LOADER
 
-#define ELOADER_PATH "ms0:/hbl.bin"
-
 // HBL stubs
 // If this value is changed, you should also change it in imports.config
 // Should get rid of this

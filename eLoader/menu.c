@@ -6,13 +6,14 @@
 #include "sdk.h"
 #include "debug.h"
 #include "menu.h"
+#include "eloader.h"
 
 #define FOLDERNAME_SIZE 30
 #define NB_FOLDERS 20
 char folders[NB_FOLDERS][FOLDERNAME_SIZE] ;
 
 char * currentPath = "ms0:/PSP/GAME/";
-char * cacheFile = "ms0:/menu.cache";
+char * cacheFile = HBL_ROOT"menu.cache";
 
 int currentFile;;
 u32 * isSet;

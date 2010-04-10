@@ -1,9 +1,11 @@
 #ifndef ELOADER_DEBUG
 #define ELOADER_DEBUG
 
+#include "eloader.h"
+
 // Comment to avoid generating debug logs
 #define DEBUG
-#define DEBUG_PATH "ms0:/dbglog"
+#define DEBUG_PATH HBL_ROOT"dbglog"
 #define STDOUT 1
 #define PSPLINK_OUT 2
 

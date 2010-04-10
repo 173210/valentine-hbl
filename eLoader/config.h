@@ -7,7 +7,7 @@
 #include "eloader.h"
 
 // Imports file
-# define IMPORTS_PATH "ms0:/config/imports.config"
+# define IMPORTS_PATH HBL_ROOT"config/imports.config"
 
 // Defining a library and its imports
 typedef struct
