@@ -6,7 +6,7 @@
 	.ent    \funcname
 \funcname:
 	lui $v0, 0x1 			# Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
-	lw $v0, 24($v0) 		# Get HBL stubs address, see eloader.c or loader.c for more info
+	lw $v0, 0x18($v0) 		# Get HBL stubs address, see eloader.c or loader.c for more info
 	addi $v0, $v0, \offset 	# Add offset
 	jr $v0 					# Jump to stub
 	nop 					# Leave this delay slot empty!

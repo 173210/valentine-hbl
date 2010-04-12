@@ -122,23 +122,6 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 	return -1;
 }
 
-// Returns a pointer to the library descriptor
-tSceLibrary* get_library_entry(const char* library_name)
-{
-	unsigned int i;
-
-	if (library_name != NULL)
-	{
-		for (i=0; i<MAX_GAME_LIBRARIES; i++)
-		{
-			if (strcmp(library_name, library_table[i].library_name) == 0)
-				return &(library_table[i]);
-		}
-	}
-
-	return NULL;
-}
-
 // Estimate a syscall
 // Pass reference NID and distance from desidered function in the export table
 // Return syscall instruction

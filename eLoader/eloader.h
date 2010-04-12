@@ -43,11 +43,11 @@ typedef struct
 // Max chars on library name
 #define MAX_LIBRARY_NAME_LENGTH 30
 
-// Max libraries per game
-#define MAX_GAME_LIBRARIES 30
+// Max libraries for HBL
+#define MAX_LIBRARIES 40
 
 // Max exported functions per library
-# define MAX_LIBRARY_EXPORTS 145
+# define MAX_LIBRARY_EXPORTS 155
 
 typedef enum
 {
@@ -77,7 +77,8 @@ typedef struct
 #define EBOOT_PATH HBL_ROOT"GAME/EBOOT.PBP"
 #define ELF_PATH HBL_ROOT"GAMEeboot.elf"
 #define MENU_PATH HBL_ROOT"menu.bin" // menu
-#define ELOADER_PATH HBL_ROOT"hbl.bin"
+#define HBL_PATH HBL_ROOT"hbl.bin"
+
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT"libs/"
 #define LIB_EXTENSION ".nids"
@@ -86,7 +87,10 @@ typedef struct
 #define MAX_PERMANENT_THREADS 30
 
 // Auxiliary structure to help with syscall estimation
-extern tSceLibrary library_table[MAX_GAME_LIBRARIES];
+extern tSceLibrary library_table[MAX_LIBRARIES];
+
+// Returns a pointer to the library descriptor
+tSceLibrary* get_library_entry(const char* library_name);
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(char *eboot_path, int is_eboot);

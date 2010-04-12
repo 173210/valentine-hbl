@@ -238,7 +238,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 
 	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
 
-	if ((hbl_file = sceIoOpen(ELOADER_PATH, PSP_O_RDONLY, 0777)) < 0)
+	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
 	
 	else
@@ -252,7 +252,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 		sceKernelDcacheWritebackInvalidateAll();
 
 		DEBUG_PRINT(" PASSING TO HBL ", NULL, 0);
-		run_eloader(0, NULL);		
+		run_eloader(0, NULL);
 	}	
 
 	while(1)

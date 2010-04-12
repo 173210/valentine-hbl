@@ -1,3 +1,15 @@
+2010/04/12 (m0skit0)
+- Added more .lib.stubs sections to imports.config
+- Added code to HBL process any number of .lib.stubs defined in imports.config
+--> eLoaderconf.rb broken, wololo please fix it
+- Added more functions and a lot of order to sdk_loader.S
+- Moved get_library_entry() from syscall.c to eloader.c
+- Added a new directory with tools for HBL development
+- Added NIDSPRX tool by arisma
+- Added whole GPLv3 to LICENSE
+- This changes should improve syscall estimation :)
+--> Need more .nids files for the new libraries
+
 2010/04/10 (wololo)
 - All files except h.bin now NEED TO BE PUT in a "hbl" folder at the root of the memstick
 -- this can be changed in the code by modifying HBL_ROOT
@@ -9,6 +21,7 @@
 - Changed config.c library to suit new file structure (also fixed some old bugs)
 - Some code cleaning (i.e. moved reestimate_syscall() to syscall.c)
 - Disabled return to HBL menu on homebrew exit
+- Adjusted MAX_LIBRARY_EXPORTS to 160.
 
 2010/04/07 (wololo)
 - small menu improvements
