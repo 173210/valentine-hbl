@@ -112,6 +112,8 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 {
 	int i = 0;
 	u32 cur_nid;
+
+	DEBUG_PRINT(" find_nid_in_file NID ", &nid, sizeof(nid));
 	
 	while(sceIoRead(nid_file, &cur_nid, sizeof(cur_nid)) > 0)
 		if (cur_nid == nid)
@@ -129,34 +131,30 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 // m0skit0's implementation
 u32 estimate_syscall(const char *lib, u32 nid)
 {
-	char file_path[MAX_LIBRARY_NAME_LENGTH+4];
+	char file_path[MAX_LIBRARY_NAME_LENGTH + 100];
 	SceUID nid_file;
 	int lib_index, file_index;
 	u32 estimated_syscall;
 	tSceLibrary *plibrary_entry;
 
-	/*
-#ifdef DEBUG
-	write_debug(" ESTIMATION ", lib, strlen(lib));
-	write_debug(" ", NULL, 0);
-	write_debug(NULL, &nid, sizeof(nid));
-#endif
-	*/
+	DEBUG_PRINT(" ESTIMATING ", lib, strlen(lib));
+	DEBUG_PRINT(" ", &nid, sizeof(nid));
 	
 	// Finding the library on table
 	plibrary_entry = get_library_entry(lib);
 
-	if (plibrary_entry == NULL){
+	DEBUG_PRINT(" NID AGAIN ", &nid, sizeof(nid));
+
+	if (plibrary_entry == NULL)
+	{
 		DEBUG_PRINT(" ERROR: LIBRARY NOT FOUND ON TABLE ", lib, strlen(lib));
         return 0;
     }
-	
-	/*
-#ifdef DEBUG
-	write_debug(" LIBRARY ENTRY ", plibrary_entry, sizeof(tSceLibrary));
-#endif
-	*/
-	
+
+	DEBUG_PRINT(" LOWEST SYSCALL ON LIBRARY ", &(plibrary_entry->lowest_syscall), sizeof(u32));
+
+	DEBUG_PRINT(" NID AGAIN ", &nid, sizeof(nid));
+		
 	// Constructing the file path
 	strcpy(file_path, LIB_PATH);
 	strcat(file_path, lib);
@@ -164,6 +162,8 @@ u32 estimate_syscall(const char *lib, u32 nid)
 
 	if ((nid_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" ERROR: CANNOT OPEN .NIDS FILE ", file_path, strlen(file_path));
+
+	DEBUG_PRINT(" NID AGAIN ", &nid, sizeof(nid));
 
 	// Get NID index in file
 	file_index = find_nid_in_file(nid_file, nid);
@@ -173,11 +173,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 		write_debug(" ERROR: NID NOT FOUND ON .NIDS FILE ", file_path, strlen(file_path));
 		exit_with_log(" ", &nid, sizeof(nid));
 	}
-/*
-#ifdef DEBUG
-	write_debug(" FOUND NID IN FILE ", &file_index, sizeof(file_index));
-#endif
-*/
+	
 	sceIoClose(nid_file);
 
 	// Set estimated syscall to lowest syscall in library
@@ -188,14 +184,8 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	else
 		estimated_syscall += (plibrary_entry->num_library_exports - plibrary_entry->lowest_index) + (unsigned int) (file_index);
 
-		/*
-#ifdef DEBUG
-	float accuracy = ((float)plibrary_entry->num_known_exports / (float)plibrary_entry->num_library_exports) * 100.0;
+	DEBUG_PRINT(" ESTIMATED ", &estimated_syscall, sizeof(estimated_syscall));
 	
-	write_debug(" NEW ESTIMATION ", &estimated_syscall, sizeof(estimated_syscall));
-	write_debug(" ACCURACY ", &accuracy, sizeof(accuracy));
-#endif
-*/
 	return MAKE_SYSCALL(estimated_syscall);
 }
 

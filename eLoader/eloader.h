@@ -75,7 +75,7 @@ typedef struct
 
 // Fixed path for EBOOT loading (used if no menu available)
 #define EBOOT_PATH HBL_ROOT"GAME/EBOOT.PBP"
-#define ELF_PATH HBL_ROOT"GAMEeboot.elf"
+#define ELF_PATH HBL_ROOT"GAME/eboot.elf"
 #define MENU_PATH HBL_ROOT"menu.bin" // menu
 #define HBL_PATH HBL_ROOT"hbl.bin"
 

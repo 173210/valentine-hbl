@@ -1,3 +1,7 @@
+2010/04/13 (m0skit0)
+- Fixed buffer overflow in estimate_syscall() (issue 14)
+- Fixed ELF path (issue 13)
+
 2010/04/12 (m0skit0)
 - Added more .lib.stubs sections to imports.config
 - Added code to HBL process any number of .lib.stubs defined in imports.config

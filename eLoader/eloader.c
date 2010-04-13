@@ -72,7 +72,7 @@ int get_lib_nid(int index, char* lib_name, u32* pnid)
 	unsigned int num_libs, i = 0, count = 0, found = 0;
 	tImportedLibrary cur_lib;
 
-	DEBUG_PRINT("**GETTING NID INDEX:**", &index, sizeof(index));
+	// DEBUG_PRINT("**GETTING NID INDEX:**", &index, sizeof(index));
 
 	index += 1;
 	ret = config_num_libraries(&num_libs);
@@ -80,10 +80,11 @@ int get_lib_nid(int index, char* lib_name, u32* pnid)
 
 	while (i<num_libs)
 	{
-
+		/*
 		DEBUG_PRINT("**CURRENT LIB**", cur_lib.library_name, strlen(cur_lib.library_name));
 		DEBUG_PRINT(NULL, &(cur_lib.num_imports), sizeof(unsigned int));
 		DEBUG_PRINT(NULL, &(cur_lib.nids_offset), sizeof(SceOff));
+		*/
 
 		count += cur_lib.num_imports;
 		if (index > count)
@@ -91,7 +92,7 @@ int get_lib_nid(int index, char* lib_name, u32* pnid)
 		else
 		{
 			ret = config_seek_nid(--index, pnid);
-			DEBUG_PRINT("**SEEK NID**", pnid, sizeof(u32));
+			// DEBUG_PRINT("**SEEK NID**", pnid, sizeof(u32));
 			break;
 		}
 	}
@@ -123,17 +124,17 @@ void resolve_missing_stubs()
 		if (*cur_stub == 0)
 		{
 
-			DEBUG_PRINT("**CURRENT STUB**", &cur_stub, sizeof(u32));
+			// DEBUG_PRINT("**CURRENT STUB**", &cur_stub, sizeof(u32));
 
 			ret = get_lib_nid(i, lib_name, &nid);
 
-			DEBUG_PRINT("**ESTIMATING SYSCALL:**", lib_name, ret);
-			DEBUG_PRINT(" ", &nid, sizeof(nid));
+			// DEBUG_PRINT("**ESTIMATING SYSCALL:**", lib_name, ret);
+			// DEBUG_PRINT(" ", &nid, sizeof(nid));
 			
 			syscall = estimate_syscall(lib_name, nid);
 
-			DEBUG_PRINT("**RESOLVED SYS**", lib_name, strlen(lib_name));
-			DEBUG_PRINT(" ", &syscall, sizeof(syscall));
+			// DEBUG_PRINT("**RESOLVED SYS**", lib_name, strlen(lib_name));
+			// DEBUG_PRINT(" ", &syscall, sizeof(syscall));
 
 			resolve_call(cur_stub, syscall);
 		}
@@ -324,8 +325,8 @@ int build_nid_table(tNIDResolver *nid_table)
 			if ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES))
 			{
 				config_close();
-				DEBUG_PRINT(" NID TABLE COUNTER ", &i, sizeof(i));
-				DEBUG_PRINT(" LIBRARY TABLE COUNTER ", &k, sizeof(k));
+				write_debug(" NID TABLE COUNTER ", &i, sizeof(i));
+				write_debug(" LIBRARY TABLE COUNTER ", &k, sizeof(k));
 				exit_with_log(" NID/LIBRARY TABLES TOO SMALL ", NULL, 0);
 			}			
 		
@@ -425,8 +426,8 @@ int build_nid_table(tNIDResolver *nid_table)
 			// Old library
 			else
 			{
-				DEBUG_PRINT(" LIBRARY ON TABLE ", NULL, 0);	
-				DEBUG_PRINT(" LIBRARY POSITION ", &library_index, sizeof(library_index));
+				//DEBUG_PRINT(" LIBRARY ON TABLE ", NULL, 0);	
+				//DEBUG_PRINT(" LIBRARY POSITION ", &library_index, sizeof(library_index));
 
 				good_call = get_good_call(cur_call);
 
@@ -519,21 +520,21 @@ int build_nid_table(tNIDResolver *nid_table)
 		
 	} while(1);
 
-	/*
 	#ifdef DEBUG
-		write_debug(" NUM LIBRARY ENTRIES ", &k, sizeof(k));
-		for (j=0; j<k; j++)
+		int c = 0;
+		u32 syscall;
+		write_debug(" NID TABLE (NID/SYSCALL NUMBER) DUMP ", NULL, 0);
+		while (c <= i)
 		{
-			write_debug(" LIBRARY NAME ", library_table[j].library_name, strlen(library_table[j].library_name));
-			write_debug(" CALLING MODE ", &(library_table[j].calling_mode), sizeof(tCallingMode));
-			write_debug(" NUMBER OF LIBRARY EXPORTS ", &(library_table[j].num_library_exports), sizeof(u32));
-			write_debug(" NUMBER OF KNOWN EXPORTS ", &(library_table[j].num_known_exports), sizeof(u32));
-			write_debug(" LOWEST SYSCALL ", &(library_table[j].lowest_syscall), sizeof(u32));
-			write_debug(" LOWEST NID ", &(library_table[j].lowest_nid), sizeof(u32));			
-			write_debug(" LOWEST INDEX ", &(library_table[j].lowest_index), sizeof(u32));			
+			syscall = GET_SYSCALL_NUMBER(nid_table[c].call);
+			write_debug(" ", &nid_table[c++].nid, sizeof(u32));
+			write_debug(" ", &syscall, sizeof(syscall));		
 		}
+		write_debug(" LIBRARY TABLE DUMP ", NULL, 0);
+		c = 0;
+		while (c <= k)
+			write_debug(" ", &library_table[c++], sizeof(tSceLibrary));
 	#endif
-	*/
 
 	config_close();
 
@@ -707,7 +708,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
-		DEBUG_PRINT("POINTER TO STUB ENTRY:", &pstub_entry, sizeof(u32*));
+		//DEBUG_PRINT("POINTER TO STUB ENTRY:", &pstub_entry, sizeof(u32*));
 
 		cur_nid = pstub_entry->nid_pointer;
 		cur_call = pstub_entry->jump_pointer;
@@ -716,13 +717,13 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		for(j=0; j<pstub_entry->stub_size; j++)
 		{
 
-			DEBUG_PRINT("Current nid:", cur_nid, sizeof(u32*));
-			DEBUG_PRINT("Current call:", &cur_call, sizeof(u32*));
+			//DEBUG_PRINT("Current nid:", cur_nid, sizeof(u32*));
+			//DEBUG_PRINT("Current call:", &cur_call, sizeof(u32*));
 
 			/* Get syscall/jump instruction for current NID */
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
 
-			DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
+			//DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
             
             switch (*cur_nid) 
 			{
@@ -978,13 +979,13 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 	
 	DEBUG_PRINT(" NUMBER OF SECTIONS ", &(pelf_header->e_shnum), sizeof(Elf32_Half));
 
-
 	// Browse all section headers
 	for(i=0; i<pelf_header->e_shnum; i++)
 	{
 		// Get section header
 		sceIoLseek(elf_file, start_offset + cur_offset, PSP_SEEK_SET);
 		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
+		
 		/*
 		// Get section name
 		section_name_size = elf_read_string(elf_file, strtab_offset + sec_header.sh_name, section_name);
@@ -999,7 +1000,7 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 
 		if(sec_header.sh_type == LOPROC)
 		{
-			DEBUG_PRINT(" RELOCATING SECTION ", NULL, 0);
+			// DEBUG_PRINT(" RELOCATING SECTION ", NULL, 0);
 			
 			// Allocate memory for section
 			num_entries = sec_header.sh_size / sizeof(tRelEntry);
@@ -1029,7 +1030,7 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 		cur_offset += sizeof(Elf32_Shdr);
 	}
 	
-	DEBUG_PRINT(" FINISHED RELOCATING  ",NULL, 0);
+	// DEBUG_PRINT(" FINISHED RELOCATING  ",NULL, 0);
 
 	// All relocation section processed
 	return entries_relocated;
@@ -1060,13 +1061,14 @@ void allocate_memory(u32 size, void* addr)
 // Needs path to ELF or EBOOT
 void start_eloader(char *eboot_path, int is_eboot)
 {
-	unsigned int num_nids, stubs_size, stubs_resolved;	
-	tStubEntry* pstub_entry;		
+	unsigned int num_nids, stubs_size, stubs_resolved;
+	unsigned int sections_relocated;
+	tStubEntry* pstub_entry;
 	SceUID elf_file, thid;
 	Elf32_Ehdr elf_header;
-	u32 offset = 0; 
+	u32 offset = 0;
 
-	DEBUG_PRINT("EBOOT:", eboot_path, strlen(eboot_path));
+	//DEBUG_PRINT("EBOOT:", eboot_path, strlen(eboot_path));
 
 	// Extracts ELF from PBP
 	if (is_eboot)		
@@ -1081,7 +1083,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 	DEBUG_PRINT(" ELF TYPE ", &(elf_header.e_type), sizeof(Elf32_Half));
     
     gp = getGP(elf_file, offset, &elf_header); 
-    DEBUG_PRINT(" GP IS: ", &gp, sizeof(u32));           
+    //DEBUG_PRINT(" GP IS: ", &gp, sizeof(u32));           
 
 	// Static ELF
 	if(elf_header.e_type == (Elf32_Half) ELF_STATIC)
@@ -1093,21 +1095,11 @@ void start_eloader(char *eboot_path, int is_eboot)
 	
 		// Locate ELF's .lib.stubs section */
 		stubs_size = elf_find_imports(elf_file, offset, &elf_header, &pstub_entry);
-
-		/*
-		#ifdef DEBUG
-			dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-			sceIoWrite(dbglog, " STUBS RESOLVED ", strlen(" STUBS RESOLVED "));
-			sceIoClose(dbglog);
-		#endif
-		*/
 	}
 	
 	// Relocatable ELF (PRX)
 	else if(elf_header.e_type == (Elf32_Half) ELF_RELOC)
-	{
-		unsigned int sections_relocated;
-		
+	{	
 		DEBUG_PRINT(" PRX ELF ", NULL, 0);
    
 		// Load program section into memory and also get stub headers
@@ -1129,8 +1121,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 	// Unknown ELF type
 	else
 	{
-		DEBUG_PRINT(" UNKNOWN ELF TYPE ", NULL, 0);
-		sceKernelExitGame();
+		exit_with_log(" UNKNOWN ELF TYPE ", NULL, 0);
 	}
 	
 	// Resolve ELF's stubs with game's stubs and syscall estimation */
@@ -1144,17 +1135,13 @@ void start_eloader(char *eboot_path, int is_eboot)
 	if (elf_header.e_type == (Elf32_Half) ELF_RELOC) {
 		elf_header.e_entry = (u32)elf_header.e_entry + (u32)PRX_LOAD_ADDRESS;
         gp += (u32)PRX_LOAD_ADDRESS;
-    }
+    }	
 	
-	
-	DEBUG_PRINT(" PROGRAM SECTION START ", &(elf_header.e_entry), sizeof(Elf32_Addr));
-		
-	DEBUG_PRINT(" EXECUTING ELF ", NULL, 0);
-    
+	// DEBUG_PRINT(" PROGRAM SECTION START ", &(elf_header.e_entry), sizeof(Elf32_Addr));		
+	DEBUG_PRINT(" EXECUTING ELF ", NULL, 0);    
     
     // Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
-
 
 	// Create and start eloader thread
     if (gp)
@@ -1246,10 +1233,10 @@ void loadMenu()
         exit_with_log(" Menu Launch failed ", NULL, 0);
     }        
 }
-/*
- * returns 1 if a given file exists, 0 otherwise
-*/
-int file_exists(const char * filename){
+
+// Returns 1 if a given file exists, 0 otherwise
+int file_exists(const char * filename)
+{
     SceUID id = sceIoOpen(filename, PSP_O_RDONLY, 0777);
     if (id < 0) 
 		return 0;
@@ -1311,34 +1298,11 @@ void _start(unsigned long arglen, unsigned long *argp)
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
 	
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-		if (dbglog >= 0)
-		{
-			sceIoWrite(dbglog, " ELOADER THREAD ID ", strlen(" ELOADER THREAD ID "));
-			sceIoWrite(dbglog, &thid, sizeof(thid));
-			sceIoClose(dbglog);
-		}
-	#endif
-	*/
-	
 	if(thid >= 0)
 	{
 		thid = sceKernelStartThread(thid, 0, NULL);
-		/* I/O race condition */
-		/*
-		#ifdef DEBUG
-			dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-			if (dbglog >= 0)
-			{
-				sceIoWrite(dbglog, " START THREAD RET ", strlen(" START THREAD RET "));
-				sceIoWrite(dbglog, &thid, sizeof(thid));
-				sceIoClose(dbglog);
-			}
-		#endif
-		*/
 	}
+	
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)

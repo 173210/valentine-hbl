@@ -93,14 +93,19 @@ void free_game_memory()
 			int res = sceKernelTerminateDeleteThread(id);
             if (res < 0) {
                 DebugPrint("  Cannot Terminate thread, probably syscall failure");
-                DEBUG_PRINT("CANNOT TERMINATE:", threads[i], strlen(threads[i]) + 1);
-                DEBUG_PRINT("ERROR:", &res, sizeof(int));
-            } else {
+                DEBUG_PRINT(" CANNOT TERMINATE: ", threads[i], strlen(threads[i]) + 1);
+                DEBUG_PRINT(" ERROR: ", &res, sizeof(int));
+            } 
+			else 
+			{
                 sceKernelDelayThread(100);
             }
-		} else {
+		} 
+		else 
+		{
             DebugPrint("  Cannot find thread, probably syscall failure");
-            DEBUG_PRINT("CANNOT FIND THREAD TO DELETE", threads[i], strlen(threads[i]) + 1);
+            DEBUG_PRINT(" CANNOT FIND THREAD TO DELETE ", threads[i], strlen(threads[i]) + 1);
+			DEBUG_PRINT(" ERROR: ", &id, sizeof(id));
         }
 	}
 
