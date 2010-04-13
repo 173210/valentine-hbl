@@ -112,8 +112,6 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 {
 	int i = 0;
 	u32 cur_nid;
-
-	DEBUG_PRINT(" find_nid_in_file NID ", &nid, sizeof(nid));
 	
 	while(sceIoRead(nid_file, &cur_nid, sizeof(cur_nid)) > 0)
 		if (cur_nid == nid)
@@ -143,8 +141,6 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	// Finding the library on table
 	plibrary_entry = get_library_entry(lib);
 
-	DEBUG_PRINT(" NID AGAIN ", &nid, sizeof(nid));
-
 	if (plibrary_entry == NULL)
 	{
 		DEBUG_PRINT(" ERROR: LIBRARY NOT FOUND ON TABLE ", lib, strlen(lib));
@@ -152,8 +148,6 @@ u32 estimate_syscall(const char *lib, u32 nid)
     }
 
 	DEBUG_PRINT(" LOWEST SYSCALL ON LIBRARY ", &(plibrary_entry->lowest_syscall), sizeof(u32));
-
-	DEBUG_PRINT(" NID AGAIN ", &nid, sizeof(nid));
 		
 	// Constructing the file path
 	strcpy(file_path, LIB_PATH);
@@ -162,19 +156,17 @@ u32 estimate_syscall(const char *lib, u32 nid)
 
 	if ((nid_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" ERROR: CANNOT OPEN .NIDS FILE ", file_path, strlen(file_path));
-
-	DEBUG_PRINT(" NID AGAIN ", &nid, sizeof(nid));
-
+	
 	// Get NID index in file
-	file_index = find_nid_in_file(nid_file, nid);
+	file_index = find_nid_in_file(nid_file, nid);	
+	
+	sceIoClose(nid_file);
 
 	if (file_index < 0)
 	{
 		write_debug(" ERROR: NID NOT FOUND ON .NIDS FILE ", file_path, strlen(file_path));
 		exit_with_log(" ", &nid, sizeof(nid));
 	}
-	
-	sceIoClose(nid_file);
 
 	// Set estimated syscall to lowest syscall in library
 	estimated_syscall = plibrary_entry->lowest_syscall;

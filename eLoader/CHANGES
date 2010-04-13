@@ -1,6 +1,8 @@
 2010/04/13 (m0skit0)
 - Fixed buffer overflow in estimate_syscall() (issue 14)
 - Fixed ELF path (issue 13)
+- Separate imports.config for 5XX and 6XX. Rename to imports.config
+- Added 2 more tools: a processor to make NID table dumps more readable and a user memory dumper (useful for 6.20)
 
 2010/04/12 (m0skit0)
 - Added more .lib.stubs sections to imports.config
