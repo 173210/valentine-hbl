@@ -71,7 +71,7 @@ void free_game_memory()
 	int nb_semas = sizeof(semas) / sizeof(semas[0]);
 	int nb_loop_semas = sizeof(loop_semas) / sizeof(loop_semas[0]);
 	int nb_evflags = sizeof(evflags) / sizeof(evflags[0]);
-	int i, ret, status = 0;
+	int i, ret, status = 0, res;
 
 #ifdef DEBUG
 	int free;
@@ -90,8 +90,9 @@ void free_game_memory()
 		id = find_thread(threads[i]);
 		if(id >= 0)
 		{
-			int res = sceKernelTerminateDeleteThread(id);
-            if (res < 0) {
+			res = sceKernelTerminateDeleteThread(id);
+            if (res < 0) 
+			{
                 DebugPrint("  Cannot Terminate thread, probably syscall failure");
                 DEBUG_PRINT(" CANNOT TERMINATE: ", threads[i], strlen(threads[i]) + 1);
                 DEBUG_PRINT(" ERROR: ", &res, sizeof(int));

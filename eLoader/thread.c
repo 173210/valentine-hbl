@@ -7,15 +7,30 @@ SceUID find_thread(const char *name)
 	SceUID readbuf[256];
 	int idcount, ret;
 	SceKernelThreadInfo info;
-	
-	ret = sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Thread, &readbuf, sizeof(readbuf)/sizeof(SceUID), &idcount);	
+	unsigned int attempt = 0;
+
+	do
+	{
+		attempt++;
+		ret = sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Thread, &readbuf, sizeof(readbuf)/sizeof(SceUID), &idcount);
+		if (ret < 0)
+			reestimate_syscall((u32*) (ADDR_HBL_STUBS_BLOCK_ADDR + 0x00a0)); // sceKernelGetThreadmanIdList
+	} while ((ret < 0) && (attempt <= MAX_REESTIMATE_ATTEMPTS));
 
 	if (ret < 0)
 		return ret;
 
 	for(info.size=sizeof(info); idcount>0; idcount--)
-	{		
-		ret = sceKernelReferThreadStatus(readbuf[idcount-1], &info);
+	{
+		attempt = 0;
+		do
+		{
+			attempt++;
+			ret = sceKernelReferThreadStatus(readbuf[idcount-1], &info);
+			if (ret < 0)
+				reestimate_syscall((u32*) (ADDR_HBL_STUBS_BLOCK_ADDR + 0x0090)); // sceKernelReferThreadStatus
+		} while ((ret < 0) && (attempt <= MAX_REESTIMATE_ATTEMPTS));
+			
 		if(ret < 0)
 		{
 			DEBUG_PRINT(" sceKernelReferThreadStatus FAILED ", &ret, sizeof(ret));

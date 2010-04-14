@@ -181,44 +181,16 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	return MAKE_SYSCALL(estimated_syscall);
 }
 
-// This doesn't really work, it's just here to be actually made into something that works
-u32 reestimate_syscall(u32 nid, unsigned int attempt) 
+// m0skit0's attempt
+// Needs to be more independent from sdk_hbl.S
+u32 reestimate_syscall(u32* stub) 
 {
-	int i, ret;
-	unsigned int num_nids;
-	u32* cur_stub = *((u32*)0x00010018);
-	u32 mNid = 0, syscall = 0;
-	char lib_name[MAX_LIBRARY_NAME_LENGTH];
-/*
-	ret = config_initialize();
+	u32 syscall;
 
-	if (ret < 0)
-		exit_with_log("**CONFIG INIT FAILED**", &ret, sizeof(ret));
-
-	ret = config_num_nids_total(&num_nids);
-	
-	for (i=0; i<num_nids; i++)
-	{
-        DEBUG_PRINT("**CURRENT STUB**", &cur_stub, sizeof(u32));
-
-        ret = get_lib_nid(i, lib_name, &mNid);
-
-        if (mNid != nid){
-            cur_stub += 2;
-            continue;
-        }
-        
-        syscall = GET_SYSCALL_NUMBER(*cur_stub);
-        syscall++;
-
-        resolve_call(cur_stub, syscall);
-        
-        sceKernelDcacheWritebackInvalidateAll();
-        break;
-	}
-    
-	config_close();
-*/  
+	stub++;
+	syscall = GET_SYSCALL_NUMBER(*stub);
+	syscall--;
+	*stub = MAKE_SYSCALL(syscall);
 	
     return syscall;
 }

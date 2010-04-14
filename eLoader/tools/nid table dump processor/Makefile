@@ -3,7 +3,7 @@ all: nidtohuman
 clean:
 	rm -f nidtohuman
 
-nidsprx:
+nidtohuman:
 	cc -o nidtohuman main.c
 
 install:

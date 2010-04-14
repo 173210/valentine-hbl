@@ -1,3 +1,7 @@
+2010/04/14 (m0skit0)
+- Fixed nidtohuman tool Makefile
+- Added a very very very simple syscall reestimation function
+
 2010/04/13 (m0skit0)
 - Fixed buffer overflow in estimate_syscall() (issue 14)
 - Fixed ELF path (issue 13)

@@ -6,6 +6,7 @@
 #include "config.h"
 #include "menu.h"
 #include "graphics.h"
+#include "scratchpad.h"
 
 //Comment the following line if you don't want wololo's crappy Fake Ram mechanism
 #define FAKEMEM 1
@@ -1175,16 +1176,16 @@ void loadMenu()
 		
     DebugPrint("Loading Menu");
 	
-    while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
+    do
 	{
         attempts++;
         id = sceIoDopen("ms0:");
-        if (id <= 0)
+        if (id < 0)
 		{
-            DEBUG_PRINT(" sceIoDopen syscall estimation failed, attempt to reestimate ",NULL, 0);
-            reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
+            DEBUG_PRINT(" sceIoDopen reestimate ", NULL, 0);
+            reestimate_syscall((u32*) (ADDR_HBL_STUBS_BLOCK_ADDR + 0x0028)); //sceIoDopen TODO move to config ?
         }
-    }
+    } while ((id < 0) && (attempts <= MAX_REESTIMATE_ATTEMPTS));
 	
     if (id < 0) 
 	{
@@ -1196,11 +1197,11 @@ void loadMenu()
 	{
         attempts = 0;        
         memset(&entry, 0, sizeof(SceIoDirent)); 
-        while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
+        while ((sceIoDread(id, &entry) <= 0) && (attempts <= MAX_REESTIMATE_ATTEMPTS))
 		{
             attempts++;
-            DEBUG_PRINT(" sceIoDread syscall estimation failed, attempt to reestimate ",NULL, 0);
-            reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
+            DEBUG_PRINT(" sceIoDread reestimate ", NULL, 0);
+            reestimate_syscall((u32*) (ADDR_HBL_STUBS_BLOCK_ADDR + 0x0030)); //sceIoDread TODO move to config ?
             memset(&entry, 0, sizeof(SceIoDirent));
         }
     }
@@ -1223,15 +1224,10 @@ void loadMenu()
     void (*start_entry)(SceSize, void*) = menu_pointer;	 
 	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
 
-	if(menuThread >= 0)
-	{
-		menuThread = sceKernelStartThread(menuThread, 0, NULL);
-    } 
-
-	else 
-	{
-        exit_with_log(" Menu Launch failed ", NULL, 0);
-    }        
+	if(menuThread < 0)
+		exit_with_log(" Menu Launch failed ", NULL, 0);
+	
+	menuThread = sceKernelStartThread(menuThread, 0, NULL);   
 }
 
 // Returns 1 if a given file exists, 0 otherwise
