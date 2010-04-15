@@ -1,3 +1,6 @@
+2010/04/16 (ultimakillz)
+- Added new imports.config files for 5.0x, 5.5x, 5.70 and 6.20 (PSP Go) versions (thanks to ultimakillz)
+
 2010/04/14 (m0skit0)
 - Fixed nidtohuman tool Makefile
 - Added a very very very simple syscall reestimation function
