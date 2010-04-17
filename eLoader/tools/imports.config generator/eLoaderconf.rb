@@ -84,7 +84,8 @@ config = [
         :functions => [ 
             [0x748CBED9, "sceKernelQueryModuleInfo"], 
             [0x644395E2, "sceKernelGetModuleIdList"],
-            [0xD675EBB8, "sceKernelSelfStopUnloadModule"],
+            [0xD1FF982A, "sceKernelStopModule"],
+            [0x2E0911AA, "sceKernelUnloadModule"],
         ],
     } ,
     { 

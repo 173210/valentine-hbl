@@ -5,11 +5,11 @@
 	.globl  \funcname
 	.ent    \funcname
 \funcname:
-	lui $v0, 0x1 			# Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
-	lw $v0, 0x18($v0) 		# Get HBL stubs address, see eloader.c or loader.c for more info
-	addi $v0, $v0, \offset 	# Add offset
-	jr $v0 					# Jump to stub
-	nop 					# Leave this delay slot empty!
+	lui $v0, 0x1            # Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
+	lw $v0, 0x18 ($v0)         # Get HBL stubs address, see eloader.c or loader.c for more info
+	addi $v0, $v0, \offset # Add offset
+	jr $v0                  # Jump to stub
+	nop                     # Leave this delay slot empty!
 	.end	\funcname
 
 .endm
@@ -21,6 +21,7 @@
 	.text
 	.align	2
 
+
 # IoFileMgrForUser(8)
 	AddNid sceIoOpen, 0x0000   # 0x109f50bc
 	AddNid sceIoWrite, 0x0008  # 0x42ec03ac
@@ -31,45 +32,46 @@
 	AddNid sceIoDread, 0x0030  # 0xe3eb004c
 	AddNid sceIoDclose, 0x0038 # 0xeb092469
 
-# ModuleMgrForUser(3)
-	AddNid sceKernelQueryModuleInfo, 0x0040      # 0x748cbed9
-	AddNid sceKernelGetModuleIdList, 0x0048      # 0x644395e2
-	AddNid sceKernelSelfStopUnloadModule, 0x0050 # 0xd675ebb8
+# ModuleMgrForUser(4)
+	AddNid sceKernelQueryModuleInfo, 0x0040 # 0x748cbed9
+	AddNid sceKernelGetModuleIdList, 0x0048 # 0x644395e2
+	AddNid sceKernelStopModule, 0x0050      # 0xd1ff982a
+	AddNid sceKernelUnloadModule, 0x0058    # 0x2e0911aa
 
 # UtilsForUser(1)
-	AddNid sceKernelDcacheWritebackInvalidateAll, 0x0058 # 0xb435dec5
+	AddNid sceKernelDcacheWritebackInvalidateAll, 0x0060 # 0xb435dec5
 
 # ThreadManForUser(16)
-	AddNid sceKernelDelayThread, 0x0060           # 0xceadeb47
-	AddNid sceKernelStartThread, 0x0068           # 0xf475845d
-	AddNid sceKernelCreateThread, 0x0070          # 0x446d8de6
-	AddNid sceKernelTerminateThread, 0x0078       # 0x616403ba
-	AddNid sceKernelExitDeleteThread, 0x0080      # 0x809ce29b
-	AddNid sceKernelDeleteThread, 0x0088          # 0x9fa03cd3
-	AddNid sceKernelReferThreadStatus, 0x0090     # 0x17c1684e
-	AddNid sceKernelTerminateDeleteThread, 0x0098 # 0x383f7bcc
-	AddNid sceKernelGetThreadmanIdList, 0x00a0    # 0x94416130
-	AddNid sceKernelReferSemaStatus, 0x00a8       # 0xbc6febc5
-	AddNid sceKernelReferFplStatus, 0x00b0        # 0xd8199e4c
-	AddNid sceKernelReferEventFlagStatus, 0x00b8  # 0xa66b0120
-	AddNid sceKernelDeleteSema, 0x00c0            # 0x28b6489c
-	AddNid sceKernelDeleteFpl, 0x00c8             # 0xed1410e0
-	AddNid sceKernelDeleteEventFlag, 0x00d0       # 0xef9e4c70
-	AddNid sceKernelGetThreadId, 0x00d8           # 0x293b45b8
+	AddNid sceKernelDelayThread, 0x0068           # 0xceadeb47
+	AddNid sceKernelStartThread, 0x0070           # 0xf475845d
+	AddNid sceKernelCreateThread, 0x0078          # 0x446d8de6
+	AddNid sceKernelTerminateThread, 0x0080       # 0x616403ba
+	AddNid sceKernelExitDeleteThread, 0x0088      # 0x809ce29b
+	AddNid sceKernelDeleteThread, 0x0090          # 0x9fa03cd3
+	AddNid sceKernelReferThreadStatus, 0x0098     # 0x17c1684e
+	AddNid sceKernelTerminateDeleteThread, 0x00a0 # 0x383f7bcc
+	AddNid sceKernelGetThreadmanIdList, 0x00a8    # 0x94416130
+	AddNid sceKernelReferSemaStatus, 0x00b0       # 0xbc6febc5
+	AddNid sceKernelReferFplStatus, 0x00b8        # 0xd8199e4c
+	AddNid sceKernelReferEventFlagStatus, 0x00c0  # 0xa66b0120
+	AddNid sceKernelDeleteSema, 0x00c8            # 0x28b6489c
+	AddNid sceKernelDeleteFpl, 0x00d0             # 0xed1410e0
+	AddNid sceKernelDeleteEventFlag, 0x00d8       # 0xef9e4c70
+	AddNid sceKernelGetThreadId, 0x00e0           # 0x293b45b8
 
 # LoadExecForUser(1)
-	AddNid sceKernelExitGame, 0x00e0 			  # 0x5572a5f
+	AddNid sceKernelExitGame, 0x00e8 # 0x5572a5f
 
 # SysMemUserForUser(4)
-	AddNid sceKernelAllocPartitionMemory, 0x00e8  # 0x237dbd4f
-	AddNid sceKernelGetBlockHeadAddr, 0x00f0      # 0x9d9a5ba1
-	AddNid sceKernelFreePartitionMemory, 0x00f8   # 0xb6d61d02
-	AddNid sceKernelTotalFreeMemSize, 0x0100      # 0xf919f628
+	AddNid sceKernelAllocPartitionMemory, 0x00f0 # 0x237dbd4f
+	AddNid sceKernelGetBlockHeadAddr, 0x00f8     # 0x9d9a5ba1
+	AddNid sceKernelFreePartitionMemory, 0x0100  # 0xb6d61d02
+	AddNid sceKernelTotalFreeMemSize, 0x0108     # 0xf919f628
 
 # sceDisplay(1)
-	AddNid sceDisplaySetFrameBuf, 0x0108 		  # 0x289d82fe
+	AddNid sceDisplaySetFrameBuf, 0x0110 # 0x289d82fe
 
 # sceCtrl(1)
-	AddNid sceCtrlReadBufferPositive, 0x0110 	  # 0x1f803938
+	AddNid sceCtrlReadBufferPositive, 0x0118 # 0x1f803938
 
 	.ident	"HBL-SDK"

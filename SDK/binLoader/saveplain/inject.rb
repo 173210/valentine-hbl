@@ -2,7 +2,7 @@
 
 #Usage:
 #requires code.bin and SOURCE_SDDATA.BIN in the same folder
-#type "inject.rb" will inject code.bin into the unencrypted savegame and produce SDDATA.BIN
+#type "inject.rb" will inject code.bin into the unencrypted savegame and produce UCUS98732_DATA02.bin
 
 require 'FileUtils'
 
@@ -49,5 +49,5 @@ File.open('SOURCE_SDDATA.BIN') do |f|
    0.upto(code.length-1) do |i|
 	x[code_pos+i]=code[i];
   end 
-  File.open('SDDATA.bin', File::CREAT | File::WRONLY | File::TRUNC) do |k| k.print x end
+  File.open('UCUS98732_DATA02.bin', File::CREAT | File::WRONLY | File::TRUNC) do |k| k.print x end
 end

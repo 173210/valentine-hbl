@@ -8,11 +8,6 @@
 #include "graphics.h"
 #include "utils.h"
 
-//Comment the following line if you don't want wololo's crappy Fake Ram mechanism
-#define FAKEMEM 1
-
-//uncomment the following line if you want to return to the menu when leaving a game (reported to crash)
-//#define RETURN_TO_MENU_ON_EXIT
 
 /* eLoader */
 /* Entry point: _start() */
@@ -1174,13 +1169,16 @@ void loadMenu()
 	SceUID menuThread;
 		
     DebugPrint("Loading Menu");
-	
+
+// this crashes too often :(
+/*	
     while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
 	{
         attempts++;
         id = sceIoDopen("ms0:");
         if (id <= 0)
 		{
+
             DEBUG_PRINT(" sceIoDopen syscall estimation failed, attempt to reestimate ",NULL, 0);
             reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
         }
@@ -1197,7 +1195,7 @@ void loadMenu()
         attempts = 0;        
         memset(&entry, 0, sizeof(SceIoDirent)); 
         while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
-		{
+		{       
             attempts++;
             DEBUG_PRINT(" sceIoDread syscall estimation failed, attempt to reestimate ",NULL, 0);
             reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
@@ -1206,7 +1204,7 @@ void loadMenu()
     }
 	
     sceIoDclose(id);
-
+*/
 	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
 
 	if ((menu_file = sceIoOpen(MENU_PATH, PSP_O_RDONLY, 0777)) < 0)
@@ -1253,6 +1251,7 @@ int start_thread(SceSize args, void *argp)
 		// Free memory
         DebugPrint("Free memory");
 		free_game_memory();
+        DebugPrint("-- Done (Free memory)");
         DEBUG_PRINT(" START HBL ", NULL, 0);
 
         // Start the menu or run directly the hardcoded eboot      

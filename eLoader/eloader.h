@@ -83,8 +83,22 @@ typedef struct
 #define LIB_PATH HBL_ROOT"libs/"
 #define LIB_EXTENSION ".nids"
 
-// Number of threads to monitor
-#define MAX_PERMANENT_THREADS 30
+//
+// Switches
+//
+
+//Comment the following line if you don't want wololo's crappy Fake Ram mechanism
+#define FAKEMEM 1
+
+//comment the following line if you don't want to return to the menu when leaving a game (reported to crash)
+//#define RETURN_TO_MENU_ON_EXIT
+
+//Comment the following line to avoid unloading Labo
+//#define UNLOAD_MODULE
+
+
+
+
 
 // Auxiliary structure to help with syscall estimation
 extern tSceLibrary library_table[MAX_LIBRARIES];
@@ -94,5 +108,6 @@ tSceLibrary* get_library_entry(const char* library_name);
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(char *eboot_path, int is_eboot);
+
 
 #endif

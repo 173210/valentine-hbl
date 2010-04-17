@@ -55,6 +55,7 @@ SceUID find_fpl(const char *name) {
 /* Warning: MUST NOT be called from Game main thread */
 void free_game_memory()
 {
+    DEBUG_PRINT(" ENTER FREE MEMORY ", NULL, 0);
 	SceUID id;
 	
 	const char* const threads[] = {"user_main", "sgx-psp-freq-thr", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-pcm-th", "FileThread"};
@@ -71,14 +72,16 @@ void free_game_memory()
 	int nb_semas = sizeof(semas) / sizeof(semas[0]);
 	int nb_loop_semas = sizeof(loop_semas) / sizeof(loop_semas[0]);
 	int nb_evflags = sizeof(evflags) / sizeof(evflags[0]);
-	int i, ret, status = 0, res;
+	int i, ret, status = 0;
 
 #ifdef DEBUG
 	int free;
 #endif
 
-	sceKernelDelayThread(100);
+    int success = 1;
 
+    sceKernelDelayThread(100);
+    
 #ifdef DEBUG
 	free = sceKernelTotalFreeMemSize();
 	write_debug(" FREE MEM BEFORE CLEANUP", &free, sizeof(free));
@@ -90,12 +93,12 @@ void free_game_memory()
 		id = find_thread(threads[i]);
 		if(id >= 0)
 		{
-			res = sceKernelTerminateDeleteThread(id);
-            if (res < 0) 
-			{
+			int res = sceKernelTerminateDeleteThread(id);
+            if (res < 0) {
                 DebugPrint("  Cannot Terminate thread, probably syscall failure");
                 DEBUG_PRINT(" CANNOT TERMINATE: ", threads[i], strlen(threads[i]) + 1);
                 DEBUG_PRINT(" ERROR: ", &res, sizeof(int));
+                success = 0;
             } 
 			else 
 			{
@@ -107,6 +110,7 @@ void free_game_memory()
             DebugPrint("  Cannot find thread, probably syscall failure");
             DEBUG_PRINT(" CANNOT FIND THREAD TO DELETE ", threads[i], strlen(threads[i]) + 1);
 			DEBUG_PRINT(" ERROR: ", &id, sizeof(id));
+            success = 0;
         }
 	}
 
@@ -160,4 +164,33 @@ void free_game_memory()
 #endif
 
 
+#ifdef UNLOAD_MODULE
+    if (!success)
+        return; //Don't try to unload the module if threads couldn't be stoped
+        
+	// Stop & Unload game module
+	id = find_module("Labo");
+	if (id >= 0)
+	{
+		DEBUG_PRINT(" GAME MODULE ID ", &id, sizeof(id));
+		
+		ret = sceKernelStopModule(id, 0, NULL, &status, NULL);
+		if (ret >= 0)
+		{
+			ret = sceKernelUnloadModule(id);
+			if (ret < 0)
+				DEBUG_PRINT(" ERROR UNLOADING GAME MODULE ", &ret, sizeof(ret));
+		}
+		else
+			DEBUG_PRINT(" ERROR STOPPING GAME MODULE ", &ret, sizeof(ret));
+	}
+	else
+		DEBUG_PRINT(" ERROR: GAME MODULE NOT FOUND ", &id, sizeof(id));
+
+#ifdef DEBUG
+	free = sceKernelTotalFreeMemSize();
+	write_debug(" FREE MEM AFTER MODULE UNLOADING ", &free, sizeof(free));
+#endif    
+#endif
+  
 }
