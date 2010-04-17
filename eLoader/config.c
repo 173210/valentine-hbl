@@ -1,5 +1,7 @@
 #include "debug.h"
 #include "config.h"
+#include "utils.h"
+
 
 /* LOCAL GLOBALS :( */
 
@@ -17,10 +19,27 @@ SceOff nids_offset = -1;
 /* INTERFACE IMPLEMENTATION */
 
 // Initialize config_file
-int config_initialize(void)
+int config_initialize()
 {
+    u32 firmware_v = getFirmwareVersion();
 	// DEBUG_PRINT(" config_initialize ", NULL, 0);
-	config_file = sceIoOpen(IMPORTS_PATH, PSP_O_RDONLY, 0777);
+    char buffer[512];
+    strcpy(buffer, IMPORTS_PATH);
+    if (firmware_v == 500)
+        strcat(buffer, "_50x");
+    else if (firmware_v == 550)
+        strcat(buffer, "_55x");
+    else if (firmware_v == 570)
+        strcat(buffer, "_570");
+    else if (firmware_v >= 600)
+        strcat(buffer, "_6xx");
+        
+    if (!file_exists(buffer))
+        strcpy(buffer, IMPORTS_PATH);
+   
+    DEBUG_PRINT("Config file:", buffer, strlen(buffer));
+    
+	config_file = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
 	return config_file;
 }
 

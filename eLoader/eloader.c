@@ -6,7 +6,7 @@
 #include "config.h"
 #include "menu.h"
 #include "graphics.h"
-#include "scratchpad.h"
+#include "utils.h"
 
 //Comment the following line if you don't want wololo's crappy Fake Ram mechanism
 #define FAKEMEM 1
@@ -25,7 +25,6 @@ u32 gp = 0;
 u32* entry_point = 0;
 u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
 int g_menu_enabled = 0; // this is set to 1 at runtime if a menu.bin file exists
-
 
 //Menu variables
 u32 * isSet = EBOOT_SET_ADDRESS;
@@ -1176,16 +1175,16 @@ void loadMenu()
 		
     DebugPrint("Loading Menu");
 	
-    do
+    while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
 	{
         attempts++;
         id = sceIoDopen("ms0:");
-        if (id < 0)
+        if (id <= 0)
 		{
-            DEBUG_PRINT(" sceIoDopen reestimate ", NULL, 0);
-            reestimate_syscall((u32*) (ADDR_HBL_STUBS_BLOCK_ADDR + 0x0028)); //sceIoDopen TODO move to config ?
+            DEBUG_PRINT(" sceIoDopen syscall estimation failed, attempt to reestimate ",NULL, 0);
+            reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
         }
-    } while ((id < 0) && (attempts <= MAX_REESTIMATE_ATTEMPTS));
+    }
 	
     if (id < 0) 
 	{
@@ -1197,11 +1196,11 @@ void loadMenu()
 	{
         attempts = 0;        
         memset(&entry, 0, sizeof(SceIoDirent)); 
-        while ((sceIoDread(id, &entry) <= 0) && (attempts <= MAX_REESTIMATE_ATTEMPTS))
+        while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
 		{
             attempts++;
-            DEBUG_PRINT(" sceIoDread reestimate ", NULL, 0);
-            reestimate_syscall((u32*) (ADDR_HBL_STUBS_BLOCK_ADDR + 0x0030)); //sceIoDread TODO move to config ?
+            DEBUG_PRINT(" sceIoDread syscall estimation failed, attempt to reestimate ",NULL, 0);
+            reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
             memset(&entry, 0, sizeof(SceIoDirent));
         }
     }
@@ -1224,20 +1223,15 @@ void loadMenu()
     void (*start_entry)(SceSize, void*) = menu_pointer;	 
 	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
 
-	if(menuThread < 0)
-		exit_with_log(" Menu Launch failed ", NULL, 0);
-	
-	menuThread = sceKernelStartThread(menuThread, 0, NULL);   
-}
+	if(menuThread >= 0)
+	{
+		menuThread = sceKernelStartThread(menuThread, 0, NULL);
+    } 
 
-// Returns 1 if a given file exists, 0 otherwise
-int file_exists(const char * filename)
-{
-    SceUID id = sceIoOpen(filename, PSP_O_RDONLY, 0777);
-    if (id < 0) 
-		return 0;
-    sceIoClose(id);
-    return 1;
+	else 
+	{
+        exit_with_log(" Menu Launch failed ", NULL, 0);
+    }        
 }
 
 // HBL main thread
@@ -1290,7 +1284,32 @@ void _start(unsigned long arglen, unsigned long *argp)
     sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
     SetColor(0);
     DebugPrint("Starting HBL -- http://code.google.com/p/valentine-hbl");
-	
+    
+    //TODO a basic printf for ints
+	switch (getFirmwareVersion()) {
+    case 500:
+        DebugPrint("firmware 5.0x detected");
+        break;
+    case 550:
+        DebugPrint("firmware 5.5x detected");
+        break;
+    case 570:
+        DebugPrint("firmware 5.7x detected");
+        break;
+    case 600:
+        DebugPrint("firmware 6.0x detected");
+        break;        
+    case 610:
+        DebugPrint("firmware 6.1x detected");
+        break;
+    case 620:
+        DebugPrint("firmware 6.2x detected");
+        break;
+    default:
+        DebugPrint("Unknown Firmware :(");
+        break;        
+    }
+    
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
 	
