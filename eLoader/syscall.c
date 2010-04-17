@@ -48,9 +48,9 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	strcpy(file_path, LIB_PATH);
     u32 firmware_v = getFirmwareVersion();
     if (firmware_v >= 500 && firmware_v < 600)
-        strcat(file_path, "_5xx");
+        strcat(file_path, "_5xx/");
     else if (firmware_v >= 600)
-        strcat(file_path, "_6xx");
+        strcat(file_path, "_6xx/");
 
 	strcat(file_path, lib);
 	strcat(file_path, LIB_EXTENSION);
@@ -59,6 +59,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
     if (!file_exists(file_path))
     {
         strcpy(file_path, LIB_PATH);
+        strcat(file_path, "/");
         strcat(file_path, lib);
         strcat(file_path, LIB_EXTENSION);
     }    

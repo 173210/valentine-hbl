@@ -80,7 +80,7 @@ typedef struct
 #define HBL_PATH HBL_ROOT"hbl.bin"
 
 // Path for NID libraries
-#define LIB_PATH HBL_ROOT"libs/"
+#define LIB_PATH HBL_ROOT"libs"
 #define LIB_EXTENSION ".nids"
 
 //
