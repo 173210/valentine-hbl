@@ -10,5 +10,8 @@ SceUID find_sema(const char *name);
 /* Find a FPL by name */
 SceUID find_fpl(const char *name);
 
+/* Debug functions */
+void DumpThreadmanObjects();
+
 #endif
 

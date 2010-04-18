@@ -1,8 +1,11 @@
+2010/04/18 (wololo)
+- Added firmware detection for 5.55 (thanks to Epel for the memory dump)
+- Added basic "printf" functions for improved logging (thanks Fanjita & noobz for the initial code)
+
 2010/04/17 (wololo)
 - This change requires a new Save Game file (changed the address where h.bin is loaded). Regenerate the Save Game by yourself (codes in the folder SDK) or get it at http://wololo.net/wagic
 - Code to unload the module "Labo". The code works, but it basically breaks compatibility with all the homebrews I tested, so right now I commented the code out.
 To activate it, define the macro "UNLOAD_MODULE" in eLoader.h
-
 
 2010/04/17 (wololo)
 - Experimental!!! firmware detection mechanism. No need to rename libs_5xx and libs_6xx, as well as imports.config_* : the HBL automatically loads the "correct" one

@@ -30,19 +30,18 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	u32 estimated_syscall;
 	tSceLibrary *plibrary_entry;
 
-	DEBUG_PRINT(" ESTIMATING ", lib, strlen(lib));
-	DEBUG_PRINT(" ", &nid, sizeof(nid));
+	LOGSTR2("=ESTIMATING %s : 0x%08lX\n", lib, nid);
 	
 	// Finding the library on table
 	plibrary_entry = get_library_entry(lib);
 
 	if (plibrary_entry == NULL)
 	{
-		DEBUG_PRINT(" ERROR: LIBRARY NOT FOUND ON TABLE ", lib, strlen(lib));
+		LOGSTR1("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", lib);
         return 0;
     }
 
-	DEBUG_PRINT(" LOWEST SYSCALL ON LIBRARY ", &(plibrary_entry->lowest_syscall), sizeof(u32));
+	LOGSTR1("--LOWEST SYSCALL ON LIBRARY:  0x%08lX\n", plibrary_entry->lowest_syscall);
 		
 	// Constructing the file path
 	strcpy(file_path, LIB_PATH);
@@ -86,7 +85,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	else
 		estimated_syscall += (plibrary_entry->num_library_exports - plibrary_entry->lowest_index) + (unsigned int) (file_index);
 
-	DEBUG_PRINT(" ESTIMATED ", &estimated_syscall, sizeof(estimated_syscall));
+	LOGSTR1("--ESTIMATED  0x%08lX\n", estimated_syscall);
 	
 	return MAKE_SYSCALL(estimated_syscall);
 }
@@ -95,12 +94,19 @@ u32 estimate_syscall(const char *lib, u32 nid)
 // Needs to be more independent from sdk_hbl.S
 u32 reestimate_syscall(u32* stub) 
 {
+#ifdef REESTIMATE_SYSCALL  
+    LOGSTR1("=Reestimating syscall for stub 0x%08lX\n", stub); 
 	u32 syscall;
 
 	stub++;
 	syscall = GET_SYSCALL_NUMBER(*stub);
+    LOGSTR1("--0x%08lX -->", syscall); 
 	syscall--;
+    LOGSTR1(" 0x%08lX\n", syscall); 
 	*stub = MAKE_SYSCALL(syscall);
-	
+    LOGSTR0("--Done.\n"); 
     return syscall;
+#else
+    return 0;
+#endif	    
 }

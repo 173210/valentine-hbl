@@ -518,14 +518,13 @@ int build_nid_table(tNIDResolver *nid_table)
 	#ifdef DEBUG
 		int c = 0;
 		u32 syscall;
-		write_debug(" NID TABLE (NID/SYSCALL NUMBER) DUMP ", NULL, 0);
+		LOGSTR0("==NID TABLE (NID/SYSCALL NUMBER)==\n");
 		while (c <= i)
 		{
 			syscall = GET_SYSCALL_NUMBER(nid_table[c].call);
-			write_debug(" ", &nid_table[c++].nid, sizeof(u32));
-			write_debug(" ", &syscall, sizeof(syscall));		
+            LOGSTR2("0x%08lX 0x%08lX\n", nid_table[c++].nid, syscall);		
 		}
-		write_debug(" LIBRARY TABLE DUMP ", NULL, 0);
+		LOGSTR0("==LIBRARY TABLE DUMP==\n");
 		c = 0;
 		while (c <= k)
 			write_debug(" ", &library_table[c++], sizeof(tSceLibrary));
@@ -533,7 +532,7 @@ int build_nid_table(tNIDResolver *nid_table)
 
 	config_close();
 
-	DEBUG_PRINT(" build_nid_table() EXITING ", NULL, 0);
+	LOGSTR0("build_nid_table() EXITING\n");
 
 	return i;
 }
@@ -1168,7 +1167,7 @@ void loadMenu()
 	SceIoDirent entry;
 	SceUID menuThread;
 		
-    DebugPrint("Loading Menu");
+    print_to_screen("Loading Menu");
 
 // this crashes too often :(
 /*	
@@ -1186,7 +1185,7 @@ void loadMenu()
 	
     if (id < 0) 
 	{
-        DebugPrint("Loading Menu Failed (syscall ?)");
+        print_to_screen("Loading Menu Failed (syscall ?)");
         exit_with_log(" FATAL, sceIoDopen syscall estimation failed ",NULL, 0);
     }
 	
@@ -1238,21 +1237,21 @@ int start_thread(SceSize args, void *argp)
 	int num_nids;
 	
 	// Build NID table
-    DebugPrint("Build Nids table");
+    print_to_screen("Build Nids table");
 	num_nids = build_nid_table(nid_table);
-    DEBUG_PRINT(" NUM NIDS ", &num_nids, sizeof(int));
+    LOGSTR1("NUM NIDS: %d\n", num_nids);
 	
 	if(num_nids > 0)
 	{	
 		// FIRST THING TO DO!!!
-        DebugPrint("Resolving Missing Stubs");
+        print_to_screen("Resolving Missing Stubs");
 		resolve_missing_stubs();
 	
 		// Free memory
-        DebugPrint("Free memory");
+        print_to_screen("Free memory");
 		free_game_memory();
-        DebugPrint("-- Done (Free memory)");
-        DEBUG_PRINT(" START HBL ", NULL, 0);
+        print_to_screen("-- Done (Free memory)");
+        LOGSTR0("START HBL\n");
 
         // Start the menu or run directly the hardcoded eboot      
         if (file_exists(EBOOT_PATH))
@@ -1267,7 +1266,7 @@ int start_thread(SceSize args, void *argp)
 	}
 	
 	// Exit thread
-    DebugPrint("Exiting HBL Thread");
+    print_to_screen("Exiting HBL Thread");
 	sceKernelExitDeleteThread(0);
 	
 	return 0;
@@ -1279,34 +1278,20 @@ void _start(unsigned long arglen, unsigned long *argp)
 {	
 	SceUID thid;    
     void *fb = (void *)0x444000000;
+    int firmware_version = getFirmwareVersion();
 	
     sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
     SetColor(0);
-    DebugPrint("Starting HBL -- http://code.google.com/p/valentine-hbl");
+    print_to_screen("Starting HBL -- http://code.google.com/p/valentine-hbl");
     
-    //TODO a basic printf for ints
-	switch (getFirmwareVersion()) {
-    case 500:
-        DebugPrint("firmware 5.0x detected");
-        break;
-    case 550:
-        DebugPrint("firmware 5.5x detected");
-        break;
-    case 570:
-        DebugPrint("firmware 5.7x detected");
-        break;
-    case 600:
-        DebugPrint("firmware 6.0x detected");
-        break;        
-    case 610:
-        DebugPrint("firmware 6.1x detected");
-        break;
-    case 620:
-        DebugPrint("firmware 6.2x detected");
-        break;
+	switch (firmware_version) {
+    case 0:
+    case 1:
+        print_to_screen("Unknown Firmware :(");
+        break; 
     default:
-        DebugPrint("Unknown Firmware :(");
-        break;        
+        PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
+        break;
     }
     
 	// Create and start eloader thread

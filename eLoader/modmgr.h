@@ -11,5 +11,8 @@ SceUID find_module(const char *name);
 int get_module_info(SceUID modid, tModuleInfo *modinfo);
 */
 
+/* debug info */
+void DumpModuleList();
+
 #endif
 

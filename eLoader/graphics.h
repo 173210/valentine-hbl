@@ -49,7 +49,13 @@ extern Color getPixelScreen(int x, int y);
 
 extern void printTextScreen(int x, int y, char text[], u32 color);
 
-extern void DebugPrint(char text[]);
+extern void print_to_screen(char text[]);
+void PRTSTR8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I);
+void PRTSTR4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E);
+void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D);
+void PRTSTR2(const char* A, unsigned long B, unsigned long C);
+void PRTSTR1(const char* A, unsigned long B);
+void PRTSTR0(const char* A);
 
 /**
  * Print a text (pixels out of the screen or image are clipped).

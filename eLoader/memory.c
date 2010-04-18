@@ -55,7 +55,13 @@ SceUID find_fpl(const char *name) {
 /* Warning: MUST NOT be called from Game main thread */
 void free_game_memory()
 {
-    DEBUG_PRINT(" ENTER FREE MEMORY ", NULL, 0);
+    LOGSTR0("ENTER FREE MEMORY\n");
+    
+#ifdef DEBUG    
+    DumpThreadmanObjects();
+    //DumpModuleList();
+#endif
+    
 	SceUID id;
 	
 	const char* const threads[] = {"user_main", "sgx-psp-freq-thr", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-pcm-th", "FileThread"};
@@ -83,8 +89,10 @@ void free_game_memory()
     sceKernelDelayThread(100);
     
 #ifdef DEBUG
+/*
 	free = sceKernelTotalFreeMemSize();
 	write_debug(" FREE MEM BEFORE CLEANUP", &free, sizeof(free));
+*/
 #endif
 	
 	// Freeing threads
@@ -95,9 +103,8 @@ void free_game_memory()
 		{
 			int res = sceKernelTerminateDeleteThread(id);
             if (res < 0) {
-                DebugPrint("  Cannot Terminate thread, probably syscall failure");
-                DEBUG_PRINT(" CANNOT TERMINATE: ", threads[i], strlen(threads[i]) + 1);
-                DEBUG_PRINT(" ERROR: ", &res, sizeof(int));
+                print_to_screen("  Cannot Terminate thread, probably syscall failure");
+                LOGSTR2("CANNOT TERMINATE %s (err:0x%08lX)\n", threads[i], res);
                 success = 0;
             } 
 			else 
@@ -107,13 +114,13 @@ void free_game_memory()
 		} 
 		else 
 		{
-            DebugPrint("  Cannot find thread, probably syscall failure");
-            DEBUG_PRINT(" CANNOT FIND THREAD TO DELETE ", threads[i], strlen(threads[i]) + 1);
-			DEBUG_PRINT(" ERROR: ", &id, sizeof(id));
+            print_to_screen("  Cannot find thread, probably syscall failure");
+            LOGSTR2("CANNOT FIND THREAD TO DELETE %s (err:0x%08lX)\n", threads[i], id);
             success = 0;
         }
 	}
 
+    LOGSTR0("FREEING SEMAPHORES\n");
 	// Freeing semaphores
 	for (i = 0; i < nb_semas; ++i)
 	{
@@ -134,6 +141,7 @@ void free_game_memory()
 		}
 	}
 	
+    LOGSTR0("FREEING EVENT FLAGS\n");
 	// Freeing event flags
 	for (i = 0; i < nb_evflags; ++i)
 	{
@@ -145,11 +153,13 @@ void free_game_memory()
 		}
 	}
 
+    LOGSTR0("FREEING MEMORY PARTITION\n");
 	/* Free memory partition created by the GAME (UserSbrk) */
 	sceKernelFreePartitionMemory(*((SceUID *) MEMORY_PARTITION_POINTER));
 	
 	//sceKernelDelayThread(100000);
 
+    LOGSTR0("FREEING MAIN HEAP\n");
 	// Free MAINHEAP FPL
 	id = find_fpl("MAINHEAP");
 	if(id >= 0)
@@ -159,8 +169,10 @@ void free_game_memory()
 	}
 	
 #ifdef DEBUG
+/*
 	free = sceKernelTotalFreeMemSize();
 	write_debug(" FREE MEM AFTER NORMAL CLEANUP", &free, sizeof(free));
+*/    
 #endif
 
 

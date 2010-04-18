@@ -63,7 +63,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 	int i = 0, j, count = 0;
 	u32 *cur_nid, *cur_call;
 
-	DEBUG_PRINT(" ENTERING build_stub_list ", &pentry, sizeof(u32));
+	LOGSTR1("ENTERING build_stub_list 0x%08lX\n", pentry);
 
 	// Zeroing data
 	memset(stub_list, 0, list_size * sizeof(u32));
@@ -90,8 +90,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 			{
 				if(hbl_imports_list[j] == *cur_nid)
 				{
-					DEBUG_PRINT(NULL, cur_nid, sizeof(u32));
-					DEBUG_PRINT(NULL, &cur_call, sizeof(u32));
+					LOGSTR2("nid:0x%08lX, call:0x%08lX\n", cur_nid, cur_call);
 					stub_list[j] = cur_call;
 					count++;
 				}
@@ -221,7 +220,7 @@ void copy_hbl_stubs(void)
 		else
 			memset(stub_addr, 0, sizeof(u32)*2);
 		stub_addr += 2;
-		sceKernelDelayThread(100000);
+		sceKernelDelayThread(100);
 	}
 
 	// Config finished
@@ -251,7 +250,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 		
 		sceKernelDcacheWritebackInvalidateAll();
 
-		DEBUG_PRINT(" PASSING TO HBL ", NULL, 0);
+		DEBUG_PRINT("PASSING TO HBL\n", NULL, 0);
 		run_eloader(0, NULL);
 	}	
 

@@ -1,5 +1,7 @@
 
 #include "graphics.h"
+#include "utils.h"
+#include "debug.h"
 
 #define IS_ALPHA(color) (((color)&0xff000000)==0xff000000?0:1)
 #define FRAMEBUFFER_SIZE (PSP_LINE_SIZE*SCREEN_HEIGHT*4)
@@ -102,7 +104,7 @@ void printTextScreen(int x, int y, char text[], u32 color)
 	}
 }
 
-void DebugPrint(char text[]) 
+void print_to_screen(char text[]) 
 {
 	if (gY > 272) 
 	{
@@ -111,6 +113,7 @@ void DebugPrint(char text[])
 	
   	printTextScreen(0, gY, text, 0x00FFFFFF);
   	gY += 12;
+    DEBUG_PRINT_NL(text);
 }  
 
 void *fb = (void *)0x44000000;
@@ -124,4 +127,45 @@ void SetColor(int col)
 		pixel->rgba = col;
 		pixel++;
 	}
+}
+
+
+void PRTSTR0(const char* A)
+{
+  print_to_screen(A);
+}
+
+void PRTSTR1(const char* A, unsigned long B)
+{
+  char buff[512];
+  mysprintf1(buff, A, (unsigned long)B);
+  print_to_screen(buff);
+}
+
+void PRTSTR2(const char* A, unsigned long B, unsigned long C)
+{
+  char buff[512];
+  mysprintf2(buff, A, (unsigned long)B, (unsigned long)C);
+  print_to_screen(buff);
+}
+
+void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D)	
+{
+  char buff[512];
+  mysprintf3(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
+  print_to_screen(buff);
+}
+
+void PRTSTR4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E)
+{
+  char buff[512];
+  mysprintf4 (buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D,  (unsigned long)E);
+  print_to_screen(buff);
+}
+
+void PRTSTR8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I)
+{
+  char buff[512];
+  mysprintf8 (buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D,  (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H,  (unsigned long)I);
+  print_to_screen(buff);
 }

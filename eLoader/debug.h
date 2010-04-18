@@ -15,16 +15,41 @@
 //init the debug file
 void init_debug();
 
+
 // Write a string + data to debug path
 void write_debug(const char* description, void* value, unsigned int size);
+
+// Write a debug string + carriage return to debug path
+void write_debug_newline (const char* description);
 
 // Write debug and exit
 void exit_with_log(const char* description, void* value, unsigned int size);
 
+void logstr8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I);
+void logstr4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E);
+void logstr3(const char* A, unsigned long B, unsigned long C, unsigned long D);
+void logstr2(const char* A, unsigned long B, unsigned long C);
+void logstr1(const char* A, unsigned long B);
+void logstr0(const char* A);
+
 #ifdef DEBUG
 #define DEBUG_PRINT(a,b,c) write_debug(a,b,c);
+#define DEBUG_PRINT_NL(a) write_debug_newline(a);
+#define LOGSTR8(a,b,c,d,e,f,g,h,i) logstr8(a,b,c,d,e,f,g,h,i);
+#define LOGSTR4(a,b,c,d,e) logstr4(a,b,c,d,e);
+#define LOGSTR3(a,b,c,d) logstr3(a,b,c,d);
+#define LOGSTR2(a,b,c) logstr2(a,b,c);
+#define LOGSTR1(a,b) logstr1(a,b);
+#define LOGSTR0(a) logstr0(a);
 #else
 #define DEBUG_PRINT(a,b,c) {};
+#define DEBUG_PRINT_NL(a) {};
+#define LOGSTR8(a,b,c,d,e,f,g,h,i){};
+#define LOGSTR4(a,b,c,d,e) {};
+#define LOGSTR3(a,b,c,d) {};
+#define LOGSTR2(a,b,c) {};
+#define LOGSTR1(a,b) {};
+#define LOGSTR0(a) {};
 #endif
 
 #endif

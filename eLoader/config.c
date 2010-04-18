@@ -37,7 +37,7 @@ int config_initialize()
     if (!file_exists(buffer))
         strcpy(buffer, IMPORTS_PATH);
    
-    DEBUG_PRINT("Config file:", buffer, strlen(buffer));
+    LOGSTR1("Config file:%s\n", buffer);
     
 	config_file = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
 	return config_file;

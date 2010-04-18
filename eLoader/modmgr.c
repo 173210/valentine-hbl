@@ -79,3 +79,35 @@ int get_module_info(SceUID modid, tModuleInfo *modinfo)
 	return 0;
 }
 */
+
+/* Dump code by Fanjita and n00bz */
+void DumpModuleList()
+{
+  int    i;
+  unsigned long *lstartptr;
+  unsigned long *lendptr;
+  unsigned long *lptr;
+  char *lcharptr;
+  unsigned long lversionAndAttr;
+  SceUID gmoduleids[256];
+  int gmodulecount = 0;
+  SceKernelModuleInfo info;
+
+  LOGSTR0("DUMP MODULE OBJECTS:\n");
+  LOGSTR0("=======================\n");
+  
+  sceKernelGetModuleIdList(gmoduleids, sizeof(gmoduleids)/sizeof(SceUID), &gmodulecount);
+  LOGSTR1("Got %d modules\n", gmodulecount);
+  for (i=0; i < gmodulecount; i++)
+  {
+    memset(&info, 0, sizeof(SceKernelModuleInfo));
+    info.size = sizeof(SceKernelModuleInfo);
+    LOGSTR1("---\nRetrieve module ID %d\n", i);
+    sceKernelQueryModuleInfo(gmoduleids[i], &info);
+
+    LOGSTR2("%d entry: %p  ", i, info.entry_addr);
+    LOGSTR2("mod id: %08lX  name: %s\n", gmoduleids[i],info.name);
+
+    LOGSTR2("segm start: %08lX   end: %08lX\n", info.text_addr, (info.text_addr + info.text_size));
+  }
+}
