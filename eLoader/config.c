@@ -2,7 +2,6 @@
 #include "config.h"
 #include "utils.h"
 
-
 /* LOCAL GLOBALS :( */
 
 // File descriptor
@@ -20,17 +19,25 @@ SceOff nids_offset = -1;
 
 // Initialize config_file
 int config_initialize()
-{
-    u32 firmware_v = getFirmwareVersion();
-	// DEBUG_PRINT(" config_initialize ", NULL, 0);
+{	
     char buffer[512];
+    u32 firmware_v = getFirmwareVersion();
+	
+	// DEBUG_PRINT(" config_initialize ", NULL, 0);
+	
     strcpy(buffer, IMPORTS_PATH);
     if (firmware_v == 500)
         strcat(buffer, "_50x");
+	
     else if (firmware_v == 550)
-        strcat(buffer, "_55x");
+        strcat(buffer, "_550");
+
+	else if (firmware_v == 555)
+        strcat(buffer, "_555");
+	
     else if (firmware_v == 570)
         strcat(buffer, "_570");
+	
     else if (firmware_v >= 600)
         strcat(buffer, "_6xx");
         

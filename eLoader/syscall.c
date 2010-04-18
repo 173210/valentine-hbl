@@ -29,6 +29,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	int lib_index, file_index;
 	u32 estimated_syscall;
 	tSceLibrary *plibrary_entry;
+	u32 firmware_v;
 
 	LOGSTR2("=ESTIMATING %s : 0x%08lX\n", lib, nid);
 	
@@ -45,7 +46,8 @@ u32 estimate_syscall(const char *lib, u32 nid)
 		
 	// Constructing the file path
 	strcpy(file_path, LIB_PATH);
-    u32 firmware_v = getFirmwareVersion();
+    firmware_v = getFirmwareVersion();
+	
     if (firmware_v >= 500 && firmware_v < 600)
         strcat(file_path, "_5xx/");
     else if (firmware_v >= 600)
@@ -54,7 +56,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	strcat(file_path, lib);
 	strcat(file_path, LIB_EXTENSION);
     
-    // rollback to default name in case of error
+    // Rollback to default name in case of error
     if (!file_exists(file_path))
     {
         strcpy(file_path, LIB_PATH);

@@ -13,7 +13,8 @@
 	.previous
 	.text
 	.align	2
-	
+
+# IMPORTANT: the addresses not inside Patapon module are only for 5.00 FW	
 # Total libraries: 36 (0x24)
 # Total functions: 418 (0x1A2)
 

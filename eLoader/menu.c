@@ -15,7 +15,7 @@ char folders[NB_FOLDERS][FOLDERNAME_SIZE] ;
 char * currentPath = "ms0:/PSP/GAME/";
 char * cacheFile = HBL_ROOT"menu.cache";
 
-int currentFile;;
+int currentFile;
 u32 * isSet;
 void * ebootPath;
 int nbFiles;
@@ -63,10 +63,8 @@ void init()
 	
 	nbFiles = 0;
 	for (i = 0; i < NB_FOLDERS; ++i)
-	{
 		folders[i][0] = 0;
-  	}
-    
+	
   	id = sceIoDopen(currentPath);
   	if (id <=0) 
 	{
@@ -126,7 +124,10 @@ void setEboot()
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
+	SceCtrlData pad; // variable to store the current state of the pad
+	
     init();
+	
     currentFile = 0;
     isSet = (u32 *) EBOOT_SET_ADDRESS;
     ebootPath = (void *) EBOOT_PATH_ADDRESS;
@@ -139,24 +140,35 @@ void _start()
     SetColor(0x00000000);
 
     refreshMenu();
-    if (!nbFiles){
+	
+    if (!nbFiles)
+	{
         printTextScreen(100, 200 , "Error, no Files found (sceIoDopen syscall estimate failure?)", 0x00FF0000);
-    }     
+    }
+	
     sceKernelDelayThread(100000);
-    while (!isSet[0]) {    
-        SceCtrlData pad; // variable to store the current state of the pad
-
+	
+    do
+	{
         sceCtrlReadBufferPositive (&pad, 1); // check the input.
-        if(pad.Buttons & PSP_CTRL_CROSS) { // if the cross button is pressed
+		
+        if (pad.Buttons & PSP_CTRL_CROSS)
+		{ // if the cross button is pressed
             DEBUG_PRINT("MENU SET EBOOT", NULL, 0);
-            setEboot();
-        }else if(pad.Buttons & PSP_CTRL_DOWN && currentFile < nbFiles - 1) {
+            setEboot();			
+        }
+		else if ((pad.Buttons & PSP_CTRL_DOWN) && (currentFile < nbFiles - 1))
+		{
             currentFile++;
             refreshMenu();
-        }else if(pad.Buttons & PSP_CTRL_UP && currentFile > 0) {
+        }
+		else if ((pad.Buttons & PSP_CTRL_UP) && (currentFile > 0) )
+		{
             currentFile--;
             refreshMenu();
-        }else if(pad.Buttons & PSP_CTRL_TRIANGLE) {
+        }
+		else if(pad.Buttons & PSP_CTRL_TRIANGLE) 
+		{
             sceKernelExitGame();
         }
 
@@ -166,7 +178,7 @@ void _start()
         printTextScreen(0, 260 , "GPL License: give the sources if you distribute binaries!!!", 0x00FFFFFF);
         
         sceKernelDelayThread(100000);
-    }
+    } while (!isSet[0]);
 
     //This point is reached when the value is set
     sceKernelExitDeleteThread(0);

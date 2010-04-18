@@ -1,3 +1,6 @@
+2010/04/18 (m0skit0)
+- Added imports.config for 5.50 and 5.55 differences (thanks to ultimakillz)
+
 2010/04/18 (wololo)
 - Added firmware detection for 5.55 (thanks to Epel for the memory dump)
 - Added basic "printf" functions for improved logging (thanks Fanjita & noobz for the initial code)
@@ -11,7 +14,7 @@ To activate it, define the macro "UNLOAD_MODULE" in eLoader.h
 - Experimental!!! firmware detection mechanism. No need to rename libs_5xx and libs_6xx, as well as imports.config_* : the HBL automatically loads the "correct" one
 
 2010/04/16 (ultimakillz)
-- Added new imports.config files for 5.0x, 5.5x, 5.70 and 6.20 (PSP Go) versions (thanks to ultimakillz)
+- Added new imports.config files for 5.0x, 5.5x, 5.70 and 6.20 (PSP Go) versions (courtesy from ultimakillz)
 
 2010/04/14 (m0skit0)
 - Fixed nidtohuman tool Makefile

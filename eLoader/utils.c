@@ -13,6 +13,7 @@ u32 firmware_version = 1;
  * It is important to call this function (once) early, before that point in memory gets erased
  * This code is experimental, it hasn't been run on "enough" psps to be sure it works
  */
+
 u32 getFirmwareVersion()
 {
     if (firmware_version != 1) return firmware_version;
@@ -22,30 +23,30 @@ u32 getFirmwareVersion()
 
     switch (value) 
     {
-    case 0xB533E9FC:
-        firmware_version = 500;
-        break;            
-    case 0xA67D3F99:
-        firmware_version = 550;
-        break;
-    case 0x67D3F99F:
-        firmware_version = 550; //actually 5.51
-        break;
-    case 0xCFA7F33F:
-        firmware_version = 550; //actually 5.55
-        break;   
-    case 0xC5B13597:
-        firmware_version = 570;
-        break;   
-    case 0x22B5CE0D:
-        firmware_version = 600;
-        break;
-    case 0x32A80E1B  :
-        firmware_version = 610;
-        break;     
-    case 0x73880F1B  :
-        firmware_version = 620;
-        break;            
+		case 0xB533E9FC:
+		    firmware_version = 500;
+		    break;            
+		case 0xA67D3F99:
+		    firmware_version = 550;
+		    break;
+		case 0x67D3F99F:
+		    firmware_version = 550; //actually 5.51
+		    break;
+		case 0xCFA7F33F:
+		    firmware_version = 555;
+		    break;   
+		case 0xC5B13597:
+		    firmware_version = 570;
+		    break;   
+		case 0x22B5CE0D:
+		    firmware_version = 600;
+		    break;
+		case 0x32A80E1B  :
+		    firmware_version = 610;
+		    break;     
+		case 0x73880F1B  :
+		    firmware_version = 620;
+		    break;            
     }
     return firmware_version; 
 }
@@ -94,8 +95,6 @@ void numtohex2(char *dst, int n)
       dst[i-6]=hex[(n>>((7-i)*4))&15];
    }
 }
-
-
 
 // limited sprintf function - avoids pulling in large library
 int writeFormat(char *xibuff, const char *xifmt, ULONG xidata)
@@ -284,34 +283,34 @@ void mysprintf11(char *xobuff, const char *xifmt,
 
 void mysprintf8(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2, ULONG xidata3, ULONG xidata4, ULONG xidata5, ULONG xidata6, ULONG xidata7, ULONG xidata8)
 {
-  mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, xidata5, xidata6, xidata7, xidata8, 0, 0, 0);
+	mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, xidata5, xidata6, xidata7, xidata8, 0, 0, 0);
 }
 
 void mysprintf4(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2, ULONG xidata3, ULONG xidata4)
 {
-  mysprintf8(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, 0, 0, 0, 0);
+	mysprintf8(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, 0, 0, 0, 0);
 }
 
 void mysprintf3(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2, ULONG xidata3)
 {
-  mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, 0, 0, 0, 0, 0, 0, 0,0);
+	mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, 0, 0, 0, 0, 0, 0, 0,0);
 }
 
 void mysprintf2(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2)
 {
-  mysprintf3(xobuff, xifmt, xidata, xidata2, 0);
+	mysprintf3(xobuff, xifmt, xidata, xidata2, 0);
 }
 
 void mysprintf1(char *xobuff, const char *xifmt, ULONG xidata)
 {
-  mysprintf3(xobuff, xifmt, xidata, 0, 0);
+	mysprintf3(xobuff, xifmt, xidata, 0, 0);
 }
 
 void mysprintf0(char *xobuff, const char *xifmt)
 {
-  while (*xifmt != '\0')
-  {
-    *xobuff++ = *xifmt++;
-  }
-  *xobuff = '\0';
+	while (*xifmt != '\0')
+	{
+		*xobuff++ = *xifmt++;
+	}
+	*xobuff = '\0';
 }
