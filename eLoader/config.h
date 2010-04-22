@@ -5,6 +5,7 @@
 
 #include "sdk.h"
 #include "eloader.h"
+#include "tables.h"
 
 // Imports file
 # define IMPORTS_PATH HBL_ROOT"config/imports.config"

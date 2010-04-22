@@ -5,43 +5,16 @@
 #include "modmgr.h"
 
 /* Find a FPL by name */
-SceUID find_fpl(const char *name) {
+SceUID find_fpl(const char *name) 
+{
 	SceUID readbuf[256];
 	int idcount;
 	SceKernelFplInfo info;
 	
-	/*
-	#ifdef DEBUG
-		SceUID fd;
-	#endif
-	
-	#ifdef DEBUG
-		fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-		if (fd >= 0)
-		{
-			sceIoWrite(fd, " GET ID LIST ", strlen(" GET ID LIST "));
-			sceIoClose(fd);
-		}
-	#endif
-	*/
-	
 	sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Fpl, &readbuf, sizeof(readbuf)/sizeof(SceUID), &idcount);
-	
-	/*
-	#ifdef DEBUG
-		fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-		if (fd >= 0)
-		{
-			sceIoWrite(fd, " GOT ID LIST, COUNT ", strlen(" GOT ID LIST, COUNT "));
-			sceIoWrite(fd, &idcount, sizeof(idcount));
-			sceIoClose(fd);
-		}
-	#endif
-	*/
 
-	for(info.size=sizeof(info);idcount>0;idcount--)
-	{
-		
+	for(info.size=sizeof(info); idcount>0; idcount--)
+	{		
 		if(sceKernelReferFplStatus(readbuf[idcount-1], &info) < 0)
 			return -1;
 		if(strcmp(info.name, name) == 0)
@@ -51,6 +24,7 @@ SceUID find_fpl(const char *name) {
 	return -1;
 }
 
+#ifdef AB5000_FREEMEM
 /* Free memory allocated by Game */
 /* Warning: MUST NOT be called from Game main thread */
 void free_game_memory()
@@ -89,10 +63,8 @@ void free_game_memory()
     sceKernelDelayThread(100);
     
 #ifdef DEBUG
-/*
 	free = sceKernelTotalFreeMemSize();
 	write_debug(" FREE MEM BEFORE CLEANUP", &free, sizeof(free));
-*/
 #endif
 	
 	// Freeing threads
@@ -101,9 +73,16 @@ void free_game_memory()
 		id = find_thread(threads[i]);
 		if(id >= 0)
 		{
-			int res = sceKernelTerminateDeleteThread(id);
+			int res = sceKernelTerminateThread(id);			
             if (res < 0) {
-                print_to_screen("  Cannot Terminate thread, probably syscall failure");
+                print_to_screen("  Cannot terminate thread, probably syscall failure");
+                LOGSTR2("CANNOT TERMINATE %s (err:0x%08lX)\n", threads[i], res);
+                success = 0;
+            }
+			
+			res = sceKernelDeleteThread(id);
+            if (res < 0) {
+                print_to_screen("  Cannot delete thread, probably syscall failure");
                 LOGSTR2("CANNOT TERMINATE %s (err:0x%08lX)\n", threads[i], res);
                 success = 0;
             } 
@@ -154,7 +133,7 @@ void free_game_memory()
 	}
 
     LOGSTR0("FREEING MEMORY PARTITION\n");
-	/* Free memory partition created by the GAME (UserSbrk) */
+	// Free memory partition created by the GAME (UserSbrk)
 	sceKernelFreePartitionMemory(*((SceUID *) MEMORY_PARTITION_POINTER));
 	
 	//sceKernelDelayThread(100000);
@@ -169,10 +148,8 @@ void free_game_memory()
 	}
 	
 #ifdef DEBUG
-/*
 	free = sceKernelTotalFreeMemSize();
 	write_debug(" FREE MEM AFTER NORMAL CLEANUP", &free, sizeof(free));
-*/    
 #endif
 
 
@@ -206,3 +183,261 @@ void free_game_memory()
 #endif
   
 }
+#endif
+
+#ifdef DAVEE_FREEMEM
+// Davee's addresses
+void free_game_memory()
+{
+	int i, ret;
+	SceUID sgx_thids[6];
+	SceUID sgx_evids[2];
+
+	LOGSTR0("ENTER FREE MEMORY\n");
+
+	// It's killin' tiem, lets raeps sum threads
+	sgx_thids[0] = *(SceUID*)0x08B46140;
+	sgx_thids[1] = *(SceUID*)0x08C38224;
+	sgx_thids[2] = *(SceUID*)0x08C32174;
+	sgx_thids[3] = *(SceUID*)0x08C2C0C4;
+	sgx_thids[4] = *(SceUID*)0x08C26014;
+	sgx_thids[5] = *(SceUID*)0x08B465E4;
+	
+	// lets kill these threads now
+	for (i = 0; i < (sizeof(sgx_thids)/sizeof(u32)); i++)
+	{
+		ret = sceKernelTerminateThread(sgx_thids[i]);
+		if (ret < 0)
+		{
+			LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, sgx_thids[i]);
+		}
+		else
+		{
+			ret = sceKernelDeleteThread(sgx_thids[i]);
+			if (ret < 0)
+				LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, sgx_thids[i]);
+		}
+	}
+
+	// one last thread "FileThread"
+	u32 filethid = *(u32*)0x08B7BBF4;
+	
+	// terminate + delete
+	ret = sceKernelTerminateThread(filethid);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX TERMINATING THREAD FileThread\n", ret);
+	
+	ret = sceKernelDeleteThread(filethid);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX DELETING THREAD FileThread\n", ret);
+
+	// lets kill some eventflags
+	sgx_evids[0] = *(SceUID*)0x08B46634;
+	sgx_evids[1] = *(SceUID*)0x08B465F4;
+	
+	// killin' tiem
+	for (i = 0; i < (sizeof(sgx_evids)/sizeof(u32)); i++)
+	{
+		ret = sceKernelDeleteEventFlag(sgx_evids[i]);
+		if (ret < 0)
+			LOGSTR2("--> ERROR 0x%08lX DELETING EVENT FLAG 0x%08lX\n", ret, sgx_evids[i]);
+	}
+	
+	// kill callback evid
+	ret = sceKernelDeleteEventFlag(*(SceUID*)0x08B7BC00);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX DELETING EVID\n", ret);
+	
+	// lets kill some semaphores
+	SceUID sgx_semaids[17];
+	SceUID semaids[11];
+	
+	// lets load the ids... ALL OF THEM
+	sgx_semaids[0] = *(SceUID*)0x08c3822c;
+	sgx_semaids[1] = *(SceUID*)0x08c38228;
+	sgx_semaids[2] = *(SceUID*)0x08c3217c;
+	sgx_semaids[3] = *(SceUID*)0x08c32178;
+	sgx_semaids[4] = *(SceUID*)0x08c2c0cc;
+	sgx_semaids[5] = *(SceUID*)0x08c2c0c8;
+	sgx_semaids[6] = *(SceUID*)0x08c2601c;
+	sgx_semaids[7] = *(SceUID*)0x08c26018;
+	sgx_semaids[8] = *(SceUID*)0x08b4656c;
+	sgx_semaids[9] = *(SceUID*)0x08b46594;
+	sgx_semaids[10] = *(SceUID*)0x08b46630;
+	sgx_semaids[11] = *(SceUID*)0x08b465f0;
+	sgx_semaids[12] = *(SceUID*)0x08b465ec;
+	sgx_semaids[13] = *(SceUID*)0x08b465e8;
+	sgx_semaids[14] = *(SceUID*)0x08b4612c;
+	sgx_semaids[15] = *(SceUID*)0x08c24c90;
+	sgx_semaids[16] = *(SceUID*)0x08c24c60;
+	
+	// lets destroy these now
+	for (i = 0; i < (sizeof(sgx_semaids)/sizeof(u32)); i++)
+	{
+		// boom headshot
+		ret = sceKernelDeleteSema(sgx_semaids[i]);
+		if (ret < 0)
+			LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, sgx_semaids[i]);
+	}
+	
+	// this annoying "Semaphore.cpp"
+	semaids[0] = *(SceUID*)0x09E658C8;
+	semaids[1] = *(SceUID*)0x09e641c4;
+	semaids[2] = *(SceUID*)0x09e640b4;
+	semaids[3] = *(SceUID*)0x08b7bc18;
+	semaids[4] = *(SceUID*)0x08b64ab0;
+	semaids[5] = *(SceUID*)0x08b64aa4;
+	semaids[6] = *(SceUID*)0x08b64a98;
+	semaids[7] = *(SceUID*)0x08b64a8c;
+	semaids[8] = *(SceUID*)0x08b64a80;
+	semaids[9] = *(SceUID*)0x08b64a74;
+	semaids[10] = *(SceUID*)0x08b64a68;
+	
+	/* lets destroy these now */
+	for (i = 0; i < (sizeof(semaids)/sizeof(u32)); i++)
+	{
+		/* boom headshot */
+		ret = sceKernelDeleteSema(semaids[i]);
+		if (ret < 0)
+			LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, semaids[i]);
+	}
+	
+	/* delete callbacks */
+	u32 msevent_cbid = *(u32*)0x8b7bc04;
+	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);	
+	ret = sceKernelDeleteCallback(msevent_cbid);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX DELETING MS CALLBACK\n", ret);
+	
+	/* umd callback */
+	SceUID umd_cbid = *(SceUID*)0x8b70d9c;
+	sceUmdUnRegisterUMDCallBack(umd_cbid);	
+	sceKernelDeleteCallback(umd_cbid);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX DELETING UMD CALLBACK\n", ret);
+	
+	/* there is another msevent callback */
+	msevent_cbid = *(SceUID*)0x8b82c0c;
+	ret = sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX GETTING MS CALLBACK 2\n", ret);
+	
+	ret = sceKernelDeleteCallback(msevent_cbid);
+	if (ret < 0)
+		LOGSTR1("--> ERROR 0x%08lX DELETING MS CALLBACK 2\n", ret);
+	
+	/* shutdown the modules in usermode */
+	SceUID modid;
+	
+	/* sceFont_Library */
+	modid = *(SceUID*)0x8b8cbb8;
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
+	ret = sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceFont_Library\n", ret);
+	}
+	
+	/* scePsmf_library */
+	modid = *(SceUID*)0x8b8ca7c;
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
+	ret = sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING scePsmf_library\n", ret);
+	}
+	/* sceCcc_Library */
+	modid = *(SceUID*)0x8b8c940;
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	ret = sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceCcc_Library\n", ret);
+	}
+	
+	/* sceNetAdhocDiscover_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09EB3A00);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocDiscover_Library\n", ret);
+	}
+	
+	/* sceNetAdhocDownload_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09EAFC00);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocDownload_Library\n", ret);
+	}
+	
+	/* sceNetAdhocMatching_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09EAB200);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocMatching_Library\n", ret);
+	}
+	
+	/* sceNetAdhocctl_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09EA3300);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocctl_Library\n", ret);
+	}
+	
+	/* sceNetAdhoc_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09E9B800);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhoc_Library\n", ret);
+	}
+	
+	/* sceNet_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09E87800);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNet_Library\n", ret);
+	}
+	
+	/* sceMpeg_library */
+	modid = sceKernelGetModuleIdByAddress(0x09E7B800);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceMpeg_library\n", ret);
+	}
+	
+	/* sceATRAC3plus_Library */
+	modid = sceKernelGetModuleIdByAddress(0x09E73800);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceATRAC3plus_Library\n", ret);
+	}
+	
+	/* Labo */
+#ifdef UNLOAD_MODULE
+	modid = sceKernelGetModuleIdByAddress(0x08804000);
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR1("--> ERROR 0x%08lX UNLOADING Labo\n", ret);
+	}
+#endif
+
+	return;
+}
+#endif

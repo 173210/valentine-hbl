@@ -1,3 +1,12 @@
+2010/04/22 (m0skit0)
+- NOT WORKING REVISION
+- Splitted several stuff from eloader.c to tables.c and hook.c (can be splitted more)
+- Added several functions to HBL imports 
+- Updated eLoaderconf.rb tool too
+- Added Davee's free memory function to HBL (you can choose between ab5000's and Davee's method in eloader.h)
+- Fixed a bug where HBL would not check if own imports already exist in NID table
+--> All seems to work fine, but HB doesn't execute
+
 2010/04/18 (m0skit0)
 - Added imports.config for 5.50 and 5.55 differences (thanks to ultimakillz)
 

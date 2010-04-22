@@ -291,7 +291,7 @@ int config_close()
 	if (config_file >= 0)
 	{
 		ret = sceIoClose(config_file);
-		config_file = 0;
+		config_file = -1;
 	}
 
 	return ret;

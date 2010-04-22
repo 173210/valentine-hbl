@@ -2,7 +2,6 @@
 #define ELOADER
 
 #include "sdk.h"
-#include "scratchpad.h"
 
 // MIPS opcodes
 #define JR_RA_OPCODE 0x03E00008
@@ -22,51 +21,29 @@
 #define MAKE_CALL(f) (0x0c000000 | (((u32)(f) >> 2)  & 0x03ffffff))
 #define MAKE_JUMP(f) (0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff))
 
+// Macros to deal with $gp register
+#define GET_GP(gp) asm volatile ("move %0, $gp\n" : "=r" (gp))
+#define SET_GP(gp) asm volatile ("move $gp, %0\n" :: "r" (gp))
+
 // Macro to get the syscall number
 #define GET_SYSCALL_NUMBER(sys) ((u32)(sys) >> 6)
 // Macro to form syscal instruction
 #define MAKE_SYSCALL(n) (0x03ffffff & (((u32)(n) << 6) | 0x0000000c))
+
+// Max chars on library name
+#define MAX_LIBRARY_NAME_LENGTH 30
+
+// Max libraries to consider
+#define MAX_LIBRARIES 40
+
+// Max exported functions per library
+# define MAX_LIBRARY_EXPORTS 155
 
 // Size of NID-to-call table
 #define NID_TABLE_SIZE 0x200
 
 // Maximum attempts to reestimate a syscall
 #define MAX_REESTIMATE_ATTEMPTS 10
-
-// Struct holding all NIDs imported by the game and their respective jump/syscalls
-typedef struct
-{
-	u32 nid;	// NID
-	u32 call;	// Syscall/jump associated to the NID
-} tNIDResolver;
-
-// Max chars on library name
-#define MAX_LIBRARY_NAME_LENGTH 30
-
-// Max libraries for HBL
-#define MAX_LIBRARIES 40
-
-// Max exported functions per library
-# define MAX_LIBRARY_EXPORTS 155
-
-typedef enum
-{
-	SYSCALL_MODE = 0, 
-	JUMP_MODE = 1
-} tCallingMode;
-
-// Struct holding info to help syscall estimation
-// This struct is for each library imported by the game
-typedef struct
-{
-	char library_name[MAX_LIBRARY_NAME_LENGTH];	// Library name
-	tCallingMode calling_mode;					// Defines how library exports are called
-	unsigned int num_library_exports;			// Number of exported functions in library
-	unsigned int num_known_exports;				// Number of known exported functions (exports we know the syscall of)
-	u32 lowest_syscall;							// Lowest syscall number found
-	u32 lowest_nid;								// NID associated to lowest syscall
-	unsigned int lowest_index;					// Lowest NID index in .nids file
-} tSceLibrary;
 
 //
 //Files locations
@@ -88,25 +65,29 @@ typedef struct
 //
 
 //Comment the following line if you don't want wololo's crappy Fake Ram mechanism
-#define FAKEMEM 1
+//#define FAKEMEM 1
+
+//Comment the following line if you don't want to fake create thread
+#define FAKE_THREADS
 
 //comment the following line if you don't want to return to the menu when leaving a game (reported to crash)
 //#define RETURN_TO_MENU_ON_EXIT
 
 //Comment the following line to avoid unloading Labo
-//#define UNLOAD_MODULE
+#define UNLOAD_MODULE
 
 //Comment the following line to avoid reestimation
 #define REESTIMATE_SYSCALL
 
+//Choose free memory method (only one)
+//#define AB5000_FREEMEM
+#define DAVEE_FREEMEM
 
+extern u32 gp;
+extern u32* entry_point;
+extern u32 hbsize;
 
-
-// Auxiliary structure to help with syscall estimation
-extern tSceLibrary library_table[MAX_LIBRARIES];
-
-// Returns a pointer to the library descriptor
-tSceLibrary* get_library_entry(const char* library_name);
+void runThread(SceSize args, void *argp);
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(char *eboot_path, int is_eboot);

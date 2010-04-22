@@ -1,6 +1,12 @@
 #include "debug.h"
 #include "sdk.h"
 #include "utils.h"
+   
+// Globals for debugging
+#ifdef DEBUG
+	SceUID dbglog;
+	u32 aux = 0;
+#endif
 
 void init_debug()
 {
@@ -29,7 +35,8 @@ void write_debug(const char* description, void* value, unsigned int size)
 			sceIoWrite(PSPLINK_OUT, description, strlen(description));		
 			sceIoWrite(fd, description, strlen(description));
 		}
-		if (value != NULL) {
+		if (value != NULL) 
+		{
 			sceIoWrite(PSPLINK_OUT, value, size);		
 			sceIoWrite(fd, value, size);
 		}

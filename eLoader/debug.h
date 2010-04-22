@@ -1,6 +1,7 @@
 #ifndef ELOADER_DEBUG
 #define ELOADER_DEBUG
 
+#include "sdk.h"
 #include "eloader.h"
 
 // Comment to avoid generating debug logs
@@ -12,9 +13,11 @@
 // Macro to make a BREAK instruction
 #define MAKE_BREAK(n) ((((u32)n << 6) & 0x03ffffc0) | 0x0000000d)
 
+extern SceUID dbglog;
+extern u32 aux;
+
 //init the debug file
 void init_debug();
-
 
 // Write a string + data to debug path
 void write_debug(const char* description, void* value, unsigned int size);

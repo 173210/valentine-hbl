@@ -6,6 +6,8 @@
 #include "debug.h"
 #include "elf.h"
 #include "config.h"
+#include "tables.h"
+#include "scratchpad.h"
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
@@ -63,7 +65,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 	int i = 0, j, count = 0;
 	u32 *cur_nid, *cur_call;
 
-	LOGSTR1("ENTERING build_stub_list 0x%08lX\n", pentry);
+	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", pentry);
 
 	// Zeroing data
 	memset(stub_list, 0, list_size * sizeof(u32));
@@ -90,15 +92,15 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 			{
 				if(hbl_imports_list[j] == *cur_nid)
 				{
-					LOGSTR2("nid:0x%08lX, call:0x%08lX\n", cur_nid, cur_call);
 					stub_list[j] = cur_call;
+					LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, cur_call, *cur_call);
+					LOGSTR1(" 0x%08lX\n", *(cur_call+1));
 					count++;
 				}
 			}
 			cur_nid++;
 			cur_call += 2;
-		}
-		
+		}		
 		pentry++;
 	}
 
@@ -124,6 +126,8 @@ int load_imports(u32* hbl_imports)
 	if(num_imports > NUM_HBL_IMPORTS)
 		exit_with_log(" ERROR FILE CONTAINS MORE IMPORTS THAN BUFFER SIZE ", &num_imports, sizeof(num_imports));
 
+	LOGSTR0("--> HBL imports from imports.config:\n");
+
 	// Get NIDs from config
 	ret = config_first_nid(&nid);
 
@@ -136,7 +140,7 @@ int load_imports(u32* hbl_imports)
 		
 		hbl_imports[i++] = nid;
 
-		// DEBUG_PRINT(" CURRENT NID ", &(hbl_imports[i]), sizeof(u32));
+		LOGSTR2("%d. 0x%08lX\n", i, nid);
 
 		if (i >= num_imports)
 			break;
@@ -159,12 +163,12 @@ void copy_hbl_stubs(void)
 	// Where are HBL stubs
 	u32* stub_addr;
 	
-	// HBL imports
+	// HBL imports (NIDs)
 	u32 hbl_imports[NUM_HBL_IMPORTS];
 	
 	// Stub addresses
 	// The one sets to 0 are not imported by the game, and will be automatically estimated by HBL when loaded
-	// ALL FUNCTIONS USED BY HBL BEFORE SYSCALL ESTIMATION IS READY MUST BE IMPORTED BY THE GAME
+	// ALL FUNCTIONS USED BEFORE SYSCALL ESTIMATION IS READY MUST BE IMPORTED BY THE GAME
 	u32* stub_list[NUM_HBL_IMPORTS];
 	
 	// Game .lib.stub entry
@@ -193,9 +197,9 @@ void copy_hbl_stubs(void)
 	//DEBUG_PRINT(" HBL IMPORTS LOADED ", &ret, sizeof(ret));	
 
 	if (ret < 0)
-		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));
+		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));;
 
-	ret = search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);
+	ret = search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);	
 
 	if (ret == 0)
 		exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
@@ -225,6 +229,8 @@ void copy_hbl_stubs(void)
 
 	// Config finished
 	config_close();
+
+	sceKernelDcacheWritebackInvalidateAll();
 }
 
 // Entry point
@@ -247,13 +253,10 @@ void _start(unsigned long arglen, unsigned long *argp)
 	
 		DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
 		copy_hbl_stubs();
-		
-		sceKernelDcacheWritebackInvalidateAll();
 
 		DEBUG_PRINT("PASSING TO HBL\n", NULL, 0);
 		run_eloader(0, NULL);
 	}	
 
-	while(1)
-		sceKernelDelayThread(10000000);
+	sceKernelExitThread(0);
 }

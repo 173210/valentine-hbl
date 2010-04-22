@@ -54,6 +54,10 @@ debug.o: debug.c
 	$(CC) $(CFLAGS) -S debug.c -o debug.s
 	$(ASM) debug.s -o debug.o
 	
+tables.o: tables.c
+	$(CC) $(CFLAGS) -S tables.c -o tables.s
+	$(ASM) tables.s -o tables.o	
+	
 config.o: config.c
 	$(CC) $(CFLAGS) -S config.c -o config.s
 	$(ASM) config.s -o config.o
@@ -78,17 +82,21 @@ utils.o: utils.c
 	$(CC) $(CFLAGS) -S utils.c -o utils.s
 	$(ASM) utils.s -o utils.o
 
+hook.o: hook.c
+	$(CC) $(CFLAGS) -S hook.c -o hook.s
+	$(ASM) hook.s -o hook.o
+
 menu: menu.o graphics.o font.o sdk_hbl.o linker_menu.x debug.o lib.o utils.o
 	$(PSPDEV)/bin/psp-ld -T linker_menu.x -L$(PSPSDK)/lib menu.o graphics.o font.o lib.o sdk_hbl.o debug.o utils.o -o menu.elf
 	$(PSPDEV)/bin/psp-strip -s menu.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary menu.elf menu.bin    	
     	
-hbl: eloader.o elf.o thread.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o syscall.o malloc.o utils.o graphics.o font.o linker_hbl.x
-	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o  eloader.o elf.o thread.o syscall.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o -o eloader.elf
+hbl: eloader.o elf.o thread.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o syscall.o malloc.o utils.o graphics.o font.o tables.o hook.o linker_hbl.x
+	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o eloader.o elf.o thread.o syscall.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o tables.o hook.o -o eloader.elf
 	$(PSPDEV)/bin/psp-strip -s eloader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary eloader.elf hbl.bin
 	
 loader: loader.o debug.o lib.o sdk_loader.o elf.o config.o utils.o linker_loader.x
-	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o  -o loader.elf
+	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o -o loader.elf
 	$(PSPDEV)/bin/psp-strip -s loader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary loader.elf h.bin
