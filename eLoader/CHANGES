@@ -3,6 +3,8 @@
 - Fixed a few bugs, mostly concerning syscall estimations being wrongly calculated. Now they seem fine, but still no go :(
 - Put back a loop at the end of loader (do not exit user_main)
 - Davee's free_game_memory adjusted to free user_main
+- Added sceHprm.nids from 6.20 FW (libs_6xx)
+- Deleted NID table processor tool (not needed anymore)
 
 2010/04/22 (m0skit0)
 - NOT WORKING REVISION
