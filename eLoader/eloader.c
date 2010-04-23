@@ -89,7 +89,7 @@ void resolve_missing_stubs()
 			// Is it known by HBL?
 			ret = get_nid_index(nid);
 
-			// If it's know, get the known call
+			// If it's known, get the call
 			if (ret > 0)
 				syscall = nid_table[ret].call;
 			
@@ -200,9 +200,10 @@ void main_loop()
 void runThread(SceSize args, void *argp)
 {
 	void (*start_entry)(SceSize, void*) = entry_point;
-	sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_BLOCK_UID));
-	sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID));	
+	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_BLOCK_UID));
+	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID));	
 	start_entry(args, argp);
+	sceKernelExitThread(0);
 }
 
 /* Resolves imports in ELF's program section already loaded in memory */
@@ -607,7 +608,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 		// Load ELF program section into memory
 		hbsize = elf_load_program(elf_file, offset, &elf_header, allocate_memory);		
 	
-		// Locate ELF's .lib.stubs section */
+		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_header, &pstub_entry);
 	}
 	
@@ -644,7 +645,6 @@ void start_eloader(char *eboot_path, int is_eboot)
 	
 	// Resolve ELF's stubs with game's stubs and syscall estimation */
 	stubs_resolved = resolve_imports(pstub_entry, stubs_size);
-
    
 	// No need for ELF file anymore
 	sceIoClose(elf_file);	
@@ -659,16 +659,26 @@ void start_eloader(char *eboot_path, int is_eboot)
     if (gp)
         SET_GP(gp);
 	entry_point = (u32 *)elf_header.e_entry;
+
 	thid = sceKernelCreateThread("homebrew", runThread, 0x18, 0x10000, 0, NULL);
 
 	if(thid >= 0)
 	{
 		thid = sceKernelStartThread(thid, strlen(eboot_path) + 1, (void *)eboot_path);
+		if (thid < 0)
+		{
+			LOGSTR1(" HB Thread couldn't start. Error 0x%08lX\n", thid);
+			sceKernelExitGame();
+		}
     } 
 	else 
 	{
-        exit_with_log(" HB Launch failed ", NULL, 0);
-    }
+        LOGSTR1(" HB Thread couldn't be created. Error 0x%08lX\n", thid);
+		sceKernelExitGame();
+	}
+
+	// Uncomment only if no homebrew thread created
+	// execute_elf(strlen(eboot_path) + 1, (void *)eboot_path);
 
 	return;
 }
@@ -786,9 +796,11 @@ int start_thread(SceSize args, void *argp)
         }
 	}
 	
-	// Exit thread
-    print_to_screen("Exiting HBL Thread");
-	sceKernelExitThread(0);
+	// Loop forever
+    print_to_screen("Looping HBL Thread");
+
+	while(1)
+		sceKernelDelayThread(100000);
 	
 	return 0;
 }

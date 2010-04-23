@@ -1,3 +1,7 @@
+2010/04/23 (m0skit0)
+- STILL DOESN'T WORK
+- Fixed a few bugs, mostly concerning syscall estimations being wrongly calculated. Now they seem fine, but still no go :(
+
 2010/04/22 (m0skit0)
 - NOT WORKING REVISION
 - Splitted several stuff from eloader.c to tables.c and hook.c (can be splitted more)

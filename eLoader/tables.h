@@ -27,7 +27,7 @@ typedef struct
 	unsigned int num_known_exports;				// Number of known exported functions (exports we know the syscall of)
 	u32 lowest_syscall;							// Lowest syscall number found
 	u32 lowest_nid;								// NID associated to lowest syscall
-	unsigned int lowest_index;					// Lowest NID index in .nids file
+	unsigned int lowest_index;					// Lowest NID index nids_table
 } tSceLibrary;
 
 // Auxiliary structures to help with syscall estimation
@@ -53,9 +53,6 @@ tSceLibrary* complete_library(tSceLibrary* plibrary);
 
 // Returns index of NID in table
 int get_nid_index(u32 nid);
-
-// Returns a pointer to the library descriptor
-tSceLibrary* get_library_entry(const char* library_name);
 
 // Checks if a library is in the global library description table
 // Returns index if it's there
