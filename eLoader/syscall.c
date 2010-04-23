@@ -43,14 +43,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
         return 0;
     }
 
-	LOGSTR0("-->Library name: ");
-	LOGSTR0(library_table[lib_index].library_name);
-	LOGSTR0("\n");
-	LOGSTR1("--Calling mode: %d\n", library_table[lib_index].calling_mode);
-	LOGSTR1("--Total library exports: %d\n", library_table[lib_index].num_library_exports);
-	LOGSTR1("--Known library exports: %d\n", library_table[lib_index].num_known_exports);
-	LOGSTR2("--Lowest NID/SYSCALL:  0x%08lX/0x%08lX\n", library_table[lib_index].lowest_nid, library_table[lib_index].lowest_syscall);
-	LOGSTR1("--Lowest index in file: %d\n", library_table[lib_index].lowest_index);
+	LOGLIB(library_table[lib_index]);
 		
 	// Constructing the file path
 	strcpy(file_path, LIB_PATH);
@@ -81,9 +74,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	
 	sceIoClose(nid_file);
 
-	LOGSTR0("--NID index in ");
-	LOGSTR0(file_path);
-	LOGSTR1(": %d\n", file_index);
+	LOGSTR2("--NID index in %s: %d\n", file_path, file_index);
 
 	if (file_index < 0)
 	{
@@ -93,7 +84,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 
 	int aux0 = (int)library_table[lib_index].lowest_syscall + file_index;
 
-	LOGSTR1("Pre: 0x%08lX\n", aux0);
+	//LOGSTR1("Pre: 0x%08lX\n", aux0);
 	
 	if (file_index > library_table[lib_index].lowest_index)
 	{
@@ -111,7 +102,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 
-	// Check if estimated syscall already exists
+	// Check if estimated syscall already exists (should be very rare)
 	int index = -1;
 	while ((index = get_call_index(MAKE_SYSCALL(estimated_syscall))) >= 0)
 	{

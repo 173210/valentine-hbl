@@ -197,7 +197,7 @@ void copy_hbl_stubs(void)
 	//DEBUG_PRINT(" HBL IMPORTS LOADED ", &ret, sizeof(ret));	
 
 	if (ret < 0)
-		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));;
+		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));
 
 	ret = search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);	
 
@@ -258,5 +258,6 @@ void _start(unsigned long arglen, unsigned long *argp)
 		run_eloader(0, NULL);
 	}	
 
-	sceKernelExitThread(0);
+	while(1)
+		sceKernelDelayThread(100000);
 }

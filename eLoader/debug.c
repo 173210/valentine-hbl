@@ -1,6 +1,7 @@
 #include "debug.h"
 #include "sdk.h"
 #include "utils.h"
+#include "tables.h"
    
 // Globals for debugging
 #ifdef DEBUG
@@ -49,6 +50,20 @@ void exit_with_log(const char* description, void* value, unsigned int size)
 	write_debug(description, value, size);
 	sceKernelExitGame();
 }
+
+void log_library(tSceLibrary lib)
+{
+	LOGSTR0("-->Library name: ");
+	LOGSTR0(lib.library_name);
+	LOGSTR0("\n");
+	LOGSTR1("--Calling mode: %d\n", lib.calling_mode);
+	LOGSTR1("--Total library exports: %d\n", lib.num_library_exports);
+	LOGSTR1("--Known library exports: %d\n", lib.num_known_exports);
+	LOGSTR2("--Lowest NID/SYSCALL:  0x%08lX/0x%08lX\n", lib.lowest_nid, lib.lowest_syscall);
+	LOGSTR1("--Lowest index in file: %d\n", lib.lowest_index);
+}
+
+// LOGSTRX implementations
 
 void logstr0(const char* A)
 {

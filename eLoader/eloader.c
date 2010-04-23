@@ -91,7 +91,10 @@ void resolve_missing_stubs()
 
 			// If it's known, get the call
 			if (ret > 0)
+			{
+				LOGSTR0("-Found in NID table, using real call\n");
 				syscall = nid_table[ret].call;
+			}
 			
 			// If not, estimate
 			else
@@ -200,10 +203,11 @@ void main_loop()
 void runThread(SceSize args, void *argp)
 {
 	void (*start_entry)(SceSize, void*) = entry_point;
+	// Do not free HBL :P
 	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_BLOCK_UID));
 	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID));	
 	start_entry(args, argp);
-	sceKernelExitThread(0);
+	//sceKernelExitDeleteThread(0);
 }
 
 /* Resolves imports in ELF's program section already loaded in memory */
@@ -565,10 +569,10 @@ void allocate_memory(u32 size, void* addr)
 #ifndef FAKEMEM
 	SceUID mem;
 	
-	DEBUG_PRINT(" ALLOC EXECUTABLE MEMORY ", NULL, 0);
+	LOGSTR1("-->ALLOCATING EXECUTABLE MEMORY @ 0x%08lX\n", addr);
 	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
 	if(mem < 0)
-		DEBUG_PRINT(" allocate_memory FAILED ", &mem, sizeof(mem));
+		LOGSTR1(" allocate_memory FAILED: 0x%08lX", mem);
 #endif
 }
 
@@ -583,7 +587,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 	Elf32_Ehdr elf_header;
 	u32 offset = 0;
 
-	//DEBUG_PRINT("EBOOT:", eboot_path, strlen(eboot_path));
+	LOGSTR1("EBOOT path: %s\n", eboot_path);
 
 	// Extracts ELF from PBP
 	if (is_eboot)		
@@ -595,15 +599,14 @@ void start_eloader(char *eboot_path, int is_eboot)
 	// Read ELF header
 	sceIoRead(elf_file, &elf_header, sizeof(Elf32_Ehdr));
 	
-	DEBUG_PRINT(" ELF TYPE ", &(elf_header.e_type), sizeof(Elf32_Half));
+	LOGSTR1("ELF TYPE: 0x%08lX -->", elf_header.e_type);
     
-    gp = getGP(elf_file, offset, &elf_header); 
-    //DEBUG_PRINT(" GP IS: ", &gp, sizeof(u32));           
+    gp = getGP(elf_file, offset, &elf_header);
 
 	// Static ELF
 	if(elf_header.e_type == (Elf32_Half) ELF_STATIC)
 	{	
-		DEBUG_PRINT(" STATIC ELF ", NULL, 0);		
+		LOGSTR0("STATIC\n");		
 
 		// Load ELF program section into memory
 		hbsize = elf_load_program(elf_file, offset, &elf_header, allocate_memory);		
@@ -615,7 +618,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 	// Relocatable ELF (PRX)
 	else if(elf_header.e_type == (Elf32_Half) ELF_RELOC)
 	{	
-		DEBUG_PRINT(" PRX ELF ", NULL, 0);
+		LOGSTR0("RELOC\n");
    
 		// Load program section into memory and also get stub headers
 		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, allocate_memory);
@@ -642,15 +645,16 @@ void start_eloader(char *eboot_path, int is_eboot)
 	{
 		exit_with_log(" UNKNOWN ELF TYPE ", NULL, 0);
 	}
+
+    LOGSTR1("GP: 0x%08lX\n", gp);
 	
-	// Resolve ELF's stubs with game's stubs and syscall estimation */
+	// Resolve ELF's stubs with game's stubs and syscall estimation
 	stubs_resolved = resolve_imports(pstub_entry, stubs_size);
    
 	// No need for ELF file anymore
 	sceIoClose(elf_file);	
 	
-	// DEBUG_PRINT(" PROGRAM SECTION START ", &(elf_header.e_entry), sizeof(Elf32_Addr));		
-	DEBUG_PRINT(" EXECUTING ELF ", NULL, 0);    
+	// DEBUG_PRINT(" PROGRAM SECTION START ", &(elf_header.e_entry), sizeof(Elf32_Addr));
     
     // Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
@@ -660,7 +664,11 @@ void start_eloader(char *eboot_path, int is_eboot)
         SET_GP(gp);
 	entry_point = (u32 *)elf_header.e_entry;
 
+	LOGSTR1("Creating homebrew thread... Entry point: 0x%08lX ", entry_point);
+
 	thid = sceKernelCreateThread("homebrew", runThread, 0x18, 0x10000, 0, NULL);
+
+	LOGSTR1("THID: 0x%08lX ", thid);
 
 	if(thid >= 0)
 	{

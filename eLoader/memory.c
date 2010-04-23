@@ -193,8 +193,6 @@ void free_game_memory()
 	SceUID sgx_thids[6];
 	SceUID sgx_evids[2];
 
-	LOGSTR0("ENTER FREE MEMORY\n");
-
 	// It's killin' tiem, lets raeps sum threads
 	sgx_thids[0] = *(SceUID*)0x08B46140;
 	sgx_thids[1] = *(SceUID*)0x08C38224;
@@ -230,6 +228,32 @@ void free_game_memory()
 	ret = sceKernelDeleteThread(filethid);
 	if (ret < 0)
 		LOGSTR1("--> ERROR 0x%08lX DELETING THREAD FileThread\n", ret);
+
+	// what about user_main?
+	SceUID id;
+	id = find_thread("user_main");
+	if(id >= 0)
+	{
+		int res = sceKernelTerminateThread(id);			
+        if (res < 0) 
+		{
+            print_to_screen("  Cannot terminate thread, probably syscall failure");
+            LOGSTR1("CANNOT TERMINATE user_main (err:0x%08lX)\n", res);
+        }
+		
+		res = sceKernelDeleteThread(id);
+        if (res < 0) 
+		{
+            print_to_screen("  Cannot delete thread, probably syscall failure");
+            LOGSTR1("CANNOT DELETE user_main (err:0x%08lX)\n", res);
+        } 
+		else 
+		{
+            sceKernelDelayThread(100);
+        }
+	}
+	else
+		LOGSTR0("Couldn't find thread user_main\n");
 
 	// lets kill some eventflags
 	sgx_evids[0] = *(SceUID*)0x08B46634;

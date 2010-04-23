@@ -67,8 +67,8 @@
 //Comment the following line if you don't want wololo's crappy Fake Ram mechanism
 //#define FAKEMEM 1
 
-//Comment the following line if you don't want to fake create thread
-#define FAKE_THREADS
+//Comment the following line if you don't want to hook thread creation
+//#define FAKE_THREADS
 
 //comment the following line if you don't want to return to the menu when leaving a game (reported to crash)
 //#define RETURN_TO_MENU_ON_EXIT

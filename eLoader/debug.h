@@ -13,8 +13,10 @@
 // Macro to make a BREAK instruction
 #define MAKE_BREAK(n) ((((u32)n << 6) & 0x03ffffc0) | 0x0000000d)
 
+#ifdef DEBUG
 extern SceUID dbglog;
 extern u32 aux;
+#endif
 
 //init the debug file
 void init_debug();
@@ -44,6 +46,7 @@ void logstr0(const char* A);
 #define LOGSTR2(a,b,c) logstr2(a,b,c);
 #define LOGSTR1(a,b) logstr1(a,b);
 #define LOGSTR0(a) logstr0(a);
+#define LOGLIB(a) log_library(a);
 #else
 #define DEBUG_PRINT(a,b,c) {};
 #define DEBUG_PRINT_NL(a) {};
@@ -53,6 +56,7 @@ void logstr0(const char* A);
 #define LOGSTR2(a,b,c) {};
 #define LOGSTR1(a,b) {};
 #define LOGSTR0(a) {};
+#define LOGLIB(a) {};
 #endif
 
 #endif
