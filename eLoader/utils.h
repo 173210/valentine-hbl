@@ -7,7 +7,11 @@
 #define ULONG unsigned long
 #endif
 
+#define PSP_GO 2
+#define PSP_OTHER 3
+
 u32 getFirmwareVersion();
+u32 getPSPModel();
 int file_exists(const char * filename);
 
 

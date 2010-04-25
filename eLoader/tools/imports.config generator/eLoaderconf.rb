@@ -145,7 +145,10 @@ config = [
             [0x237DBD4F, "sceKernelAllocPartitionMemory"],
             [0x9D9A5BA1, "sceKernelGetBlockHeadAddr"],
             [0xB6D61D02, "sceKernelFreePartitionMemory"],
-            [0xF919F628, "sceKernelTotalFreeMemSize"],
+# The two following can be overriden by some of our code, which will not fail
+# Our code is slow though, so if syscalls can be done 100% perfect at some point let's put those back
+#            [0xF919F628, "sceKernelTotalFreeMemSize"],
+#            [0xA291F107, "sceKernelMaxFreeMemSize"],
         ],
     },   
     { 

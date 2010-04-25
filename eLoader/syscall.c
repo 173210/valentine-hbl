@@ -19,6 +19,48 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 	return -1;
 }
 
+u32 find_first_free_syscall (int lib_index, u32 start_syscall) {
+	int index = -1;
+    u32 syscall = start_syscall;
+    int boundary_low = 0, boundary_high = 0;
+    int ret = get_syscall_boundaries(lib_index, &boundary_low,  &boundary_high);
+    if (!ret)
+    {
+        LOGSTR0("--ERROR GETTING SYSCALL BOUNDARIES\n");
+        return 0;
+    }
+	while ((index = get_call_index(MAKE_SYSCALL(syscall))) >= 0)
+	{
+		LOGSTR2("--ESTIMATED SYSCALL 0x%08lX ALREADY EXISTS AT INDEX %d\n", syscall, index);
+		syscall--;
+        if (!check_syscall_boundaries (syscall, boundary_low, boundary_high))
+        {
+            syscall = boundary_high - 1;
+            //Risk of infinite loop here ?
+        }
+	}
+
+    return syscall;
+}
+/*
+ * Checks if a syscall looks normal compared to other libraries boundaries.
+ * returns 1 if ok, 0 if not
+*/
+int check_syscall_boundaries (u32 syscall, int boundary_low, int boundary_high) {
+    if (syscall <= boundary_low) 
+    {
+        LOGSTR2("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be higher than 0x%08lX, but we got 0x%08lX\n", boundary_low, syscall);
+        return 0;
+    }
+    if (syscall >= boundary_high)
+    {
+        LOGSTR2("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be lower than 0x%08lX, but we got 0x%08lX\n", boundary_high, syscall);             
+        return 0;
+    }
+
+    return 1;
+}
+
 // Estimate a syscall
 // Pass reference NID and distance from desidered function in the export table
 // Return syscall instruction
@@ -103,32 +145,39 @@ u32 estimate_syscall(const char *lib, u32 nid)
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 
 	// Check if estimated syscall already exists (should be very rare)
-	int index = -1;
-	while ((index = get_call_index(MAKE_SYSCALL(estimated_syscall))) >= 0)
-	{
-		LOGSTR2("--ESTIMATED SYSCALL 0x%08lX ALREADY EXISTS AT INDEX %d\n", estimated_syscall, index);
-		estimated_syscall--;
-	}
+    estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
 
 	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
 
 	LOGSTR1("--FINAL ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
-	
+    
 	return MAKE_SYSCALL(estimated_syscall);
 }
 
 // m0skit0's attempt
 // Needs to be more independent from sdk_hbl.S
-u32 reestimate_syscall(u32* stub) 
+u32 reestimate_syscall(const char * lib, u32* stub) 
 {
 #ifdef REESTIMATE_SYSCALL  
-    LOGSTR1("=Reestimating syscall for stub 0x%08lX\n", stub); 
-	u32 syscall;
 
+	u32 syscall;
+    int lib_index;
+    
+	// Finding the library on table
+	lib_index = get_library_index(lib);
+
+	if (lib_index < 0)
+	{
+		LOGSTR1("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", lib);
+        return 0;
+    }
+
+    LOGSTR1("=Reestimating syscall for stub 0x%08lX\n", stub); 
 	stub++;
 	syscall = GET_SYSCALL_NUMBER(*stub);
     LOGSTR1("--0x%08lX -->", syscall); 
 	syscall--;
+    syscall = find_first_free_syscall(lib_index, syscall);
     LOGSTR1(" 0x%08lX\n", syscall); 
 	*stub = MAKE_SYSCALL(syscall);
     LOGSTR0("--Done.\n");

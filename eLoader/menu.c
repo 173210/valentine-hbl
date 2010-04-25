@@ -55,6 +55,26 @@ void loadCache()
     }    
 }
 
+/*
+ * Function to filter out "official" games
+ * these games are usually in the form XXXX12345
+*/
+int not_homebrew(const char * name)
+{
+    int i;
+    
+    if (strlen(name) == 0) return 1;
+    //official games are in the form: XXXX12345
+    if (strlen(name) != 9) return 0;
+    for (i = 4; i < 9; ++i)
+    {
+        if (name[i] < '0' || name[i] > '9')
+            return 0;
+    }
+    
+    return 1;
+}
+
 void init()
 {
  	int i;
@@ -77,12 +97,12 @@ void init()
 	
   	while (sceIoDread(id, &entry) > 0 && nbFiles < NB_FOLDERS)
   	{
-    	if (strcmp(".", entry.d_name) == 0 || strcmp("..", entry.d_name) == 0) 
+    	if (strcmp(".", entry.d_name) == 0 || strcmp("..", entry.d_name) == 0 || not_homebrew(entry.d_name)) 
 		{
         	memset(&entry, 0, sizeof(SceIoDirent)); 
         	continue;
     	}
-      
+         
     	strcpy(folders[nbFiles], entry.d_name);
     	nbFiles++;
     	memset(&entry, 0, sizeof(SceIoDirent)); 
@@ -173,8 +193,9 @@ void _start()
         }
 
         printTextScreen(220, 0 , "X to select, /\\ to quit", 0x00FFFFFF);
-        printTextScreen(0, 236 , "HALF-Byte Loader by m0skit0, ab5000, and wololo", 0x00FFFFFF);
-        printTextScreen(0, 248 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen", 0x00FFFFFF);
+        printTextScreen(0, 224 , "HALF-Byte Loader by m0skit0, ab5000, and wololo", 0x00FFFFFF);
+        printTextScreen(0, 236 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);
+        printTextScreen(0, 248 , "Davee, Fanjita & Noobz, psp-hacks.com", 0x00FFFFFF);
         printTextScreen(0, 260 , "GPL License: give the sources if you distribute binaries!!!", 0x00FFFFFF);
         
         sceKernelDelayThread(100000);

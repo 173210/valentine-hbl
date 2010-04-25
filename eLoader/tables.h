@@ -28,6 +28,7 @@ typedef struct
 	u32 lowest_syscall;							// Lowest syscall number found
 	u32 lowest_nid;								// NID associated to lowest syscall
 	unsigned int lowest_index;					// Lowest NID index nids_table
+    u32 highest_syscall;                        // Highest syscall number found
 } tSceLibrary;
 
 // Auxiliary structures to help with syscall estimation
@@ -62,5 +63,12 @@ int get_library_index(char* library_name);
 // Returns NIDs copied
 int build_nid_table(tNIDResolver *nid_table);
 
+/*
+ * Retrieves highest known syscall of the previous library,
+ * and lowest known syscall of the next library, to get some
+ * rough boundaries of where current library's syscalls should be
+ * returns 1 on success, 0 on failure
+*/
+int get_syscall_boundaries(int lib_index, u32* low, u32* high);
 
 #endif

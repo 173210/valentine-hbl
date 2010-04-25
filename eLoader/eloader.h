@@ -43,7 +43,7 @@
 #define NID_TABLE_SIZE 0x200
 
 // Maximum attempts to reestimate a syscall
-#define MAX_REESTIMATE_ATTEMPTS 10
+#define MAX_REESTIMATE_ATTEMPTS 15
 
 //
 //Files locations
@@ -63,9 +63,6 @@
 //
 // Switches
 //
-
-//Comment the following line if you don't want wololo's crappy Fake Ram mechanism
-//#define FAKEMEM 1
 
 //Comment the following line if you don't want to hook thread creation
 //#define FAKE_THREADS

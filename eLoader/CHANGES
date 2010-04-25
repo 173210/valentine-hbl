@@ -1,3 +1,13 @@
+2010/04/25 (wololo)
+- cleaned up Davee's free memory function
+-- Also fixed issue 42 : 6.20 hangs on free_game_memory (as usual, syscall estimation was the culprit, I replaced the "find_thread" call with a direct address fetch like Davee does)
+- Written own sceKernelMaxFreeMemSize() and sceKernelTotalFreeMemSize() functions to avoid 2 unecessary syscall estimates (avoids a crash in free_memory by ab5000)
+- Fixed issue 41 (How to distinguish between Go and other PSPs ) : call getPSPModel() in utils.c (see eLoader.c which does that call). Note: impossible with this technique to differentiate other psp models though
+- Fixed issue 39 ([Rev 49]Still no Free Ram). This was actually an issue with the game T.O.M.E and I'll post an updated Eboot for this game on my blog (http://wololo.net/wagic) ASAP
+- Fixed issue 23 (List Only the Homebrew ) with a simple filter in menu.bin. Hopefully that should clean things a little bit.
+- Added some more syscall boundaries, but I'm not super happy with the result (a.k.a. haven't seen any improvement), so maybe that update can be reverted :(
+- removed the FAKEMEM flag as it is not needed anymore. I kept the hook for AllocPartitionMemory for debug purposes, but it should probabl be removed in the future. 
+
 2010/04/23 (m0skit0)
 - STILL DOESN'T WORK
 - Fixed a few bugs, mostly concerning syscall estimations being wrongly calculated. Now they seem fine, but still no go :(

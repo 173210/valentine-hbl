@@ -163,20 +163,57 @@ int get_library_index(char* library_name)
 {
 	int i;
 
-	if (library_name != NULL)
-	{
-		for (i=0; i<MAX_LIBRARIES; i++)
-		{
-			if (library_table[i].library_name == NULL)
-				break;
-			else if (strcmp(library_name, library_table[i].library_name) == 0)
-				return i;
-		}
-	}
-
+	if (library_name == NULL)
+        return -1;
+        
+    for (i=0; i<MAX_LIBRARIES; i++)
+    {
+        if (library_table[i].library_name == NULL)
+            break;
+        else if (strcmp(library_name, library_table[i].library_name) == 0)
+            return i;
+    }
+    
 	return -1;
 }
 
+/*
+ * Retrieves highest known syscall of the previous library,
+ * and lowest known syscall of the next library, to get some
+ * rough boundaries of where current library's syscalls should be
+ * returns 1 on success, 0 on failure
+*/
+int get_syscall_boundaries(int lib_index, u32* low, u32* high)
+{
+    tSceLibrary my_lib;
+    int i;
+    
+    my_lib = library_table[lib_index];
+    *low = 0;
+    *high = 0;
+    
+    for (i=0; i<MAX_LIBRARIES; i++)
+    {
+        if (i == lib_index)
+            continue;
+        
+        if (library_table[i].library_name == NULL)
+            break;
+            
+        tSceLibrary lib = library_table[i];    
+        u32 l = lib.lowest_syscall;
+        u32 h = lib.highest_syscall;
+        
+        if (l > my_lib.highest_syscall && (l < *high || *high == 0))
+            *high = l;
+            
+        if (h < my_lib.lowest_syscall && h > *low)
+            *low = h;
+    }
+  
+    if (*low && *high) return 1;
+    return 0;
+}
 /* Fills NID Table */
 /* Returns NIDs resolved */
 /* "pentry" points to first stub header in game */
@@ -260,6 +297,9 @@ int build_nid_table(tNIDResolver *nid_table)
 					library_table[k].lowest_syscall = 0;				
 					library_table[k].lowest_nid = 0;
 					
+                    //initialize highest syscall on library table
+                    library_table[k].highest_syscall = 0;	
+                    
 					// Browse all stubs defined by this header and fill NID table
 					for(j=0; j<pentry->stub_size; j++)
 					{						
@@ -293,6 +333,9 @@ int build_nid_table(tNIDResolver *nid_table)
 					library_table[k].lowest_nid = *cur_nid;
 					LOGSTR2("Initial lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table[k].lowest_syscall, library_table[k].lowest_nid);
 			
+                    // Initialize highest syscall on library table	
+                    library_table[k].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
+                    
 					// Browse all stubs defined by this header
 					for(j=0; j<pentry->stub_size; j++)
 					{
@@ -315,7 +358,13 @@ int build_nid_table(tNIDResolver *nid_table)
 							{
 								library_table[k].lowest_syscall = syscall_num;
 								library_table[k].lowest_nid = nid_table[i].nid;
-								LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", library_table[k].lowest_syscall, library_table[k].lowest_nid);
+								LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", library_table[k].lowest_syscall, library_table[k].lowest_nid);
+							}
+                            
+                            if (syscall_num > library_table[k].highest_syscall)
+							{
+								library_table[k].highest_syscall = syscall_num;
+								LOGSTR2("\nNew highest syscall/nid: 0x%08lX/0x%08lX", library_table[k].highest_syscall, nid);
 							}
 							LOGSTR0("\n");
 							i++;

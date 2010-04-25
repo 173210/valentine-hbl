@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "tables.h"
 #include "hook.h"
+#include "memory.h"
 
 /* eLoader */
 /* Entry point: _start() */
@@ -221,7 +222,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32 real_call;
 	unsigned int resolving_count = 0;
 
-	DEBUG_PRINT("RESOLVING IMPORTS", &stubs_size, sizeof(unsigned int));
+	LOGSTR1("RESOLVING IMPORTS. Stubs siwe:%d", stubs_size);
 
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
@@ -256,22 +257,15 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                     if (g_menu_enabled)
                         real_call = MAKE_JUMP(_hook_sceKernelExitGame);
                     break;
-#endif
-
-#ifdef FAKEMEM    
+#endif   
                 case 0xA291F107:
                     DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(_hook_sceKernelMaxFreeMemSize);
-                    break;
-                case 0x9D9A5BA1:
-                    DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(_hook_sceKernelGetBlockHeadAddr);
+                    real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
                     break;
                 case 0x237DBD4F:
                     DEBUG_PRINT("mem trick", NULL, 0);
                     real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break; 
-#endif
+                    break;                     
 					
 /*
 Work in progress, attempt for the mp3 library not to fail                  
@@ -361,6 +355,7 @@ Work in progress, attempt for the mp3 library not to fail
 		pstub_entry++;
 	}
 	
+    LOGSTR0("RESOLVING IMPORTS: Done.");
 	return resolving_count;	
 }
 
@@ -566,14 +561,12 @@ void execute_elf(SceSize args, void *argp)
 // Allocates memory for homebrew so it doesn't overwrite itself
 void allocate_memory(u32 size, void* addr)
 {
-#ifndef FAKEMEM
 	SceUID mem;
 	
 	LOGSTR1("-->ALLOCATING EXECUTABLE MEMORY @ 0x%08lX\n", addr);
 	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
 	if(mem < 0)
 		LOGSTR1(" allocate_memory FAILED: 0x%08lX", mem);
-#endif
 }
 
 // HBL entry point
@@ -666,7 +659,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 
 	LOGSTR1("Creating homebrew thread... Entry point: 0x%08lX ", entry_point);
 
-	thid = sceKernelCreateThread("homebrew", runThread, 0x18, 0x10000, 0, NULL);
+	thid = sceKernelCreateThread("homebrew", entry_point, 0x18, 0x10000, 0, NULL);
 
 	LOGSTR1("THID: 0x%08lX ", thid);
 
@@ -833,6 +826,11 @@ void _start(unsigned long arglen, unsigned long *argp)
     default:
         PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
         break;
+    }
+    
+    if (getPSPModel() == PSP_GO){
+        print_to_screen("PSP Go Detected");
+        //TODO : Read kernel :)
     }
     
 	// Create and start eloader thread

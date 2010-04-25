@@ -186,9 +186,72 @@ void free_game_memory()
 #endif
 
 #ifdef DAVEE_FREEMEM
+
+int kill_thread(SceUID thid) 
+{
+    int ret = sceKernelTerminateThread(thid);
+    if (ret < 0)
+    {
+        LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
+        return 0;
+    }
+
+    ret = sceKernelDeleteThread(thid);
+    if (ret < 0)
+    {
+        LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
+        return 0;
+    }    
+
+    return 1;
+}
+
+int kill_event_flag(SceUID flid)
+{
+    int ret = sceKernelDeleteEventFlag(flid);
+    if (ret < 0)
+    {
+        LOGSTR2("--> ERROR 0x%08lX DELETING EVENT FLAG 0x%08lX\n", ret, flid);
+        return 0;
+    }
+    
+    return 1;
+} 
+
+int kill_sema(SceUID sema)
+{
+    int ret = sceKernelDeleteSema(sema);
+    if (ret < 0)
+    {
+        LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, sema);
+        return 0;
+    }
+    
+    return 1;
+} 
+
+int kill_module(const char * name, SceUID modid) {
+	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
+	int ret = sceKernelUnloadModule(modid);
+	if (ret < 0)
+	{
+		LOGSTR2("--> ERROR 0x%08lX UNLOADING %s\n", ret, name);
+        return 0;
+	}
+    return 1;
+}
+
 // Davee's addresses
 void free_game_memory()
 {
+#ifdef DEBUG
+    int free;
+    int max_free;
+	free = sceKernelTotalFreeMemSize();
+    max_free = sceKernelMaxFreeMemSize();
+	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", free, max_free);
+#endif  
+
 	int i, ret;
 	SceUID sgx_thids[6];
 	SceUID sgx_evids[2];
@@ -203,57 +266,13 @@ void free_game_memory()
 	
 	// lets kill these threads now
 	for (i = 0; i < (sizeof(sgx_thids)/sizeof(u32)); i++)
-	{
-		ret = sceKernelTerminateThread(sgx_thids[i]);
-		if (ret < 0)
-		{
-			LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, sgx_thids[i]);
-		}
-		else
-		{
-			ret = sceKernelDeleteThread(sgx_thids[i]);
-			if (ret < 0)
-				LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, sgx_thids[i]);
-		}
-	}
+        kill_thread(sgx_thids[i]);
 
-	// one last thread "FileThread"
-	u32 filethid = *(u32*)0x08B7BBF4;
-	
-	// terminate + delete
-	ret = sceKernelTerminateThread(filethid);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX TERMINATING THREAD FileThread\n", ret);
-	
-	ret = sceKernelDeleteThread(filethid);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX DELETING THREAD FileThread\n", ret);
+	// thread "FileThread"	(terminate + delete)
+    kill_thread(*(SceUID*)0x08B7BBF4);
 
-	// what about user_main?
-	SceUID id;
-	id = find_thread("user_main");
-	if(id >= 0)
-	{
-		int res = sceKernelTerminateThread(id);			
-        if (res < 0) 
-		{
-            print_to_screen("  Cannot terminate thread, probably syscall failure");
-            LOGSTR1("CANNOT TERMINATE user_main (err:0x%08lX)\n", res);
-        }
-		
-		res = sceKernelDeleteThread(id);
-        if (res < 0) 
-		{
-            print_to_screen("  Cannot delete thread, probably syscall failure");
-            LOGSTR1("CANNOT DELETE user_main (err:0x%08lX)\n", res);
-        } 
-		else 
-		{
-            sceKernelDelayThread(100);
-        }
-	}
-	else
-		LOGSTR0("Couldn't find thread user_main\n");
+	// thread user_main (terminate + delete)
+    kill_thread(*(SceUID*)0x08B44C28);	
 
 	// lets kill some eventflags
 	sgx_evids[0] = *(SceUID*)0x08B46634;
@@ -261,16 +280,10 @@ void free_game_memory()
 	
 	// killin' tiem
 	for (i = 0; i < (sizeof(sgx_evids)/sizeof(u32)); i++)
-	{
-		ret = sceKernelDeleteEventFlag(sgx_evids[i]);
-		if (ret < 0)
-			LOGSTR2("--> ERROR 0x%08lX DELETING EVENT FLAG 0x%08lX\n", ret, sgx_evids[i]);
-	}
-	
+        kill_event_flag(sgx_evids[i]);
+        
 	// kill callback evid
-	ret = sceKernelDeleteEventFlag(*(SceUID*)0x08B7BC00);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX DELETING EVID\n", ret);
+	kill_event_flag(*(SceUID*)0x08B7BC00);
 	
 	// lets kill some semaphores
 	SceUID sgx_semaids[17];
@@ -297,12 +310,7 @@ void free_game_memory()
 	
 	// lets destroy these now
 	for (i = 0; i < (sizeof(sgx_semaids)/sizeof(u32)); i++)
-	{
-		// boom headshot
-		ret = sceKernelDeleteSema(sgx_semaids[i]);
-		if (ret < 0)
-			LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, sgx_semaids[i]);
-	}
+		kill_sema(sgx_semaids[i]);
 	
 	// this annoying "Semaphore.cpp"
 	semaids[0] = *(SceUID*)0x09E658C8;
@@ -319,12 +327,7 @@ void free_game_memory()
 	
 	/* lets destroy these now */
 	for (i = 0; i < (sizeof(semaids)/sizeof(u32)); i++)
-	{
-		/* boom headshot */
-		ret = sceKernelDeleteSema(semaids[i]);
-		if (ret < 0)
-			LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, semaids[i]);
-	}
+        kill_sema(semaids[i]);
 	
 	/* delete callbacks */
 	u32 msevent_cbid = *(u32*)0x8b7bc04;
@@ -351,117 +354,132 @@ void free_game_memory()
 		LOGSTR1("--> ERROR 0x%08lX DELETING MS CALLBACK 2\n", ret);
 	
 	/* shutdown the modules in usermode */
-	SceUID modid;
 	
 	/* sceFont_Library */
-	modid = *(SceUID*)0x8b8cbb8;
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
-	ret = sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceFont_Library\n", ret);
-	}
+	kill_module("sceFont_Library", *(SceUID*)0x8b8cbb8);
 	
 	/* scePsmf_library */
-	modid = *(SceUID*)0x8b8ca7c;
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
-	ret = sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING scePsmf_library\n", ret);
-	}
+    kill_module("scePsmf_library", *(SceUID*)0x8b8ca7c);
+
 	/* sceCcc_Library */
-	modid = *(SceUID*)0x8b8c940;
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	ret = sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceCcc_Library\n", ret);
-	}
+    kill_module("sceCcc_Library", *(SceUID*)0x8b8c940);
 	
 	/* sceNetAdhocDiscover_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09EB3A00);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocDiscover_Library\n", ret);
-	}
+    kill_module("sceNetAdhocDiscover_Library", sceKernelGetModuleIdByAddress(0x09EB3A00));
 	
 	/* sceNetAdhocDownload_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09EAFC00);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocDownload_Library\n", ret);
-	}
-	
+    kill_module("sceNetAdhocDownload_Library", sceKernelGetModuleIdByAddress(0x09EAFC00));
+
 	/* sceNetAdhocMatching_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09EAB200);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocMatching_Library\n", ret);
-	}
+    kill_module("sceNetAdhocMatching_Library", sceKernelGetModuleIdByAddress(0x09EAB200));
 	
 	/* sceNetAdhocctl_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09EA3300);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhocctl_Library\n", ret);
-	}
+    kill_module("sceNetAdhocctl_Library", sceKernelGetModuleIdByAddress(0x09EA3300));
 	
 	/* sceNetAdhoc_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09E9B800);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNetAdhoc_Library\n", ret);
-	}
+    kill_module("sceNetAdhoc_Library", sceKernelGetModuleIdByAddress(0x09E9B800));
 	
 	/* sceNet_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09E87800);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceNet_Library\n", ret);
-	}
+    kill_module("sceNet_Library", sceKernelGetModuleIdByAddress(0x09E87800));
 	
 	/* sceMpeg_library */
-	modid = sceKernelGetModuleIdByAddress(0x09E7B800);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceMpeg_library\n", ret);
-	}
+    kill_module("sceMpeg_library", sceKernelGetModuleIdByAddress(0x09E7B800));
 	
 	/* sceATRAC3plus_Library */
-	modid = sceKernelGetModuleIdByAddress(0x09E73800);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING sceATRAC3plus_Library\n", ret);
-	}
+    kill_module("sceATRAC3plus_Library", sceKernelGetModuleIdByAddress(0x09E73800));
 	
 	/* Labo */
 #ifdef UNLOAD_MODULE
-	modid = sceKernelGetModuleIdByAddress(0x08804000);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR1("--> ERROR 0x%08lX UNLOADING Labo\n", ret);
-	}
+    kill_module("Labo", sceKernelGetModuleIdByAddress(0x08804000));
 #endif
+
+#ifdef DEBUG
+	free = sceKernelTotalFreeMemSize();
+    max_free = sceKernelMaxFreeMemSize();
+	LOGSTR2(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", free, max_free);
+#endif  
 
 	return;
 }
 #endif
+
+
+// Those 2 functions are heavy but this avoids 2 extra syscalls that might fail
+// In the future if we can have access to the "real" functions, let's remove this
+SceSize sceKernelMaxFreeMemSize()
+{
+    SceSize size, sizeblock;
+    u8 *ram;
+    SceUID uid;
+
+    LOGSTR0("Call to sceKernelMaxFreeMemSize()\n");
+    // Init variables
+    size = 0;
+    sizeblock = 1024 * 1024;
+
+    // Check loop
+    while (sizeblock)
+    {
+        // Increment size
+        size += sizeblock;
+
+        /* Allocate block */
+        uid = sceKernelAllocPartitionMemory(2, "ValentineFreeMemMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
+        if (uid < 0) // Memory allocation failed
+        {
+            // Restore old size
+            size -= sizeblock;
+
+            // Size block / 2
+            sizeblock >>= 1;
+        }
+        else
+            sceKernelFreePartitionMemory(uid);
+    }
+    
+    return size;
+}
+
+SceSize sceKernelTotalFreeMemSize()
+{
+    SceUID blocks[1024];
+    u32 count;
+    SceSize size, x;
+    int i;
+
+    LOGSTR0("Call to sceKernelTotalFreeMemSize()\n");
+    // Init variables
+    size = 0;
+    count = 0;
+
+    // Check loop
+    for (;;)
+    {
+        if (count >= sizeof(blocks)/sizeof(blocks[0]))
+        {
+            LOGSTR0("Too many blocks in sceKernelTotalFreeSize, return value will be approximate\n");
+            return size;
+        }
+
+        // Find max lineare size available
+        x = sceKernelMaxFreeMemSize();
+        if (!(x)) break;
+
+        // Allocate ram
+        blocks[count] = sceKernelAllocPartitionMemory(2, "ValentineFreeMemMalloc", PSP_SMEM_Low, x, NULL);
+        if (!(blocks[count]))
+        {
+            LOGSTR0("Discrepency between  sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
+            return size;
+        }
+        
+        // Update variables
+        size += x;
+        count++;
+    }
+
+    for (i=0;i<count;++i)
+        sceKernelFreePartitionMemory(blocks[i]);
+
+    return size;
+}

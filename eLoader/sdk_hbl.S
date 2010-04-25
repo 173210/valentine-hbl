@@ -66,19 +66,18 @@
 # LoadExecForUser(1)
 	AddNid sceKernelExitGame, 0x0108 # 0x5572a5f
 
-# SysMemUserForUser(4)
+# SysMemUserForUser(3)
 	AddNid sceKernelAllocPartitionMemory, 0x0110 # 0x237dbd4f
 	AddNid sceKernelGetBlockHeadAddr, 0x0118     # 0x9d9a5ba1
 	AddNid sceKernelFreePartitionMemory, 0x0120  # 0xb6d61d02
-	AddNid sceKernelTotalFreeMemSize, 0x0128     # 0xf919f628
 
 # sceDisplay(1)
-	AddNid sceDisplaySetFrameBuf, 0x0130 # 0x289d82fe
+	AddNid sceDisplaySetFrameBuf, 0x0128 # 0x289d82fe
 
 # sceCtrl(1)
-	AddNid sceCtrlReadBufferPositive, 0x0138 # 0x1f803938
+	AddNid sceCtrlReadBufferPositive, 0x0130 # 0x1f803938
 
 # sceUmdUser(1)
-	AddNid sceUmdUnRegisterUMDCallBack, 0x0140 # 0xbd2bde07
+	AddNid sceUmdUnRegisterUMDCallBack, 0x0138 # 0xbd2bde07
 
 	.ident	"HBL-SDK"

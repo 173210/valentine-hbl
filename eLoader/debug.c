@@ -98,6 +98,13 @@ void logstr4(const char* A, unsigned long B, unsigned long C, unsigned long D, u
     write_debug(buff, NULL, 0);
 }
 
+void logstr5(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F)
+{
+    char buff[512];
+    mysprintf8(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, 0, 0, 0);
+    write_debug(buff, NULL, 0);
+}
+
 void logstr8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I)
 {
     char buff[512];

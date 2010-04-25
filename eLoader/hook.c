@@ -1,5 +1,6 @@
 #include "sdk.h"
 #include "eloader.h"
+#include "debug.h"
 
 /* Hooks for some functions used by Homebrews */
 
@@ -39,26 +40,15 @@ void  _hook_sceKernelExitGame()
 }
 #endif
 
-#ifdef FAKEMEM
-int  _hook_sceKernelMaxFreeMemSize () 
-{
- return 0x09EC8000 - PRX_LOAD_ADDRESS - hbsize;
-}
-
-void *  _hook_sceKernelGetBlockHeadAddr (SceUID mid) 
-{
-    if (mid == 0x05B8923F)
-        return PRX_LOAD_ADDRESS + hbsize;
-    return 0;
-}
-
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
-	SceUID ret = 0x05B8923F;
-
-	return ret;
+    LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid,name, type, size, addr);
+    SceUID uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
+    if (uid <=0)
+        LOGSTR1("failed with result: 0x%08lX\n", uid);
+    return uid;
 }
-#endif
+
 
 /* WIP
 // A function that just returns "ok" but does nothing

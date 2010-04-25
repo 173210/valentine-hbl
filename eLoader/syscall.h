@@ -6,5 +6,10 @@
 /* Return syscall number */
 u32 estimate_syscall(const char *lib, u32 nid);
 
+/*
+ * Reestimate a syscall if it's suspected of being incorrect
+*/
+u32 reestimate_syscall(const char * lib, u32* stub);
+
 #endif
 

@@ -16,7 +16,7 @@ SceUID find_thread(const char *name)
 		attempt++;
 		ret = sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Thread, &readbuf, sizeof(readbuf)/sizeof(SceUID), &idcount);
 		if (ret < 0)
-			reestimate_syscall(*(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x00a8); // sceKernelGetThreadmanIdList
+			reestimate_syscall("ThreadManForUser", *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x00a8); // sceKernelGetThreadmanIdList
 	} while ((ret < 0) && (attempt <= MAX_REESTIMATE_ATTEMPTS));
 
 	if (ret < 0)
@@ -30,7 +30,7 @@ SceUID find_thread(const char *name)
 			attempt++;
 			ret = sceKernelReferThreadStatus(readbuf[idcount-1], &info);
 			if (ret < 0)
-				reestimate_syscall(*(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0090); // sceKernelReferThreadStatus
+				reestimate_syscall("ThreadManForUser", *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0090); // sceKernelReferThreadStatus
 		} while ((ret < 0) && (attempt <= MAX_REESTIMATE_ATTEMPTS));
 			
 		if(ret < 0)
