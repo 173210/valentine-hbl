@@ -31,7 +31,10 @@ u32 getFirmwareVersion()
     {
 		case 0xB533E9FC:
 		    firmware_version = 500;
-		    break;            
+		    break;  
+		case 0x4CFA7F33:
+		    firmware_version = 500; //actually 5.03
+		    break;               
 		case 0xA67D3F99:
 		    firmware_version = 550;
 		    break;
