@@ -8,11 +8,12 @@
 #include "config.h"
 #include "tables.h"
 #include "scratchpad.h"
+#include "utils.h"
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
 // HBL intermediate buffer
-int hbl_buffer[MAX_ELOADER_SIZE];
+// int hbl_buffer[MAX_ELOADER_SIZE];
 
 // Loads HBL to memory
 void load_hbl(SceUID hbl_file)
@@ -23,14 +24,18 @@ void load_hbl(SceUID hbl_file)
 
 	// Get HBL size
 	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
+	/*
 	if (file_size >= MAX_ELOADER_SIZE)
 		exit_with_log(" HBL TOO BIG ", &file_size, sizeof(file_size));
+	*/
 	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
 
 	//write_debug(" HBL SIZE ", &file_size, sizeof(file_size));
 	
 	// Allocate memory for HBL
-	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, MAX_ELOADER_SIZE, 0x09EC8000);
+	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, MAX_ELOADER_SIZE, 0x09EC8000);
+	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_High, file_size, NULL); // Best one, but don't work, why?
+	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, 0x09EC8000);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
@@ -40,7 +45,13 @@ void load_hbl(SceUID hbl_file)
 	*((SceUID*)ADDR_HBL_BLOCK_ADDR) = run_eloader;
 
 	// Load HBL to buffer
+	/*
 	if ((bytes_read = sceIoRead(hbl_file, (void*)hbl_buffer, file_size)) < 0)
+		exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
+	*/
+
+	// Load directly to allocated memory
+	if ((bytes_read = sceIoRead(hbl_file, (void*)run_eloader, file_size)) < 0)
 		exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
 	
 	//DEBUG_PRINT(" HBL LOADED ", &bytes_read, sizeof(bytes_read));
@@ -48,9 +59,9 @@ void load_hbl(SceUID hbl_file)
 	sceIoClose(hbl_file);
 
 	// Copy HBL to safe memory
-	memcpy((void*)run_eloader, (void*)hbl_buffer, bytes_read);
+	// memcpy((void*)run_eloader, (void*)hbl_buffer, bytes_read);
 
-	//write_debug(" HBL COPIED TO SCRATCHPAD ", (void*)hbl_buffer, bytes_read);
+	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", run_eloader);
 
 	// Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
@@ -233,28 +244,61 @@ void copy_hbl_stubs(void)
 	sceKernelDcacheWritebackInvalidateAll();
 }
 
+// Erase kernel dump
+void init_kdump()
+{
+	SceUID fd;
+	
+	if ((fd = sceIoOpen(KDUMP_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777)) >= 0)
+	{
+		sceIoClose(fd);
+	}
+}
+
+// Dumps kmem
+void get_kmem_dump()
+{
+	SceUID dump_fd;
+	
+	dump_fd = sceIoOpen(KDUMP_PATH, PSP_O_CREAT | PSP_O_WRONLY, 0777);
+
+	if (dump_fd >= 0)
+	{
+		sceIoWrite(dump_fd, (void*) 0x08000000, (unsigned int)0x400000);
+		sceIoClose(dump_fd);
+	}
+}
+
 // Entry point
 void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.start")));
 void _start(unsigned long arglen, unsigned long *argp)
 {
-    //reset the contents of the debug file;
-    init_debug();
 	SceUID hbl_file;
 
-	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
+	LOGSTR0("Loader running\n");
+
+	// Erase previous kernel dump
+	init_kdump();
+
+	// If PSPGo, do a kmem dump
+	if (getPSPModel() == PSP_GO)
+		get_kmem_dump();
+	
+    //reset the contents of the debug file;
+    init_debug();
 
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
 	
 	else
 	{
-		DEBUG_PRINT(" LOADING HBL ", NULL, 0);
+		LOGSTR0("Loading HBL\n");
 		load_hbl(hbl_file);
 	
-		DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
+		LOGSTR0("Copying & resolving HBL stubs\n");
 		copy_hbl_stubs();
 
-		DEBUG_PRINT("PASSING TO HBL\n", NULL, 0);
+		LOGSTR0("Passing to HBL\n");
 		run_eloader(0, NULL);
 	}	
 

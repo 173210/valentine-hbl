@@ -81,7 +81,7 @@ void resolve_missing_stubs()
 		{
 			LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
 
-			// Get NID & library for i-th import
+			// NID & library for i-th import
 			ret = get_lib_nid(i, lib_name, &nid);
 
 			LOGSTR0(lib_name);
@@ -130,33 +130,9 @@ void resolve_missing_stubs()
 // Subsitutes the right instruction
 void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 {
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-		if(dbglog >= 0)
-		{
-			sceIoWrite(dbglog, " CALL TO RESOLVE ", strlen(" CALL TO RESOLVE "));
-			sceIoWrite(dbglog, &call_to_resolve, sizeof(u32*));
-			sceIoWrite(dbglog, " CALL RESOLVED ", strlen(" CALL RESOLVED "));
-			sceIoWrite(dbglog, &call_resolved, sizeof(u32));
-			sceIoClose(dbglog);
-		}
-	#endif
-	*/
-
 	// SYSCALL
 	if(!(call_resolved & SYSCALL_MASK_RESOLVE))
 	{
-		/*
-		#ifdef DEBUG
-			dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-			if(dbglog >= 0)
-			{
-				sceIoWrite(dbglog, " SYSCALL ", strlen(" SYSCALL "));
-				sceIoClose(dbglog);
-			}
-		#endif
-		*/
 		*call_to_resolve = JR_RA_OPCODE;
 		*(++call_to_resolve) = call_resolved;
 	}
@@ -164,16 +140,6 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 	// JUMP
 	else
 	{
-		/*
-		#ifdef DEBUG
-			dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-			if(dbglog >= 0)
-			{
-				sceIoWrite(dbglog, " JUMP ", strlen(" JUMP "));
-				sceIoClose(dbglog);
-			}
-		#endif
-		*/
 		*call_to_resolve = call_resolved;
 		*(++call_to_resolve) = NOP_OPCODE;
 	}
@@ -194,7 +160,7 @@ void main_loop()
 	
     loadMenu();
 	
-    while(! isSet[0])
+    while(!isSet[0])
         sceKernelDelayThread(5000);
 	
     start_eloader((char *)ebootPath, 1);
@@ -298,35 +264,10 @@ Work in progress, attempt for the mp3 library not to fail
 			/* Syscall estimation if library available */
 			if (real_call == 0)
 			{
-				/*
-				#ifdef DEBUG
-					dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-					if (dbglog >= 0)
-					{
-						sceIoWrite(dbglog, " LIBRARY NAME ", strlen(" LIBRARY NAME "));
-						sceIoWrite(dbglog, pstub_entry->library_name, strlen(pstub_entry->library_name));					
-						sceIoClose(dbglog);
-					}
-				#endif
-				*/
-
 				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid);
 				
 				/* Commit changes to RAM */
 				sceKernelDcacheWritebackInvalidateAll();
-
-				/*
-				#ifdef DEBUG	
-					dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT|PSP_O_WRONLY|PSP_O_APPEND, 0777);
-					if (dbglog >= 0)
-					{
-						sceIoWrite(dbglog, " ESTIMATED SYSCALL VALUE ", strlen(" ESTIMATED SYSCALL VALUE "));
-						sceIoWrite(dbglog, &real_call, sizeof(real_call));
-						sceIoClose(dbglog);
-					}
-				#endif
-				*/
-
 			}
 
 			/* If it's an instruction, resolve it */
@@ -340,13 +281,6 @@ Work in progress, attempt for the mp3 library not to fail
 			}
 
 			sceKernelDcacheWritebackInvalidateAll();
-
-			/*
-			#ifdef DEBUG
-				sceIoWrite(dbglog, &real_call, sizeof(u32));	
-				sceIoWrite(dbglog, cur_call, sizeof(u32)*2);
-			#endif
-			*/
 
 			cur_nid++;
 			cur_call += 2;
@@ -364,49 +298,28 @@ Work in progress, attempt for the mp3 library not to fail
 int relocate_entry(tRelEntry reloc_entry)
 {
 	u32 buffer = 0, code = 0, offset = 0, offset_target, i;
-	
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-		sceIoWrite(dbglog, " RELOCATING ", strlen(" RELOCATING "));
-		sceIoWrite(dbglog, &reloc_entry, sizeof(tRelEntry));
-		sceIoClose(dbglog);
-	#endif
-	*/
 
 	// Actual offset
 	offset_target = (u32)reloc_entry.r_offset + (u32)PRX_LOAD_ADDRESS;
-	
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-		sceIoWrite(dbglog, &(offset_target), sizeof(u32));
-		sceIoClose(dbglog);
-	#endif
-	*/
 
 	// Load word to be relocated into buffer
     u32 misalign = offset_target%4;
-    if (misalign) {
+    if (misalign) 
+	{
         u32 array[2];
         array[0] = *(u32*)(offset_target - misalign);
         array[1] = *(u32*)(offset_target + 4 - misalign);
         u8* array8 = (u8*)&array;
         u8* buffer8 = (u8*)&buffer;
-        for (i = 3 + misalign; i >= misalign; --i){
+        for (i = 3 + misalign; i >= misalign; --i)
+		{
             buffer8[i-misalign] = array8[i];
         }
-    } else {
+    } 
+	else 
+	{
         buffer = *(u32*)offset_target;
     }
-
-	/*	
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-		sceIoWrite(dbglog, &buffer, sizeof(u32));
-		sceIoClose(dbglog);
-	#endif
-	*/
 	
 	//Relocate depending on reloc type
 	switch(ELF32_R_TYPE(reloc_entry.r_info))
@@ -446,28 +359,24 @@ int relocate_entry(tRelEntry reloc_entry)
 	}
 	
 	// Restore relocated word
-    if (misalign) {
+    if (misalign) 
+	{
         u32 array[2];
         array[0] = *(u32*)(offset_target - misalign);
         array[1] = *(u32*)(offset_target + 4 - misalign);
         u8* array8 = (u8*)&array;
         u8* buffer8 = (u8*)&buffer;
-        for (i = 3 + misalign; i >= misalign; --i){
+        for (i = 3 + misalign; i >= misalign; --i)
+		{
              array8[i] = buffer8[i-misalign];
         }
         *(u32*)(offset_target - misalign) = array[0];
         *(u32*)(offset_target + 4 - misalign) = array[1];
-    } else { 
+    } 
+	else 
+	{ 
         *(u32*)offset_target = buffer;
     }
-	
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-		sceIoWrite(dbglog, offset_target, sizeof(u32));
-		sceIoClose(dbglog);
-	#endif
-	*/
 
 	return 0;
 }
@@ -500,18 +409,6 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 		// Get section header
 		sceIoLseek(elf_file, start_offset + cur_offset, PSP_SEEK_SET);
 		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
-		
-		/*
-		// Get section name
-		section_name_size = elf_read_string(elf_file, strtab_offset + sec_header.sh_name, section_name);
-
-		#ifdef DEBUG
-			dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-			sceIoWrite(dbglog, " SECTION NAME ", strlen(" SECTION NAME "));
-			sceIoWrite(dbglog, section_name, strlen(section_name));
-			sceIoClose(dbglog);
-		#endif
-		*/
 
 		if(sec_header.sh_type == LOPROC)
 		{
@@ -615,15 +512,6 @@ void start_eloader(char *eboot_path, int is_eboot)
    
 		// Load program section into memory and also get stub headers
 		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, allocate_memory);
-		
-		/*
-		#ifdef DEBUG
-			dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-			sceIoWrite(dbglog, " STUBS SIZE ", strlen(" STUBS SIZE "));
-			sceIoWrite(dbglog, &stubs_size, sizeof(int));
-			sceIoClose(dbglog);
-		#endif
-		*/
 
 		//Relocate all sections that need to
 		sections_relocated = relocate_sections(elf_file, offset, &elf_header);
@@ -828,9 +716,9 @@ void _start(unsigned long arglen, unsigned long *argp)
         break;
     }
     
-    if (getPSPModel() == PSP_GO){
+    if (getPSPModel() == PSP_GO)
+	{
         print_to_screen("PSP Go Detected");
-        //TODO : Read kernel :)
     }
     
 	// Create and start eloader thread

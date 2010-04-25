@@ -55,6 +55,7 @@
 #define ELF_PATH HBL_ROOT"GAME/eboot.elf"
 #define MENU_PATH HBL_ROOT"menu.bin" // menu
 #define HBL_PATH HBL_ROOT"hbl.bin"
+#define KDUMP_PATH HBL_ROOT"kmem.dump"
 
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT"libs"

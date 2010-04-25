@@ -19,7 +19,8 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 	return -1;
 }
 
-u32 find_first_free_syscall (int lib_index, u32 start_syscall) {
+u32 find_first_free_syscall (int lib_index, u32 start_syscall) 
+{
 	int index = -1;
     u32 syscall = start_syscall;
     int boundary_low = 0, boundary_high = 0;
@@ -46,7 +47,8 @@ u32 find_first_free_syscall (int lib_index, u32 start_syscall) {
  * Checks if a syscall looks normal compared to other libraries boundaries.
  * returns 1 if ok, 0 if not
 */
-int check_syscall_boundaries (u32 syscall, int boundary_low, int boundary_high) {
+int check_syscall_boundaries (u32 syscall, int boundary_low, int boundary_high) 
+{
     if (syscall <= boundary_low) 
     {
         LOGSTR2("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be higher than 0x%08lX, but we got 0x%08lX\n", boundary_low, syscall);
@@ -158,8 +160,7 @@ u32 estimate_syscall(const char *lib, u32 nid)
 // Needs to be more independent from sdk_hbl.S
 u32 reestimate_syscall(const char * lib, u32* stub) 
 {
-#ifdef REESTIMATE_SYSCALL  
-
+#ifdef REESTIMATE_SYSCALL
 	u32 syscall;
     int lib_index;
     
@@ -172,15 +173,18 @@ u32 reestimate_syscall(const char * lib, u32* stub)
         return 0;
     }
 
-    LOGSTR1("=Reestimating syscall for stub 0x%08lX\n", stub); 
+    LOGSTR1("=Reestimating syscall for stub 0x%08lX: ", stub); 
 	stub++;
 	syscall = GET_SYSCALL_NUMBER(*stub);
-    LOGSTR1("--0x%08lX -->", syscall); 
+    LOGSTR1("0x%08lX -->", syscall); 
+	
 	syscall--;
     syscall = find_first_free_syscall(lib_index, syscall);
     LOGSTR1(" 0x%08lX\n", syscall); 
+	
 	*stub = MAKE_SYSCALL(syscall);
     LOGSTR0("--Done.\n");
+	
 	sceKernelDcacheWritebackInvalidateAll();
 	return syscall;
 #else

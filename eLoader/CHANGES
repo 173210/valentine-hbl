@@ -1,3 +1,10 @@
+2010/04/24 (m0skit0)
+- Added kernel memory dump for PSPGo at the start of the loader, because otherwise accessing kmem will fail (i dont know why)
+--> This can be improved dumping only necessary offsets and not the whole partition
+- Added finding lowest syscall from kernel memory for some libraries -only for PSP Go, and using the kmem dump-
+- Got rid of intermediate static buffer for loading HBL into memory
+- Changed tool "umem dumper" to do a kernel dump as well (only works on PSP Go) and changed the linker address to the new one on the new savedata (new!)
+
 2010/04/25 (wololo)
 - cleaned up Davee's free memory function
 -- Also fixed issue 42 : 6.20 hangs on free_game_memory (as usual, syscall estimation was the culprit, I replaced the "find_thread" call with a direct address fetch like Davee does)

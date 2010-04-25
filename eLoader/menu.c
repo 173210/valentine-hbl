@@ -88,7 +88,7 @@ void init()
   	id = sceIoDopen(currentPath);
   	if (id <=0) 
 	{
-    	DEBUG_PRINT("FATAL: Menu can't open directory ", NULL, 0);
+    	LOGSTR1("FATAL: Menu can't open directory %s \n", currentPath);
     	loadCache();
     	return;
   	}	
@@ -137,7 +137,7 @@ void setEboot()
   	strcpy(ebootPath, currentPath);
   	strcat(ebootPath, folders[currentFile]);
   	strcat(ebootPath, "/EBOOT.PBP");
-  	DEBUG_PRINT("MENU SET EBOOT", &ebootPath, strlen(ebootPath));
+  	LOGSTR0(ebootPath);
   	isSet[0] = 1;
 }
 
@@ -151,10 +151,10 @@ void _start()
     currentFile = 0;
     isSet = (u32 *) EBOOT_SET_ADDRESS;
     ebootPath = (void *) EBOOT_PATH_ADDRESS;
-    DEBUG_PRINT("START MENU", NULL, 0);
+    LOGSTR0("Start menu\n");
     isSet[0] = 0;
 
-    DEBUG_PRINT("MENU Sets display", NULL, 0);
+    LOGSTR0("MENU Sets display\n");
     sceDisplaySetFrameBuf(frameBuffer, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
 
     SetColor(0x00000000);
@@ -174,7 +174,7 @@ void _start()
 		
         if (pad.Buttons & PSP_CTRL_CROSS)
 		{ // if the cross button is pressed
-            DEBUG_PRINT("MENU SET EBOOT", NULL, 0);
+            LOGSTR0("Menu sets EBOOT path: ");
             setEboot();			
         }
 		else if ((pad.Buttons & PSP_CTRL_DOWN) && (currentFile < nbFiles - 1))

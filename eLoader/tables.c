@@ -88,6 +88,99 @@ u32 get_good_call(u32* call_pointer)
 	return *call_pointer;
 }
 
+// Gets lowest syscall from kernel dump
+u32 get_klowest_syscall(char* lib_name)
+{
+	SceUID kdump_fd;
+	SceSize kdump_size;
+	SceOff lowest_offset = 0;
+	u32 lowest_syscall = 0xFFFFFFFF;
+
+	kdump_fd = sceIoOpen(HBL_ROOT"kmem.dump", PSP_O_CREAT | PSP_O_RDONLY, 0777);
+	if (kdump_fd >= 0)
+	{
+		kdump_size = sceIoLseek(kdump_fd, 0, PSP_SEEK_END);
+
+		if (kdump_size > 0)
+		{
+			if (strcmp(lib_name, "LoadExecForUser") == 0)
+				lowest_offset = (SceOff)0x000203AC;
+	
+			else if (strcmp(lib_name, "UtilsForUser") == 0)
+				lowest_offset = (SceOff)0x0002044C;
+	
+			else if (strcmp(lib_name, "sceSuspendForUser") == 0)
+				lowest_offset = (SceOff)0x0002049C;
+	
+			else if (strcmp(lib_name, "SysMemUserForUser") == 0)
+				lowest_offset = (SceOff)0x000204EC;
+	
+			else if (strcmp(lib_name, "ModuleMgrForUser") == 0)
+				lowest_offset = (SceOff)0x000205DC;
+	
+			else if (strcmp(lib_name, "IoFileMgrForUser") == 0)
+				lowest_offset = (SceOff)0x0002071C;
+	
+			else if (strcmp(lib_name, "StdioForUser") == 0)
+				lowest_offset = (SceOff)0x000207BC;
+	
+			else if (strcmp(lib_name, "ThreadManForUser") == 0)
+				lowest_offset = (SceOff)0x000208FC;
+	
+			else if (strcmp(lib_name, "InterruptManager") == 0)
+				lowest_offset = (SceOff)0x0002094C;
+	
+			else if (strcmp(lib_name, "sceDisplay") == 0)
+				lowest_offset = (SceOff)0x0002A8F8;
+	
+			else if (strcmp(lib_name, "sceRtc") == 0)
+				lowest_offset = (SceOff)0x0002B0D8;
+	
+			else if (strcmp(lib_name, "sceCtrl") == 0)
+				lowest_offset = (SceOff)0x000BEDA0;
+	
+			else if (strcmp(lib_name, "sceWlanDrv_lib") == 0)
+				lowest_offset = (SceOff)0x00159DA8;
+	
+			else if (strcmp(lib_name, "sceWlanDrv") == 0)
+				lowest_offset = (SceOff)0x00159E00;
+	
+			else if (strcmp(lib_name, "sceReg") == 0)
+				lowest_offset = (SceOff)0x001889A0;
+	
+			else if (strcmp(lib_name, "sceUtility") == 0)
+				lowest_offset = (SceOff)0x001E5CD0;
+	
+			else if (strcmp(lib_name, "sceUmdUser") == 0)
+				lowest_offset = (SceOff)0x001E6408;
+	
+			else if (strcmp(lib_name, "sceNetIfhandle_lib") == 0)
+				lowest_offset = (SceOff)0x00269D80;
+	
+			else
+				LOGSTR0("Library not hacked\n");			
+
+			if (lowest_offset > 0)
+			{
+				LOGSTR1("Lowest offset: 0x%08lX\n", lowest_offset);
+				sceIoLseek(kdump_fd, lowest_offset, PSP_SEEK_SET);
+				sceIoRead(kdump_fd, &lowest_syscall, sizeof(lowest_syscall));
+				LOGSTR1("Kernel dump says lowest syscall is: 0x%08lX\n", lowest_syscall);
+			}			
+		}
+		else
+		{
+			LOGSTR0("Kmemdump empty\n");
+		}
+		
+		sceIoClose(kdump_fd);
+	}
+	else
+		LOGSTR0("Could not open kernel dump\n");
+
+	return lowest_syscall;
+}
+
 // Fills remaining information on a library
 tSceLibrary* complete_library(tSceLibrary* plibrary)
 {
@@ -95,6 +188,9 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 	SceUID nid_file;
 	u32 nid;
 	unsigned int i;
+	u32 lowest_syscall;
+	int syscall_gap;
+	int index;
 	
 	// Constructing the file path
 	strcpy(file_path, LIB_PATH);
@@ -131,6 +227,40 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 				break;
 			}
 			i++;
+		}
+
+		LOGSTR0("Getting lowest syscall from kernel dump\n");
+		lowest_syscall = get_klowest_syscall(plibrary->library_name);
+		if ((lowest_syscall & SYSCALL_MASK_RESOLVE) == 0)
+		{
+			syscall_gap = plibrary->lowest_syscall - lowest_syscall;
+			if (syscall_gap < 0)
+			{
+				LOGSTR2("WARNING: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
+				        plibrary->lowest_syscall);
+			}
+			
+			else if (syscall_gap == 0)
+			{
+				LOGSTR0("Nothing to do, lowest syscall from kernel is the same from tables\n");
+			}
+			
+			// Find NID for lowest syscall
+			else
+			{
+				index = plibrary->lowest_index - (unsigned int)syscall_gap;
+
+				// Rotation ;)
+				if (index < 0)
+					index = plibrary->num_library_exports + index;				
+				
+				sceIoLseek(nid_file, index * 4, PSP_SEEK_SET);
+				sceIoRead(nid_file, &nid, sizeof(u32));
+
+				plibrary->lowest_index = index;
+				plibrary->lowest_nid = nid;
+				plibrary->lowest_syscall = lowest_syscall;
+			}
 		}
 		
 		sceIoClose(nid_file);
@@ -277,12 +407,12 @@ int build_nid_table(tNIDResolver *nid_table)
 			{
 				LOGSTR1(" --> New: %d\n", k);
 				
-				strcpy(library_table[k].library_name, pentry->library_name);
-				
-				good_call = get_good_call(cur_call);
+				strcpy(library_table[k].library_name, pentry->library_name);			
 				
 				// Get number of syscalls imported
 				library_table[k].num_known_exports = pentry->stub_size;
+
+				good_call = get_good_call(cur_call);
 
 				LOGSTR1("Total known exports: %d\n", library_table[k].num_known_exports);
 
@@ -374,6 +504,7 @@ int build_nid_table(tNIDResolver *nid_table)
 					}
 
 					// Fill remaining data
+					LOGSTR0("Completing library...\n");
 					ret = complete_library(&(library_table[k]));
 				}			
 
