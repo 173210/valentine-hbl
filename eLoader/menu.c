@@ -86,7 +86,7 @@ void init()
 		folders[i][0] = 0;
 	
   	id = sceIoDopen(currentPath);
-  	if (id <=0) 
+  	if (id < 0) 
 	{
     	LOGSTR1("FATAL: Menu can't open directory %s \n", currentPath);
     	loadCache();

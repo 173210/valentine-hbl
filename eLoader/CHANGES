@@ -1,3 +1,7 @@
+2010/04/26 (m0skit0)
+- Fixed minor bug on menu (error is < 0, not <= 0)
+- More eloader.c house cleaning
+
 2010/04/24 (m0skit0)
 - Added kernel memory dump for PSPGo at the start of the loader, because otherwise accessing kmem will fail (i dont know why)
 --> This can be improved dumping only necessary offsets and not the whole partition

@@ -1,17 +1,13 @@
 #include "sdk.h"
 #include "eloader.h"
-#include "scratchpad.h"
-#include "elf.h"
-#include "loader.h"
-#include "thread.h"
 #include "debug.h"
-#include "config.h"
+#include "elf.h"
 #include "menu.h"
 #include "graphics.h"
 #include "utils.h"
+#include "reloc.h"
+#include "resolve.h"
 #include "tables.h"
-#include "hook.h"
-#include "memory.h"
 
 /* eLoader */
 /* Entry point: _start() */
@@ -27,131 +23,82 @@ u32 * isSet = EBOOT_SET_ADDRESS;
 u32 * ebootPath = EBOOT_PATH_ADDRESS;  
 u32 * menu_pointer = MENU_LOAD_ADDRESS;
 
-// This function can be used to catch up the import calls when the ELF is up and running
-// For debugging only; does not perform the calls
-/*
-#ifdef DEBUG
-		
-	void late_import(void)
-	{
-		asm("\tsw $ra, aux\n");
-		int i;
-		
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_APPEND | PSP_O_WRONLY, 0777);
-		sceIoWrite(dbglog, &aux, sizeof(u32));	
-		sceIoClose(dbglog);			
-	}
- 
-#endif
+/* Loads a Basic menu as a thread
+* In the future, we might want the menu to be an actual homebrew
 */
-
-// Autoresolves HBL missing stubs
-// Some stubs are compulsory, like sceIo*
-void resolve_missing_stubs()
+void loadMenu()
 {
-	int i, ret;
-	unsigned int num_nids;
-	u32* cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
-	u32 nid = 0, syscall = 0;
-	char lib_name[MAX_LIBRARY_NAME_LENGTH];
+    // Just trying the basic functions used by the menu
+    SceUID id = -1;
+    int attempts = 0;
+	SceUID menu_file;
+    SceOff file_size;
+	int bytes_read;
+	SceIoDirent entry;
+	SceUID menuThread;
+		
+    print_to_screen("Loading Menu");
 
-	ret = config_initialize();
-
-	if (ret < 0)
-		exit_with_log("**CONFIG INIT FAILED**", &ret, sizeof(ret));
-
-	ret = config_num_nids_total(&num_nids);
-
-#ifdef DEBUG
-	LOGSTR0("--> HBL STUBS BEFORE ESTIMATING:\n");	
-	for(i=0; i<num_nids; i++)
+// this crashes too often :(
+/*	
+    while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
 	{
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
-		LOGSTR1("  0x%08lX ", *cur_stub);
-		cur_stub++;
-		LOGSTR1("0x%08lX\n", *cur_stub);
-		cur_stub++;
-	}
-	cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
-#endif
-	
-	for (i=0; i<num_nids; i++)
-	{
-		if (*cur_stub == 0)
+        attempts++;
+        id = sceIoDopen("ms0:");
+        if (id <= 0)
 		{
-			LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
 
-			// NID & library for i-th import
-			ret = get_lib_nid(i, lib_name, &nid);
-
-			LOGSTR0(lib_name);
-			LOGSTR1(" 0x%08lX\n", nid);
-
-			// Is it known by HBL?
-			ret = get_nid_index(nid);
-
-			// If it's known, get the call
-			if (ret > 0)
-			{
-				LOGSTR0("-Found in NID table, using real call\n");
-				syscall = nid_table[ret].call;
-			}
-			
-			// If not, estimate
-			else
-				syscall = estimate_syscall(lib_name, nid);
-
-			// DEBUG_PRINT("**RESOLVED SYS**", lib_name, strlen(lib_name));
-			// DEBUG_PRINT(" ", &syscall, sizeof(syscall));
-
-			resolve_call(cur_stub, syscall);
-		}
-		cur_stub += 2;
-	}
-
-#ifdef DEBUG
-	cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
-	LOGSTR0("--> HBL STUBS AFTER ESTIMATING:\n");	
-	for(i=0; i<num_nids; i++)
-	{
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
-		LOGSTR1("  0x%08lX ", *cur_stub);
-		cur_stub++;
-		LOGSTR1("0x%08lX\n", *cur_stub);
-		cur_stub++;
-	}	
-#endif	
-
-	sceKernelDcacheWritebackInvalidateAll();
-
-	config_close();
-}
-
-// Subsitutes the right instruction
-void resolve_call(u32 *call_to_resolve, u32 call_resolved)
-{
-	// SYSCALL
-	if(!(call_resolved & SYSCALL_MASK_RESOLVE))
-	{
-		*call_to_resolve = JR_RA_OPCODE;
-		*(++call_to_resolve) = call_resolved;
-	}
+            DEBUG_PRINT(" sceIoDopen syscall estimation failed, attempt to reestimate ",NULL, 0);
+            reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
+        }
+    }
 	
-	// JUMP
-	else
+    if (id < 0) 
 	{
-		*call_to_resolve = call_resolved;
-		*(++call_to_resolve) = NOP_OPCODE;
-	}
+        print_to_screen("Loading Menu Failed (syscall ?)");
+        exit_with_log(" FATAL, sceIoDopen syscall estimation failed ",NULL, 0);
+    }
+	
+	else 
+	{
+        attempts = 0;        
+        memset(&entry, 0, sizeof(SceIoDirent)); 
+        while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
+		{       
+            attempts++;
+            DEBUG_PRINT(" sceIoDread syscall estimation failed, attempt to reestimate ",NULL, 0);
+            reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
+            memset(&entry, 0, sizeof(SceIoDirent));
+        }
+    }
+	
+    sceIoDclose(id);
+*/
+	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
 
-	// This is a jump to "late_import" function
-	// To use late importing (only for debugging for now), uncomment this and the function late_import(), 
-	// and comment out previous code
-	/*
-	#ifdef DEBUG		
-		*call_to_resolve = MAKE_CALL(late_import);
-	#endif	
-	*/
+	if ((menu_file = sceIoOpen(MENU_PATH, PSP_O_RDONLY, 0777)) < 0)
+		exit_with_log(" FAILED TO LOAD MENU ", &menu_file, sizeof(menu_file));
+
+	// Get MENU size
+	file_size = sceIoLseek(menu_file, 0, PSP_SEEK_END);
+	sceIoLseek(menu_file, 0, PSP_SEEK_SET);    
+    
+	// Load MENU to buffer
+	if ((bytes_read = sceIoRead(menu_file, (void*)menu_pointer, file_size)) < 0)
+		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
+        
+    void (*start_entry)(SceSize, void*) = menu_pointer;	 
+	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
+
+	if(menuThread >= 0)
+	{
+		menuThread = sceKernelStartThread(menuThread, 0, NULL);
+    } 
+
+	else 
+	{
+        exit_with_log(" Menu Launch failed ", NULL, 0);
+    }        
 }
 
 void main_loop() 
@@ -175,277 +122,6 @@ void runThread(SceSize args, void *argp)
 	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID));	
 	start_entry(args, argp);
 	//sceKernelExitDeleteThread(0);
-}
-
-/* Resolves imports in ELF's program section already loaded in memory */
-/* Uses game's imports to do the resolving (this can be further improved) */
-/* Returns number of resolves */
-unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
-{
-	unsigned int i,j,nid_index;
-	u32* cur_nid;
-	u32* cur_call;
-	u32 real_call;
-	unsigned int resolving_count = 0;
-
-	LOGSTR1("RESOLVING IMPORTS. Stubs siwe:%d", stubs_size);
-
-	/* Browse ELF stub headers */
-	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
-	{
-		//DEBUG_PRINT("POINTER TO STUB ENTRY:", &pstub_entry, sizeof(u32*));
-
-		cur_nid = pstub_entry->nid_pointer;
-		cur_call = pstub_entry->jump_pointer;
-
-		/* For each stub header, browse all stubs */
-		for(j=0; j<pstub_entry->stub_size; j++)
-		{
-
-			//DEBUG_PRINT("Current nid:", cur_nid, sizeof(u32*));
-			//DEBUG_PRINT("Current call:", &cur_call, sizeof(u32*));
-
-			/* Get syscall/jump instruction for current NID */
-			nid_index = get_call_nidtable(*cur_nid, &real_call);
-
-			//DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
-            
-            switch (*cur_nid) 
-			{
-#ifdef FAKE_THREADS
-                case 0x446D8DE6: //sceKernelCreateThread
-                    real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
-                    break;
-#endif
-
-#ifdef RETURN_TO_MENU_ON_EXIT                
-                case 0x05572A5F: //sceKernelExitGame
-                    if (g_menu_enabled)
-                        real_call = MAKE_JUMP(_hook_sceKernelExitGame);
-                    break;
-#endif   
-                case 0xA291F107:
-                    DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
-                    break;
-                case 0x237DBD4F:
-                    DEBUG_PRINT("mem trick", NULL, 0);
-                    real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break;                     
-					
-/*
-Work in progress, attempt for the mp3 library not to fail                  
-                case 0x07EC321A:	//sceMp3ReserveMp3Handle
-                case 0x0DB149F4:	//sceMp3NotifyAddStreamData
-                case 0x2A368661:	//sceMp3ResetPlayPosition
-                case 0x354D27EA:	//	sceMp3GetSumDecodedSample
-                case 0x35750070:	//	sceMp3InitResource
-                case 0x3C2FA058:	//	sceMp3TermResource
-                case 0x3CEF484F:	//	sceMp3SetLoopNum
-                case 0x44E07129:	//	sceMp3Init
-                case 0x732B042A:	//	sceMp3EndEntry
-                case 0x7F696782:	//	sceMp3GetMp3ChannelNum
-                case 0x87677E40:	//	sceMp3GetBitRate
-                case 0x87C263D1:	//	sceMp3GetMaxOutputSample
-                case 0x8AB81558:	//	sceMp3StartEntry
-                case 0x8F450998:	//	sceMp3GetSamplingRate
-                case 0xA703FE0F:	//	sceMp3GetInfoToAddStreamData
-                case 0xD021C0FB:	//	sceMp3Decode
-                case 0xD0A56296:	//	sceMp3CheckStreamDataNeeded
-                case 0xD8F54A51:	//	sceMp3GetLoopNum
-                case 0xF5478233:	//	sceMp3ReleaseMp3Handle
-                    real_call = MAKE_JUMP(_hook_genericSuccess);
-                    break;
-*/
-                   
-            }
-            
-			/* If NID not found in game imports */
-			/* Syscall estimation if library available */
-			if (real_call == 0)
-			{
-				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid);
-				
-				/* Commit changes to RAM */
-				sceKernelDcacheWritebackInvalidateAll();
-			}
-
-			/* If it's an instruction, resolve it */
-			/* 0xC -> syscall 0 */
-			/* Jumps are always > 0xC */		
-			if(real_call > 0xC)
-			{	
-				/* Write it in ELF stubs memory */
-				resolve_call(cur_call, real_call);
-				resolving_count++;
-			}
-
-			sceKernelDcacheWritebackInvalidateAll();
-
-			cur_nid++;
-			cur_call += 2;
-		}
-		
-		pstub_entry++;
-	}
-	
-    LOGSTR0("RESOLVING IMPORTS: Done.");
-	return resolving_count;	
-}
-
-// Relocates based on a MIPS relocation type
-// Returns 0 on success, -1 on fail
-int relocate_entry(tRelEntry reloc_entry)
-{
-	u32 buffer = 0, code = 0, offset = 0, offset_target, i;
-
-	// Actual offset
-	offset_target = (u32)reloc_entry.r_offset + (u32)PRX_LOAD_ADDRESS;
-
-	// Load word to be relocated into buffer
-    u32 misalign = offset_target%4;
-    if (misalign) 
-	{
-        u32 array[2];
-        array[0] = *(u32*)(offset_target - misalign);
-        array[1] = *(u32*)(offset_target + 4 - misalign);
-        u8* array8 = (u8*)&array;
-        u8* buffer8 = (u8*)&buffer;
-        for (i = 3 + misalign; i >= misalign; --i)
-		{
-            buffer8[i-misalign] = array8[i];
-        }
-    } 
-	else 
-	{
-        buffer = *(u32*)offset_target;
-    }
-	
-	//Relocate depending on reloc type
-	switch(ELF32_R_TYPE(reloc_entry.r_info))
-	{
-		// Nothing
-		case R_MIPS_NONE:
-			return 0;
-			
-		// 32-bit address
-		case R_MIPS_32:
-			buffer += PRX_LOAD_ADDRESS;
-			break;
-		
-		// Jump instruction
-		case R_MIPS_26:    
-			code = buffer & 0xfc000000;
-			offset = (buffer & 0x03ffffff) << 2;
-			offset += PRX_LOAD_ADDRESS;
-			buffer = ((offset >> 2) & 0x03ffffff) | code;
-			break;
-		
-		// Low 16 bits relocate as high 16 bits
-		case R_MIPS_HI16:     
-			offset = (buffer << 16) + PRX_LOAD_ADDRESS;
-			offset = offset >> 16;
-			buffer = (buffer & 0xffff0000) | offset;
-			break;
-		
-		// Low 16 bits relocate as low 16 bits
-		case R_MIPS_LO16:       
-			offset = (buffer & 0x0000ffff) + PRX_LOAD_ADDRESS;
-			buffer = (buffer & 0xffff0000) | (offset & 0x0000ffff);
-			break;
-		
-		default:
-			return -1;		
-	}
-	
-	// Restore relocated word
-    if (misalign) 
-	{
-        u32 array[2];
-        array[0] = *(u32*)(offset_target - misalign);
-        array[1] = *(u32*)(offset_target + 4 - misalign);
-        u8* array8 = (u8*)&array;
-        u8* buffer8 = (u8*)&buffer;
-        for (i = 3 + misalign; i >= misalign; --i)
-		{
-             array8[i] = buffer8[i-misalign];
-        }
-        *(u32*)(offset_target - misalign) = array[0];
-        *(u32*)(offset_target + 4 - misalign) = array[1];
-    } 
-	else 
-	{ 
-        *(u32*)offset_target = buffer;
-    }
-
-	return 0;
-}
-
-// Relocates PRX sections that need to
-// Returns number of relocated entries
-unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pelf_header)
-{
-	Elf32_Half i;
-	Elf32_Shdr sec_header;
-	Elf32_Off strtab_offset;
-	Elf32_Off cur_offset;	
-	char section_name[40];
-	unsigned int j, section_name_size, entries_relocated = 0, num_entries;
-	tRelEntry* reloc_entry;
-	
-	// Seek string table
-	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
-	sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
-	strtab_offset = sec_header.sh_offset;
-
-	// First section header
-	cur_offset = pelf_header->e_shoff;
-	
-	DEBUG_PRINT(" NUMBER OF SECTIONS ", &(pelf_header->e_shnum), sizeof(Elf32_Half));
-
-	// Browse all section headers
-	for(i=0; i<pelf_header->e_shnum; i++)
-	{
-		// Get section header
-		sceIoLseek(elf_file, start_offset + cur_offset, PSP_SEEK_SET);
-		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
-
-		if(sec_header.sh_type == LOPROC)
-		{
-			// DEBUG_PRINT(" RELOCATING SECTION ", NULL, 0);
-			
-			// Allocate memory for section
-			num_entries = sec_header.sh_size / sizeof(tRelEntry);
-			reloc_entry = malloc(sec_header.sh_size);
-			if(!reloc_entry)
-			{
-				DEBUG_PRINT(" CANNOT ALLOCATE MEMORY FOR SECTION ", NULL, 0);
-				continue;
-			}
-			
-			// Read section
-			sceIoLseek(elf_file, start_offset + sec_header.sh_offset, PSP_SEEK_SET);
-			sceIoRead(elf_file, reloc_entry, sec_header.sh_size);
-
-			for(j=0; j<num_entries; j++)
-			{
-				//DEBUG_PRINT(" RELOC_ENTRY ", &(reloc_entry[j]), sizeof(tRelEntry));	
-                relocate_entry(reloc_entry[j]);
-				entries_relocated++;
-			}
-			
-			// Free section memory
-			free(reloc_entry);
-		}
-
-		// Next section header
-		cur_offset += sizeof(Elf32_Shdr);
-	}
-	
-	// DEBUG_PRINT(" FINISHED RELOCATING  ",NULL, 0);
-
-	// All relocation section processed
-	return entries_relocated;
 }
 
 // Jumps to ELF's entry point
@@ -570,84 +246,6 @@ void start_eloader(char *eboot_path, int is_eboot)
 	// execute_elf(strlen(eboot_path) + 1, (void *)eboot_path);
 
 	return;
-}
-
-/* Loads a Basic menu as a thread
-* In the future, we might want the menu to be an actual homebrew
-*/
-void loadMenu()
-{
-    // Just trying the basic functions used by the menu
-    SceUID id = -1;
-    int attempts = 0;
-	SceUID menu_file;
-    SceOff file_size;
-	int bytes_read;
-	SceIoDirent entry;
-	SceUID menuThread;
-		
-    print_to_screen("Loading Menu");
-
-// this crashes too often :(
-/*	
-    while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
-	{
-        attempts++;
-        id = sceIoDopen("ms0:");
-        if (id <= 0)
-		{
-
-            DEBUG_PRINT(" sceIoDopen syscall estimation failed, attempt to reestimate ",NULL, 0);
-            reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
-        }
-    }
-	
-    if (id < 0) 
-	{
-        print_to_screen("Loading Menu Failed (syscall ?)");
-        exit_with_log(" FATAL, sceIoDopen syscall estimation failed ",NULL, 0);
-    }
-	
-	else 
-	{
-        attempts = 0;        
-        memset(&entry, 0, sizeof(SceIoDirent)); 
-        while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
-		{       
-            attempts++;
-            DEBUG_PRINT(" sceIoDread syscall estimation failed, attempt to reestimate ",NULL, 0);
-            reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
-            memset(&entry, 0, sizeof(SceIoDirent));
-        }
-    }
-	
-    sceIoDclose(id);
-*/
-	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
-
-	if ((menu_file = sceIoOpen(MENU_PATH, PSP_O_RDONLY, 0777)) < 0)
-		exit_with_log(" FAILED TO LOAD MENU ", &menu_file, sizeof(menu_file));
-
-	// Get MENU size
-	file_size = sceIoLseek(menu_file, 0, PSP_SEEK_END);
-	sceIoLseek(menu_file, 0, PSP_SEEK_SET);    
-    
-	// Load MENU to buffer
-	if ((bytes_read = sceIoRead(menu_file, (void*)menu_pointer, file_size)) < 0)
-		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
-        
-    void (*start_entry)(SceSize, void*) = menu_pointer;	 
-	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
-
-	if(menuThread >= 0)
-	{
-		menuThread = sceKernelStartThread(menuThread, 0, NULL);
-    } 
-
-	else 
-	{
-        exit_with_log(" Menu Launch failed ", NULL, 0);
-    }        
 }
 
 // HBL main thread
