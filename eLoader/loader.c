@@ -88,13 +88,6 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 		cur_nid = pentry->nid_pointer;
 		cur_call = pentry->jump_pointer;
 
-		/*
-		DEBUG_PRINT(" LIBRARY ", pentry->library_name, strlen(pentry->library_name));
-		DEBUG_PRINT(" NUM IMPORTS ", &(pentry->stub_size), sizeof(Elf32_Half));
-		DEBUG_PRINT(" NID POINTER ", &cur_nid, sizeof(u32));
-		DEBUG_PRINT(" NID-CALL ", NULL, 0);
-		*/
-
 		// Browse all stubs defined by this header
 		for(i=0; i<pentry->stub_size; i++)
 		{

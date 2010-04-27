@@ -441,6 +441,7 @@ int build_nid_table(tNIDResolver *nid_table)
 						{							
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
+							nid_table[i].lib_index = k;
 							LOGSTR1(" --> new inserted @ %d", i);
 							LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
 							i++;							
@@ -478,6 +479,7 @@ int build_nid_table(tNIDResolver *nid_table)
 							// Fill NID table
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
+							nid_table[i].lib_index = k;
 							LOGSTR1(" --> new inserted @ %d", i);
 
 							// Check lowest syscall
@@ -542,6 +544,7 @@ int build_nid_table(tNIDResolver *nid_table)
 						{
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
+							nid_table[i].lib_index = library_index;
 							LOGSTR1(" --> new inserted @ %d", i);
 							LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
 							i++;
@@ -575,7 +578,8 @@ int build_nid_table(tNIDResolver *nid_table)
 						{
 							// Fill NID table
 							nid_table[i].nid = nid;			
-							nid_table[i].call = get_good_call(cur_call);							
+							nid_table[i].call = get_good_call(cur_call);
+							nid_table[i].lib_index = library_index;
 							LOGSTR1(" --> new inserted @ %d", i);
 						
 							// Check lowest syscall
@@ -623,33 +627,40 @@ int build_nid_table(tNIDResolver *nid_table)
 	} while(1);
 
 #ifdef DEBUG
-	int c = 0;
+	int c1, c2;
 	u32 syscall;
-	//unsigned int line_count = 0;
-	LOGSTR0("==NID TABLE (NID/SYSCALL NUMBER)==\n");
-	while (c <= i)
-	{
-		//line_count++;
-		if (nid_table[c].call & SYSCALL_MASK_RESOLVE)
-			syscall = nid_table[c].call;
-		else
-			syscall = GET_SYSCALL_NUMBER(nid_table[c].call);
-        LOGSTR3("%d. 0x%08lX 0x%08lX ", c, nid_table[c++].nid, syscall);
-		/*
-		if (line_count == 3)
-		{
-			line_count = 0;
-			LOGSTR0("\n");
-		}
-		*/
-	}
+	unsigned int line_count = 0;
 	
 	LOGSTR0("\n==LIBRARY TABLE DUMP==\n");
-	c = 0;
-	while (c <= k)
+	c1 = 0;
+	while (c1 < k)
 	{
-		LOGSTR1("Index: %d\n", c);
-		LOGLIB(library_table[c++]);
+		LOGSTR1("->Index: %d\n", c1);
+		LOGLIB(library_table[c1]);
+
+		LOGSTR0("\nNID list:\n");
+		c2 = 0;
+		while (c2 <= i)
+		{
+			if (nid_table[c2].lib_index == c1)
+			{
+				if (nid_table[c2].call & SYSCALL_MASK_RESOLVE)
+					syscall = nid_table[c2].call;
+				else
+					syscall = GET_SYSCALL_NUMBER(nid_table[c2].call);
+				LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, nid_table[c2].nid, syscall);
+				
+				line_count++;
+				if (line_count == 3)
+				{
+					line_count = 0;
+					LOGSTR0("\n");
+				}
+			}
+			c2++;
+		}
+		c1++;
+		LOGSTR0("\n\n");
 	}
 #endif
 

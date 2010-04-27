@@ -92,7 +92,7 @@ typedef struct
 #define EM_MIPS_RS4_BE 10 //MIPS RS4000 Big-endian
 
 /* e_version */
-#define EV_NONE 0    //Invalid versionn
+#define EV_NONE 0    //Invalid version
 #define EV_CURRENT 1 //Current version
 
 /******************/
@@ -172,9 +172,11 @@ typedef struct
 
 /* Macros for the r_info field */
 /* Determines which program header the current address value in memory should be relocated from */
-#define ELF32_R_ADDR_BASE(i) (((i)> >16) & 0xFF) 
+#define ELF32_R_ADDR_BASE(i) (((i)> >16) & 0xFF)
+
 /* Determines which program header the r_offset field is based from */
 #define ELF32_R_OFS_BASE(i) (((i)> >8) & 0xFF)
+
 /* Determines type of relocation needed, see defines below */
 #define ELF32_R_TYPE(i) (i&0xFF) 
 

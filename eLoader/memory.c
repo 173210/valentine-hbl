@@ -160,15 +160,13 @@ void free_game_memory()
 	// Stop & Unload game module
 	id = find_module("Labo");
 	if (id >= 0)
-	{
-		DEBUG_PRINT(" GAME MODULE ID ", &id, sizeof(id));
-		
+	{		
 		ret = sceKernelStopModule(id, 0, NULL, &status, NULL);
 		if (ret >= 0)
 		{
 			ret = sceKernelUnloadModule(id);
 			if (ret < 0)
-				DEBUG_PRINT(" ERROR UNLOADING GAME MODULE ", &ret, sizeof(ret));
+				LOGSTR0("\nERROR UNLOADING GAME MODULE\n");
 		}
 		else
 			DEBUG_PRINT(" ERROR STOPPING GAME MODULE ", &ret, sizeof(ret));
@@ -230,7 +228,8 @@ int kill_sema(SceUID sema)
     return 1;
 } 
 
-int kill_module(const char * name, SceUID modid) {
+int kill_module(const char * name, SceUID modid) 
+{
 	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
 	int ret = sceKernelUnloadModule(modid);
 	if (ret < 0)

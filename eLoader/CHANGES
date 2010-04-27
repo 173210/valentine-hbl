@@ -1,3 +1,8 @@
+2010/04/27 (m0skit0)
+- Added a new member to tNIDResolver struct to relate each NID to a library
+--> I think this is better than including a pointer/array for NID in tSceLibrary
+- Added more debugging functions to dump ELF structures directly (more need to be done)
+
 2010/04/26 (m0skit0)
 - Fixed minor bug on menu (error is < 0, not <= 0)
 - More eloader.c house cleaning

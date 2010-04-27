@@ -2,6 +2,7 @@
 #include "sdk.h"
 #include "utils.h"
 #include "tables.h"
+#include "elf.h"
    
 // Globals for debugging
 #ifdef DEBUG
@@ -53,7 +54,7 @@ void exit_with_log(const char* description, void* value, unsigned int size)
 
 void log_library(tSceLibrary lib)
 {
-	LOGSTR0("-->Library name: ");
+	LOGSTR0("\n-->Library name: ");
 	LOGSTR0(lib.library_name);
 	LOGSTR0("\n");
 	LOGSTR1("--Calling mode: %d\n", lib.calling_mode);
@@ -61,6 +62,29 @@ void log_library(tSceLibrary lib)
 	LOGSTR1("--Known library exports: %d\n", lib.num_known_exports);
 	LOGSTR2("--Lowest NID/SYSCALL:  0x%08lX/0x%08lX\n", lib.lowest_nid, lib.lowest_syscall);
 	LOGSTR1("--Lowest index in file: %d\n", lib.lowest_index);
+}
+
+void log_modinfo(tModInfoEntry modinfo)
+{
+	LOGSTR0("\n->Module information:\n");
+	LOGSTR1("Name: %s\n", modinfo.module_name);
+	LOGSTR1("Version: 0x%08lX\n", modinfo.module_version);
+	LOGSTR1("Attributes: 0x%08lX\n", modinfo.module_attributes);
+	LOGSTR1("Lib entry: 0x%08lX\n", modinfo.library_entry);
+	LOGSTR1("Lib stubs: 0x%08lX\n", modinfo.library_stubs);
+}
+
+void log_elf_header(Elf32_Ehdr eheader)
+{
+	LOGSTR0("\n->ELF header:\n");
+	LOGSTR1("Type: 0x%08lX\n", eheader.e_type);
+	LOGSTR1("Code entry: 0x%08lX\n", eheader.e_entry);
+	LOGSTR1("Program header table offset: 0x%08lX\n", eheader.e_phoff);
+	LOGSTR1("Program header size: 0x%08lX\n", eheader.e_phentsize);
+	LOGSTR1("Number of program headers: 0x%08lX\n", eheader.e_phnum);
+	LOGSTR1("Section header table offset: 0x%08lX\n", eheader.e_shoff);
+	LOGSTR1("Section header size: 0x%08lX\n", eheader.e_shentsize);
+	LOGSTR1("Number of section headers: 0x%08lX\n", eheader.e_shnum);
 }
 
 // LOGSTRX implementations

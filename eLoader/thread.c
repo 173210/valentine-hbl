@@ -35,7 +35,7 @@ SceUID find_thread(const char *name)
 			
 		if(ret < 0)
 		{
-			DEBUG_PRINT(" sceKernelReferThreadStatus FAILED ", &ret, sizeof(ret));
+			LOGSTR0("\nsceKernelReferThreadStatus FAILED\n");
 			return ret;
 		}
 	
@@ -63,7 +63,7 @@ SceUID find_sema(const char *name)
 		ret = sceKernelReferSemaStatus(readbuf[idcount-1], &info);
 		if(ret < 0)
 		{
-			DEBUG_PRINT(" sceKernelReferSemaStatus FAILED ", &ret, sizeof(ret));
+			LOGSTR0("\nsceKernelReferSemaStatus FAILED\n");
 			return ret;
 		}
 		
@@ -91,7 +91,7 @@ SceUID find_evflag(const char *name)
 		ret = sceKernelReferEventFlagStatus(readbuf[idcount-1], &info);
 		if(ret < 0)
 		{
-			DEBUG_PRINT(" sceKernelReferEventFlagStatus FAILED ", &ret, sizeof(ret));
+			LOGSTR0("\nsceKernelReferEventFlagStatus FAILED\n");
 			return ret;
 		}
 		

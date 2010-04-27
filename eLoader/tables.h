@@ -7,8 +7,9 @@
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
 typedef struct
 {
-	u32 nid;	// NID
-	u32 call;	// Syscall/jump associated to the NID
+	u32 nid;	            // NID
+	u32 call;	            // Syscall/jump associated to the NID
+	unsigned int lib_index; // Index to the library descriptor tSceLibrary
 } tNIDResolver;
 
 typedef enum

@@ -113,7 +113,9 @@ void print_to_screen(char text[])
 	
   	printTextScreen(0, gY, text, 0x00FFFFFF);
   	gY += 12;
-    DEBUG_PRINT_NL(text);
+	
+    LOGSTR0(text);
+	LOGSTR0("\n");
 }  
 
 void *fb = (void *)0x44000000;

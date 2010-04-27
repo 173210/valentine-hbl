@@ -111,7 +111,7 @@ unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pe
 	// First section header
 	cur_offset = pelf_header->e_shoff;
 	
-	DEBUG_PRINT(" NUMBER OF SECTIONS ", &(pelf_header->e_shnum), sizeof(Elf32_Half));
+	LOGSTR1("Number of sections: %d\n", pelf_header->e_shnum);
 
 	// Browse all section headers
 	for(i=0; i<pelf_header->e_shnum; i++)

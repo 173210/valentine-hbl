@@ -1,29 +1,3 @@
-/* Half Byte Loader by m0skit0 and ab5000*/
-/* EBOOT loader for kgsws MoHH exploit */
-/*
-	This license applies if not stated otherwise:
-
-    This file is part of Half Byte Loader.
-
-    Half Byte Loader is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Half Byte Loader is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Half Byte Loader.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-/* COMPILING */
-/* Use exploit SDK to compile, just "make" it */
-/* Original SDK modified, please check the link below for more information*/
-/* Visit us at http://advancedpsp.freeforums.org/ */
-
 #include "elf.h"
 #include "eloader.h"
 #include "debug.h"
@@ -96,7 +70,7 @@ unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
 	sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
 
-    DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));
+    // DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));
     
 	// Check if kernel mode
 	if ((unsigned int)program_header.p_paddr & 0x80000000)
@@ -106,7 +80,7 @@ unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 	sceIoLseek(elf_file, start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
-    DEBUG_PRINT("Module INFO:", &module_info, sizeof(tModInfoEntry));
+    LOGMODINFO(module_info);
     
 	// Loads global pool over Valentine's global pool
     /*
@@ -136,9 +110,7 @@ unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);
 }
 
-// Loads relocatable executable in memory using fixed address
-// Loads address of first stub header in pstub_entry
-// Returns number of stubs
+// Get module GP
 u32 getGP(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header)
 {
 	Elf32_Phdr program_header;
@@ -149,14 +121,14 @@ u32 getGP(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header)
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
 	sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
 
-    DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));
-    
+    // DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));    
 
 	// Read module info from PRX
 	sceIoLseek(elf_file, start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
-    DEBUG_PRINT("Module INFO:", &module_info, sizeof(tModInfoEntry));
+    // LOGMODINFO(module_info);
+	
     return (u32) module_info.gp;
 }
 
@@ -233,26 +205,11 @@ SceUID elf_eboot_extract_open(const char* eboot_path, u32 *offset)
 
 	sceKernelDcacheWritebackInvalidateAll();
 
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-		sceIoWrite(dbglog, eboot_path, strlen(eboot_path));
-		sceIoClose(dbglog);
-	#endif
-	*/
-
 	eboot = sceIoOpen(eboot_path, PSP_O_RDONLY, 777);
 
 	sceIoLseek(eboot, 0x20, PSP_SEEK_SET);
 	sceIoRead(eboot, offset, sizeof(u32));
 
-	/*
-	#ifdef DEBUG
-		dbglog = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-		sceIoWrite(dbglog, &offset, sizeof(u32));
-		sceIoClose(dbglog);
-	#endif
-	*/
 
 	sceIoLseek(eboot, *offset, PSP_SEEK_SET);
 

@@ -44,7 +44,9 @@ SceUID find_module(const char *name) {
 		
 		if(sceKernelQueryModuleInfo(readbuf[idcount-1], &info) < 0)
 			return -1;
-        DEBUG_PRINT(info.name, NULL, 0);
+		
+        LOGSTR1("%s\n", info.name);
+		
 		if(strcmp(info.name, name) == 0)
 			return readbuf[idcount-1];
 	}
