@@ -117,7 +117,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32 real_call;
 	unsigned int resolving_count = 0;
 
-	LOGSTR1("RESOLVING IMPORTS. Stubs siwe:%d", stubs_size);
+	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d", stubs_size);
 
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
@@ -157,6 +157,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                     DEBUG_PRINT("mem trick", NULL, 0);
                     real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
                     break;
+					
                 case 0x237DBD4F:
                     DEBUG_PRINT("mem trick", NULL, 0);
                     real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);

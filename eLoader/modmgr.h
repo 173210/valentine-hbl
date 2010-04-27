@@ -3,6 +3,15 @@
 
 #include "sdk.h"
 
+typedef struct
+{
+	unsigned int id;
+	unsigned long size;
+	void* text_addr;
+	void* text_entry;
+	void* libstub_addr;	
+} HBLModuleInfo;
+
 // Get module ID from module name
 SceUID find_module(const char *name);
 

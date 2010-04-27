@@ -4,7 +4,7 @@
 #include "debug.h"
 #include "modmgr.h"
 
-/* Find a FPL by name */
+// Find a FPL by name
 SceUID find_fpl(const char *name) 
 {
 	SceUID readbuf[256];
@@ -24,6 +24,7 @@ SceUID find_fpl(const char *name)
 	return -1;
 }
 
+// ab5000 system
 #ifdef AB5000_FREEMEM
 /* Free memory allocated by Game */
 /* Warning: MUST NOT be called from Game main thread */
@@ -183,7 +184,11 @@ void free_game_memory()
 }
 #endif
 
+// Davee system
 #ifdef DAVEE_FREEMEM
+
+#define MODULES_START_ADDRESS 0x08804000
+#define MAX_MODULES 0x20
 
 int kill_thread(SceUID thid) 
 {
@@ -228,19 +233,134 @@ int kill_sema(SceUID sema)
     return 1;
 } 
 
-int kill_module(const char * name, SceUID modid) 
+int kill_module(SceUID modid) 
 {
 	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
 	int ret = sceKernelUnloadModule(modid);
 	if (ret < 0)
 	{
-		LOGSTR2("--> ERROR 0x%08lX UNLOADING %s\n", ret, name);
+		LOGSTR2("--> ERROR 0x%08lX UNLOADING MODULE ID 0x%08lX\n", ret, modid);
         return 0;
 	}
     return 1;
 }
 
-// Davee's addresses
+void DeleteAllThreads(void)
+{
+	int i;
+	SceUID thids[8];
+	
+	/* sgx threads */
+	thids[0] = *(SceUID*)(0x08B46140);
+	thids[1] = *(SceUID*)(0x08C38224);
+	thids[2] = *(SceUID*)(0x08C32174);
+	thids[3] = *(SceUID*)(0x08C2C0C4);
+	thids[4] = *(SceUID*)(0x08C26014);
+	thids[5] = *(SceUID*)(0x08B465E4);
+	/* file thread */
+	thids[6] = *(SceUID*)(0x08B7BBF4);
+	// user_main
+	thids[7] = *(SceUID*)(0x08B44C28);
+	
+	/* lets kill these threads now */
+	for (i = 0; i < (sizeof(thids)/sizeof(u32)); i++)
+	{
+		kill_thread(thids[i]);
+	}
+}
+
+void DeleteAllEventFlags(void)
+{
+	int i;
+	SceUID evids[3];
+	
+	/* sgx event ids */
+	evids[0] = *(SceUID*)(0x08B46634);
+	evids[1] = *(SceUID*)(0x08B465F4);
+	/* callback event id */
+	evids[2] = *(SceUID*)(0x08B7BC00);
+	
+	/* killin' tiem */
+	for (i = 0; i < (sizeof(evids)/sizeof(u32)); i++)
+	{
+		kill_event_flag(evids[i]);
+	}
+}
+
+void DeleteAllSemaphores(void)
+{
+	int i;
+	SceUID semaids[28];
+	
+	/* sgx semaphores */
+	semaids[0] = *(SceUID*)(0x08C3822C);
+	semaids[1] = *(SceUID*)(0x08C38228);
+	semaids[2] = *(SceUID*)(0x08C3217C);
+	semaids[3] = *(SceUID*)(0x08C32178);
+	semaids[4] = *(SceUID*)(0x08C2C0CC);
+	semaids[5] = *(SceUID*)(0x08C2C0C8);
+	semaids[6] = *(SceUID*)(0x08C2601C);
+	semaids[7] = *(SceUID*)(0x08C26018);
+	semaids[8] = *(SceUID*)(0x08B4656C);
+	semaids[9] = *(SceUID*)(0x08B46594);
+	semaids[10] = *(SceUID*)(0x08B46630);
+	semaids[11] = *(SceUID*)(0x08B465F0);
+	semaids[12] = *(SceUID*)(0x08B465EC);
+	semaids[13] = *(SceUID*)(0x08B465E8);
+	semaids[14] = *(SceUID*)(0x08B4612C);
+	semaids[15] = *(SceUID*)(0x08C24C90);
+	semaids[16] = *(SceUID*)(0x08C24C60);
+	
+	/* this annoying "Semaphore.cpp" */
+	semaids[17] = *(SceUID*)(0x09E658C8);
+	semaids[18] = *(SceUID*)(0x09E641C4);
+	semaids[19] = *(SceUID*)(0x09E640B4);
+	semaids[20] = *(SceUID*)(0x08B7BC18);
+	semaids[21] = *(SceUID*)(0x08B64AB0);
+	semaids[22] = *(SceUID*)(0x08B64AA4);
+	semaids[23] = *(SceUID*)(0x08B64A98);
+	semaids[24] = *(SceUID*)(0x08B64A8C);
+	semaids[25] = *(SceUID*)(0x08B64A80);
+	semaids[26] = *(SceUID*)(0x08B64A74);
+	semaids[27] = *(SceUID*)(0x08B64A68);
+	
+	/* lets destroy these now */
+	for (i = 0; i < (sizeof(semaids)/sizeof(u32)); i++)
+	{
+		/* boom headshot */
+		kill_sema(semaids[i]);
+	}
+}
+
+void DeleteAndUnassignCallbacks(void)
+{
+	SceUID ret; 
+	
+	/* clear msevent */
+	u32 msevent_cbid = *(SceUID*)(0x08B7BC04);
+	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
+	ret = sceKernelDeleteCallback(msevent_cbid);
+	
+	if (ret < 0)
+		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", msevent_cbid, ret);
+
+	/* there is another msevent callback */
+	msevent_cbid = *(SceUID*)(0x08B82C0C);
+	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
+	ret = sceKernelDeleteCallback(msevent_cbid);
+
+	if (ret < 0)
+		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", msevent_cbid, ret);
+	
+	/* umd callback */
+	SceUID umd_cbid = *(SceUID*)(0x08B70D9C);
+	sceUmdUnRegisterUMDCallBack(umd_cbid);
+	ret = sceKernelDeleteCallback(umd_cbid);
+
+	if (ret < 0)
+		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", umd_cbid, ret);
+}
+
 void free_game_memory()
 {
 #ifdef DEBUG
@@ -249,148 +369,50 @@ void free_game_memory()
 	free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
 	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", free, max_free);
-#endif  
+#endif
 
-	int i, ret;
-	SceUID sgx_thids[6];
-	SceUID sgx_evids[2];
+	DeleteAllThreads();
 
-	// It's killin' tiem, lets raeps sum threads
-	sgx_thids[0] = *(SceUID*)0x08B46140;
-	sgx_thids[1] = *(SceUID*)0x08C38224;
-	sgx_thids[2] = *(SceUID*)0x08C32174;
-	sgx_thids[3] = *(SceUID*)0x08C2C0C4;
-	sgx_thids[4] = *(SceUID*)0x08C26014;
-	sgx_thids[5] = *(SceUID*)0x08B465E4;
-	
-	// lets kill these threads now
-	for (i = 0; i < (sizeof(sgx_thids)/sizeof(u32)); i++)
-        kill_thread(sgx_thids[i]);
+	DeleteAllEventFlags();
 
-	// thread "FileThread"	(terminate + delete)
-    kill_thread(*(SceUID*)0x08B7BBF4);
+	DeleteAllSemaphores();
 
-	// thread user_main (terminate + delete)
-    kill_thread(*(SceUID*)0x08B44C28);	
+	DeleteAndUnassignCallbacks();
 
-	// lets kill some eventflags
-	sgx_evids[0] = *(SceUID*)0x08B46634;
-	sgx_evids[1] = *(SceUID*)0x08B465F4;
+	// Set inital UID to -1 and the current UID to 0
+	int i;
+	SceUID uids[MAX_MODULES];
+	uids[0] = -1;
+	SceUID cur_uid = 0;
 	
-	// killin' tiem
-	for (i = 0; i < (sizeof(sgx_evids)/sizeof(u32)); i++)
-        kill_event_flag(sgx_evids[i]);
-        
-	// kill callback evid
-	kill_event_flag(*(SceUID*)0x08B7BC00);
-	
-	// lets kill some semaphores
-	SceUID sgx_semaids[17];
-	SceUID semaids[11];
-	
-	// lets load the ids... ALL OF THEM
-	sgx_semaids[0] = *(SceUID*)0x08c3822c;
-	sgx_semaids[1] = *(SceUID*)0x08c38228;
-	sgx_semaids[2] = *(SceUID*)0x08c3217c;
-	sgx_semaids[3] = *(SceUID*)0x08c32178;
-	sgx_semaids[4] = *(SceUID*)0x08c2c0cc;
-	sgx_semaids[5] = *(SceUID*)0x08c2c0c8;
-	sgx_semaids[6] = *(SceUID*)0x08c2601c;
-	sgx_semaids[7] = *(SceUID*)0x08c26018;
-	sgx_semaids[8] = *(SceUID*)0x08b4656c;
-	sgx_semaids[9] = *(SceUID*)0x08b46594;
-	sgx_semaids[10] = *(SceUID*)0x08b46630;
-	sgx_semaids[11] = *(SceUID*)0x08b465f0;
-	sgx_semaids[12] = *(SceUID*)0x08b465ec;
-	sgx_semaids[13] = *(SceUID*)0x08b465e8;
-	sgx_semaids[14] = *(SceUID*)0x08b4612c;
-	sgx_semaids[15] = *(SceUID*)0x08c24c90;
-	sgx_semaids[16] = *(SceUID*)0x08c24c60;
-	
-	// lets destroy these now
-	for (i = 0; i < (sizeof(sgx_semaids)/sizeof(u32)); i++)
-		kill_sema(sgx_semaids[i]);
-	
-	// this annoying "Semaphore.cpp"
-	semaids[0] = *(SceUID*)0x09E658C8;
-	semaids[1] = *(SceUID*)0x09e641c4;
-	semaids[2] = *(SceUID*)0x09e640b4;
-	semaids[3] = *(SceUID*)0x08b7bc18;
-	semaids[4] = *(SceUID*)0x08b64ab0;
-	semaids[5] = *(SceUID*)0x08b64aa4;
-	semaids[6] = *(SceUID*)0x08b64a98;
-	semaids[7] = *(SceUID*)0x08b64a8c;
-	semaids[8] = *(SceUID*)0x08b64a80;
-	semaids[9] = *(SceUID*)0x08b64a74;
-	semaids[10] = *(SceUID*)0x08b64a68;
-	
-	/* lets destroy these now */
-	for (i = 0; i < (sizeof(semaids)/sizeof(u32)); i++)
-        kill_sema(semaids[i]);
-	
-	/* delete callbacks */
-	u32 msevent_cbid = *(u32*)0x8b7bc04;
-	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);	
-	ret = sceKernelDeleteCallback(msevent_cbid);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX DELETING MS CALLBACK\n", ret);
-	
-	/* umd callback */
-	SceUID umd_cbid = *(SceUID*)0x8b70d9c;
-	sceUmdUnRegisterUMDCallBack(umd_cbid);	
-	sceKernelDeleteCallback(umd_cbid);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX DELETING UMD CALLBACK\n", ret);
-	
-	/* there is another msevent callback */
-	msevent_cbid = *(SceUID*)0x8b82c0c;
-	ret = sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX GETTING MS CALLBACK 2\n", ret);
-	
-	ret = sceKernelDeleteCallback(msevent_cbid);
-	if (ret < 0)
-		LOGSTR1("--> ERROR 0x%08lX DELETING MS CALLBACK 2\n", ret);
+	/* scan through user memory looking for modules ;) */
+	for (i = 0; i < (24 << 20); i += 0x400)
+	{
+		SceUID modid;
+		
+		/* check if we've got a UID */
+		if ((modid = sceKernelGetModuleIdByAddress(MODULES_START_ADDRESS + i)) >= 0)
+		{
+			/* we do, make sure it's not just the same one */
+			if (uids[cur_uid - ((cur_uid == 0) ? (0) : (1))] != modid)
+			{
+				/* okay add it */
+				uids[cur_uid++] = modid;
+			}
+
+			if (cur_uid == MAX_MODULES)
+			{
+				LOGSTR0("\n->WARNING: Max number of modules to unload reached\n");
+				break;
+			}
+		}
+	}
 	
 	/* shutdown the modules in usermode */
-	
-	/* sceFont_Library */
-	kill_module("sceFont_Library", *(SceUID*)0x8b8cbb8);
-	
-	/* scePsmf_library */
-    kill_module("scePsmf_library", *(SceUID*)0x8b8ca7c);
-
-	/* sceCcc_Library */
-    kill_module("sceCcc_Library", *(SceUID*)0x8b8c940);
-	
-	/* sceNetAdhocDiscover_Library */
-    kill_module("sceNetAdhocDiscover_Library", sceKernelGetModuleIdByAddress(0x09EB3A00));
-	
-	/* sceNetAdhocDownload_Library */
-    kill_module("sceNetAdhocDownload_Library", sceKernelGetModuleIdByAddress(0x09EAFC00));
-
-	/* sceNetAdhocMatching_Library */
-    kill_module("sceNetAdhocMatching_Library", sceKernelGetModuleIdByAddress(0x09EAB200));
-	
-	/* sceNetAdhocctl_Library */
-    kill_module("sceNetAdhocctl_Library", sceKernelGetModuleIdByAddress(0x09EA3300));
-	
-	/* sceNetAdhoc_Library */
-    kill_module("sceNetAdhoc_Library", sceKernelGetModuleIdByAddress(0x09E9B800));
-	
-	/* sceNet_Library */
-    kill_module("sceNet_Library", sceKernelGetModuleIdByAddress(0x09E87800));
-	
-	/* sceMpeg_library */
-    kill_module("sceMpeg_library", sceKernelGetModuleIdByAddress(0x09E7B800));
-	
-	/* sceATRAC3plus_Library */
-    kill_module("sceATRAC3plus_Library", sceKernelGetModuleIdByAddress(0x09E73800));
-	
-	/* Labo */
-#ifdef UNLOAD_MODULE
-    kill_module("Labo", sceKernelGetModuleIdByAddress(0x08804000));
-#endif
+	for (i = cur_uid - 1; (int)i >= 0; i--)
+	{
+		kill_module(uids[i]);
+	}
 
 #ifdef DEBUG
 	free = sceKernelTotalFreeMemSize();
@@ -460,7 +482,7 @@ SceSize sceKernelTotalFreeMemSize()
             return size;
         }
 
-        // Find max lineare size available
+        // Find max linear size available
         x = sceKernelMaxFreeMemSize();
         if (!(x)) break;
 
@@ -468,7 +490,7 @@ SceSize sceKernelTotalFreeMemSize()
         blocks[count] = sceKernelAllocPartitionMemory(2, "ValentineFreeMemMalloc", PSP_SMEM_Low, x, NULL);
         if (!(blocks[count]))
         {
-            LOGSTR0("Discrepency between  sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
+            LOGSTR0("Discrepency between sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
             return size;
         }
         

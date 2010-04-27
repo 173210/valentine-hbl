@@ -2,7 +2,8 @@
 #include "eloader.h"
 #include "debug.h"
 
-/* Hooks for some functions used by Homebrews */
+// Hooks for some functions used by Homebrews
+// Hooks are put in place by resolve_imports() in resolve.c
 
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
                              	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
@@ -48,7 +49,6 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
         LOGSTR1("failed with result: 0x%08lX\n", uid);
     return uid;
 }
-
 
 /* WIP
 // A function that just returns "ok" but does nothing
