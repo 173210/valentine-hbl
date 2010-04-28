@@ -5,6 +5,7 @@
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() in resolve.c
 
+#ifdef FAKE_THREADS
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
                              	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 { 
@@ -27,6 +28,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
 	
     return res;
 }
+#endif
 
 #ifdef RETURN_TO_MENU_ON_EXIT
 void  _hook_sceKernelExitGame() 
@@ -49,6 +51,14 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
         LOGSTR1("failed with result: 0x%08lX\n", uid);
     return uid;
 }
+
+#ifdef LOAD_MODULE
+// Working on it (m0skit0)
+SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption *option)
+{	
+	return SCE_KERNEL_ERROR_ILLEGAL_PRIMARY_SYSCALL_NUMBER;
+}
+#endif
 
 /* WIP
 // A function that just returns "ok" but does nothing

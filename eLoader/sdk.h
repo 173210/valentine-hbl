@@ -10,5 +10,11 @@
 // Typedefs
 typedef unsigned char byte;
 
+#ifndef ULONG
+#define ULONG unsigned long
+#endif
+
+#define EXIT sceKernelExitGame()
+
 #endif
 

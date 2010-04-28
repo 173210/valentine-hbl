@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "tables.h"
 #include "elf.h"
+#include "modmgr.h"
    
 // Globals for debugging
 #ifdef DEBUG
@@ -85,6 +86,19 @@ void log_elf_header(Elf32_Ehdr eheader)
 	LOGSTR1("Section header table offset: 0x%08lX\n", eheader.e_shoff);
 	LOGSTR1("Section header size: 0x%08lX\n", eheader.e_shentsize);
 	LOGSTR1("Number of section headers: 0x%08lX\n", eheader.e_shnum);
+}
+
+void log_mod_entry(HBLModInfo modinfo)
+{
+	LOGSTR0("\n->Module entry:\n");
+	LOGSTR1("ID: 0x%08lX\n", modinfo.id);
+	LOGSTR1("State: %d\n", modinfo.state);
+	LOGSTR1("Size: 0x%08lX\n", modinfo.size);
+	LOGSTR1("Text address: 0x%08lX\n", modinfo.text_addr);
+	LOGSTR1("Entry point: 0x%08lX\n", modinfo.text_entry);
+	LOGSTR1(".lib.stub address: 0x%08lX\n", modinfo.libstub_addr);
+	LOGSTR1("GP: 0x%08lX\n", modinfo.gp);
+	LOGSTR1("Path: %s\n", modinfo.path);
 }
 
 // LOGSTRX implementations

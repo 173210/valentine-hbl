@@ -4,7 +4,7 @@
 #include "sdk.h"
 
 /* Free memory allocated by The game */
-/* Warning: MUST NOT be called from The game's main thread */
+/* Warning: MUST NOT be called from the game's main thread */
 void free_game_memory();
 
 /* Overrides of sce functions to avoid syscall estimates */

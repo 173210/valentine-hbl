@@ -3,14 +3,37 @@
 
 #include "sdk.h"
 
+// Maximum modules that can be loaded
+#define MAX_MODULES 5
+#define MOD_ID_START 0x10000000
+
+// Module states
+typedef enum
+{
+	LOADED = 0,
+	RUNNING = 1,
+	STOPPED = 2
+}HBLModState;
+
+// Module information
 typedef struct
 {
-	unsigned int id;
-	unsigned long size;
-	void* text_addr;
-	void* text_entry;
-	void* libstub_addr;	
-} HBLModuleInfo;
+	unsigned int id;		// Module ID given by HBL
+	HBLModState state;		// Current module state
+	unsigned long size;		// Allocated size
+	void* text_addr;		// Text address (useful?)
+	void* text_entry;		// Entry point
+	void* libstub_addr;		// .lib.stub section address
+	void* gp;				// Global pointer
+	char path[256];			// Path
+} HBLModInfo;
+
+// Loaded modules
+typedef struct
+{
+	unsigned int num_loaded_mod;			// Loaded modules
+	HBLModInfo table[MAX_MODULES];	// List of loaded modules info struct
+} HBLModTable;
 
 // Get module ID from module name
 SceUID find_module(const char *name);
@@ -22,6 +45,12 @@ int get_module_info(SceUID modid, tModuleInfo *modinfo);
 
 /* debug info */
 void DumpModuleList();
+
+// Loads a module to memory
+SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset);
+
+// Start an already loaded module
+SceUID start_module(SceUID modid);
 
 #endif
 

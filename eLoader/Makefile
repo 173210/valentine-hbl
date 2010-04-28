@@ -26,7 +26,7 @@ eloader.o: eloader.c
 	$(CC) $(CFLAGS) -S eloader.c -o eloader.s
 	$(ASM) eloader.s -o eloader.o
 
-elf.o: elf.c 
+elf.o: elf.c
 	$(CC) $(CFLAGS) -S elf.c -o elf.s
 	$(ASM) elf.s -o elf.o
 
@@ -104,7 +104,7 @@ hbl: eloader.o elf.o thread.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o
 	$(PSPDEV)/bin/psp-strip -s eloader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary eloader.elf hbl.bin
 	
-loader: loader.o debug.o lib.o sdk_loader.o elf.o config.o utils.o linker_loader.x
-	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o -o loader.elf
+loader: loader.o debug.o lib.o sdk_loader.o elf.o config.o utils.o malloc.o linker_loader.x
+	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o malloc.o -o loader.elf
 	$(PSPDEV)/bin/psp-strip -s loader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary loader.elf h.bin

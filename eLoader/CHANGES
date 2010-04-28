@@ -1,3 +1,12 @@
+2010/04/28 (m0skit0)
+- Changed prx_load_program() to accept addresses other than PRX_LOAD_ADDRESS
+- Added load_module and start_module functions in modmgr.c
+- Moved some generic functions from utils.c to lib.c
+- Changed EBOOT offset type to SceOff
+- Added relevant data structures and functions for module loading
+- To load external modules, hook sceKernelLoadModule and sceKernelStartModule (not tested), and uncomment LOAD_MODULE
+- Big thanks to ab5000 for the memory allocation library!
+
 2010/04/27 (m0skit0)
 - Added a new member to tNIDResolver struct to relate each NID to a library
 --> I think this is better than including a pointer/array for NID in tSceLibrary

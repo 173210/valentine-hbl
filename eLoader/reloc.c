@@ -93,7 +93,7 @@ int relocate_entry(tRelEntry reloc_entry)
 
 // Relocates PRX sections that need to
 // Returns number of relocated entries
-unsigned int relocate_sections(SceUID elf_file, u32 start_offset, Elf32_Ehdr *pelf_header)
+unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr *pelf_header)
 {
 	Elf32_Half i;
 	Elf32_Shdr sec_header;

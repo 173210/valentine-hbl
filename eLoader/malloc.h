@@ -3,14 +3,24 @@
 
 #include "sdk.h"
 
-/* Max number of allocated memory blocks */
-#define MAX_ALLOCS 1
+// Max number of allocated memory blocks
+#define MAX_ALLOCS 5
 
-/* Allocate memory */
+/* Blocks structure */
+typedef struct 
+{
+	SceUID uid;    // UID of block
+	void* address; // Head address of block (0 if the block isn't allocated)
+} HBLMemBlock;
+
+// Allocate memory
 void* malloc(u32 size);
 
-/* Free memory */
+// Free memory
 void free(void* ptr);
+
+// Allocates memory from a given address
+void allocate_memory(u32 size, void* addr);
 
 #endif
 

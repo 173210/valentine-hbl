@@ -2,12 +2,6 @@
 #include "malloc.h"
 #include "debug.h"
 
-/* Blocks structure */
-typedef struct {
-	SceUID uid; // UID of block
-	void* address; // Head address of block (0 if the block isn't allocated)
-} MyBlock;
-
 /* Number of allocated blocks */
 u32 nblocks = 0;
 
@@ -15,7 +9,7 @@ u32 nblocks = 0;
 u8 init = 0;
 
 /* Blocks */
-MyBlock block[MAX_ALLOCS];
+HBLMemBlock block[MAX_ALLOCS];
 
 /* Allocate memory */
 void* malloc(SceSize size)
@@ -78,3 +72,13 @@ void free(void* ptr)
 	return;
 }
 
+// Allocates memory for homebrew so it doesn't overwrite itself
+void allocate_memory(u32 size, void* addr)
+{
+	SceUID mem;
+	
+	LOGSTR1("-->ALLOCATING EXECUTABLE MEMORY @ 0x%08lX\n", addr);
+	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
+	if(mem < 0)
+		LOGSTR1(" allocate_memory FAILED: 0x%08lX", mem);
+}

@@ -77,18 +77,21 @@
 //Comment the following line to avoid reestimation
 #define REESTIMATE_SYSCALL
 
-//Choose free memory method (only one)
+//Choose free memory method (only one :P)
 //#define AB5000_FREEMEM
 #define DAVEE_FREEMEM
 
+//Comment to disable HBL LoadModule system
+// #define LOAD_MODULE
+
 extern u32 gp;
 extern u32* entry_point;
-extern u32 hbsize;
+//extern u32 hbsize;
 
 void runThread(SceSize args, void *argp);
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
-void start_eloader(char *eboot_path, int is_eboot);
+void start_eloader(const char *path, int is_eboot);
 
 
 #endif

@@ -138,7 +138,8 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
 
 			//DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
-            
+
+			// HOOOOOOK THAT!!!
             switch (*cur_nid) 
 			{
 #ifdef FAKE_THREADS
@@ -148,20 +149,27 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 #endif
 
 #ifdef RETURN_TO_MENU_ON_EXIT                
-                case 0x05572A5F: //sceKernelExitGame
+                case 0x05572A5F: // sceKernelExitGame
                     if (g_menu_enabled)
                         real_call = MAKE_JUMP(_hook_sceKernelExitGame);
                     break;
 #endif   
-                case 0xA291F107:
-                    DEBUG_PRINT("mem trick", NULL, 0);
+                case 0xA291F107: // sceKernelMaxFreeMemSize
+                    LOGSTR0(" mem trick ");
                     real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
                     break;
 					
-                case 0x237DBD4F:
-                    DEBUG_PRINT("mem trick", NULL, 0);
+                case 0x237DBD4F: // sceKernelAllocPartitionMemory
+                    LOGSTR0(" mem trick ");
                     real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break;                     
+                    break;
+
+#ifdef LOAD_MODULE
+				case 0x710F61B5: // sceKernelLoadModule
+					LOGSTR0(" loadmodule trick ");
+					real_call = MAKE_JUMP(_hook_sceKernelLoadModule);
+					break;
+#endif
 					
 /*
 Work in progress, attempt for the mp3 library not to fail                  

@@ -193,9 +193,9 @@ void _start()
         }
 
         printTextScreen(220, 0 , "X to select, /\\ to quit", 0x00FFFFFF);
-        printTextScreen(0, 224 , "HALF-Byte Loader by m0skit0, ab5000, and wololo", 0x00FFFFFF);
+        printTextScreen(0, 224 , "Half Byte Loader BETA by m0skit0, ab5000, wololo, davee", 0x00FFFFFF);
         printTextScreen(0, 236 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);
-        printTextScreen(0, 248 , "Davee, Fanjita & Noobz, psp-hacks.com", 0x00FFFFFF);
+        printTextScreen(0, 248 , "Fanjita & Noobz, psp-hacks.com", 0x00FFFFFF);
         printTextScreen(0, 260 , "GPL License: give the sources if you distribute binaries!!!", 0x00FFFFFF);
         
         sceKernelDelayThread(100000);

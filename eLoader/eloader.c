@@ -8,19 +8,20 @@
 #include "reloc.h"
 #include "resolve.h"
 #include "tables.h"
+#include "memory.h"
 
 /* eLoader */
 /* Entry point: _start() */
 
 // Any way to have those non globals ?
-u32 gp = 0;
-u32* entry_point = 0;
-u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
+//u32 gp = 0;
+//u32* entry_point = 0;
+//u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
 
 // Menu variables
 int g_menu_enabled = 0; // this is set to 1 at runtime if a menu.bin file exists
 u32 * isSet = EBOOT_SET_ADDRESS;
-u32 * ebootPath = EBOOT_PATH_ADDRESS;  
+u32 * ebootPath = EBOOT_PATH_ADDRESS;
 u32 * menu_pointer = MENU_LOAD_ADDRESS;
 
 /* Loads a Basic menu as a thread
@@ -114,6 +115,7 @@ void main_loop()
 }
 
 // Jumps to ELF's entry point
+/*
 void runThread(SceSize args, void *argp)
 {
 	void (*start_entry)(SceSize, void*) = entry_point;
@@ -130,38 +132,35 @@ void execute_elf(SceSize args, void *argp)
 	void (*start_elf)(SceSize, void*) = entry_point;	
 	start_elf(args, argp);
 }
-
-// Allocates memory for homebrew so it doesn't overwrite itself
-void allocate_memory(u32 size, void* addr)
-{
-	SceUID mem;
-	
-	LOGSTR1("-->ALLOCATING EXECUTABLE MEMORY @ 0x%08lX\n", addr);
-	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
-	if(mem < 0)
-		LOGSTR1(" allocate_memory FAILED: 0x%08lX", mem);
-}
+*/
 
 // HBL entry point
 // Needs path to ELF or EBOOT
-void start_eloader(char *eboot_path, int is_eboot)
+void start_eloader(const char *path, int is_eboot)
 {
-	unsigned int num_nids, stubs_size, stubs_resolved;
-	unsigned int sections_relocated;
-	tStubEntry* pstub_entry;
-	SceUID elf_file, thid;
-	Elf32_Ehdr elf_header;
-	u32 offset = 0;
+	SceUID elf_file;
+	SceOff offset = 0;
+	SceUID mod_id;
 
-	LOGSTR1("EBOOT path: %s\n", eboot_path);
+	LOGSTR1("EBOOT path: %s\n", path);
 
 	// Extracts ELF from PBP
 	if (is_eboot)		
-		elf_file = elf_eboot_extract_open(eboot_path, &offset);
+		elf_file = elf_eboot_extract_open(path, &offset);
 	// Plain ELF
 	else
-		elf_file = sceIoOpen(eboot_path, PSP_O_RDONLY, 0777);
-	
+		elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
+
+	LOGSTR0("Loading module\n");
+	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
+
+	if (mod_id < 0)
+	{
+		LOGSTR1("ERROR 0x%08lX loading main module\n", mod_id);
+		EXIT;
+	}
+
+	/*
 	// Read ELF header
 	sceIoRead(elf_file, &elf_header, sizeof(Elf32_Ehdr));
 	
@@ -172,10 +171,11 @@ void start_eloader(char *eboot_path, int is_eboot)
 	// Static ELF
 	if(elf_header.e_type == (Elf32_Half) ELF_STATIC)
 	{	
+		// TODO: insert into mod_table
 		LOGSTR0("STATIC\n");		
 
 		// Load ELF program section into memory
-		hbsize = elf_load_program(elf_file, offset, &elf_header, allocate_memory);		
+		hbsize = elf_load_program(elf_file, offset, &elf_header);		
 	
 		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_header, &pstub_entry);
@@ -183,11 +183,13 @@ void start_eloader(char *eboot_path, int is_eboot)
 	
 	// Relocatable ELF (PRX)
 	else if(elf_header.e_type == (Elf32_Half) ELF_RELOC)
-	{	
+	{
+		// TODO: insert into mod_table
 		LOGSTR0("RELOC\n");
    
 		// Load program section into memory and also get stub headers
-		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, allocate_memory);
+		void* addr = (void*) PRX_LOAD_ADDRESS;
+		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, &addr);
 
 		//Relocate all sections that need to
 		sections_relocated = relocate_sections(elf_file, offset, &elf_header);
@@ -215,7 +217,17 @@ void start_eloader(char *eboot_path, int is_eboot)
     
     // Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
-	
+	*/
+
+	mod_id = start_module(mod_id);
+
+	if (mod_id < 0)
+	{
+		LOGSTR1("ERROR 0x%08lX starting main module\n", mod_id);
+		EXIT;
+	}
+
+	/*
 	// Create and start hb thread
     if (gp)
         SET_GP(gp);
@@ -244,6 +256,7 @@ void start_eloader(char *eboot_path, int is_eboot)
 
 	// Uncomment only if no homebrew thread created
 	// execute_elf(strlen(eboot_path) + 1, (void *)eboot_path);
+	*/
 
 	return;
 }
@@ -261,7 +274,7 @@ int start_thread(SceSize args, void *argp)
 	if(num_nids > 0)
 	{	
 		// FIRST THING TO DO!!!
-        print_to_screen("Resolving Missing Stubs");
+        print_to_screen("Resolving missing stubs");
 		resolve_missing_stubs();
 	
 		// Free memory
@@ -270,6 +283,10 @@ int start_thread(SceSize args, void *argp)
 		
         print_to_screen("-- Done (Free memory)");
         LOGSTR0("START HBL\n");
+
+		// Initialize module loading
+		print_to_screen("Initialize LoadModule");
+		init_load_module();
 
         // Start the menu or run directly the hardcoded eboot      
         if (file_exists(EBOOT_PATH))

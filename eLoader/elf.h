@@ -222,24 +222,25 @@ int elf_check_stub_entry(tStubEntry* pentry);
 
 /* Load static executable in memory using virtual address */
 /* Returns total size copied in memory */
-unsigned int elf_load_program(SceUID elf_file, u32 start_offset,  Elf32_Ehdr* pelf_header, void (*alloc)(u32, void*));
+unsigned int elf_load_program(SceUID elf_file, SceOff start_offset,  Elf32_Ehdr* pelf_header);
 
 // Load relocatable executable in memory using fixed address 
 // and fills pointer to stub with first stub entry
 // Returns total size copied in memory
-unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void (*alloc)(u32, void*));
+unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr);
 
 /* Copies the string pointed by table_offset into "buffer" */
 /* WARNING: modifies file pointer. This behaviour MUST be changed */
 unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buffer);
 
 /* Returns size and address (pstub) of ".lib.stub" section (imports) */
-unsigned int elf_find_imports(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub);
+unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub);
 
 // Extracts ELF from PBP,returns pointer to EBOOT File & fills offset
-SceUID elf_eboot_extract_open(const char* eboot_path, u32 *offset);
+SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset);
 
-u32 getGP(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header);
+// Get ELF GP value
+u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header);
 
 #endif
 

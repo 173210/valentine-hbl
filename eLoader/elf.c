@@ -1,6 +1,7 @@
 #include "elf.h"
 #include "eloader.h"
 #include "debug.h"
+#include "malloc.h"
 
 /*****************/
 /* ELF FUNCTIONS */
@@ -29,7 +30,7 @@ int elf_check_stub_entry(tStubEntry* pentry)
 
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
-unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, void (*alloc)(u32, void*))
+unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 {
 	Elf32_Phdr program_header;
 	int excess;
@@ -42,7 +43,7 @@ unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 	// Loads program segment at virtual address
 	sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
 	buffer = (void *) program_header.p_vaddr;
-	alloc(program_header.p_memsz, buffer);
+	allocate_memory(program_header.p_memsz, buffer);
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
@@ -59,7 +60,7 @@ unsigned int elf_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 // Loads relocatable executable in memory using fixed address
 // Loads address of first stub header in pstub_entry
 // Returns number of stubs
-unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void (*alloc)(u32, void*))
+unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr)
 {
 	Elf32_Phdr program_header;
 	int excess;
@@ -91,27 +92,40 @@ unsigned int prx_load_program(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
     
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
-	buffer = (void *) PRX_LOAD_ADDRESS;
-	alloc(program_header.p_memsz, buffer);
+
+	// If address set, allocate from that address
+	if (*addr != NULL)
+	{
+		buffer = *addr;
+		allocate_memory(program_header.p_memsz, buffer);
+	}
+	
+	// If no address set, malloc and store value on pointer
+	else
+	{
+		buffer = malloc(program_header.p_memsz);
+		*addr = buffer;
+	}
+	
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
 	buffer = buffer + program_header.p_filesz + 1;
 
 	// Fills excess memory with zeroes
-    size[0] = program_header.p_memsz;
+    *size = program_header.p_memsz;
 	excess = program_header.p_memsz - program_header.p_filesz;
 	if(excess > 0)
         memset(buffer, 0, excess);
 
-	*pstub_entry = (u32)module_info.library_stubs + (u32)PRX_LOAD_ADDRESS;
+	*pstub_entry = (u32)module_info.library_stubs + (u32)*addr;
 
 	// Return size of stubs
 	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);
 }
 
 // Get module GP
-u32 getGP(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header)
+u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 {
 	Elf32_Phdr program_header;
 	void *buffer;
@@ -151,7 +165,7 @@ unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buff
 }
 
 // Returns size and address (pstub) of ".lib.stub" section (imports)
-unsigned int elf_find_imports(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub)
+unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub)
 {
 	Elf32_Half i;
 	Elf32_Shdr sec_header;
@@ -196,7 +210,7 @@ unsigned int elf_find_imports(SceUID elf_file, u32 start_offset, Elf32_Ehdr* pel
 
 
 // Extracts ELF from PBP,returns pointer to EBOOT File + fills offset
-SceUID elf_eboot_extract_open(const char* eboot_path, u32 *offset)
+SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset)
 {
 	SceUID eboot;
 	*offset = 0;
@@ -209,8 +223,6 @@ SceUID elf_eboot_extract_open(const char* eboot_path, u32 *offset)
 
 	sceIoLseek(eboot, 0x20, PSP_SEEK_SET);
 	sceIoRead(eboot, offset, sizeof(u32));
-
-
 	sceIoLseek(eboot, *offset, PSP_SEEK_SET);
 
 	return eboot;

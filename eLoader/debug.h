@@ -51,6 +51,8 @@ void logstr0(const char* A);
 #define LOGLIB(a) log_library(a);
 #define LOGMODINFO(a) log_modinfo(a);
 #define LOGELFHEADER(a) log_elf_header(a);
+#define LOGMODENTRY(a) log_mod_entry(a);
+
 #else
 #define DEBUG_PRINT(a,b,c) {};
 #define DEBUG_PRINT_NL(a) {};
@@ -64,6 +66,7 @@ void logstr0(const char* A);
 #define LOGLIB(a) {};
 #define LOGMODINFO(a) {};
 #define LOGELFHEADER(a) {};
+#define LOGMODENTRY(a) {};
 #endif
 
 #endif
