@@ -39,7 +39,10 @@ void* malloc(SceSize size)
 	{
 		uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
 		if(uid < 0) // Memory allocation failed
+		{
+			LOGSTR1("WARNING: malloc failed with error 0x%08lX\n", uid);
 			return NULL;
+		}
 	}
 	
 	/* Fill block info */

@@ -30,7 +30,7 @@ int elf_check_stub_entry(tStubEntry* pentry)
 
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
-unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
+unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size)
 {
 	Elf32_Phdr program_header;
 	int excess;
@@ -54,6 +54,8 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	if(excess > 0)
         memset(buffer, 0, excess);
 
+	*size = program_header.p_memsz;
+
 	return program_header.p_memsz;
 }
 
@@ -67,7 +69,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	void *buffer;
 	tModInfoEntry module_info;
 
-	LOGSTR1("prx_load_program -> Offset: 0x%08lX\n", start_offset);
+	//LOGSTR1("prx_load_program -> Offset: 0x%08lX\n", start_offset);
 
 	// Read the program header
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);

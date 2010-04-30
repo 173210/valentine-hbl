@@ -92,6 +92,7 @@ void log_mod_entry(HBLModInfo modinfo)
 {
 	LOGSTR0("\n->Module entry:\n");
 	LOGSTR1("ID: 0x%08lX\n", modinfo.id);
+	LOGSTR1("ELF type: 0x%08lX\n", modinfo.type);
 	LOGSTR1("State: %d\n", modinfo.state);
 	LOGSTR1("Size: 0x%08lX\n", modinfo.size);
 	LOGSTR1("Text address: 0x%08lX\n", modinfo.text_addr);
@@ -112,6 +113,17 @@ void log_program_header(Elf32_Phdr pheader)
 	LOGSTR1("Segment image size in memory: 0x%08lX\n", pheader.p_memsz);
 	LOGSTR1("Flags: 0x%08lX\n", pheader.p_flags);
 	LOGSTR1("Alignment: 0x%08lX\n", pheader.p_align);
+}
+
+void log_elf_section_header(Elf32_Shdr shdr)
+{	
+	LOGSTR0("\n->Section header:\n");
+	LOGSTR1("Name: %d\n", shdr.sh_name);
+	LOGSTR1("Type: 0x%08lX\n", shdr.sh_type);
+	LOGSTR1("Flags: 0x%08lX\n", shdr.sh_flags);
+	LOGSTR1("Address: 0x%08lX\n", shdr.sh_addr);
+	LOGSTR1("Offset in file: 0x%08lX\n", shdr.sh_offset);
+	LOGSTR1("Size: 0x%08lX\n", shdr.sh_size);
 }
 
 // LOGSTRX implementations

@@ -66,7 +66,7 @@
 	AddNID sceKernelStderr, 0x08A88650	# 0xF78BA90A
 	
 # SysMemUserForUser (9)	
-	AddNID sceKernelPrintf, 0x08A88658	# 0x13A5ABEF
+	AddNID sceKernelPrintf, 0x08A88658					# 0x13A5ABEF
 	AddNID sceKernelSetCompilerVersion, 0x08A88660		# 0xF77D77CB
 	AddNID sceKernelAllocPartitionMemory, 0x08A88668	# 0x237DBD4F
 	AddNID sceKernelGetBlockHeadAddr, 0x08A88670		# 0x9D9A5BA1

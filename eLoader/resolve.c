@@ -119,7 +119,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	unsigned int resolving_count = 0;
 
 #ifdef HOOK_CHDIR_AND_FRIENDS    
-    int chdir_ok = test_sceIoChdir();
+    chdir_ok = test_sceIoChdir();
 #endif
 
 	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
@@ -144,92 +144,10 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 
 			LOGSTR1("Index for NID on table: %d\n", nid_index);
             
-			// HOOOOOOK THAT!!!
-            switch (*cur_nid) 
-			{
+			u32 hook_call = setup_hook(*cur_nid);
 
-//utility functions, we need those
-                case 0x237DBD4F: // sceKernelAllocPartitionMemory
-                    LOGSTR0(" mem trick ");
-                    real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break;                     
-    
-#ifdef FAKE_THREADS
-                case 0x446D8DE6: //sceKernelCreateThread
-                    real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
-                    break;
-#endif
-
-#ifdef RETURN_TO_MENU_ON_EXIT                
-                case 0x05572A5F: // sceKernelExitGame
-                    if (g_menu_enabled)
-                        real_call = MAKE_JUMP(_hook_sceKernelExitGame);
-                    break;
-#endif 
-
-#ifdef LOAD_MODULE
-				case 0x977DE386: // sceKernelLoadModule
-					LOGSTR0(" loadmodule trick ");
-					real_call = MAKE_JUMP(_hook_sceKernelLoadModule);
-					break;
-				
-				case 0x50F0C1EC: // sceKernelStartModule
-					LOGSTR0(" loadmodule trick ");
-					real_call = MAKE_JUMP(_hook_sceKernelStartModule);
-					break;
-#endif  
-
-//overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
-                case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
-                    LOGSTR0(" mem trick ");
-                    real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
-                    break;
-                case 0xC41C2853: //	sceRtcGetTickResolution (avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceRtcGetTickResolution);
-                    break;  
-                case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceIoLseek32);
-                    break;                    
-                case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
-                    break;   
-                case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
-                    break;   
-                    
-#ifdef HOOK_AUDIOFUNCTIONS                    
-                case 0x38553111: //sceAudioSRCChReserve(avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceAudioSRCChReserve);
-                    break;  
-                case 0x5C37C0AE: //	sceAudioSRCChRelease (avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceAudioSRCChRelease);
-                    break;  
-                case 0xE0727056: // sceAudioSRCOutputBlocking (avoid syscall estimation)
-                    real_call = MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
-                    break; 
-#endif   
-
-#ifdef HOOK_CHDIR_AND_FRIENDS    
-                case 0x55F4717D: //	sceIoChdir (only if it failed)
-                    if (chdir_ok)
-                        break;
-                    LOGSTR0(" Chdir trick sceIoChdir\n");
-                    real_call = MAKE_JUMP(_hook_sceIoChdir);
-                    break; 
-                case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
-                    if (chdir_ok)
-                        break;
-                    LOGSTR0(" Chdir trick sceIoOpen\n");                        
-                    real_call = MAKE_JUMP(_hook_sceIoOpen);
-                    break;  
-                case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-                    if (chdir_ok)
-                        break;
-                    LOGSTR0(" Chdir trick sceIoDopen\n");                        
-                    real_call = MAKE_JUMP(_hook_sceIoDopen);
-                    break;                      
-#endif		
-            }
+			if (hook_call != 0)
+				real_call = hook_call;
 
 			LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
             

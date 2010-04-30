@@ -20,6 +20,7 @@ typedef struct
 {
 	unsigned int id;		// Module ID given by HBL
 	HBLModState state;		// Current module state
+	unsigned int type;		// Static or reloc
 	unsigned long size;		// Allocated size
 	void* text_addr;		// Text address (useful?)
 	void* text_entry;		// Entry point

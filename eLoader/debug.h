@@ -55,6 +55,7 @@ void logstr0(const char* A);
 #define LOGELFHEADER(a) log_elf_header(a);
 #define LOGMODENTRY(a) log_mod_entry(a);
 #define LOGELFPROGHEADER(a) log_program_header(a);
+#define LOGELFSECHEADER(a) log_elf_section_header(a);
 
 #else
 #define DEBUG_PRINT(a,b,c) {};
@@ -71,6 +72,7 @@ void logstr0(const char* A);
 #define LOGELFHEADER(a) {};
 #define LOGMODENTRY(a) {};
 #define LOGELFPROGHEADER(a) {};
+#define LOGELFSECHEADER {};
 #endif
 
 #ifdef NID_DEBUG

@@ -134,13 +134,15 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Static ELF
 	if(elf_hdr.e_type == (Elf32_Half) ELF_STATIC)
 	{
-		LOGSTR0("STATIC\n");
+		//LOGSTR0("STATIC\n");
+
+		mod_table.table[i].type = ELF_STATIC;
 		
 		if(mod_table.num_loaded_mod > 0)
 			return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
 		// Load ELF program section into memory
-		hbsize = elf_load_program(elf_file, offset, &elf_hdr);		
+		hbsize = elf_load_program(elf_file, offset, &elf_hdr, &program_size);		
 	
 		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_hdr, &pstub);
@@ -152,9 +154,11 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Relocatable ELF (PRX)
 	else if(elf_hdr.e_type == (Elf32_Half) ELF_RELOC)
 	{
-		LOGSTR0("RELOC\n");
+		//LOGSTR0("RELOC\n");
 
-		LOGSTR1("load_module -> Offset: 0x%08lX\n", offset);
+		mod_table.table[i].type = ELF_RELOC;
+
+		//LOGSTR1("load_module -> Offset: 0x%08lX\n", offset);
 		
 		// Load PRX program section
 		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, &program_size, &addr)) == 0)
@@ -162,15 +166,16 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 		sceKernelDcacheWritebackInvalidateAll();
 
-		LOGSTR1("Before reloc -> Offset: 0x%08lX\n", offset);
+		//LOGSTR1("Before reloc -> Offset: 0x%08lX\n", offset);
 		//Relocate all sections that need to
-		unsigned int ret = relocate_sections(elf_file, offset, &elf_hdr);
+		unsigned int ret = relocate_sections(elf_file, offset, &elf_hdr, addr);
+
+		LOGSTR1("Relocated entries: %d\n", ret);
+		
 		if (ret == 0)
 		{
-			LOGSTR0("WARNING: no sections to relocate in a relocatable ELF o_O\n");
+			LOGSTR0("WARNING: no entries to relocate on a relocatable ELF\n");
 		}
-
-		sceKernelDcacheWritebackInvalidateAll();
 		
 		// Relocate ELF entry point and GP register
 		mod_table.table[i].text_entry = (u32)elf_hdr.e_entry + (u32)addr;
@@ -252,8 +257,10 @@ SceUID start_module(SceUID modid)
 	{
         LOGSTR1(" HB Thread couldn't be created. Error 0x%08lX\n", thid);
 		return thid;
-	}
+	}	
 
+	mod_table.table[index].state = RUNNING;
+	
 	SET_GP(gp_bak);
 
 	return modid;

@@ -1,15 +1,9 @@
 #include "sdk.h"
 #include "eloader.h"
 #include "debug.h"
-#include "elf.h"
 #include "menu.h"
-#include "graphics.h"
-#include "utils.h"
-#include "reloc.h"
-#include "resolve.h"
 #include "tables.h"
-#include "scratchpad.h"
-#include "memory.h"
+#include "utils.h"
 
 /* eLoader */
 /* Entry point: _start() */
@@ -139,65 +133,6 @@ void start_eloader(const char *path, int is_eboot)
 		EXIT;
 	}
 
-	/*
-	// Read ELF header
-	sceIoRead(elf_file, &elf_header, sizeof(Elf32_Ehdr));
-	
-	LOGSTR1("ELF TYPE: 0x%08lX -->", elf_header.e_type);
-    
-    gp = getGP(elf_file, offset, &elf_header);
-
-	// Static ELF
-	if(elf_header.e_type == (Elf32_Half) ELF_STATIC)
-	{	
-		// TODO: insert into mod_table
-		LOGSTR0("STATIC\n");		
-
-		// Load ELF program section into memory
-		hbsize = elf_load_program(elf_file, offset, &elf_header);		
-	
-		// Locate ELF's .lib.stubs section
-		stubs_size = elf_find_imports(elf_file, offset, &elf_header, &pstub_entry);
-	}
-	
-	// Relocatable ELF (PRX)
-	else if(elf_header.e_type == (Elf32_Half) ELF_RELOC)
-	{
-		// TODO: insert into mod_table
-		LOGSTR0("RELOC\n");
-   
-		// Load program section into memory and also get stub headers
-		void* addr = (void*) PRX_LOAD_ADDRESS;
-		stubs_size = prx_load_program(elf_file, offset, &elf_header, &pstub_entry, &hbsize, &addr);
-
-		//Relocate all sections that need to
-		sections_relocated = relocate_sections(elf_file, offset, &elf_header);
-
-		// Relocate ELF entry point and GP register
-		elf_header.e_entry = (u32)elf_header.e_entry + (u32)PRX_LOAD_ADDRESS;
-        gp += (u32)PRX_LOAD_ADDRESS;
-	}
-	
-	// Unknown ELF type
-	else
-	{
-		exit_with_log(" UNKNOWN ELF TYPE ", NULL, 0);
-	}
-
-    LOGSTR1("GP: 0x%08lX\n", gp);
-	
-	// Resolve ELF's stubs with game's stubs and syscall estimation
-	stubs_resolved = resolve_imports(pstub_entry, stubs_size);
-   
-	// No need for ELF file anymore
-	sceIoClose(elf_file);	
-	
-	// DEBUG_PRINT(" PROGRAM SECTION START ", &(elf_header.e_entry), sizeof(Elf32_Addr));
-    
-    // Commit changes to RAM
-	sceKernelDcacheWritebackInvalidateAll();
-	*/
-
 	mod_id = start_module(mod_id);
 
 	if (mod_id < 0)
@@ -205,37 +140,6 @@ void start_eloader(const char *path, int is_eboot)
 		LOGSTR1("ERROR 0x%08lX starting main module\n", mod_id);
 		EXIT;
 	}
-
-	/*
-	// Create and start hb thread
-    if (gp)
-        SET_GP(gp);
-	entry_point = (u32 *)elf_header.e_entry;
-
-	LOGSTR1("Creating homebrew thread... Entry point: 0x%08lX ", entry_point);
-
-	thid = sceKernelCreateThread("homebrew", entry_point, 0x18, 0x10000, 0, NULL);
-
-	LOGSTR1("THID: 0x%08lX ", thid);
-
-	if(thid >= 0)
-	{
-		thid = sceKernelStartThread(thid, strlen(eboot_path) + 1, (void *)eboot_path);
-		if (thid < 0)
-		{
-			LOGSTR1(" HB Thread couldn't start. Error 0x%08lX\n", thid);
-			sceKernelExitGame();
-		}
-    } 
-	else 
-	{
-        LOGSTR1(" HB Thread couldn't be created. Error 0x%08lX\n", thid);
-		sceKernelExitGame();
-	}
-
-	// Uncomment only if no homebrew thread created
-	// execute_elf(strlen(eboot_path) + 1, (void *)eboot_path);
-	*/
 
 	return;
 }
@@ -246,25 +150,25 @@ int start_thread(SceSize args, void *argp)
 	int num_nids;
 	
 	// Build NID table
-    print_to_screen("Build Nids table");
-	num_nids = build_nid_table(nid_table);
+    print_to_screen("Building NIDs table");
+	num_nids = build_nid_table();
     LOGSTR1("NUM NIDS: %d\n", num_nids);
 	
 	if(num_nids > 0)
 	{	
 		// FIRST THING TO DO!!!
-        print_to_screen("Resolving missing stubs");
+        print_to_screen("Resolving own missing stubs");
 		resolve_missing_stubs();
 	
 		// Free memory
-        print_to_screen("Free memory");
+        print_to_screen("Freeing memory");
 		free_game_memory();
 		
-        print_to_screen("-- Done (Free memory)");
+        print_to_screen("-- Done");
         LOGSTR0("START HBL\n");
 
 		// Initialize module loading
-		print_to_screen("Initialize LoadModule");
+		print_to_screen("Initializing LoadModule");
 		init_load_module();
 
         // Start the menu or run directly the hardcoded eboot      

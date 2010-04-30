@@ -18,7 +18,7 @@ typedef char BYTE;
 /*************/
 /* ELF types */
 /*************/
-#define ELF_STATIC 0x0002    /* Static ELF */
+#define ELF_STATIC 0x0002     /* Static ELF */
 #define ELF_RELOC 0xffa0      /* Relocatable ELF, aka PRX */
 
 /**************/
@@ -222,7 +222,7 @@ int elf_check_stub_entry(tStubEntry* pentry);
 
 /* Load static executable in memory using virtual address */
 /* Returns total size copied in memory */
-unsigned int elf_load_program(SceUID elf_file, SceOff start_offset,  Elf32_Ehdr* pelf_header);
+unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size);
 
 // Load relocatable executable in memory using fixed address 
 // and fills pointer to stub with first stub entry

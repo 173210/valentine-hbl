@@ -62,7 +62,7 @@ int get_library_index(char* library_name);
 
 // Fills NID Table and a part of library_table
 // Returns NIDs copied
-int build_nid_table(tNIDResolver *nid_table);
+int build_nid_table();
 
 /*
  * Retrieves highest known syscall of the previous library,

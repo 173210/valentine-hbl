@@ -347,7 +347,7 @@ int get_syscall_boundaries(int lib_index, u32* low, u32* high)
 /* Fills NID Table */
 /* Returns NIDs resolved */
 /* "pentry" points to first stub header in game */
-int build_nid_table(tNIDResolver *nid_table)
+int build_nid_table()
 {
 	int i = 0, j, k = 0, library_index = -1;
 	unsigned int nlib_stubs;

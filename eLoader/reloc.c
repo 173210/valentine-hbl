@@ -5,12 +5,12 @@
 
 // Relocates based on a MIPS relocation type
 // Returns 0 on success, -1 on fail
-int relocate_entry(tRelEntry reloc_entry)
+int relocate_entry(tRelEntry reloc_entry, void* reloc_addr)
 {
 	u32 buffer = 0, code = 0, offset = 0, offset_target, i;
 
 	// Actual offset
-	offset_target = (u32)reloc_entry.r_offset + (u32)PRX_LOAD_ADDRESS;
+	offset_target = (u32)reloc_entry.r_offset + (u32)reloc_addr;
 
 	// Load word to be relocated into buffer
     u32 misalign = offset_target%4;
@@ -40,27 +40,27 @@ int relocate_entry(tRelEntry reloc_entry)
 			
 		// 32-bit address
 		case R_MIPS_32:
-			buffer += PRX_LOAD_ADDRESS;
+			buffer += reloc_addr;
 			break;
 		
 		// Jump instruction
 		case R_MIPS_26:    
 			code = buffer & 0xfc000000;
 			offset = (buffer & 0x03ffffff) << 2;
-			offset += PRX_LOAD_ADDRESS;
+			offset += (u32)reloc_addr;
 			buffer = ((offset >> 2) & 0x03ffffff) | code;
 			break;
 		
 		// Low 16 bits relocate as high 16 bits
 		case R_MIPS_HI16:     
-			offset = (buffer << 16) + PRX_LOAD_ADDRESS;
+			offset = (buffer << 16) + (u32)reloc_addr;
 			offset = offset >> 16;
 			buffer = (buffer & 0xffff0000) | offset;
 			break;
 		
 		// Low 16 bits relocate as low 16 bits
 		case R_MIPS_LO16:       
-			offset = (buffer & 0x0000ffff) + PRX_LOAD_ADDRESS;
+			offset = (buffer & 0x0000ffff) + (u32)reloc_addr;
 			buffer = (buffer & 0xffff0000) | (offset & 0x0000ffff);
 			break;
 		
@@ -93,20 +93,24 @@ int relocate_entry(tRelEntry reloc_entry)
 
 // Relocates PRX sections that need to
 // Returns number of relocated entries
-unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr *pelf_header)
+unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr *pelf_header, void* reloc_addr)
 {
 	Elf32_Half i;
 	Elf32_Shdr sec_header;
 	Elf32_Off strtab_offset;
-	Elf32_Off cur_offset;	
+	Elf32_Off cur_offset;
 	char section_name[40];
 	unsigned int j, section_name_size, entries_relocated = 0, num_entries;
 	tRelEntry* reloc_entry;
+
+	LOGSTR0("relocate_sections\n");
 	
 	// Seek string table
 	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
 	sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
 	strtab_offset = sec_header.sh_offset;
+
+	//LOGSTR1("String table offset: 0x%08lX\n", strtab_offset);
 
 	// First section header
 	cur_offset = pelf_header->e_shoff;
@@ -120,16 +124,26 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 		sceIoLseek(elf_file, start_offset + cur_offset, PSP_SEEK_SET);
 		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
 
+		/*
+#ifdef DEBUG
+		char sec_name[40];	
+		elf_read_string(elf_file, strtab_offset + sec_header.sh_name, sec_name);
+		LOGELFSECHEADER(sec_header);
+		LOGSTR1("Name: %s\n", sec_name);
+		sceIoLseek(elf_file, start_offset + cur_offset + sizeof(Elf32_Shdr), PSP_SEEK_SET);
+#endif
+		*/
+
 		if(sec_header.sh_type == LOPROC)
 		{
-			// DEBUG_PRINT(" RELOCATING SECTION ", NULL, 0);
+			//LOGSTR0("Relocating...\n");
 			
 			// Allocate memory for section
 			num_entries = sec_header.sh_size / sizeof(tRelEntry);
 			reloc_entry = malloc(sec_header.sh_size);
 			if(!reloc_entry)
 			{
-				DEBUG_PRINT(" CANNOT ALLOCATE MEMORY FOR SECTION ", NULL, 0);
+				LOGSTR0("\nWARNING: cannot allocate memory for section\n");
 				continue;
 			}
 			
@@ -140,12 +154,14 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 			for(j=0; j<num_entries; j++)
 			{
 				//DEBUG_PRINT(" RELOC_ENTRY ", &(reloc_entry[j]), sizeof(tRelEntry));	
-                relocate_entry(reloc_entry[j]);
+                relocate_entry(reloc_entry[j], reloc_addr);
 				entries_relocated++;
 			}
 			
 			// Free section memory
 			free(reloc_entry);
+
+			sceKernelDcacheWritebackInvalidateAll();
 		}
 
 		// Next section header

@@ -1,3 +1,8 @@
+2010/04/30 (m0skit0)
+- Fixed resolving functions (resolve.c) to accept other loading address than PRX_LOAD_ADDRESS
+--> Now external modules seem to load/relocate/resolve fine, they do not crash but do not start either. PSPLink reports the external module thread is stopped
+- Minor code/style fixing
+
 2010/04/30 (wololo)
 - Override a bunch of functions to avoid estimating them
 -- Most of those can be deactivated with macros in eLoader.h (in the future we'll want a config for each game)
