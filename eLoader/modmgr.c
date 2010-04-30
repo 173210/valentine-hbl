@@ -97,7 +97,7 @@ int get_module_index(SceUID modid)
 {
 	int i;
 
-	for (i=0; i<MAX_MODULES; i++)
+	for (i=0; i<mod_table.num_loaded_mod; i++)
 	{
 		if (mod_table.table[i].id == modid)
 			return i;
@@ -115,12 +115,16 @@ void init_load_module()
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 {
+	LOGSTR0("\n\n->Entering load_module...\n");
+	
 	if (mod_table.num_loaded_mod >= MAX_MODULES)
 		return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 	
 	// Read ELF header
 	Elf32_Ehdr elf_hdr;
 	sceIoRead(elf_file, &elf_hdr, sizeof(elf_hdr));
+
+	LOGELFHEADER(elf_hdr);
 	
 	// Loading module
 	tStubEntry* pstub;
@@ -149,13 +153,24 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	else if(elf_hdr.e_type == (Elf32_Half) ELF_RELOC)
 	{
 		LOGSTR0("RELOC\n");
+
+		LOGSTR1("load_module -> Offset: 0x%08lX\n", offset);
 		
 		// Load PRX program section
 		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, &program_size, &addr)) == 0)
 			return SCE_KERNEL_ERROR_ERROR;
-	
+
+		sceKernelDcacheWritebackInvalidateAll();
+
+		LOGSTR1("Before reloc -> Offset: 0x%08lX\n", offset);
 		//Relocate all sections that need to
-		relocate_sections(elf_file, offset, &elf_hdr);
+		unsigned int ret = relocate_sections(elf_file, offset, &elf_hdr);
+		if (ret == 0)
+		{
+			LOGSTR0("WARNING: no sections to relocate in a relocatable ELF o_O\n");
+		}
+
+		sceKernelDcacheWritebackInvalidateAll();
 		
 		// Relocate ELF entry point and GP register
 		mod_table.table[i].text_entry = (u32)elf_hdr.e_entry + (u32)addr;
@@ -172,26 +187,22 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	unsigned int stubs_resolved = resolve_imports(pstub, stubs_size);
 
 	if (stubs_resolved == 0)
-		LOGSTR0("WARNING: no stubs found\n");
+		LOGSTR0("WARNING: no stubs found!!\n");
 
-	LOGSTR0("\nUpdating module table\n");
+	//LOGSTR0("\nUpdating module table\n");
 
 	mod_table.table[i].id = MOD_ID_START + i;
 	mod_table.table[i].state = LOADED;
 	mod_table.table[i].size = program_size;
 	mod_table.table[i].text_addr = addr;
-	mod_table.table[i].libstub_addr = pstub;
-
-	LOGSTR0("Copying name... ");
-	
-	strcpy(mod_table.table[i].path, path);
-
-	LOGSTR0("Done");
-	
+	mod_table.table[i].libstub_addr = pstub;	
+	strcpy(mod_table.table[i].path, path);	
 	mod_table.num_loaded_mod++;
 
-	LOGSTR0("Module table updated\n");
+	//LOGSTR0("Module table updated\n");
 
+	LOGSTR1("->Actual number of loaded modules: %d\n", mod_table.num_loaded_mod);
+	LOGSTR1("Last loaded module [%d]:\n", i);
 	LOGMODENTRY(mod_table.table[i]);
   
 	// No need for ELF file anymore
@@ -205,7 +216,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 // Starts an already loaded module
 SceUID start_module(SceUID modid)
 {
-	LOGSTR1("Starting module ID: 0x%08lX\n", modid);
+	LOGSTR1("\n\n-->Starting module ID: 0x%08lX\n", modid);
 	
 	if (mod_table.num_loaded_mod == 0)
 		return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
@@ -229,7 +240,7 @@ SceUID start_module(SceUID modid)
 
 	if(thid >= 0)
 	{
-		LOGSTR1("MODULE MAIN THID: 0x%08lX ", thid);
+		LOGSTR1("->MODULE MAIN THID: 0x%08lX ", thid);
 		thid = sceKernelStartThread(thid, strlen(mod_table.table[index].path) + 1, (void *)mod_table.table[index].path);
 		if (thid < 0)
 		{

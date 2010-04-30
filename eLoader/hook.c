@@ -53,10 +53,36 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 }
 
 #ifdef LOAD_MODULE
-// Working on it (m0skit0)
-SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption *option)
+SceUID _hook_sceKernelLoadModule(const char *path, int flags, SceKernelLMOption *option)
 {	
-	return SCE_KERNEL_ERROR_ILLEGAL_PRIMARY_SYSCALL_NUMBER;
+	LOGSTR0("_hook_sceKernelLoadModule\n");
+	LOGSTR1("Attempting to load %s\n", path);
+	
+	SceUID elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
+
+	if (elf_file < 0)
+	{
+		LOGSTR2("Error 0x%08lX opening requested module %s\n", elf_file, path);
+		return elf_file;
+	}
+
+	SceOff offset = 0;
+	LOGSTR1("_hook_sceKernelLoadModule offset: 0x%08lX\n", offset);
+	SceUID ret = load_module(elf_file, path, NULL, offset);
+
+	LOGSTR1("load_module returned 0x%08lX\n", ret);
+
+	return ret;
+}
+
+int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option)
+{
+	LOGSTR0("_hook_sceKernelStartModule\n");
+	
+	SceUID ret = start_module(modid);
+	LOGSTR1("start_module returned 0x%08lX\n", ret);
+	
+	return ret;
 }
 #endif
 

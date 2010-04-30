@@ -67,18 +67,27 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	void *buffer;
 	tModInfoEntry module_info;
 
+	LOGSTR1("prx_load_program -> Offset: 0x%08lX\n", start_offset);
+
 	// Read the program header
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
 	sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
 
+	LOGELFPROGHEADER(program_header);
+
     // DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));
     
 	// Check if kernel mode
+	// No go, does not apply to PRXs
+	/*
 	if ((unsigned int)program_header.p_paddr & 0x80000000)
 		return 0;
+	*/
+	
+	LOGSTR1("Module info @ 0x%08lX offset\n", start_offset + (SceOff)program_header.p_paddr);
 
 	// Read module info from PRX
-	sceIoLseek(elf_file, start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
+	sceIoLseek(elf_file, start_offset + (SceOff)program_header.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
     LOGMODINFO(module_info);
@@ -91,8 +100,10 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
     */
     
 	// Loads program segment at fixed address
-	sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
+	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_offset, PSP_SEEK_SET);
 
+	LOGSTR1("Address to allocate from: 0x%08lX\n", *addr);
+	
 	// If address set, allocate from that address
 	if (*addr != NULL)
 	{
@@ -106,12 +117,21 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		buffer = malloc(program_header.p_memsz);
 		*addr = buffer;
 	}
+
+	if ((int)buffer < 0)
+	{
+		LOGSTR0("Failed to allocate memory for the module\n");
+		return 0;
+	}
+
+	LOGSTR1("Allocated memory address from: 0x%08lX\n", *addr);
 	
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
 	buffer = buffer + program_header.p_filesz + 1;
 
+	LOGSTR0("Zero filling\n");
 	// Fills excess memory with zeroes
     *size = program_header.p_memsz;
 	excess = program_header.p_memsz - program_header.p_filesz;
@@ -119,6 +139,8 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
         memset(buffer, 0, excess);
 
 	*pstub_entry = (u32)module_info.library_stubs + (u32)*addr;
+
+	LOGSTR1("stub_entry address: 0x%08lX\n", *pstub_entry);
 
 	// Return size of stubs
 	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);

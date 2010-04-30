@@ -1,3 +1,8 @@
+2010/04/30 (m0skit0)
+- Added hooks for external module loading
+- Fixed some bugs on module loading/starting
+--> HBL crashes when resolving the imports for loaded module. Seems values have not been relocated.
+
 2010/04/28 (m0skit0)
 - Changed prx_load_program() to accept addresses other than PRX_LOAD_ADDRESS
 - Added load_module and start_module functions in modmgr.c

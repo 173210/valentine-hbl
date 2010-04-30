@@ -82,7 +82,7 @@
 #define DAVEE_FREEMEM
 
 //Comment to disable HBL LoadModule system
-// #define LOAD_MODULE
+#define LOAD_MODULE
 
 extern u32 gp;
 extern u32* entry_point;

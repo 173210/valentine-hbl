@@ -5,6 +5,7 @@
 #include "elf.h"
 #include "tables.h"
 #include "hook.h"
+#include "modmgr.h"
 
 // Autoresolves HBL missing stubs
 // Some stubs are compulsory, like sceIo*
@@ -117,12 +118,12 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32 real_call;
 	unsigned int resolving_count = 0;
 
-	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d", stubs_size);
+	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
 
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
-		//DEBUG_PRINT("POINTER TO STUB ENTRY:", &pstub_entry, sizeof(u32*));
+		LOGSTR1("Pointer to stub entry: 0x%08lX\n", pstub_entry);	
 
 		cur_nid = pstub_entry->nid_pointer;
 		cur_call = pstub_entry->jump_pointer;
@@ -131,13 +132,13 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		for(j=0; j<pstub_entry->stub_size; j++)
 		{
 
-			//DEBUG_PRINT("Current nid:", cur_nid, sizeof(u32*));
-			//DEBUG_PRINT("Current call:", &cur_call, sizeof(u32*));
+			LOGSTR1("Current nid: 0x%08lX\n", *cur_nid);
+			LOGSTR1("Current call: 0x%08lX\n", cur_call);
 
 			/* Get syscall/jump instruction for current NID */
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
 
-			//DEBUG_PRINT(" REAL CALL (TABLE) ", &real_call, sizeof(u32));
+			LOGSTR1("Index for NID on table: %d\n", nid_index);
 
 			// HOOOOOOK THAT!!!
             switch (*cur_nid) 
@@ -165,9 +166,14 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                     break;
 
 #ifdef LOAD_MODULE
-				case 0x710F61B5: // sceKernelLoadModule
+				case 0x977DE386: // sceKernelLoadModule
 					LOGSTR0(" loadmodule trick ");
 					real_call = MAKE_JUMP(_hook_sceKernelLoadModule);
+					break;
+				
+				case 0x50F0C1EC: // sceKernelStartModule
+					LOGSTR0(" loadmodule trick ");
+					real_call = MAKE_JUMP(_hook_sceKernelStartModule);
 					break;
 #endif
 					
@@ -197,16 +203,17 @@ Work in progress, attempt for the mp3 library not to fail
 */
                    
             }
+
+			LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
             
 			/* If NID not found in game imports */
 			/* Syscall estimation if library available */
 			if (real_call == 0)
 			{
 				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid);
-				
-				/* Commit changes to RAM */
-				sceKernelDcacheWritebackInvalidateAll();
 			}
+
+			LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
 
 			/* If it's an instruction, resolve it */
 			/* 0xC -> syscall 0 */
@@ -217,6 +224,8 @@ Work in progress, attempt for the mp3 library not to fail
 				resolve_call(cur_call, real_call);
 				resolving_count++;
 			}
+
+			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", cur_call, *cur_call, *(cur_call+1))
 
 			sceKernelDcacheWritebackInvalidateAll();
 

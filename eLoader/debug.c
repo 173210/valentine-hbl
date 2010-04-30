@@ -101,6 +101,19 @@ void log_mod_entry(HBLModInfo modinfo)
 	LOGSTR1("Path: %s\n", modinfo.path);
 }
 
+void log_program_header(Elf32_Phdr pheader)
+{
+	LOGSTR0("\n->Program header:\n");
+	LOGSTR1("Segment type: 0x%08lX\n", pheader.p_type);
+	LOGSTR1("Segment offset: 0x%08lX\n", pheader.p_offset);
+	LOGSTR1("Virtual address for segment: 0x%08lX\n", pheader.p_vaddr);
+	LOGSTR1("Physical address for segment: 0x%08lX\n", pheader.p_paddr);
+	LOGSTR1("Segment image size in file: 0x%08lX\n", pheader.p_filesz);
+	LOGSTR1("Segment image size in memory: 0x%08lX\n", pheader.p_memsz);
+	LOGSTR1("Flags: 0x%08lX\n", pheader.p_flags);
+	LOGSTR1("Alignment: 0x%08lX\n", pheader.p_align);
+}
+
 // LOGSTRX implementations
 
 void logstr0(const char* A)
