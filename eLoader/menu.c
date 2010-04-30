@@ -36,6 +36,8 @@ void saveCache()
 void loadCache()
 {
 	int i;
+
+    printTextScreen(0, 216 , "->Using a cached version of the folder's contents", 0x000000FF);
     SceUID id = sceIoOpen(cacheFile, PSP_O_RDONLY, 0777);
 	
     if (id < 0) 
@@ -89,6 +91,7 @@ void init()
   	if (id < 0) 
 	{
     	LOGSTR1("FATAL: Menu can't open directory %s \n", currentPath);
+        printTextScreen(0, 205 , "Unable to open GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
     	return;
   	}	
@@ -112,6 +115,7 @@ void init()
 	
   	if (!nbFiles) 
 	{
+        printTextScreen(0, 205 , "No files found in GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
   	}
 	
@@ -146,7 +150,7 @@ void _start()
 {
 	SceCtrlData pad; // variable to store the current state of the pad
 	
-    init();
+
 	
     currentFile = 0;
     isSet = (u32 *) EBOOT_SET_ADDRESS;
@@ -155,16 +159,15 @@ void _start()
     isSet[0] = 0;
 
     LOGSTR0("MENU Sets display\n");
+    
+    //init screen
     sceDisplaySetFrameBuf(frameBuffer, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
-
     SetColor(0x00000000);
 
+    //load folder's contents
+    init();
+    
     refreshMenu();
-	
-    if (!nbFiles)
-	{
-        printTextScreen(100, 200 , "Error, no Files found (sceIoDopen syscall estimate failure?)", 0x00FF0000);
-    }
 	
     sceKernelDelayThread(100000);
 	
@@ -193,9 +196,9 @@ void _start()
         }
 
         printTextScreen(220, 0 , "X to select, /\\ to quit", 0x00FFFFFF);
-        printTextScreen(0, 224 , "Half Byte Loader BETA by m0skit0, ab5000, wololo, davee", 0x00FFFFFF);
-        printTextScreen(0, 236 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);
-        printTextScreen(0, 248 , "Fanjita & Noobz, psp-hacks.com", 0x00FFFFFF);
+        printTextScreen(0, 227 , "Half Byte Loader BETA by m0skit0, ab5000, wololo, davee", 0x00FFFFFF);
+        printTextScreen(0, 238 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);
+        printTextScreen(0, 249 , "Fanjita & Noobz, psp-hacks.com", 0x00FFFFFF);
         printTextScreen(0, 260 , "GPL License: give the sources if you distribute binaries!!!", 0x00FFFFFF);
         
         sceKernelDelayThread(100000);

@@ -91,7 +91,9 @@ config = [
             [0xB29DDF9C, "sceIoDopen"],
             [0xE3EB004C, "sceIoDread"],
             [0xEB092469, "sceIoDclose"],
-            [0x54F5FB11, "sceIoDevctl"],        
+            [0x54F5FB11, "sceIoDevctl"],  
+            [0x55F4717D, "sceIoChdir"], 
+            
         ],
     },
     { 
@@ -168,7 +170,22 @@ config = [
     	:functions => [
     		[0xBD2BDE07, "sceUmdUnRegisterUMDCallBack"],
     	],
-    },      
+    },  
+    {
+    	:lib => "sceAudio",
+    	:functions => [
+    		[0x6FC46853, "sceAudioChRelease"],
+            [0x13F592BC, "sceAudioOutputPannedBlocking"],
+            [0x5EC81C55, "sceAudioChReserve"],
+    	],
+    },  
+        {
+    	:lib => "sceRtc",
+    	:functions => [
+    		[0xE7C27D1B, "sceRtcGetCurrentClockLocalTime"],
+    	],
+    }, 
+   
 
 ]
 

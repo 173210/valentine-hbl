@@ -5,7 +5,7 @@
 // If this value is changed, you should also change it in imports.config
 // Should get rid of this
 
-#define NUM_HBL_IMPORTS 0x28
+#define NUM_HBL_IMPORTS 0x2D
 
 // 32 kB should be enough :P
 // Eternal computing dilemma: there's never enough xD

@@ -158,25 +158,25 @@ u32 get_klowest_syscall(char* lib_name)
 				lowest_offset = (SceOff)0x00269D80;
 	
 			else
-				LOGSTR0("Library not hacked\n");			
+				NID_LOGSTR0("Library not hacked\n");			
 
 			if (lowest_offset > 0)
 			{
-				LOGSTR1("Lowest offset: 0x%08lX\n", lowest_offset);
+				NID_LOGSTR1("Lowest offset: 0x%08lX\n", lowest_offset);
 				sceIoLseek(kdump_fd, lowest_offset, PSP_SEEK_SET);
 				sceIoRead(kdump_fd, &lowest_syscall, sizeof(lowest_syscall));
-				LOGSTR1("Kernel dump says lowest syscall is: 0x%08lX\n", lowest_syscall);
+				NID_LOGSTR1("Kernel dump says lowest syscall is: 0x%08lX\n", lowest_syscall);
 			}			
 		}
 		else
 		{
-			LOGSTR0("Kmemdump empty\n");
+			NID_LOGSTR0("Kmemdump empty\n");
 		}
 		
 		sceIoClose(kdump_fd);
 	}
 	else
-		LOGSTR0("Could not open kernel dump\n");
+		NID_LOGSTR0("Could not open kernel dump\n");
 
 	return lowest_syscall;
 }
@@ -206,9 +206,9 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 	strcat(file_path, plibrary->library_name);
 	strcat(file_path, LIB_EXTENSION);
 
-	LOGSTR0(">> Opening file ");
-	LOGSTR0(file_path);
-	LOGSTR0("\n");
+	NID_LOGSTR0(">> Opening file ");
+	NID_LOGSTR0(file_path);
+	NID_LOGSTR0("\n");
 
 	// Opening the NID file
 	if ((nid_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777)) >= 0)
@@ -229,20 +229,20 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 			i++;
 		}
 
-		LOGSTR0("Getting lowest syscall from kernel dump\n");
+		NID_LOGSTR0("Getting lowest syscall from kernel dump\n");
 		lowest_syscall = get_klowest_syscall(plibrary->library_name);
 		if ((lowest_syscall & SYSCALL_MASK_RESOLVE) == 0)
 		{
 			syscall_gap = plibrary->lowest_syscall - lowest_syscall;
 			if (syscall_gap < 0)
 			{
-				LOGSTR2("WARNING: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
+				NID_LOGSTR2("WARNING: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
 				        plibrary->lowest_syscall);
 			}
 			
 			else if (syscall_gap == 0)
 			{
-				LOGSTR0("Nothing to do, lowest syscall from kernel is the same from tables\n");
+				NID_LOGSTR0("Nothing to do, lowest syscall from kernel is the same from tables\n");
 			}
 			
 			// Find NID for lowest syscall
@@ -378,7 +378,7 @@ int build_nid_table(tNIDResolver *nid_table)
 
 	do
 	{
-		LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", pentry);
+		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", pentry);
 		
 		// While it's a valid stub header
 		while (elf_check_stub_entry(pentry))
@@ -387,13 +387,13 @@ int build_nid_table(tNIDResolver *nid_table)
 			if ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES))
 			{
 				config_close();
-				LOGSTR1(" NID TABLE COUNTER: 0x%08lX\n", i);
-				LOGSTR1(" LIBRARY TABLE COUNTER: 0x%08lX\n", k);
-				LOGSTR0(" NID/LIBRARY TABLES TOO SMALL ");
+				NID_LOGSTR1(" NID TABLE COUNTER: 0x%08lX\n", i);
+				NID_LOGSTR1(" LIBRARY TABLE COUNTER: 0x%08lX\n", k);
+				NID_LOGSTR0(" NID/LIBRARY TABLES TOO SMALL ");
 				sceKernelExitGame();
 			}			
 
-			LOGSTR1("-->Processing library: %s ", pentry->library_name);
+			NID_LOGSTR1("-->Processing library: %s ", pentry->library_name);
 		
 			// Get current NID and resolved syscall/jump pointer
 			cur_nid = pentry->nid_pointer;
@@ -405,7 +405,7 @@ int build_nid_table(tNIDResolver *nid_table)
 			// New library
 			if (library_index < 0)
 			{
-				LOGSTR1(" --> New: %d\n", k);
+				NID_LOGSTR1(" --> New: %d\n", k);
 				
 				strcpy(library_table[k].library_name, pentry->library_name);			
 				
@@ -414,14 +414,14 @@ int build_nid_table(tNIDResolver *nid_table)
 
 				good_call = get_good_call(cur_call);
 
-				LOGSTR1("Total known exports: %d\n", library_table[k].num_known_exports);
+				NID_LOGSTR1("Total known exports: %d\n", library_table[k].num_known_exports);
 
 				// JUMP call
 				if (good_call & SYSCALL_MASK_RESOLVE)
 				{
 					library_table[k].calling_mode = JUMP_MODE;					
 					
-					LOGSTR0("Type: JUMP\n");
+					NID_LOGSTR0("Type: JUMP\n");
 					
 					// Initialize lowest syscall on library table				
 					library_table[k].lowest_syscall = 0;				
@@ -434,7 +434,7 @@ int build_nid_table(tNIDResolver *nid_table)
 					for(j=0; j<pentry->stub_size; j++)
 					{						
 						nid = *cur_nid;
-						LOGSTR1("--Current NID: 0x%08lX", nid);
+						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
 						
 						// Only insert NID if it's a new one
 						if (get_nid_index(nid) < 0)
@@ -442,11 +442,11 @@ int build_nid_table(tNIDResolver *nid_table)
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
 							nid_table[i].lib_index = k;
-							LOGSTR1(" --> new inserted @ %d", i);
-							LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
+							NID_LOGSTR1(" --> new inserted @ %d", i);
+							NID_LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
 							i++;							
 						}
-						LOGSTR0("\n");
+						NID_LOGSTR0("\n");
 						cur_nid++;
 						cur_call += 2;
 					}
@@ -457,12 +457,12 @@ int build_nid_table(tNIDResolver *nid_table)
 				{					
 					library_table[k].calling_mode = SYSCALL_MODE;
 
-					LOGSTR0("Type: SYSCALL\n");
+					NID_LOGSTR0("Type: SYSCALL\n");
 					
 					// Initialize lowest syscall on library table				
 					library_table[k].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
 					library_table[k].lowest_nid = *cur_nid;
-					LOGSTR2("Initial lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table[k].lowest_syscall, library_table[k].lowest_nid);
+					NID_LOGSTR2("Initial lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table[k].lowest_syscall, library_table[k].lowest_nid);
 			
                     // Initialize highest syscall on library table	
                     library_table[k].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
@@ -471,7 +471,7 @@ int build_nid_table(tNIDResolver *nid_table)
 					for(j=0; j<pentry->stub_size; j++)
 					{
 						nid = *cur_nid;
-						LOGSTR1("--Current NID: 0x%08lX", nid);
+						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
 						
 						// If NID is already in, don't put it again 
 						if (get_nid_index(nid) < 0)
@@ -480,25 +480,25 @@ int build_nid_table(tNIDResolver *nid_table)
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
 							nid_table[i].lib_index = k;
-							LOGSTR1(" --> new inserted @ %d", i);
+							NID_LOGSTR1(" --> new inserted @ %d", i);
 
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(nid_table[i].call);
-							LOGSTR1(" with syscall 0x%08lX", syscall_num);
+							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
 							
 							if (syscall_num < library_table[k].lowest_syscall)
 							{
 								library_table[k].lowest_syscall = syscall_num;
 								library_table[k].lowest_nid = nid_table[i].nid;
-								LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", library_table[k].lowest_syscall, library_table[k].lowest_nid);
+								NID_LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", library_table[k].lowest_syscall, library_table[k].lowest_nid);
 							}
                             
                             if (syscall_num > library_table[k].highest_syscall)
 							{
 								library_table[k].highest_syscall = syscall_num;
-								LOGSTR2("\nNew highest syscall/nid: 0x%08lX/0x%08lX", library_table[k].highest_syscall, nid);
+								NID_LOGSTR2("\nNew highest syscall/nid: 0x%08lX/0x%08lX", library_table[k].highest_syscall, nid);
 							}
-							LOGSTR0("\n");
+							NID_LOGSTR0("\n");
 							i++;
 						}
 						cur_nid++;
@@ -506,7 +506,7 @@ int build_nid_table(tNIDResolver *nid_table)
 					}
 
 					// Fill remaining data
-					LOGSTR0("Completing library...\n");
+					NID_LOGSTR0("Completing library...\n");
 					ret = complete_library(&(library_table[k]));
 				}			
 
@@ -517,12 +517,12 @@ int build_nid_table(tNIDResolver *nid_table)
 			// Old library
 			else
 			{
-				LOGSTR1(" --> Old: %d\n", library_index);
+				NID_LOGSTR1(" --> Old: %d\n", library_index);
 
 				good_call = get_good_call(cur_call);
 
 				LOGLIB(library_table[library_index]);
-				LOGSTR1("Number of imports of this stub: %d\n", pentry->stub_size);
+				NID_LOGSTR1("Number of imports of this stub: %d\n", pentry->stub_size);
 
 				// JUMP
 				if (good_call & SYSCALL_MASK_RESOLVE)
@@ -536,7 +536,7 @@ int build_nid_table(tNIDResolver *nid_table)
 					// Browse all stubs defined by this header and fill NID table
 					for(j=0; j<pentry->stub_size; j++)
 					{
-						LOGSTR1("--Current NID: 0x%08lX", nid);
+						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
 						nid = *cur_nid;
 						
 						// Only insert NID if it's a new one
@@ -545,12 +545,12 @@ int build_nid_table(tNIDResolver *nid_table)
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
 							nid_table[i].lib_index = library_index;
-							LOGSTR1(" --> new inserted @ %d", i);
-							LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
+							NID_LOGSTR1(" --> new inserted @ %d", i);
+							NID_LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
 							i++;
 							library_table[library_index].num_known_exports++;							
 						}
-						LOGSTR0("\n");
+						NID_LOGSTR0("\n");
 						cur_nid++;
 						cur_call += 2;
 					}
@@ -559,7 +559,7 @@ int build_nid_table(tNIDResolver *nid_table)
 				// SYSCALL
 				else
 				{
-					LOGSTR2("Current lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table[library_index].lowest_syscall, library_table[library_index].lowest_nid);
+					NID_LOGSTR2("Current lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table[library_index].lowest_syscall, library_table[library_index].lowest_nid);
 					
 					if (library_table[library_index].calling_mode != SYSCALL_MODE)
 					{
@@ -571,7 +571,7 @@ int build_nid_table(tNIDResolver *nid_table)
 					for(j=0; j<pentry->stub_size; j++)
 					{
 						nid = *cur_nid;
-						LOGSTR1("--Current NID: 0x%08lX", nid);
+						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
 						
 						// If NID is already in, don't put it again 
 						if (get_nid_index(nid) < 0)
@@ -580,23 +580,23 @@ int build_nid_table(tNIDResolver *nid_table)
 							nid_table[i].nid = nid;			
 							nid_table[i].call = get_good_call(cur_call);
 							nid_table[i].lib_index = library_index;
-							LOGSTR1(" --> new inserted @ %d", i);
+							NID_LOGSTR1(" --> new inserted @ %d", i);
 						
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(nid_table[i].call);
-							LOGSTR1(" with syscall 0x%08lX", syscall_num);
+							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
 							if (syscall_num < library_table[library_index].lowest_syscall)
 							{
 								library_table[library_index].lowest_syscall = syscall_num;
 								library_table[library_index].lowest_nid = nid_table[i].nid;
-								LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", library_table[library_index].lowest_syscall, library_table[library_index].lowest_nid);
+								NID_LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", library_table[library_index].lowest_syscall, library_table[library_index].lowest_nid);
 							}
 							//DEBUG_PRINT(" NID INSERTED ", &nid_table[i].nid, sizeof(u32));
 							//DEBUG_PRINT(" CURRENT POSITION ", &i, sizeof(i));
 							i++;
 							library_table[library_index].num_known_exports++;
 						}
-						LOGSTR0("\n");
+						NID_LOGSTR0("\n");
 						cur_nid++;
 						cur_call += 2;
 					}
@@ -631,14 +631,14 @@ int build_nid_table(tNIDResolver *nid_table)
 	u32 syscall;
 	unsigned int line_count = 0;
 	
-	LOGSTR0("\n==LIBRARY TABLE DUMP==\n");
+	NID_LOGSTR0("\n==LIBRARY TABLE DUMP==\n");
 	c1 = 0;
 	while (c1 < k)
 	{
-		LOGSTR1("->Index: %d\n", c1);
+		NID_LOGSTR1("->Index: %d\n", c1);
 		LOGLIB(library_table[c1]);
 
-		LOGSTR0("\nNID list:\n");
+		NID_LOGSTR0("\nNID list:\n");
 		c2 = 0;
 		while (c2 <= i)
 		{
@@ -648,19 +648,19 @@ int build_nid_table(tNIDResolver *nid_table)
 					syscall = nid_table[c2].call;
 				else
 					syscall = GET_SYSCALL_NUMBER(nid_table[c2].call);
-				LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, nid_table[c2].nid, syscall);
+				NID_LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, nid_table[c2].nid, syscall);
 				
 				line_count++;
 				if (line_count == 3)
 				{
 					line_count = 0;
-					LOGSTR0("\n");
+					NID_LOGSTR0("\n");
 				}
 			}
 			c2++;
 		}
 		c1++;
-		LOGSTR0("\n\n");
+		NID_LOGSTR0("\n\n");
 	}
 #endif
 

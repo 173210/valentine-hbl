@@ -4,6 +4,8 @@
 #include "sdk.h"
 #include "eloader.h"
 
+// Comment to avoid generating NID debug logs
+//#define NID_DEBUG
 // Comment to avoid generating debug logs
 #define DEBUG
 #define DEBUG_PATH HBL_ROOT"dbglog"
@@ -69,6 +71,26 @@ void logstr0(const char* A);
 #define LOGELFHEADER(a) {};
 #define LOGMODENTRY(a) {};
 #define LOGELFPROGHEADER(a) {};
+#endif
+
+#ifdef NID_DEBUG
+#define NID_LOGSTR8(a,b,c,d,e,f,g,h,i) logstr8(a,b,c,d,e,f,g,h,i);
+#define NID_LOGSTR5(a,b,c,d,e,f) logstr5(a,b,c,d,e,f);
+#define NID_LOGSTR4(a,b,c,d,e) logstr4(a,b,c,d,e);
+#define NID_LOGSTR3(a,b,c,d) logstr3(a,b,c,d);
+#define NID_LOGSTR2(a,b,c) logstr2(a,b,c);
+#define NID_LOGSTR1(a,b) logstr1(a,b);
+#define NID_LOGSTR0(a) logstr0(a);
+
+#else
+#define NID_LOGSTR8(a,b,c,d,e,f,g,h,i){};
+#define NID_LOGSTR5(a,b,c,d,e,f) {};
+#define NID_LOGSTR4(a,b,c,d,e) {};
+#define NID_LOGSTR3(a,b,c,d) {};
+#define NID_LOGSTR2(a,b,c) {};
+#define NID_LOGSTR1(a,b) {};
+#define NID_LOGSTR0(a) {};
+#define LOGLIB(a) {};
 #endif
 
 #endif

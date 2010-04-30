@@ -49,12 +49,12 @@
 //Files locations
 //
 #define HBL_ROOT "ms0:/hbl/"
-
+#define HBL_BIN "hbl.bin"
 // Fixed path for EBOOT loading (used if no menu available)
 #define EBOOT_PATH HBL_ROOT"GAME/EBOOT.PBP"
 #define ELF_PATH HBL_ROOT"GAME/eboot.elf"
 #define MENU_PATH HBL_ROOT"menu.bin" // menu
-#define HBL_PATH HBL_ROOT"hbl.bin"
+#define HBL_PATH HBL_ROOT HBL_BIN
 #define KDUMP_PATH HBL_ROOT"kmem.dump"
 
 // Path for NID libraries
@@ -64,6 +64,7 @@
 //
 // Switches
 //
+
 
 //Comment the following line if you don't want to hook thread creation
 //#define FAKE_THREADS
@@ -84,11 +85,29 @@
 //Comment to disable HBL LoadModule system
 #define LOAD_MODULE
 
+/*
+ * Avoiding syscall estimations
+ * The following override some major functions to avoid syscall estimations
+ * Currently (until we can get 100% syscall estimation working ?) this increases
+ * compatibility a LOT, but this alsow slows down some specific homebrews
+ * and increases the size of HBL.
+ * In the future if we can't achieve perfect syscall estimates, 
+ * we will want to move these settings in a settings file, on a per homebrew basis
+ * (see Noobz eLoader cfg file for reference on this)
+ */
+
+//this one might make emulators slow as it maps peekbufferpositive to readbufferpositive
+//Comment the following line to avoid overriding sceCtrlPeekBufferPositive
+#define HOOK_PEEKBUFFERPOSITIVE
+
+//Comment the following line to avoid overriding sceAudioSRC*
+#define HOOK_AUDIOFUNCTIONS
+
+//Comment the following line to avoid overriding sceIo* (happens only if sceIoChdir fails)
+#define HOOK_CHDIR_AND_FRIENDS
+ 
 extern u32 gp;
 extern u32* entry_point;
-//extern u32 hbsize;
-
-void runThread(SceSize args, void *argp);
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(const char *path, int is_eboot);

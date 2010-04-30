@@ -8,6 +8,7 @@
 #include "reloc.h"
 #include "resolve.h"
 #include "tables.h"
+#include "scratchpad.h"
 #include "memory.h"
 
 /* eLoader */
@@ -29,6 +30,8 @@ u32 * menu_pointer = MENU_LOAD_ADDRESS;
 */
 void loadMenu()
 {
+    print_to_screen("Loading Menu");
+      
     // Just trying the basic functions used by the menu
     SceUID id = -1;
     int attempts = 0;
@@ -37,46 +40,38 @@ void loadMenu()
 	int bytes_read;
 	SceIoDirent entry;
 	SceUID menuThread;
-		
-    print_to_screen("Loading Menu");
 
-// this crashes too often :(
-/*	
-    while ((id < 0) && (attempts < MAX_REESTIMATE_ATTEMPTS))
-	{
-        attempts++;
-        id = sceIoDopen("ms0:");
-        if (id <= 0)
-		{
-
-            DEBUG_PRINT(" sceIoDopen syscall estimation failed, attempt to reestimate ",NULL, 0);
-            reestimate_syscall(0xB29DDF9C, attempts); //sceIoDopen TODO move to config ?
-        }
+    print_to_screen("-Test sceIoDopen");
+    id = sceIoDopen("ms0:");
+    if (id < 0)
+    {
+        print_to_screen_color("--failure", 0x000000FF);
+        sceKernelDelayThread(1000000);
     }
-	
-    if (id < 0) 
-	{
-        print_to_screen("Loading Menu Failed (syscall ?)");
-        exit_with_log(" FATAL, sceIoDopen syscall estimation failed ",NULL, 0);
-    }
-	
-	else 
-	{
-        attempts = 0;        
+    else
+    {
+        print_to_screen_color("--success", 0x0000FF00);
+        print_to_screen("-Test sceIoDread");
         memset(&entry, 0, sizeof(SceIoDirent)); 
-        while (sceIoDread(id, &entry) <= 0 && attempts < 10) 
-		{       
-            attempts++;
-            DEBUG_PRINT(" sceIoDread syscall estimation failed, attempt to reestimate ",NULL, 0);
-            reestimate_syscall(0xE3EB004C, attempts); //sceIoDread TODO move to config ?
-            memset(&entry, 0, sizeof(SceIoDirent));
+        if (sceIoDread(id, &entry) < 0 ) 
+        {
+            print_to_screen_color("--failure", 0x000000FF);
+            sceKernelDelayThread(1000000);
         }
+        else
+            print_to_screen_color("--success", 0x0000FF00);
+        
+        print_to_screen("-Test sceIoDclose");
+        id = sceIoDclose(id);
+        if (id < 0)
+        {
+            print_to_screen_color("--failure", 0x000000FF);
+            sceKernelDelayThread(1000000);            
+        }
+        else
+            print_to_screen_color("--success", 0x0000FF00);            
     }
 	
-    sceIoDclose(id);
-*/
-	//DEBUG_PRINT(" LOADER RUNNING ", NULL, 0);	
-
 	if ((menu_file = sceIoOpen(MENU_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD MENU ", &menu_file, sizeof(menu_file));
 
@@ -111,28 +106,12 @@ void main_loop()
     while(!isSet[0])
         sceKernelDelayThread(5000);
 	
-    start_eloader((char *)ebootPath, 1);
+    //this is to avoid the stupid menu variable ebootPath to get overwritten
+    char eboot_path_copy[256];
+    strcpy(eboot_path_copy, ebootPath);
+    
+    start_eloader(eboot_path_copy, 1);
 }
-
-// Jumps to ELF's entry point
-/*
-void runThread(SceSize args, void *argp)
-{
-	void (*start_entry)(SceSize, void*) = entry_point;
-	// Do not free HBL :P
-	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_BLOCK_UID));
-	// sceKernelFreePartitionMemory(*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID));	
-	start_entry(args, argp);
-	//sceKernelExitDeleteThread(0);
-}
-
-// Jumps to ELF's entry point
-void execute_elf(SceSize args, void *argp)
-{
-	void (*start_elf)(SceSize, void*) = entry_point;	
-	start_elf(args, argp);
-}
-*/
 
 // HBL entry point
 // Needs path to ELF or EBOOT
@@ -143,7 +122,7 @@ void start_eloader(const char *path, int is_eboot)
 	SceUID mod_id;
 
 	LOGSTR1("EBOOT path: %s\n", path);
-
+    
 	// Extracts ELF from PBP
 	if (is_eboot)		
 		elf_file = elf_eboot_extract_open(path, &offset);

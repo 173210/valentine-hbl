@@ -104,18 +104,24 @@ void printTextScreen(int x, int y, char text[], u32 color)
 	}
 }
 
-void print_to_screen(char text[]) 
+void print_to_screen_color(char text[], u32 color) 
 {
 	if (gY > 272) 
 	{
     	SetColor(0);
   	}
 	
-  	printTextScreen(0, gY, text, 0x00FFFFFF);
+  	printTextScreen(0, gY, text, color);
   	gY += 12;
 	
     LOGSTR0(text);
 	LOGSTR0("\n");
+}  
+
+
+void print_to_screen(char text[]) 
+{
+  	print_to_screen_color(text, 0x00FFFFFF);
 }  
 
 void *fb = (void *)0x44000000;

@@ -1,3 +1,9 @@
+2010/04/30 (wololo)
+- Override a bunch of functions to avoid estimating them
+-- Most of those can be deactivated with macros in eLoader.h (in the future we'll want a config for each game)
+-- With these overrides, Wagic now loads on the PSPGo as long as you remove the mp3s from the Sound folder. (it crashes when attempting to save options though...)
+- Fixed a bug that prevented big EBOOTS from loading (scummVM) because the path was overwritten
+
 2010/04/30 (m0skit0)
 - Added hooks for external module loading
 - Fixed some bugs on module loading/starting

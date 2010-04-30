@@ -92,13 +92,6 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 
     LOGMODINFO(module_info);
     
-	// Loads global pool over Valentine's global pool
-    /*
-	sceIoLseek(elf_file, start_offset + (u32)module_info.gp - 0x8000, PSP_SEEK_SET);
-	buffer = (void *) 0x08B43B50 - 0x8000;
-	sceIoRead(elf_file, buffer, 0x10000);        
-    */
-    
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_offset, PSP_SEEK_SET);
 

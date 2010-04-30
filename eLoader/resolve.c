@@ -118,6 +118,10 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32 real_call;
 	unsigned int resolving_count = 0;
 
+#ifdef HOOK_CHDIR_AND_FRIENDS    
+    int chdir_ok = test_sceIoChdir();
+#endif
+
 	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
 
 	/* Browse ELF stub headers */
@@ -139,10 +143,17 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
 
 			LOGSTR1("Index for NID on table: %d\n", nid_index);
-
+            
 			// HOOOOOOK THAT!!!
             switch (*cur_nid) 
 			{
+
+//utility functions, we need those
+                case 0x237DBD4F: // sceKernelAllocPartitionMemory
+                    LOGSTR0(" mem trick ");
+                    real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
+                    break;                     
+    
 #ifdef FAKE_THREADS
                 case 0x446D8DE6: //sceKernelCreateThread
                     real_call = MAKE_JUMP(_hook_sceKernelCreateThread);
@@ -154,16 +165,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
                     if (g_menu_enabled)
                         real_call = MAKE_JUMP(_hook_sceKernelExitGame);
                     break;
-#endif   
-                case 0xA291F107: // sceKernelMaxFreeMemSize
-                    LOGSTR0(" mem trick ");
-                    real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
-                    break;
-					
-                case 0x237DBD4F: // sceKernelAllocPartitionMemory
-                    LOGSTR0(" mem trick ");
-                    real_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-                    break;
+#endif 
 
 #ifdef LOAD_MODULE
 				case 0x977DE386: // sceKernelLoadModule
@@ -175,33 +177,58 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 					LOGSTR0(" loadmodule trick ");
 					real_call = MAKE_JUMP(_hook_sceKernelStartModule);
 					break;
-#endif
-					
-/*
-Work in progress, attempt for the mp3 library not to fail                  
-                case 0x07EC321A:	//sceMp3ReserveMp3Handle
-                case 0x0DB149F4:	//sceMp3NotifyAddStreamData
-                case 0x2A368661:	//sceMp3ResetPlayPosition
-                case 0x354D27EA:	//	sceMp3GetSumDecodedSample
-                case 0x35750070:	//	sceMp3InitResource
-                case 0x3C2FA058:	//	sceMp3TermResource
-                case 0x3CEF484F:	//	sceMp3SetLoopNum
-                case 0x44E07129:	//	sceMp3Init
-                case 0x732B042A:	//	sceMp3EndEntry
-                case 0x7F696782:	//	sceMp3GetMp3ChannelNum
-                case 0x87677E40:	//	sceMp3GetBitRate
-                case 0x87C263D1:	//	sceMp3GetMaxOutputSample
-                case 0x8AB81558:	//	sceMp3StartEntry
-                case 0x8F450998:	//	sceMp3GetSamplingRate
-                case 0xA703FE0F:	//	sceMp3GetInfoToAddStreamData
-                case 0xD021C0FB:	//	sceMp3Decode
-                case 0xD0A56296:	//	sceMp3CheckStreamDataNeeded
-                case 0xD8F54A51:	//	sceMp3GetLoopNum
-                case 0xF5478233:	//	sceMp3ReleaseMp3Handle
-                    real_call = MAKE_JUMP(_hook_genericSuccess);
+#endif  
+
+//overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
+                case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
+                    LOGSTR0(" mem trick ");
+                    real_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
                     break;
-*/
-                   
+                case 0xC41C2853: //	sceRtcGetTickResolution (avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceRtcGetTickResolution);
+                    break;  
+                case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceIoLseek32);
+                    break;                    
+                case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
+                    break;   
+                case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
+                    break;   
+                    
+#ifdef HOOK_AUDIOFUNCTIONS                    
+                case 0x38553111: //sceAudioSRCChReserve(avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceAudioSRCChReserve);
+                    break;  
+                case 0x5C37C0AE: //	sceAudioSRCChRelease (avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceAudioSRCChRelease);
+                    break;  
+                case 0xE0727056: // sceAudioSRCOutputBlocking (avoid syscall estimation)
+                    real_call = MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
+                    break; 
+#endif   
+
+#ifdef HOOK_CHDIR_AND_FRIENDS    
+                case 0x55F4717D: //	sceIoChdir (only if it failed)
+                    if (chdir_ok)
+                        break;
+                    LOGSTR0(" Chdir trick sceIoChdir\n");
+                    real_call = MAKE_JUMP(_hook_sceIoChdir);
+                    break; 
+                case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
+                    if (chdir_ok)
+                        break;
+                    LOGSTR0(" Chdir trick sceIoOpen\n");                        
+                    real_call = MAKE_JUMP(_hook_sceIoOpen);
+                    break;  
+                case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
+                    if (chdir_ok)
+                        break;
+                    LOGSTR0(" Chdir trick sceIoDopen\n");                        
+                    real_call = MAKE_JUMP(_hook_sceIoDopen);
+                    break;                      
+#endif		
             }
 
 			LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
