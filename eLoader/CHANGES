@@ -1,3 +1,6 @@
+2010/05/02 (m0skit0)
+- Changed detection of FW 5.51 as 5.55 (previously set to 5.50) to load correct configuration
+
 2010/04/30 (m0skit0)
 - Fixed resolving functions (resolve.c) to accept other loading address than PRX_LOAD_ADDRESS
 --> Now external modules seem to load/relocate/resolve fine, they do not crash but do not start either. PSPLink reports the external module thread is stopped
