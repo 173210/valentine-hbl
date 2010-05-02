@@ -20,6 +20,7 @@ int test_sceIoChdir();
 
 // Thread manager
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option);
+int _hook_sceKernelTerminateDeleteThread(SceUID thid);
 
 // Memory manager
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr);
@@ -37,6 +38,7 @@ int _hook_sceCtrlPeekBufferPositive(SceCtrlData* pad_data,int count);
 int _hook_sceAudioSRCChReserve (int samplecount, int freq, int channels);
 int _hook_sceAudioSRCOutputBlocking (int vol,void * buf);
 int _hook_sceAudioSRCChRelease();
+int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf);
 
 // Clock manager
 u32 _hook_sceRtcGetTickResolution();
@@ -46,6 +48,16 @@ int _hook_sceRtcGetCurrentTick(u64 * tick);
 SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption *option);
 int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
 void  _hook_sceKernelExitGame();
+int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp);
+
+// Power
+int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);
+int _hook_scePowerGetCpuClockFrequencyInt();
+int _hook_scePowerGetBatteryLifeTime();
+int _hook_scePowerGetBatteryLifePercent();
+
+//Generic success
+int _hook_generic_ok();
 
 
 #endif

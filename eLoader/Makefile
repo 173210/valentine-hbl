@@ -2,13 +2,22 @@ PSPSDK=$(shell psp-config --pspsdk-path)
 PSPDEV=$(shell psp-config --pspdev-path)
 INCLUDE=$(PSPSDK)/include
 
-all:    hbl loader menu
+# default : dev
+# make distrib to compile without debug info
+# make or make dev to compile with debug info
+all: base
+base:    hbl loader menu
 
 clean:
 	rm -rf *~ *.o *.elf *.bin *.s
 
 CC       = psp-gcc
-CFLAGS   := -D DEBUG -D PSP -I $(INCLUDE) -W -Wall -O2 -G0 -fno-pic -mno-abicalls -w -fomit-frame-pointer
+CFLAGS   :=  -D PSP -I $(INCLUDE) -W -Wall -O2 -G0 -fno-pic -mno-abicalls -w -fomit-frame-pointer
+
+
+all: CFLAGS += -D DEBUG -D NID_DEBUG
+dev: all
+distrib: base
 
 ASM      = psp-as
 

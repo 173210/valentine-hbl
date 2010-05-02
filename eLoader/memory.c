@@ -3,6 +3,7 @@
 #include "thread.h"
 #include "debug.h"
 #include "modmgr.h"
+#include "hook.h"
 
 // Find a FPL by name
 SceUID find_fpl(const char *name) 
@@ -190,25 +191,6 @@ void free_game_memory()
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES 0x20
 
-int kill_thread(SceUID thid) 
-{
-    int ret = sceKernelTerminateThread(thid);
-    if (ret < 0)
-    {
-        LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
-        return 0;
-    }
-
-    ret = sceKernelDeleteThread(thid);
-    if (ret < 0)
-    {
-        LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
-        return 0;
-    }    
-
-    return 1;
-}
-
 int kill_event_flag(SceUID flid)
 {
     int ret = sceKernelDeleteEventFlag(flid);
@@ -265,7 +247,7 @@ void DeleteAllThreads(void)
 	/* lets kill these threads now */
 	for (i = 0; i < (sizeof(thids)/sizeof(u32)); i++)
 	{
-		kill_thread(thids[i]);
+		_hook_sceKernelTerminateDeleteThread(thids[i]);
 	}
 }
 

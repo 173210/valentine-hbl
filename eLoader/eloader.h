@@ -100,8 +100,11 @@
 //Comment the following line to avoid overriding sceCtrlPeekBufferPositive
 #define HOOK_PEEKBUFFERPOSITIVE
 
-//Comment the following line to avoid overriding sceAudioSRC*
+//Comment the following line to avoid overriding sceAudio*
 #define HOOK_AUDIOFUNCTIONS
+
+//Comment the following line to avoid overriding scePower*
+#define HOOK_POWERFUNCTIONS
 
 //Comment the following line to avoid overriding sceIo* (happens only if sceIoChdir fails)
 #define HOOK_CHDIR_AND_FRIENDS

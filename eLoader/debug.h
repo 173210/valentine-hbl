@@ -4,10 +4,6 @@
 #include "sdk.h"
 #include "eloader.h"
 
-// Comment to avoid generating NID debug logs
-//#define NID_DEBUG
-// Comment to avoid generating debug logs
-#define DEBUG
 #define DEBUG_PATH HBL_ROOT"dbglog"
 #define STDOUT 1
 #define PSPLINK_OUT 2

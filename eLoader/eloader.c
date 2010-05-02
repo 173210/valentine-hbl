@@ -204,6 +204,13 @@ void _start(unsigned long arglen, unsigned long *argp)
     SetColor(0);
     print_to_screen("Starting HBL -- http://code.google.com/p/valentine-hbl");
     
+#ifdef DEBUG
+     print_to_screen("DEBUG version");
+#endif
+#ifdef NID_DEBUG
+     print_to_screen("--DEBUG NIDS");
+#endif
+    
 	switch (firmware_version) {
     case 0:
     case 1:

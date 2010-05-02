@@ -104,6 +104,7 @@ config = [
             [0xD1FF982A, "sceKernelStopModule"],
             [0x2E0911AA, "sceKernelUnloadModule"],
             [0xD8B73127, "sceKernelGetModuleIdByAddress"],
+            [0x8F2DF740, "ModuleMgrForUser_8F2DF740"], #sceKernelSelfStopUnloadModuleWithStatus, see hook.c
         ],
     } ,
     { 
@@ -179,12 +180,18 @@ config = [
             [0x5EC81C55, "sceAudioChReserve"],
     	],
     },  
-        {
+    {
     	:lib => "sceRtc",
     	:functions => [
     		[0xE7C27D1B, "sceRtcGetCurrentClockLocalTime"],
     	],
     }, 
+    {
+    	:lib => "scePower",
+    	:functions => [
+    		[0xEBD177D6, "scePower_EBD177D6"], # == scePowerSetClockFrequency see hook.c
+    	],
+    },     
    
 
 ]

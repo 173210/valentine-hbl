@@ -74,6 +74,41 @@ u32 setup_hook(u32 nid)
             hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
             break;   
             
+        case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
+            hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
+            break;  
+            
+        case 0x383F7BCC: // sceKernelTerminateDeleteThread  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelTerminateDeleteThread);
+            break;    
+        
+        case 0xD675EBB8: // sceKernelSelfStopUnloadModule (avoid syscall estimation) - not sure about this one
+            hook_call = MAKE_JUMP(_hook_sceKernelSelfStopUnloadModule);
+            break;               
+
+#ifdef HOOK_POWERFUNCTIONS
+        case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_scePowerGetCpuClockFrequencyInt);
+            break;     
+
+        case 0x2085D15D: //scePowerGetBatteryLifePercent  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
+            break;   
+
+        case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
+            break;               
+
+// Hooks to a function that does nothing but says "ok"            
+        case 0x87440F5E: // scePowerIsPowerOnline  - Assuming it's not super necessary
+        case 0x04B7766E: //	scePowerRegisterCallback - Assuming it's already done by the game
+        case 0xD6D016EF: // scePowerLock - Assuming it's not super necessary
+        case 0xCA3D34C1: // scePowerUnlock - Assuming it's not super necessary
+            hook_call = MAKE_JUMP(_hook_generic_ok);
+            break; 	   
+
+#endif            
+  
 #ifdef HOOK_AUDIOFUNCTIONS                    
         case 0x38553111: //sceAudioSRCChReserve(avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceAudioSRCChReserve);
@@ -86,6 +121,12 @@ u32 setup_hook(u32 nid)
         case 0xE0727056: // sceAudioSRCOutputBlocking (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
             break;
+  
+        case 0x136CAF51: // sceAudioOutputBlocking (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceAudioOutputBlocking);
+            break;  
+              
+
 #endif   
 
 #ifdef HOOK_CHDIR_AND_FRIENDS    
@@ -109,7 +150,7 @@ u32 setup_hook(u32 nid)
             LOGSTR0(" Chdir trick sceIoDopen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
             break;                      
-#endif		
+#endif	
     }
 
 	return hook_call;
@@ -170,7 +211,6 @@ u32 _hook_sceRtcGetTickResolution()
     return 1000000;
 }
 
-// will this work ?
 int _hook_sceRtcGetCurrentTick(u64 * tick)
 {   	
     pspTime time;
@@ -183,6 +223,7 @@ int _hook_sceRtcGetCurrentTick(u64 * tick)
     *tick = seconds * 1000000   + (u64) time.microseconds;
     return 0;
 }
+
 //based on http://forums.ps2dev.org/viewtopic.php?t=12490
 int _hook_sceIoLseek32 (SceUID  fd, int offset, int whence) 
 {
@@ -228,6 +269,12 @@ int _hook_sceAudioSRCOutputBlocking (int vol,void * buf)
     return sceAudioOutputPannedBlocking(audio_channels[cur_channel_id],vol, vol, buf);
 }
 
+//quite straightforward
+int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf)
+{
+    return sceAudioOutputPannedBlocking(channel,vol, vol, buf);
+}
+
 //
 int _hook_sceAudioSRCChRelease()
 {
@@ -249,6 +296,7 @@ int test_sceIoChdir()
     return 0;
 }
 
+// returns 1 if a string is anabsolute file path, 0 otherwise
 int path_is_absolute(const char * file)
 {
     int i;
@@ -259,10 +307,12 @@ int path_is_absolute(const char * file)
     return 0;
 }
 
+// converts a relative path to an absolute one based on cwd
+// it is the responsibility of the caller to
+// 1 - ensure that the passed path is actually relative
+// 2 - delete the returned char *
 char * relative_to_absolute(const char * file)
 {
-    int i;
-    int absolute = 0;
     if (!g_module_chdir)
     {
         char * buf = malloc(strlen(file) + 1);
@@ -330,6 +380,86 @@ int _hook_sceIoChdir(const char *dirname)
     return g_module_chdir;
 }
 
+int g_pllfreq = 0;
+int g_cpufreq = 0;
+int g_busfreq = 0;
+
+// see http://forums.ps2dev.org/viewtopic.php?p=52329
+int _hook_scePowerGetCpuClockFrequencyInt()
+{
+    if (!g_cpufreq)
+    {
+        //that's a bit dirty :(
+        _hook_scePowerSetClockFrequency(333, 333, 166);
+    }
+    return g_cpufreq;
+}
+
+
+//Alias, see http://forums.ps2dev.org/viewtopic.php?t=11294
+int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
+{
+    int ret = scePower_EBD177D6(pllfreq, cpufreq, busfreq);
+    if (ret >= 0)
+    {
+        g_pllfreq = pllfreq;
+        g_cpufreq = cpufreq;
+        g_busfreq = busfreq;
+    }
+    
+    return ret;
+}
+
+//Dirty
+int _hook_scePowerGetBatteryLifeTime()
+{
+    return 60;
+}
+
+//Dirty
+int _hook_scePowerGetBatteryLifePercent()
+{
+    return 50;
+}   
+
+// http://forums.ps2dev.org/viewtopic.php?p=43495
+int _hook_sceKernelDevkitVersion(void)
+{
+    //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
+    u32 version = getFirmwareVersion();
+    int result = 0x01000000 * version / 100;
+    result += 0x010000 * (version % 100) / 10;
+    result += 0x0100 * (version % 10);
+    result += 0x10;
+    return result;
+    
+}
+
+
+//
+int _hook_sceKernelTerminateDeleteThread(SceUID thid) 
+{
+    int ret = sceKernelTerminateThread(thid);
+    if (ret < 0)
+    {
+        LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
+        return ret;
+    }
+
+    ret = sceKernelDeleteThread(thid);
+    if (ret < 0)
+        LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
+
+    return ret;
+}
+
+// see http://powermgrprx.googlecode.com/svn-history/r2/trunk/include/pspmodulemgr.h
+int 	_hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp)
+{
+    int status;
+    return ModuleMgrForUser_8F2DF740(exitcode, argsize, argp, &status, NULL);
+
+}
 
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int flags, SceKernelLMOption *option)
@@ -365,10 +495,11 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *s
 }
 #endif
 
-/* WIP
+
 // A function that just returns "ok" but does nothing
-int _hook_ok()
+// Note: in Sony's world, "0" means ok
+int _hook_generic_ok()
 {
-    return 1;
+    return 0;
 }
-*/
+
