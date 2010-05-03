@@ -12,6 +12,12 @@ typedef struct
 	unsigned int lib_index; // Index to the library descriptor tSceLibrary
 } tNIDResolver;
 
+typedef struct
+{
+	unsigned int num;					// Number of nids on table	
+	tNIDResolver table[NID_TABLE_SIZE];	// NID resolver
+} HBLNIDTable;
+
 typedef enum
 {
 	SYSCALL_MODE = 0, 
@@ -34,7 +40,7 @@ typedef struct
 
 // Auxiliary structures to help with syscall estimation
 extern tSceLibrary library_table[MAX_LIBRARIES];
-extern tNIDResolver nid_table[NID_TABLE_SIZE];
+extern HBLNIDTable nid_table;
 
 // Returns nid_table index where the call is found, -1 if not found
 int get_call_index(u32 call);
@@ -71,5 +77,8 @@ int build_nid_table();
  * returns 1 on success, 0 on failure
 */
 int get_syscall_boundaries(int lib_index, u32* low, u32* high);
+
+// Adds NID entry to nid_table
+void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
 
 #endif

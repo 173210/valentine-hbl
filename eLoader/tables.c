@@ -4,17 +4,45 @@
 #include "debug.h"
 
 // NID table for resolving imports
-tNIDResolver nid_table[NID_TABLE_SIZE];
+HBLNIDTable nid_table;
 
 // Auxiliary structure to help with syscall estimation
 tSceLibrary library_table[MAX_LIBRARIES];
+
+// Adds NID entry to nid_table
+void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
+{
+	// Check if NID already exists in table (by another estimation for example)
+	int index = get_nid_index(nid);
+
+	// Doesn't exist, insert new
+	if (index < 0)
+	{
+		if (nid_table.num >= NID_TABLE_SIZE)
+		{
+			LOGSTR0("WARNING: nid_table full\n");
+			return;
+		}
+
+		nid_table.table[nid_table.num].nid = nid;
+		nid_table.table[nid_table.num].call = call;
+		nid_table.table[nid_table.num].lib_index = lib_index;
+		nid_table.num++;
+	}
+
+	// If it exists, just change the old call with the new one
+	else
+		nid_table.table[index].call = call;
+
+	return;
+}
 
 // Returns the index on nid_table for the given call
 // NOTE: the whole calling instruction is to be passed
 int get_call_index(u32 call)
 {
 	int i = NID_TABLE_SIZE - 1;
-	while(i >= 0 && nid_table[i].call != call)
+	while(i >= 0 && nid_table.table[i].call != call)
 	{
 		i--;
 	}
@@ -69,10 +97,10 @@ u32 get_call_nidtable(u32 nid, u32* call_buffer)
 	*call_buffer = 0;
 	for(i=0; i<NID_TABLE_SIZE; i++) 
 	{
-        if(nid == nid_table[i].nid)
+        if(nid == nid_table.table[i].nid)
         {
             if(call_buffer != NULL)
-                *call_buffer = nid_table[i].call;
+                *call_buffer = nid_table.table[i].call;
             break;
         }
     }
@@ -181,6 +209,52 @@ u32 get_klowest_syscall(char* lib_name)
 	return lowest_syscall;
 }
 
+// Return index in nid_table for closest higher known NID
+int get_higher_known_nid(unsigned int lib_index, u32 nid)
+{
+	int i;
+	int higher_index = -1;
+
+	for(i=0; i<NID_TABLE_SIZE; i++)
+	{
+		if (nid_table.table[i].lib_index == lib_index && nid_table.table[i].nid > nid)
+		{
+			// First higher found
+			if (higher_index < 0)
+				higher_index = i;
+
+			// New higher, check if closer
+			else if (nid_table.table[i].nid < nid_table.table[higher_index].nid)
+				higher_index = i;
+		}
+	}
+
+	return higher_index;
+}
+
+// Return index in nid_table for closest lower known NID
+int get_lower_known_nid(unsigned int lib_index, u32 nid)
+{
+	int i;
+	int lower_index = -1;
+
+	for(i=0; i<NID_TABLE_SIZE; i++)
+	{
+		if (nid_table.table[i].lib_index == lib_index && nid_table.table[i].nid < nid)
+		{
+			// First higher found
+			if (lower_index < 0)
+				lower_index = i;
+
+			// New higher, check if closer
+			else if (nid_table.table[i].nid > nid_table.table[lower_index].nid)
+				lower_index = i;
+		}
+	}
+
+	return lower_index;
+}
+
 // Fills remaining information on a library
 tSceLibrary* complete_library(tSceLibrary* plibrary)
 {
@@ -278,9 +352,9 @@ int get_nid_index(u32 nid)
 
 	for (i=0; i<NID_TABLE_SIZE; i++)
 	{
-		if (nid_table[i].nid == 0)
+		if (nid_table.table[i].nid == 0)
 			break;
-		else if (nid_table[i].nid == nid)
+		else if (nid_table.table[i].nid == nid)
 		    return i;
 	}
 
@@ -356,7 +430,7 @@ int build_nid_table()
 	tStubEntry *pentry;	
 	
 	// Zeroing global tables
-	memset(nid_table, 0, sizeof(nid_table));
+	memset(&nid_table, 0, sizeof(nid_table));
 	memset(library_table, 0, sizeof(library_table));
 	
 	// Getting game's .lib.stub address
@@ -438,12 +512,15 @@ int build_nid_table()
 						
 						// Only insert NID if it's a new one
 						if (get_nid_index(nid) < 0)
-						{							
-							nid_table[i].nid = nid;			
-							nid_table[i].call = get_good_call(cur_call);
-							nid_table[i].lib_index = k;
+						{
+							add_nid_to_table(nid, get_good_call(cur_call), k);
+							/*
+							nid_table.table[i].nid = nid;			
+							nid_table.table[i].call = get_good_call(cur_call);
+							nid_table.table[i].lib_index = k;
+							*/
 							NID_LOGSTR1(" --> new inserted @ %d", i);
-							NID_LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
+							NID_LOGSTR1(" with jump 0x%08lX", nid_table.table[i].call);
 							i++;							
 						}
 						NID_LOGSTR0("\n");
@@ -477,19 +554,22 @@ int build_nid_table()
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
-							nid_table[i].nid = nid;			
-							nid_table[i].call = get_good_call(cur_call);
-							nid_table[i].lib_index = k;
+							add_nid_to_table(nid, get_good_call(cur_call), k);
+							/*
+							nid_table.table[i].nid = nid;			
+							nid_table.table[i].call = get_good_call(cur_call);
+							nid_table.table[i].lib_index = k;
+							*/
 							NID_LOGSTR1(" --> new inserted @ %d", i);
 
 							// Check lowest syscall
-							syscall_num = GET_SYSCALL_NUMBER(nid_table[i].call);
+							syscall_num = GET_SYSCALL_NUMBER(nid_table.table[i].call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
 							
 							if (syscall_num < library_table[k].lowest_syscall)
 							{
 								library_table[k].lowest_syscall = syscall_num;
-								library_table[k].lowest_nid = nid_table[i].nid;
+								library_table[k].lowest_nid = nid_table.table[i].nid;
 								NID_LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", library_table[k].lowest_syscall, library_table[k].lowest_nid);
 							}
                             
@@ -542,11 +622,14 @@ int build_nid_table()
 						// Only insert NID if it's a new one
 						if (get_nid_index(nid) < 0)
 						{
-							nid_table[i].nid = nid;			
-							nid_table[i].call = get_good_call(cur_call);
-							nid_table[i].lib_index = library_index;
+							add_nid_to_table(nid, get_good_call(cur_call), library_index);
+							/*
+							nid_table.table[i].nid = nid;			
+							nid_table.table[i].call = get_good_call(cur_call);
+							nid_table.table[i].lib_index = library_index;
+							*/
 							NID_LOGSTR1(" --> new inserted @ %d", i);
-							NID_LOGSTR1(" with jump 0x%08lX", nid_table[i].call);
+							NID_LOGSTR1(" with jump 0x%08lX", nid_table.table[i].call);
 							i++;
 							library_table[library_index].num_known_exports++;							
 						}
@@ -577,18 +660,21 @@ int build_nid_table()
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
-							nid_table[i].nid = nid;			
-							nid_table[i].call = get_good_call(cur_call);
-							nid_table[i].lib_index = library_index;
+							add_nid_to_table(nid, get_good_call(cur_call), library_index);
+							/*
+							nid_table.table[i].nid = nid;			
+							nid_table.table[i].call = get_good_call(cur_call);
+							nid_table.table[i].lib_index = library_index;
+							*/
 							NID_LOGSTR1(" --> new inserted @ %d", i);
 						
 							// Check lowest syscall
-							syscall_num = GET_SYSCALL_NUMBER(nid_table[i].call);
+							syscall_num = GET_SYSCALL_NUMBER(nid_table.table[i].call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
 							if (syscall_num < library_table[library_index].lowest_syscall)
 							{
 								library_table[library_index].lowest_syscall = syscall_num;
-								library_table[library_index].lowest_nid = nid_table[i].nid;
+								library_table[library_index].lowest_nid = nid_table.table[i].nid;
 								NID_LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", library_table[library_index].lowest_syscall, library_table[library_index].lowest_nid);
 							}
 							//DEBUG_PRINT(" NID INSERTED ", &nid_table[i].nid, sizeof(u32));
@@ -642,13 +728,13 @@ int build_nid_table()
 		c2 = 0;
 		while (c2 <= i)
 		{
-			if (nid_table[c2].lib_index == c1)
+			if (nid_table.table[c2].lib_index == c1)
 			{
-				if (nid_table[c2].call & SYSCALL_MASK_RESOLVE)
-					syscall = nid_table[c2].call;
+				if (nid_table.table[c2].call & SYSCALL_MASK_RESOLVE)
+					syscall = nid_table.table[c2].call;
 				else
-					syscall = GET_SYSCALL_NUMBER(nid_table[c2].call);
-				NID_LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, nid_table[c2].nid, syscall);
+					syscall = GET_SYSCALL_NUMBER(nid_table.table[c2].call);
+				NID_LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, nid_table.table[c2].nid, syscall);
 				
 				line_count++;
 				if (line_count == 3)
@@ -665,5 +751,8 @@ int build_nid_table()
 #endif
 
 	config_close();
+
+	nid_table.num = i;
+	
 	return i;
 }

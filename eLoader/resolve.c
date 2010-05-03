@@ -6,6 +6,7 @@
 #include "tables.h"
 #include "hook.h"
 #include "modmgr.h"
+#include "syscall.h"
 
 // Autoresolves HBL missing stubs
 // Some stubs are compulsory, like sceIo*
@@ -56,12 +57,12 @@ void resolve_missing_stubs()
 			if (ret > 0)
 			{
 				LOGSTR0("-Found in NID table, using real call\n");
-				syscall = nid_table[ret].call;
+				syscall = nid_table.table[ret].call;
 			}
 			
 			// If not, estimate
 			else
-				syscall = estimate_syscall(lib_name, nid);
+				syscall = estimate_syscall(lib_name, nid, FROM_LOWEST);
 
 			// DEBUG_PRINT("**RESOLVED SYS**", lib_name, strlen(lib_name));
 			// DEBUG_PRINT(" ", &syscall, sizeof(syscall));
@@ -155,7 +156,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			/* Syscall estimation if library available */
 			if (real_call == 0)
 			{
-				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid);
+				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid, FROM_LOWEST);
 			}
 
 			LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);

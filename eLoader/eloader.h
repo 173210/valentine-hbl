@@ -42,8 +42,11 @@
 // Size of NID-to-call table
 #define NID_TABLE_SIZE 0x200
 
+// Invalid/unknown NID
+#define INVALID_NID 0xFFFFFFFF
+
 // Maximum attempts to reestimate a syscall
-#define MAX_REESTIMATE_ATTEMPTS 15
+#define MAX_REESTIMATE_ATTEMPTS 5
 
 //
 //Files locations

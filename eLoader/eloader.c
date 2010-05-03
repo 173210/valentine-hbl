@@ -4,6 +4,7 @@
 #include "menu.h"
 #include "tables.h"
 #include "utils.h"
+#include "test.h"
 
 /* eLoader */
 /* Entry point: _start() */
@@ -36,34 +37,37 @@ void loadMenu()
 	SceUID menuThread;
 
     print_to_screen("-Test sceIoDopen");
-    id = sceIoDopen("ms0:");
+
+    id = _test_sceIoDopen("ms0:");
     if (id < 0)
     {
-        print_to_screen_color("--failure", 0x000000FF);
-        sceKernelDelayThread(1000000);
+		print_to_screen_color("--failure", 0x000000FF);
+	    sceKernelDelayThread(1000000);
     }
+	
     else
     {
         print_to_screen_color("--success", 0x0000FF00);
+		
         print_to_screen("-Test sceIoDread");
-        memset(&entry, 0, sizeof(SceIoDirent)); 
-        if (sceIoDread(id, &entry) < 0 ) 
+        memset(&entry, 0, sizeof(SceIoDirent));
+        if (_test_sceIoDread(id, &entry) < 0 )
         {
-            print_to_screen_color("--failure", 0x000000FF);
-            sceKernelDelayThread(1000000);
+	        print_to_screen_color("--failure", 0x000000FF);
+	        sceKernelDelayThread(1000000);
+		}
+		else
+        	print_to_screen_color("--success", 0x0000FF00);
+		
+        print_to_screen("-Test sceIoDclose");
+        id = _test_sceIoDclose(id);
+        if (id < 0)
+        {
+	        print_to_screen_color("--failure", 0x000000FF);
+	        sceKernelDelayThread(1000000);
         }
         else
             print_to_screen_color("--success", 0x0000FF00);
-        
-        print_to_screen("-Test sceIoDclose");
-        id = sceIoDclose(id);
-        if (id < 0)
-        {
-            print_to_screen_color("--failure", 0x000000FF);
-            sceKernelDelayThread(1000000);            
-        }
-        else
-            print_to_screen_color("--success", 0x0000FF00);            
     }
 	
 	if ((menu_file = sceIoOpen(MENU_PATH, PSP_O_RDONLY, 0777)) < 0)
@@ -71,13 +75,13 @@ void loadMenu()
 
 	// Get MENU size
 	file_size = sceIoLseek(menu_file, 0, PSP_SEEK_END);
-	sceIoLseek(menu_file, 0, PSP_SEEK_SET);    
+	sceIoLseek(menu_file, 0, PSP_SEEK_SET);
     
 	// Load MENU to buffer
 	if ((bytes_read = sceIoRead(menu_file, (void*)menu_pointer, file_size)) < 0)
 		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
         
-    void (*start_entry)(SceSize, void*) = menu_pointer;	 
+    void (*start_entry)(SceSize, void*) = menu_pointer;
 	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
 
 	if(menuThread >= 0)
@@ -202,7 +206,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 	
     sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
     SetColor(0);
-    print_to_screen("Starting HBL -- http://code.google.com/p/valentine-hbl");
+    print_to_screen("Starting HBL r66 http://code.google.com/p/valentine-hbl");
     
 #ifdef DEBUG
      print_to_screen("DEBUG version");
@@ -211,14 +215,15 @@ void _start(unsigned long arglen, unsigned long *argp)
      print_to_screen("--DEBUG NIDS");
 #endif
     
-	switch (firmware_version) {
-    case 0:
-    case 1:
-        print_to_screen("Unknown Firmware :(");
-        break; 
-    default:
-        PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
-        break;
+	switch (firmware_version) 
+	{
+		case 0:
+		case 1:
+		    print_to_screen("Unknown Firmware :(");
+		    break; 
+		default:
+		    PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
+		    break;
     }
     
     if (getPSPModel() == PSP_GO)
@@ -233,7 +238,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 	{
 		thid = sceKernelStartThread(thid, 0, NULL);
 	}
-	
+
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)
