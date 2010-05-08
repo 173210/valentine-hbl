@@ -81,10 +81,6 @@
 //Comment the following line to avoid reestimation
 #define REESTIMATE_SYSCALL
 
-//Choose free memory method (only one :P)
-//#define AB5000_FREEMEM
-#define DAVEE_FREEMEM
-
 //Comment to disable HBL LoadModule system
 #define LOAD_MODULE
 

@@ -1,3 +1,9 @@
+2010/05/07 (wololo)
+- More functions overrides
+- Automatic SVN version number through makefile (tested on cygwin and dos command line, hopefully will work on linux too)
+- Some cleanup. Removed some dead code.
+- Fixed a nid bug in eLoaderconf.rb
+
 2010/05/04 (m0skit0)
 - Fixed a bug in syscall estimation for PSP Go
 - Added 2 new methods for syscall estimation (also for reestimation)

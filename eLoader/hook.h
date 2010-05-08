@@ -21,6 +21,11 @@ int test_sceIoChdir();
 // Thread manager
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option);
 int _hook_sceKernelTerminateDeleteThread(SceUID thid);
+int _hook_sceKernelSleepThreadCB();
+int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2);
+int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int timeout);
+int _hook_sceKernelExitDeleteThread(int status);
+int _hook_sceKernelGetThreadCurrentPriority();
 
 // Memory manager
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr);
@@ -55,6 +60,11 @@ int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);
 int _hook_scePowerGetCpuClockFrequencyInt();
 int _hook_scePowerGetBatteryLifeTime();
 int _hook_scePowerGetBatteryLifePercent();
+int _hook_scePowerGetBusClockFrequency();
+
+//SysMemUser
+int _hook_sceKernelDevkitVersion();
+
 
 //Generic success
 int _hook_generic_ok();

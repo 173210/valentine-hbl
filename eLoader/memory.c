@@ -1,195 +1,26 @@
 #include "sdk.h"
 #include "eloader.h"
-#include "thread.h"
 #include "debug.h"
 #include "modmgr.h"
-#include "hook.h"
-
-// Find a FPL by name
-SceUID find_fpl(const char *name) 
-{
-	SceUID readbuf[256];
-	int idcount;
-	SceKernelFplInfo info;
-	
-	sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Fpl, &readbuf, sizeof(readbuf)/sizeof(SceUID), &idcount);
-
-	for(info.size=sizeof(info); idcount>0; idcount--)
-	{		
-		if(sceKernelReferFplStatus(readbuf[idcount-1], &info) < 0)
-			return -1;
-		if(strcmp(info.name, name) == 0)
-			return readbuf[idcount-1];
-	}
-	
-	return -1;
-}
-
-// ab5000 system
-#ifdef AB5000_FREEMEM
-/* Free memory allocated by Game */
-/* Warning: MUST NOT be called from Game main thread */
-void free_game_memory()
-{
-    LOGSTR0("ENTER FREE MEMORY\n");
-    
-#ifdef DEBUG    
-    DumpThreadmanObjects();
-    //DumpModuleList();
-#endif
-    
-	SceUID id;
-	
-	const char* const threads[] = {"user_main", "sgx-psp-freq-thr", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-at3-th", "sgx-psp-pcm-th", "FileThread"};
-	
-	const char* const semas[] = {"sgx-flush-mutex", "sgx-tick-mutex", "sgx-di-sema", "sgx-psp-freq-left-sema", "sgx-psp-freq-free-sema", "sgx-psp-freq-que-sema",
-	"sgx-ao-sema", "sgx-psp-sas-attrsema", "sgx-psp-at3-slotsema", "sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema", "sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema", "sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema",
-	"sgx-psp-at3-reqsema", "sgx-psp-at3-bufsema"};
-	
-	const char* const loop_semas[] = {"Semaphore.cpp"};
-	
-	const char* const evflags[] = {"sgx-ao-evf", "sgx-psp-freq-wait-evf", "loadEndCallbackEventId"};
-	
-	int nb_threads = sizeof(threads) / sizeof(threads[0]);
-	int nb_semas = sizeof(semas) / sizeof(semas[0]);
-	int nb_loop_semas = sizeof(loop_semas) / sizeof(loop_semas[0]);
-	int nb_evflags = sizeof(evflags) / sizeof(evflags[0]);
-	int i, ret, status = 0;
-
-#ifdef DEBUG
-	int free;
-#endif
-
-    int success = 1;
-
-    sceKernelDelayThread(100);
-    
-#ifdef DEBUG
-	free = sceKernelTotalFreeMemSize();
-	write_debug(" FREE MEM BEFORE CLEANUP", &free, sizeof(free));
-#endif
-	
-	// Freeing threads
-	for (i = 0; i < nb_threads; ++i)
-	{
-		id = find_thread(threads[i]);
-		if(id >= 0)
-		{
-			int res = sceKernelTerminateThread(id);			
-            if (res < 0) {
-                print_to_screen("  Cannot terminate thread, probably syscall failure");
-                LOGSTR2("CANNOT TERMINATE %s (err:0x%08lX)\n", threads[i], res);
-                success = 0;
-            }
-			
-			res = sceKernelDeleteThread(id);
-            if (res < 0) {
-                print_to_screen("  Cannot delete thread, probably syscall failure");
-                LOGSTR2("CANNOT TERMINATE %s (err:0x%08lX)\n", threads[i], res);
-                success = 0;
-            } 
-			else 
-			{
-                sceKernelDelayThread(100);
-            }
-		} 
-		else 
-		{
-            print_to_screen("  Cannot find thread, probably syscall failure");
-            LOGSTR2("CANNOT FIND THREAD TO DELETE %s (err:0x%08lX)\n", threads[i], id);
-            success = 0;
-        }
-	}
-
-    LOGSTR0("FREEING SEMAPHORES\n");
-	// Freeing semaphores
-	for (i = 0; i < nb_semas; ++i)
-	{
-		id = find_sema(semas[i]);
-		if(id >= 0)
-		{
-			sceKernelDeleteSema(id);
-			sceKernelDelayThread(100);
-		}
-	}
-	
-	for(i = 0; i < nb_loop_semas; ++i)
-	{
-		while((id = find_sema(loop_semas[i])) >= 0)
-		{
-			sceKernelDeleteSema(id);
-			sceKernelDelayThread(100);
-		}
-	}
-	
-    LOGSTR0("FREEING EVENT FLAGS\n");
-	// Freeing event flags
-	for (i = 0; i < nb_evflags; ++i)
-	{
-		id = find_evflag(evflags[i]);
-		if(id >= 0)
-		{
-			sceKernelDeleteEventFlag(id);
-			sceKernelDelayThread(100);
-		}
-	}
-
-    LOGSTR0("FREEING MEMORY PARTITION\n");
-	// Free memory partition created by the GAME (UserSbrk)
-	sceKernelFreePartitionMemory(*((SceUID *) MEMORY_PARTITION_POINTER));
-	
-	//sceKernelDelayThread(100000);
-
-    LOGSTR0("FREEING MAIN HEAP\n");
-	// Free MAINHEAP FPL
-	id = find_fpl("MAINHEAP");
-	if(id >= 0)
-	{
-		sceKernelDeleteFpl(id);
-		sceKernelDelayThread(100);
-	}
-	
-#ifdef DEBUG
-	free = sceKernelTotalFreeMemSize();
-	write_debug(" FREE MEM AFTER NORMAL CLEANUP", &free, sizeof(free));
-#endif
-
-
-#ifdef UNLOAD_MODULE
-    if (!success)
-        return; //Don't try to unload the module if threads couldn't be stoped
-        
-	// Stop & Unload game module
-	id = find_module("Labo");
-	if (id >= 0)
-	{		
-		ret = sceKernelStopModule(id, 0, NULL, &status, NULL);
-		if (ret >= 0)
-		{
-			ret = sceKernelUnloadModule(id);
-			if (ret < 0)
-				LOGSTR0("\nERROR UNLOADING GAME MODULE\n");
-		}
-		else
-			DEBUG_PRINT(" ERROR STOPPING GAME MODULE ", &ret, sizeof(ret));
-	}
-	else
-		DEBUG_PRINT(" ERROR: GAME MODULE NOT FOUND ", &id, sizeof(id));
-
-#ifdef DEBUG
-	free = sceKernelTotalFreeMemSize();
-	write_debug(" FREE MEM AFTER MODULE UNLOADING ", &free, sizeof(free));
-#endif    
-#endif
-  
-}
-#endif
-
-// Davee system
-#ifdef DAVEE_FREEMEM
 
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES 0x20
+
+int kill_thread(SceUID thid) 
+{
+    int ret = sceKernelTerminateThread(thid);
+    if (ret < 0)
+    {
+        LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
+        return ret;
+    }
+
+    ret = sceKernelDeleteThread(thid);
+    if (ret < 0)
+        LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
+
+    return ret;
+}
 
 int kill_event_flag(SceUID flid)
 {
@@ -247,7 +78,7 @@ void DeleteAllThreads(void)
 	/* lets kill these threads now */
 	for (i = 0; i < (sizeof(thids)/sizeof(u32)); i++)
 	{
-		_hook_sceKernelTerminateDeleteThread(thids[i]);
+		kill_thread(thids[i]);
 	}
 }
 
@@ -404,8 +235,6 @@ void free_game_memory()
 
 	return;
 }
-#endif
-
 
 // Those 2 functions are heavy but this avoids 2 extra syscalls that might fail
 // In the future if we can have access to the "real" functions, let's remove this

@@ -12,7 +12,21 @@ clean:
 	rm -rf *~ *.o *.elf *.bin *.s
 
 CC       = psp-gcc
-CFLAGS   :=  -D PSP -I $(INCLUDE) -W -Wall -O2 -G0 -fno-pic -mno-abicalls -w -fomit-frame-pointer
+
+CFLAGS   := -D PSP -I $(INCLUDE) -W -Wall -O2 -G0 -fno-pic -mno-abicalls -w -fomit-frame-pointer
+
+
+#svn revision in code
+RESULT=$(shell svnversion -n 2> Makefile.cache)
+ifeq ($(RESULT),)
+#try windows with tortoise svn
+all:
+	@echo svnrevision not found, trying SubWCRev
+	@SubWCRev . svnversion.txt svnversion.h
+else
+#linux
+CFLAGS += -DSVNVERSION=\"$(RESULT)\"
+endif
 
 
 #all: CFLAGS += -D DEBUG -D NID_DEBUG
@@ -43,10 +57,6 @@ elf.o: elf.c
 loader.o: loader.c
 	$(CC) $(CFLAGS) -S loader.c -o loader.s
 	$(ASM) loader.s -o loader.o	
-	
-thread.o: thread.c 
-	$(CC) $(CFLAGS) -S thread.c -o thread.s
-	$(ASM) thread.s -o thread.o
 	
 modmgr.o: modmgr.c 
 	$(CC) $(CFLAGS) -S modmgr.c -o modmgr.s
@@ -113,8 +123,8 @@ menu: menu.o graphics.o font.o sdk_hbl.o linker_menu.x debug.o lib.o utils.o
 	$(PSPDEV)/bin/psp-strip -s menu.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary menu.elf menu.bin    	
     	
-hbl: eloader.o elf.o thread.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o syscall.o malloc.o utils.o graphics.o font.o tables.o hook.o reloc.o resolve.o test.o linker_hbl.x
-	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o eloader.o elf.o thread.o syscall.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o tables.o hook.o reloc.o resolve.o test.o -o eloader.elf
+hbl: eloader.o elf.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o syscall.o malloc.o utils.o graphics.o font.o tables.o hook.o reloc.o resolve.o test.o linker_hbl.x
+	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o eloader.o elf.o syscall.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o tables.o hook.o reloc.o resolve.o test.o -o eloader.elf
 	$(PSPDEV)/bin/psp-strip -s eloader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary eloader.elf hbl.bin
 	

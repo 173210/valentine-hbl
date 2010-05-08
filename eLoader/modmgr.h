@@ -36,17 +36,6 @@ typedef struct
 	HBLModInfo table[MAX_MODULES];	// List of loaded modules info struct
 } HBLModTable;
 
-// Get module ID from module name
-SceUID find_module(const char *name);
-
-/*
-// Get complete module info from an UID
-int get_module_info(SceUID modid, tModuleInfo *modinfo);
-*/
-
-/* debug info */
-void DumpModuleList();
-
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset);
 

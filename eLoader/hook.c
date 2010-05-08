@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "malloc.h"
 #include "hook.h"
+#include "memory.h"
 
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
@@ -25,7 +26,7 @@ u32 setup_hook(u32 nid)
             LOGSTR0(" mem trick ");
             hook_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
             break;                     
-
+            
 #ifdef FAKE_THREADS
         case 0x446D8DE6: //sceKernelCreateThread
             hook_call = MAKE_JUMP(_hook_sceKernelCreateThread);
@@ -40,6 +41,7 @@ u32 setup_hook(u32 nid)
 #endif 
 
 #ifdef LOAD_MODULE
+        case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
 		case 0x977DE386: // sceKernelLoadModule
 			LOGSTR0(" loadmodule trick ");
 			hook_call = MAKE_JUMP(_hook_sceKernelLoadModule);
@@ -52,7 +54,10 @@ u32 setup_hook(u32 nid)
 #endif  
 
 // Overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
-		
+	    case 0x3FC9AE6A:  //sceKernelDevkitVersion   (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelDevkitVersion);
+            break;
+            
         case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
             LOGSTR0(" mem trick ");
             hook_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
@@ -79,17 +84,42 @@ u32 setup_hook(u32 nid)
             break;  
             
         case 0x383F7BCC: // sceKernelTerminateDeleteThread  (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceKernelTerminateDeleteThread);
+            hook_call = MAKE_JUMP(kill_thread);
             break;    
         
         case 0xD675EBB8: // sceKernelSelfStopUnloadModule (avoid syscall estimation) - not sure about this one
             hook_call = MAKE_JUMP(_hook_sceKernelSelfStopUnloadModule);
             break;               
 
+        case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)          
+            hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
+            break; 
+            
+        case 0x884C9F90: //	sceKernelTrySendMsgPipe (avoid syscall estimation)  
+            hook_call = MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);
+            break;    
+
+        case 0x74829B76: // sceKernelReceiveMsgPipe (avoid syscall estimation)  
+            hook_call = MAKE_JUMP(_hook_sceKernelReceiveMsgPipe);
+            break;    
+
+        case 0x809CE29B : // sceKernelExitDeleteThread (avoid syscall estimation)  
+            hook_call = MAKE_JUMP(_hook_sceKernelExitDeleteThread);
+            break;               
+           
+        case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
+            hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
+            break; 
+                  
 #ifdef HOOK_POWERFUNCTIONS
+        case 0xFEE03A2F: //scePowerGetCpuClockFrequency (alias to scePowerGetCpuClockFrequencyInt)
         case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_scePowerGetCpuClockFrequencyInt);
-            break;     
+            break;  
+
+        case 0x478FE6F5:// scePowerGetBusClockFrequency     (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_scePowerGetBusClockFrequency);
+            break;         
 
         case 0x2085D15D: //scePowerGetBatteryLifePercent  (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
@@ -97,8 +127,8 @@ u32 setup_hook(u32 nid)
 
         case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
-            break;               
-
+            break;      
+            
 // Hooks to a function that does nothing but says "ok"            
         case 0x87440F5E: // scePowerIsPowerOnline  - Assuming it's not super necessary
         case 0x04B7766E: //	scePowerRegisterCallback - Assuming it's already done by the game
@@ -395,6 +425,15 @@ int _hook_scePowerGetCpuClockFrequencyInt()
     return g_cpufreq;
 }
 
+int _hook_scePowerGetBusClockFrequency() {
+    if (!g_busfreq)
+    {
+        //that's a bit dirty :(
+        _hook_scePowerSetClockFrequency(333, 333, 166);
+    }
+    return g_busfreq;
+}
+
 
 //Alias, see http://forums.ps2dev.org/viewtopic.php?t=11294
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
@@ -423,7 +462,7 @@ int _hook_scePowerGetBatteryLifePercent()
 }   
 
 // http://forums.ps2dev.org/viewtopic.php?p=43495
-int _hook_sceKernelDevkitVersion(void)
+int _hook_sceKernelDevkitVersion()
 {
     //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
     u32 version = getFirmwareVersion();
@@ -435,31 +474,43 @@ int _hook_sceKernelDevkitVersion(void)
     
 }
 
-
-//
-int _hook_sceKernelTerminateDeleteThread(SceUID thid) 
-{
-    int ret = sceKernelTerminateThread(thid);
-    if (ret < 0)
-    {
-        LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
-        return ret;
-    }
-
-    ret = sceKernelDeleteThread(thid);
-    if (ret < 0)
-        LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
-
-    return ret;
-}
-
 // see http://powermgrprx.googlecode.com/svn-history/r2/trunk/include/pspmodulemgr.h
-int 	_hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp)
+int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp)
 {
     int status;
     return ModuleMgrForUser_8F2DF740(exitcode, argsize, argp, &status, NULL);
 
 }
+
+int _hook_sceKernelGetThreadCurrentPriority()
+{
+    return 0x18;
+    //TODO : real management of threads --> keep track of their priorities ?
+}
+
+int _hook_sceKernelSleepThreadCB() 
+{
+    while (1)
+        sceKernelDelayThreadCB(1000000);
+    return 1;
+}
+
+int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
+{
+    return sceKernelSendMsgPipe(uid, message, size, unk1, unk2, 0);
+}
+
+int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int timeout)
+{
+    return sceKernelTryReceiveMsgPipe(uid, message, size, unk1, unk2);
+}
+
+int _hook_sceKernelExitDeleteThread(int status)
+{
+    int ret = sceKernelExitThread(status);
+    //TODO add self to a list of threads to delete then let HBL handle the deletion
+    return ret;
+}   	
 
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int flags, SceKernelLMOption *option)

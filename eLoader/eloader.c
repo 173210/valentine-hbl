@@ -6,6 +6,8 @@
 #include "utils.h"
 #include "test.h"
 
+#include "svnversion.h"
+
 /* eLoader */
 /* Entry point: _start() */
 
@@ -206,14 +208,18 @@ void _start(unsigned long arglen, unsigned long *argp)
 	
     sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
     SetColor(0);
-    print_to_screen("Starting HBL r66 http://code.google.com/p/valentine-hbl");
+    print_to_screen("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
     
 #ifdef DEBUG
-     print_to_screen("DEBUG version");
-#endif
 #ifdef NID_DEBUG
-     print_to_screen("--DEBUG NIDS");
+    print_to_screen("DEBUG version (+NIDS)");
+#else
+    print_to_screen("DEBUG version");        
+#endif     
+#else
+    print_to_screen_color("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
 #endif
+
     
 	switch (firmware_version) 
 	{
