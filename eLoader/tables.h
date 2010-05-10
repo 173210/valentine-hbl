@@ -93,4 +93,10 @@ void* init_nid_table();
 // Initialize library_table
 void* init_library_table();
 
+// Return index in nid_table for closest higher known NID
+int get_higher_known_nid(unsigned int lib_index, u32 nid);
+
+// Return index in nid_table for closest lower known NID
+int get_lower_known_nid(unsigned int lib_index, u32 nid);
+
 #endif

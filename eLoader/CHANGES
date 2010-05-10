@@ -1,4 +1,7 @@
 2010/05/10 (m0skit0)
+- Fixed bug on syscall reestimation
+- Added a new reestimation method
+- Reverted first estimation method (FROM_LOWEST)
 - Fixed 5.03 FW detection (should be detected as 5.50)
 - HBL tables are now allocated separately, this fixes a bug where they were overwritten when another module was loaded
 - Changed reestimation method order (I don't see any improvement though)

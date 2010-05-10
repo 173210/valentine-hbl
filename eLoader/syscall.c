@@ -101,6 +101,74 @@ int check_syscall_boundaries (u32 syscall, int boundary_low, int boundary_high)
     return 1;
 }
 
+// Estimate a syscall from library's closest known syscall
+u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
+{	
+	LOGSTR0("=> FROM CLOSEST\n");
+		
+	// Get NIDs index in file
+	int nid_index = find_nid_in_file(nid_file, nid);
+
+	if (nid_index < 0)
+	{
+		LOGSTR0("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
+		return 0;
+	}
+
+	LOGSTR1("NID index in file: %d\n", nid_index);
+
+	// Get higher and lower known NIDs
+	int higher_nid_index = get_higher_known_nid(lib_index, nid);
+	int lower_nid_index = get_lower_known_nid(lib_index, nid);
+
+	// Get higher and lower NID index on file
+	int higher_index_file = -1;
+	if (higher_nid_index >= 0)
+		higher_index_file = find_nid_in_file(nid_file, nid_table->table[higher_nid_index].nid);
+	
+	int lower_index_file = -1;
+	if (lower_nid_index >= 0)
+		lower_index_file = find_nid_in_file(nid_file, nid_table->table[lower_nid_index].nid);
+
+	// Check which one is closer
+	int closest_index = -1;
+	u32 base_syscall = 0;
+	if (higher_index_file >= 0) 
+	{
+		if (lower_index_file >= 0)
+		{
+			int higher_dist = higher_index_file - nid_index;
+			int lower_dist = nid_index - lower_index_file;
+			if (higher_dist < lower_dist)
+				closest_index = higher_index_file;
+			else
+				closest_index = lower_index_file;
+		}
+		else
+			closest_index = higher_index_file;
+	}
+	else
+		closest_index = lower_index_file;
+
+	// Estimate based on closest known NID
+	u32 estimated_syscall;
+	if (closest_index > nid_index)
+		estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call) - (higher_index_file - nid_index);
+	else
+		estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call) + (nid_index - lower_index_file);
+
+	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
+
+	// Check if estimated syscall already exists (should be very rare)
+    estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
+
+	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
+
+	LOGSTR1("--FINAL ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
+
+	return estimated_syscall;
+}
+
 // Estimate a syscall from library's closest lower known syscall
 u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file)
 {
@@ -117,7 +185,7 @@ u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file)
 
 	LOGSTR1("NID index in file: %d\n", nid_index);
 
-	u32 higher_nid_index = get_higher_known_nid(lib_index, nid);
+	int higher_nid_index = get_higher_known_nid(lib_index, nid);
 
 	if (higher_nid_index < 0)
 	{
@@ -169,7 +237,7 @@ u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file)
 
 	LOGSTR1("NID index in file: %d\n", nid_index);
 
-	u32 lower_nid_index = get_lower_known_nid(lib_index, nid);
+	int lower_nid_index = get_lower_known_nid(lib_index, nid);
 
 	if (lower_nid_index < 0)
 	{
@@ -276,6 +344,10 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 	u32 estimated_syscall;
 	switch (method)
 	{
+		case FROM_CLOSEST:
+			estimated_syscall = estimate_syscall_closest(lib_index, nid, nid_file);
+			break;
+			
 		case FROM_LOWEST:
 			estimated_syscall = estimate_syscall_lowest(lib_index, nid, nid_file);
 			break;
@@ -331,13 +403,9 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
 	
 	switch (type)
 	{
-		case SUBSTRACT:
-			syscall--;
-			break;
-
-		case ADD_TWICE:
-			syscall += 2;
-			break;
+		case FROM_CLOSEST:
+			syscall = estimate_syscall_closest(lib_index, nid, nid_file);
+			break;			
 
 		case FROM_LOWER:
 			syscall = estimate_syscall_lower(lib_index, nid, nid_file);
@@ -346,15 +414,17 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
 		case FROM_HIGHER:
 			syscall = estimate_syscall_higher(lib_index, nid, nid_file);
 			break;
-			
-		/*
-		case ADD:
-			syscall++;
-			break;
-		*/
 
 		case FROM_LOWEST:
 			syscall = estimate_syscall_lowest(lib_index, nid, nid_file);
+			break;
+			
+		case SUBSTRACT:
+			syscall--;
+			break;
+
+		case ADD_TWICE:
+			syscall += 2;
 			break;
 
 		default:
