@@ -38,7 +38,7 @@ void* init_library_table()
 // Adds NID entry to nid_table
 void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 {
-	LOGSTR1("Addind NID 0x%08lX to table... ", nid);
+	LOGSTR1("Adding NID 0x%08lX to table... ", nid);
 	
 	// Check if NID already exists in table (by another estimation for example)
 	int index = get_nid_index(nid);

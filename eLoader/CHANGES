@@ -1,4 +1,5 @@
 2010/05/10 (m0skit0)
+- Fixed error on "make distrib" (thanks Cathesdus)
 - Fixed bug on syscall reestimation
 - Added a new reestimation method
 - Reverted first estimation method (FROM_LOWEST)

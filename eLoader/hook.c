@@ -215,9 +215,13 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
     res = sceKernelCreateThread(name, entry, currentPriority, stackSize, attr, option);
 
 	if (res < 0)
+	{
 		LOGSTR1("Thread creation failed with error 0x%08lX\n", res);
+	}
 	else
+	{
 		LOGSTR1("Thread successfully created with ID 0x%08lX\n", res);		
+	}
 
 	/*
     if (gp) 
@@ -238,9 +242,13 @@ int	_hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 	res = sceKernelStartThread(thid, arglen, argp);
 
 	if (res < 0)
+	{
 		LOGSTR1("Thread starting failed with error 0x%08lX\n", res);
+	}
 	else
+	{
 		LOGSTR1("Thread successfully started!\n", res);	
+	}
 
 	return res;
 }

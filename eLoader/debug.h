@@ -56,7 +56,7 @@ void logstr0(const char* A);
 #else
 #define DEBUG_PRINT(a,b,c) {}
 #define DEBUG_PRINT_NL(a) {}
-#define LOGSTR8(a,b,c,d,e,f,g,h,i){}
+#define LOGSTR8(a,b,c,d,e,f,g,h,i) {}
 #define LOGSTR5(a,b,c,d,e,f) {}
 #define LOGSTR4(a,b,c,d,e) {}
 #define LOGSTR3(a,b,c,d) {}
@@ -81,7 +81,7 @@ void logstr0(const char* A);
 #define NID_LOGSTR0(a) logstr0(a)
 
 #else
-#define NID_LOGSTR8(a,b,c,d,e,f,g,h,i){}
+#define NID_LOGSTR8(a,b,c,d,e,f,g,h,i) {}
 #define NID_LOGSTR5(a,b,c,d,e,f) {}
 #define NID_LOGSTR4(a,b,c,d,e) {}
 #define NID_LOGSTR3(a,b,c,d) {}
