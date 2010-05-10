@@ -57,7 +57,7 @@ void resolve_missing_stubs()
 			if (ret > 0)
 			{
 				LOGSTR0("-Found in NID table, using real call\n");
-				syscall = nid_table->table[ret].call;
+				syscall = nid_table.table[ret].call;
 			}
 			
 			// If not, estimate

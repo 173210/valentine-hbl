@@ -45,8 +45,10 @@ typedef struct
 } HBLLibTable;
 
 // Auxiliary structures to help with syscall estimation
-extern HBLLibTable* library_table;
-extern HBLNIDTable* nid_table;
+//extern HBLLibTable* library_table;
+//extern HBLNIDTable* nid_table;
+extern HBLLibTable library_table;
+extern HBLNIDTable nid_table;
 
 // Returns nid_table index where the call is found, -1 if not found
 int get_call_index(u32 call);

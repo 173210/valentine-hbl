@@ -124,11 +124,11 @@ u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 	// Get higher and lower NID index on file
 	int higher_index_file = -1;
 	if (higher_nid_index >= 0)
-		higher_index_file = find_nid_in_file(nid_file, nid_table->table[higher_nid_index].nid);
+		higher_index_file = find_nid_in_file(nid_file, nid_table.table[higher_nid_index].nid);
 	
 	int lower_index_file = -1;
 	if (lower_nid_index >= 0)
-		lower_index_file = find_nid_in_file(nid_file, nid_table->table[lower_nid_index].nid);
+		lower_index_file = find_nid_in_file(nid_file, nid_table.table[lower_nid_index].nid);
 
 	// Check which one is closer
 	int closest_index = -1;
@@ -153,9 +153,9 @@ u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 	// Estimate based on closest known NID
 	u32 estimated_syscall;
 	if (closest_index > nid_index)
-		estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call) - (higher_index_file - nid_index);
+		estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[higher_nid_index].call) - (higher_index_file - nid_index);
 	else
-		estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call) + (nid_index - lower_index_file);
+		estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[higher_nid_index].call) + (nid_index - lower_index_file);
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 
@@ -193,9 +193,9 @@ u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file)
 		return estimate_syscall_lower(lib_index, nid, nid_file);  // Infinite call risk here!!
 	}
 
-	LOGSTR2("Higher known NID/SYSCALL: 0x%08lX/0x%08lX\n", nid_table->table[higher_nid_index].nid, GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call));
+	LOGSTR2("Higher known NID/SYSCALL: 0x%08lX/0x%08lX\n", nid_table.table[higher_nid_index].nid, GET_SYSCALL_NUMBER(nid_table.table[higher_nid_index].call));
 	
-	int higher_index = find_nid_in_file(nid_file, nid_table->table[higher_nid_index].nid);
+	int higher_index = find_nid_in_file(nid_file, nid_table.table[higher_nid_index].nid);
 
 	if (higher_index < 0)
 	{
@@ -207,7 +207,7 @@ u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file)
 	
 	sceIoClose(nid_file);
 
-	u32 estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call) - (higher_index - nid_index);
+	u32 estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[higher_nid_index].call) - (higher_index - nid_index);
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 
@@ -245,9 +245,9 @@ u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file)
 		return estimate_syscall_higher(lib_index, nid, nid_file);  // Infinite call risk here!!
 	}
 
-	LOGSTR2("Lower known NID/SYSCALL: 0x%08lX/0x%08lX\n", nid_table->table[lower_nid_index].nid, GET_SYSCALL_NUMBER(nid_table->table[lower_nid_index].call));
+	LOGSTR2("Lower known NID/SYSCALL: 0x%08lX/0x%08lX\n", nid_table.table[lower_nid_index].nid, GET_SYSCALL_NUMBER(nid_table.table[lower_nid_index].call));
 	
-	int lower_index = find_nid_in_file(nid_file, nid_table->table[lower_nid_index].nid);
+	int lower_index = find_nid_in_file(nid_file, nid_table.table[lower_nid_index].nid);
 
 	if (lower_index < 0)
 	{
@@ -259,7 +259,7 @@ u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file)
 	
 	sceIoClose(nid_file);
 
-	u32 estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[lower_nid_index].call) + (nid_index - lower_index);
+	u32 estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[lower_nid_index].call) + (nid_index - lower_index);
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 
@@ -292,13 +292,13 @@ u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
 	}
 	
 	int estimated_syscall;	
-	if (nid_index > library_table->table[lib_index].lowest_index)
+	if (nid_index > library_table.table[lib_index].lowest_index)
 	{
-		estimated_syscall = (int)library_table->table[lib_index].lowest_syscall + nid_index - (int)library_table->table[lib_index].lowest_index;
+		estimated_syscall = (int)library_table.table[lib_index].lowest_syscall + nid_index - (int)library_table.table[lib_index].lowest_index;
 	}
 	else
 	{
-		estimated_syscall = (int)library_table->table[lib_index].lowest_syscall + nid_index + (int)library_table->table[lib_index].num_library_exports - (int)library_table->table[lib_index].lowest_index;
+		estimated_syscall = (int)library_table.table[lib_index].lowest_syscall + nid_index + (int)library_table.table[lib_index].num_library_exports - (int)library_table.table[lib_index].lowest_index;
 	}
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
@@ -331,7 +331,7 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
         return 0;
     }
 
-	LOGLIB(library_table->table[lib_index]);
+	LOGLIB(library_table.table[lib_index]);
 
 	SceUID nid_file = open_nids_file(lib);
 

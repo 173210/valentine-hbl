@@ -1,4 +1,5 @@
 2010/05/10 (m0skit0)
+- Reverted the tables memory allocation, made a lot of things to fail
 - Fixed error on "make distrib" (thanks Cathesdus)
 - Fixed bug on syscall reestimation
 - Added a new reestimation method

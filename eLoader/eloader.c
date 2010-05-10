@@ -176,8 +176,12 @@ int start_thread(SceSize args, void *argp)
 		// Initialize module loading
 		print_to_screen("Initializing LoadModule");
 
+		/*
 		if(init_load_module() == NULL)
 			exit_with_log(" ERROR: UNABLE TO ALLOCATE MEMORY FOR MODULE TABLES ", NULL, 0);
+		*/
+
+		init_load_module();
 
         // Start the menu or run directly the hardcoded eboot      
         if (file_exists(EBOOT_PATH))

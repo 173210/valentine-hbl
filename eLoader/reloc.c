@@ -143,7 +143,8 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 			reloc_entry = malloc(sec_header.sh_size);
 			if(!reloc_entry)
 			{
-				LOGSTR0("\nWARNING: cannot allocate memory for section\n");
+				LOGSTR1("\nWARNING: cannot allocate memory (size: %d) for section\n", sec_header.sh_size);
+				LOGSTR2("Free memory: %d (max: %d)\n ", sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
 				continue;
 			}
 			
