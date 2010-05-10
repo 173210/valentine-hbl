@@ -1,3 +1,8 @@
+2010/05/10 (m0skit0)
+- Fixed 5.03 FW detection (should be detected as 5.50)
+- HBL tables are now allocated separately, this fixes a bug where they were overwritten when another module was loaded
+- Changed reestimation method order (I don't see any improvement though)
+
 2010/05/07 (wololo)
 - More functions overrides
 - Automatic SVN version number through makefile (tested on cygwin and dos command line, hopefully will work on linux too)

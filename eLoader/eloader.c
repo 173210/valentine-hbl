@@ -53,7 +53,7 @@ void loadMenu()
 		
         print_to_screen("-Test sceIoDread");
         memset(&entry, 0, sizeof(SceIoDirent));
-        if (_test_sceIoDread(id, &entry) < 0 )
+        if (_test_sceIoDread(id, &entry) < 0)
         {
 	        print_to_screen_color("--failure", 0x000000FF);
 	        sceKernelDelayThread(1000000);
@@ -175,7 +175,9 @@ int start_thread(SceSize args, void *argp)
 
 		// Initialize module loading
 		print_to_screen("Initializing LoadModule");
-		init_load_module();
+
+		if(init_load_module() == NULL)
+			exit_with_log(" ERROR: UNABLE TO ALLOCATE MEMORY FOR MODULE TABLES ", NULL, 0);
 
         // Start the menu or run directly the hardcoded eboot      
         if (file_exists(EBOOT_PATH))

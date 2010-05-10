@@ -27,10 +27,14 @@ u32 setup_hook(u32 nid)
             hook_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
             break;                     
             
-#ifdef FAKE_THREADS
-        case 0x446D8DE6: //sceKernelCreateThread
+#ifdef HOOK_THREADS
+        case 0x446D8DE6: // sceKernelCreateThread
             hook_call = MAKE_JUMP(_hook_sceKernelCreateThread);
             break;
+
+		case 0xF475845D: // sceKernelStartThread
+			hook_call = MAKE_JUMP(_hook_sceKernelStartThread);
+			break;
 #endif
 
 #ifdef RETURN_TO_MENU_ON_EXIT                
@@ -186,14 +190,19 @@ u32 setup_hook(u32 nid)
 	return hook_call;
 }
 
-#ifdef FAKE_THREADS
+#ifdef HOOK_THREADS
 
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
                              	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 { 
-    u32 gp_bak = 0;
-	SceUID res;
+	LOGSTR5("\n->Attempting to create thread named %s with entry point 0x%08lX, priority 0x%08lX, stack size 0x%08lX, and attributes 0x%08lX\n", 
+	        name, entry, currentPriority, stackSize, attr);
 	
+    //u32 gp_bak = 0;
+	SceUID res;
+
+
+	/*
     if (gp) 
 	{
         GET_GP(gp_bak);
@@ -201,14 +210,39 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
     }
 	
     entry_point = entry;
-    res = sceKernelCreateThread(name, entry, runThread, stackSize, attr, option);
+	*/
 	
+    res = sceKernelCreateThread(name, entry, currentPriority, stackSize, attr, option);
+
+	if (res < 0)
+		LOGSTR1("Thread creation failed with error 0x%08lX\n", res);
+	else
+		LOGSTR1("Thread successfully created with ID 0x%08lX\n", res);		
+
+	/*
     if (gp) 
 	{
         SET_GP(gp_bak);
     }
+	*/
 	
     return res;
+}
+
+int	_hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
+{
+	SceUID res;
+
+	LOGSTR1("\n->Attempting to start thread ID 0x%08lX\n", thid);
+
+	res = sceKernelStartThread(thid, arglen, argp);
+
+	if (res < 0)
+		LOGSTR1("Thread starting failed with error 0x%08lX\n", res);
+	else
+		LOGSTR1("Thread successfully started!\n", res);	
+
+	return res;
 }
 #endif
 

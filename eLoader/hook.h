@@ -20,6 +20,7 @@ int test_sceIoChdir();
 
 // Thread manager
 SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option);
+int	_hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp);
 int _hook_sceKernelTerminateDeleteThread(SceUID thid);
 int _hook_sceKernelSleepThreadCB();
 int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2);

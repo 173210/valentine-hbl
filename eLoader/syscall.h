@@ -3,12 +3,12 @@
 
 typedef enum
 {
-	SUBSTRACT = 0,		// Only for reestimation
-	ADD_TWICE = 1,		// Only for reestimation
-	FROM_LOWER = 2,
-	FROM_HIGHER = 3,
-	ADD = 4,			// Only for reestimation
-	FROM_LOWEST = 5
+	FROM_LOWER = 0,
+	FROM_HIGHER = 1,
+	FROM_LOWEST = 2,
+	SUBSTRACT = 3,		// Only for reestimation
+	ADD_TWICE = 4		// Only for reestimation
+	
 } HBLEstimateMethod;
 
 /* Estimate a syscall */
@@ -22,7 +22,7 @@ u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file);
 /*
  * Reestimate a syscall if it's suspected of being incorrect
 */
-u32 reestimate_syscall(const char *lib, u32 nid, u32* stub, HBLEstimateMethod type);
+//u32 reestimate_syscall(const char *lib, u32 nid, u32* stub, HBLEstimateMethod type);
 
 #endif
 

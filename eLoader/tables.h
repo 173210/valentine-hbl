@@ -28,7 +28,7 @@ typedef enum
 // This struct is for each library imported by the game
 typedef struct
 {
-	char library_name[MAX_LIBRARY_NAME_LENGTH];	// Library name
+	char name[MAX_LIBRARY_NAME_LENGTH];			// Library name
 	tCallingMode calling_mode;					// Defines how library exports are called
 	unsigned int num_library_exports;			// Number of exported functions in library
 	unsigned int num_known_exports;				// Number of known exported functions (exports we know the syscall of)
@@ -38,9 +38,15 @@ typedef struct
     u32 highest_syscall;                        // Highest syscall number found
 } tSceLibrary;
 
+typedef struct
+{
+	unsigned int num;
+	tSceLibrary table[MAX_LIBRARIES];
+} HBLLibTable;
+
 // Auxiliary structures to help with syscall estimation
-extern tSceLibrary library_table[MAX_LIBRARIES];
-extern HBLNIDTable nid_table;
+extern HBLLibTable* library_table;
+extern HBLNIDTable* nid_table;
 
 // Returns nid_table index where the call is found, -1 if not found
 int get_call_index(u32 call);
@@ -80,5 +86,11 @@ int get_syscall_boundaries(int lib_index, u32* low, u32* high);
 
 // Adds NID entry to nid_table
 void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
+
+// Initialize nid_table
+void* init_nid_table();
+
+// Initialize library_table
+void* init_library_table();
 
 #endif

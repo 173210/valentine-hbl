@@ -33,7 +33,7 @@ void write_debug(const char* description, void* value, unsigned int size)
 	
 	if ((fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777)) >= 0)
 	{
-	if (description != NULL)
+		if (description != NULL)
 		{
 			sceIoWrite(PSPLINK_OUT, description, strlen(description));		
 			sceIoWrite(fd, description, strlen(description));
@@ -56,7 +56,7 @@ void exit_with_log(const char* description, void* value, unsigned int size)
 void log_library(tSceLibrary lib)
 {
 	LOGSTR0("\n-->Library name: ");
-	LOGSTR0(lib.library_name);
+	LOGSTR0(lib.name);
 	LOGSTR0("\n");
 	LOGSTR1("--Calling mode: %d\n", lib.calling_mode);
 	LOGSTR1("--Total library exports: %d\n", lib.num_library_exports);

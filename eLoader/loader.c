@@ -18,7 +18,7 @@ void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 // Loads HBL to memory
 void load_hbl(SceUID hbl_file)
 {	
-	SceOff file_size;
+	unsigned long file_size;
 	int bytes_read;
 	SceUID HBL_block;
 

@@ -57,7 +57,7 @@ void resolve_missing_stubs()
 			if (ret > 0)
 			{
 				LOGSTR0("-Found in NID table, using real call\n");
-				syscall = nid_table.table[ret].call;
+				syscall = nid_table->table[ret].call;
 			}
 			
 			// If not, estimate
@@ -171,7 +171,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 				resolving_count++;
 			}
 
-			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", cur_call, *cur_call, *(cur_call+1))
+			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", cur_call, *cur_call, *(cur_call+1));
 
 			sceKernelDcacheWritebackInvalidateAll();
 
