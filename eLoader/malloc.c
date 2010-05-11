@@ -31,7 +31,12 @@ void* malloc(SceSize size)
 	}
 	
 	if(i == MAX_ALLOCS) // No free block found
+	{
+		LOGSTR0("WARNING: no free blocks remaining\n");
 		return NULL;
+	}
+
+	LOGSTR1("Found free block %d\n", i);
 	
 	/* Allocate block */
 	uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
@@ -44,6 +49,8 @@ void* malloc(SceSize size)
 			return NULL;
 		}
 	}
+
+	LOGSTR1("Got block from kernel with UID 0x%08lX\n", uid);
 	
 	/* Fill block info */
 	block[i].uid = uid;
@@ -80,8 +87,10 @@ void allocate_memory(u32 size, void* addr)
 {
 	SceUID mem;
 	
-	LOGSTR1("-->ALLOCATING EXECUTABLE MEMORY @ 0x%08lX\n", addr);
+	LOGSTR1("-->ALLOCATING MEMORY @ 0x%08lX... ", addr);
 	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
 	if(mem < 0)
-		LOGSTR1(" allocate_memory FAILED: 0x%08lX", mem);
+		LOGSTR1("FAILED: 0x%08lX", mem);
+	else
+		LOGSTR0("\n");
 }

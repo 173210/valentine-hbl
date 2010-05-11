@@ -4,7 +4,7 @@
 #include "sdk.h"
 
 // Max number of allocated memory blocks
-#define MAX_ALLOCS 5
+#define MAX_ALLOCS 20
 
 /* Blocks structure */
 typedef struct 

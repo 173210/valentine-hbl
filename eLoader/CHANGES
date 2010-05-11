@@ -1,4 +1,5 @@
 2010/05/11 (m0skit0)
+- Put back the table memory allocation (seems to work fine now)
 - Deleted all user mode libraries from the tables
 --> It's useless to have them there when the user mode modules have been unloaded
 - Fixed REESTIMATE_SYSCALL define to be useful (wasn't used)
