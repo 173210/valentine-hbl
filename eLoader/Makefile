@@ -6,6 +6,7 @@ INCLUDE=$(PSPSDK)/include
 # make distrib to compile without debug info
 # make or make dev to compile with debug info
 all: base
+nonids: base
 base:    hbl loader menu
 
 clean:
@@ -29,8 +30,8 @@ CFLAGS += -DSVNVERSION=\"$(RESULT)\"
 endif
 
 
-#all: CFLAGS += -D DEBUG -D NID_DEBUG
-all: CFLAGS += -D DEBUG
+all: CFLAGS += -D DEBUG -D NID_DEBUG
+nonids: CFLAGS += -D DEBUG
 dev: all
 distrib: base
 

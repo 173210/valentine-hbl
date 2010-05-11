@@ -62,7 +62,7 @@ void resolve_missing_stubs()
 			
 			// If not, estimate
 			else
-				syscall = estimate_syscall(lib_name, nid, FROM_LOWEST);
+				syscall = estimate_syscall(lib_name, nid, FROM_CLOSEST);
 
 			// DEBUG_PRINT("**RESOLVED SYS**", lib_name, strlen(lib_name));
 			// DEBUG_PRINT(" ", &syscall, sizeof(syscall));
@@ -156,7 +156,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			/* Syscall estimation if library available */
 			if (real_call == 0)
 			{
-				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid, FROM_LOWEST);
+				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid, FROM_CLOSEST);
 			}
 
 			LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);

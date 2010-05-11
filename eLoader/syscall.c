@@ -155,7 +155,7 @@ u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 	if (closest_index > nid_index)
 		estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[higher_nid_index].call) - (higher_index_file - nid_index);
 	else
-		estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[higher_nid_index].call) + (nid_index - lower_index_file);
+		estimated_syscall = GET_SYSCALL_NUMBER(nid_table.table[lower_nid_index].call) + (nid_index - lower_index_file);
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 

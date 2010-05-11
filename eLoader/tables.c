@@ -506,90 +506,54 @@ int build_nid_table()
 			if ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES))
 			{
 				config_close();
-				NID_LOGSTR1(" NID TABLE COUNTER: 0x%08lX\n", i);
-				NID_LOGSTR1(" LIBRARY TABLE COUNTER: 0x%08lX\n", k);
-				NID_LOGSTR0(" NID/LIBRARY TABLES TOO SMALL ");
+				LOGSTR1(" NID TABLE COUNTER: 0x%08lX\n", i);
+				LOGSTR1(" LIBRARY TABLE COUNTER: 0x%08lX\n", k);
+				LOGSTR0(" NID/LIBRARY TABLES TOO SMALL ");
 				sceKernelExitGame();
 			}			
 
 			NID_LOGSTR1("-->Processing library: %s ", pentry->library_name);
-		
-			// Get current NID and resolved syscall/jump pointer
-			cur_nid = pentry->nid_pointer;
+
+			// Get actual call
 			cur_call = pentry->jump_pointer;
+			good_call = get_good_call(cur_call);
 
-			// Is this library on the table?
-			library_index = get_library_index(pentry->library_name);
+			// Only process if syscall
+			if (!(good_call & SYSCALL_MASK_RESOLVE))
+			{		
+				// Get current NID
+				cur_nid = pentry->nid_pointer;
 
-			// New library
-			if (library_index < 0)
-			{
-				NID_LOGSTR1(" --> New: %d\n", k);
-				
-				strcpy(library_table.table[k].name, pentry->library_name);			
-				
-				// Get number of syscalls imported
-				library_table.table[k].num_known_exports = pentry->stub_size;
+				// Is this library on the table?
+				library_index = get_library_index(pentry->library_name);
 
-				good_call = get_good_call(cur_call);
-
-				NID_LOGSTR1("Total known exports: %d\n", library_table.table[k].num_known_exports);
-
-				// JUMP call
-				if (good_call & SYSCALL_MASK_RESOLVE)
+				// New library
+				if (library_index < 0)
 				{
-					library_table.table[k].calling_mode = JUMP_MODE;					
-					
-					NID_LOGSTR0("Type: JUMP\n");
-					
-					// Initialize lowest syscall on library table				
-					library_table.table[k].lowest_syscall = 0;				
-					library_table.table[k].lowest_nid = 0;
-					
-                    //initialize highest syscall on library table
-                    library_table.table[k].highest_syscall = 0;	
-                    
-					// Browse all stubs defined by this header and fill NID table
-					for(j=0; j<pentry->stub_size; j++)
-					{						
-						nid = *cur_nid;
-						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
-						
-						// Only insert NID if it's a new one
-						if (get_nid_index(nid) < 0)
-						{
-							add_nid_to_table(nid, get_good_call(cur_call), k);
-							NID_LOGSTR1(" --> new inserted @ %d", i);
-							NID_LOGSTR1(" with jump 0x%08lX", nid_table.table[i].call);
-							i++;							
-						}
-						NID_LOGSTR0("\n");
-						cur_nid++;
-						cur_call += 2;
-					}
-				}
-
-				// SYSCALL call
-				else
-				{					
+					NID_LOGSTR1(" --> New: %d\n", k);
+			
+					strcpy(library_table.table[k].name, pentry->library_name);
 					library_table.table[k].calling_mode = SYSCALL_MODE;
+			
+					// Get number of syscalls imported
+					library_table.table[k].num_known_exports = pentry->stub_size;
 
-					NID_LOGSTR0("Type: SYSCALL\n");
-					
+					NID_LOGSTR1("Total known exports: %d\n", library_table.table[k].num_known_exports);
+			
 					// Initialize lowest syscall on library table				
 					library_table.table[k].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
 					library_table.table[k].lowest_nid = *cur_nid;
-					NID_LOGSTR2("Initial lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table[k].lowest_syscall, library_table[k].lowest_nid);
-			
-                    // Initialize highest syscall on library table	
-                    library_table.table[k].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
-                    
+					NID_LOGSTR2("Initial lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table.table[k].lowest_syscall, library_table.table[k].lowest_nid);
+	
+		            // Initialize highest syscall on library table	
+		            library_table.table[k].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
+		            
 					// Browse all stubs defined by this header
 					for(j=0; j<pentry->stub_size; j++)
 					{
 						nid = *cur_nid;
 						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
-						
+				
 						// If NID is already in, don't put it again 
 						if (get_nid_index(nid) < 0)
 						{
@@ -600,15 +564,15 @@ int build_nid_table()
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(nid_table.table[i].call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
-							
+					
 							if (syscall_num < library_table.table[k].lowest_syscall)
 							{
 								library_table.table[k].lowest_syscall = syscall_num;
 								library_table.table[k].lowest_nid = nid_table.table[i].nid;
 								NID_LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", library_table.table[k].lowest_syscall, library_table.table[k].lowest_nid);
 							}
-                            
-                            if (syscall_num > library_table.table[k].highest_syscall)
+		                    
+		                    if (syscall_num > library_table.table[k].highest_syscall)
 							{
 								library_table.table[k].highest_syscall = syscall_num;
 								NID_LOGSTR2("\nNew highest syscall/nid: 0x%08lX/0x%08lX", library_table.table[k].highest_syscall, nid);
@@ -623,79 +587,44 @@ int build_nid_table()
 					// Fill remaining data
 					NID_LOGSTR0("Completing library...\n");
 					ret = complete_library(&(library_table.table[k]));
+
+					// New library
+					library_table.num++;
+
+					// Next library entry
+					k++;
 				}
 
-				// New library
-				library_table.num++;
-
-				// Next library entry
-				k++;
-			}
-
-			// Old library
-			else
-			{
-				NID_LOGSTR1(" --> Old: %d\n", library_index);
-
-				good_call = get_good_call(cur_call);
-
-				LOGLIB(library_table.table[library_index]);
-				NID_LOGSTR1("Number of imports of this stub: %d\n", pentry->stub_size);
-
-				// JUMP
-				if (good_call & SYSCALL_MASK_RESOLVE)
-				{
-					if (library_table.table[library_index].calling_mode != JUMP_MODE)
-					{
-						config_close();
-						exit_with_log(" ERROR OLD CALL MODE IS JUMP, NEW IS SYSCALL ", &library_index, sizeof(library_index));
-					}
-					
-					// Browse all stubs defined by this header and fill NID table
-					for(j=0; j<pentry->stub_size; j++)
-					{
-						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
-						nid = *cur_nid;
-						
-						// Only insert NID if it's a new one
-						if (get_nid_index(nid) < 0)
-						{
-							add_nid_to_table(nid, get_good_call(cur_call), library_index);
-							NID_LOGSTR1(" --> new inserted @ %d", i);
-							NID_LOGSTR1(" with jump 0x%08lX", nid_table.table[i].call);
-							i++;
-							library_table.table[library_index].num_known_exports++;							
-						}
-						NID_LOGSTR0("\n");
-						cur_nid++;
-						cur_call += 2;
-					}
-				}
-
-				// SYSCALL
+				// Old library
 				else
 				{
-					NID_LOGSTR2("Current lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table.table[library_index].lowest_syscall, library_table.table[library_index].lowest_nid);
+					NID_LOGSTR1(" --> Old: %d\n", library_index);
+
+					LOGLIB(library_table.table[library_index]);
 					
+					NID_LOGSTR1("Number of imports of this stub: %d\n", pentry->stub_size);
+
+					NID_LOGSTR2("Current lowest nid/syscall: 0x%08lX/0x%08lX \n", library_table.table[library_index].lowest_syscall, library_table.table[library_index].lowest_nid);
+			
 					if (library_table.table[library_index].calling_mode != SYSCALL_MODE)
 					{
 						config_close();
 						exit_with_log(" ERROR OLD CALL MODE IS SYSCALL, NEW IS JUMP ", &library_index, sizeof(library_index));
 					}
-					
+			
 					// Browse all stubs defined by this header
 					for(j=0; j<pentry->stub_size; j++)
 					{
 						nid = *cur_nid;
 						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
-						
+				
 						// If NID is already in, don't put it again 
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
 							add_nid_to_table(nid, get_good_call(cur_call), library_index);
 							NID_LOGSTR1(" --> new inserted @ %d", i);
-						
+				
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(nid_table.table[i].call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);

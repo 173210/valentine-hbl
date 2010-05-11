@@ -75,9 +75,6 @@
 //comment the following line if you don't want to return to the menu when leaving a game (reported to crash)
 //#define RETURN_TO_MENU_ON_EXIT
 
-//Comment the following line to avoid unloading Labo
-#define UNLOAD_MODULE
-
 //Comment the following line to avoid reestimation
 #define REESTIMATE_SYSCALL
 

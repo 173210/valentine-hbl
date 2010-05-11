@@ -1,3 +1,10 @@
+2010/05/11 (m0skit0)
+- Deleted all user mode libraries from the tables
+--> It's useless to have them there when the user mode modules have been unloaded
+- Fixed REESTIMATE_SYSCALL define to be useful (wasn't used)
+- Added a new make target (nonids) to build without NID debug
+- Fixed big stupid bug on new syscall estimation method (FROM_CLOSEST)
+
 2010/05/10 (m0skit0)
 - Reverted the tables memory allocation, made a lot of things to fail
 - Fixed error on "make distrib" (thanks Cathesdus)
