@@ -3,12 +3,12 @@
 
 typedef enum
 {
-	FROM_CLOSEST = 0,
-	FROM_LOWER = 1,
-	FROM_HIGHER = 2,
-	SUBSTRACT = 3,		// Only for reestimation
-	ADD_TWICE = 4,		// Only for reestimation		
-	FROM_LOWEST = 5
+	FROM_LOWER = 0,
+	FROM_HIGHER = 1,
+	SUBSTRACT = 2,		// Only for reestimation
+	ADD_TWICE = 3,		// Only for reestimation		
+	FROM_LOWEST = 4,
+	FROM_CLOSEST = 5
 } HBLEstimateMethod;
 
 /* Estimate a syscall */

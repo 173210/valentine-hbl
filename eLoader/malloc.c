@@ -90,7 +90,11 @@ void allocate_memory(u32 size, void* addr)
 	LOGSTR1("-->ALLOCATING MEMORY @ 0x%08lX... ", addr);
 	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
 	if(mem < 0)
+	{
 		LOGSTR1("FAILED: 0x%08lX", mem);
+	}
 	else
+	{
 		LOGSTR0("\n");
+	}
 }

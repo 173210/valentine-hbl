@@ -124,11 +124,17 @@ u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 	// Get higher and lower NID index on file
 	int higher_index_file = -1;
 	if (higher_nid_index >= 0)
+	{
 		higher_index_file = find_nid_in_file(nid_file, nid_table->table[higher_nid_index].nid);
+		LOGSTR2("Higher known NID: 0x%08lX; index: %d\n", nid_table->table[higher_nid_index].nid, higher_index_file);
+	}
 	
 	int lower_index_file = -1;
 	if (lower_nid_index >= 0)
+	{
 		lower_index_file = find_nid_in_file(nid_file, nid_table->table[lower_nid_index].nid);
+		LOGSTR2("Lower known NID: 0x%08lX; index: %d\n", nid_table->table[lower_nid_index].nid, lower_index_file);
+	}
 
 	// Check which one is closer
 	int closest_index = -1;
@@ -149,6 +155,8 @@ u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 	}
 	else
 		closest_index = lower_index_file;
+
+	LOGSTR1("Closest: %d\n", closest_index);
 
 	// Estimate based on closest known NID
 	u32 estimated_syscall;
