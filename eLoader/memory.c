@@ -17,8 +17,10 @@ int kill_thread(SceUID thid)
 
     ret = sceKernelDeleteThread(thid);
     if (ret < 0)
+    {
         LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
-
+    }
+        
     return ret;
 }
 
@@ -155,23 +157,29 @@ void DeleteAndUnassignCallbacks(void)
 	ret = sceKernelDeleteCallback(msevent_cbid);
 	
 	if (ret < 0)
+    {
 		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", msevent_cbid, ret);
-
+    }
+    
 	/* there is another msevent callback */
 	msevent_cbid = *(SceUID*)(0x08B82C0C);
 	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
 	ret = sceKernelDeleteCallback(msevent_cbid);
 
 	if (ret < 0)
+    {
 		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", msevent_cbid, ret);
-	
+	}
+    
 	/* umd callback */
 	SceUID umd_cbid = *(SceUID*)(0x08B70D9C);
 	sceUmdUnRegisterUMDCallBack(umd_cbid);
 	ret = sceKernelDeleteCallback(umd_cbid);
 
 	if (ret < 0)
+    {
 		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", umd_cbid, ret);
+    }
 }
 
 void free_game_memory()

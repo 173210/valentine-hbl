@@ -1,3 +1,11 @@
+2010/05/13 (wololo)
+- added md5 functions (they can be removed and replaced by a _hook_generic_success if we are short on ram, I only added that for gpsp, but it works without it)
+- added some more hooks for improved compatibility
+- Added configuration file with possibility of local override on a per game basis
+-- the config file allows to choose the folder in which the menu will start
+
+- I'm seeing weird effects from time to time when compiling. I think we have a huge bug somewhere OR as m0skit0 said we are running out of memory, and the stack is meeting our data :(
+
 2010/05/11 (m0skit0)
 - Fixed an error on "make distrib" (again, thanks Cathesdus)
 - Put back the tables memory allocation (seems to work fine now)

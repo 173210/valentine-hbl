@@ -5,12 +5,6 @@
 #include "elf.h"
 #include "modmgr.h"
    
-// Globals for debugging
-#ifdef DEBUG
-	SceUID dbglog;
-	u32 aux = 0;
-#endif
-
 void init_debug()
 {
 	SceUID fd;
@@ -30,17 +24,23 @@ void write_debug_newline (const char* description)
 void write_debug(const char* description, void* value, unsigned int size)
 {
 	SceUID fd;
+    if (description != NULL)
+    {
+        sceIoWrite(PSPLINK_OUT, description, strlen(description));
+    }
+    if (value != NULL) 
+    {
+        sceIoWrite(PSPLINK_OUT, value, size);
+    }
 	
 	if ((fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777)) >= 0)
 	{
 		if (description != NULL)
-		{
-			sceIoWrite(PSPLINK_OUT, description, strlen(description));		
+		{	
 			sceIoWrite(fd, description, strlen(description));
 		}
 		if (value != NULL) 
-		{
-			sceIoWrite(PSPLINK_OUT, value, size);		
+		{	
 			sceIoWrite(fd, value, size);
 		}
 		sceIoClose(fd);

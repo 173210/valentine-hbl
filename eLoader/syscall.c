@@ -212,8 +212,6 @@ u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file)
 	}	
 
 	LOGSTR1("Lower known NID index: %d\n", higher_index);
-	
-	sceIoClose(nid_file);
 
 	u32 estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[higher_nid_index].call) - (higher_index - nid_index);
 
@@ -264,8 +262,6 @@ u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file)
 	}	
 
 	LOGSTR1("Lower known NID index: %d\n", lower_index);
-	
-	sceIoClose(nid_file);
 
 	u32 estimated_syscall = GET_SYSCALL_NUMBER(nid_table->table[lower_nid_index].call) + (nid_index - lower_index);
 
@@ -374,6 +370,8 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 			break;
 	}			
 
+    sceIoClose(nid_file);
+    
 	add_nid_to_table(nid, MAKE_SYSCALL(estimated_syscall), lib_index);
 
 	LOGSTR0("Estimation done\n");
@@ -440,6 +438,8 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
 			break;
 	}
 		
+    sceIoClose(nid_file);
+    
     syscall = find_first_free_syscall(lib_index, syscall);
     LOGSTR1(" 0x%08lX\n", syscall);
 	

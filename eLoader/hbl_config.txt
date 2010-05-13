@@ -1,0 +1,29 @@
+# Config File for HBL
+
+# hb_folder 
+#   The menu displays the contents of this folder at startup
+hb_folder=ms0:/PSP/GAME/
+
+###############
+# override_*
+###############
+#The override_* params specify if a given function of the firmware should be overriden by HBL
+# values can be 0, 1, or -1 (see specific parameters for details)
+#
+# 0  : attempt to estimate syscall (let the HBL do its job)
+#
+# 1  : use the override if/when available 
+#    (usually overrides are guaranteed to work, unlike syscall estimates, but they might have drawbacks.
+#    for example, the override for sceCtrlPeekBufferPositive is sceCtrlReadBufferPositive, which will work all the time but is slower
+#
+# -1 : replace the function with a function that does nothing and returns 0 (ok).
+#    Usually not recommended, only to avoid some crashes for functions that are "not really required".
+#    a good example is sceIoMkdir which is sometimes only needed the first time a game is ran, when the game creates
+#    its default directories. Instead of estimating sceIoMkdir, you can create the folders manually, and tell the homebrew to do nothing
+#   Whenever sceIoMkdir is called
+#
+# 0 is the defaut value
+
+# override_sceIoMkdir
+# values: 0, -1
+# overrides_sceIoMkdir=-1

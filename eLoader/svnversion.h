@@ -3,5 +3,5 @@
 //For linux users, SVNVERSION is passed as a D variable in the makefile through svnversion
 
 #ifndef SVNVERSION
-#define SVNVERSION "66"
+#define SVNVERSION " YOU FORGOT TO MAKE CLEAN"
 #endif

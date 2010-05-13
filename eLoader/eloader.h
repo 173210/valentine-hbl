@@ -59,6 +59,7 @@
 #define MENU_PATH HBL_ROOT"menu.bin" // menu
 #define HBL_PATH HBL_ROOT HBL_BIN
 #define KDUMP_PATH HBL_ROOT"kmem.dump"
+#define HBL_CONFIG "hbl_config.txt"
 
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT"libs"

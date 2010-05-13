@@ -124,16 +124,6 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 		sceIoLseek(elf_file, start_offset + cur_offset, PSP_SEEK_SET);
 		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
 
-		/*
-#ifdef DEBUG
-		char sec_name[40];	
-		elf_read_string(elf_file, strtab_offset + sec_header.sh_name, sec_name);
-		LOGELFSECHEADER(sec_header);
-		LOGSTR1("Name: %s\n", sec_name);
-		sceIoLseek(elf_file, start_offset + cur_offset + sizeof(Elf32_Shdr), PSP_SEEK_SET);
-#endif
-		*/
-
 		if(sec_header.sh_type == LOPROC)
 		{
 			//LOGSTR0("Relocating...\n");
@@ -168,8 +158,6 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 		// Next section header
 		cur_offset += sizeof(Elf32_Shdr);
 	}
-	
-	// DEBUG_PRINT(" FINISHED RELOCATING  ",NULL, 0);
 
 	// All relocation section processed
 	return entries_relocated;

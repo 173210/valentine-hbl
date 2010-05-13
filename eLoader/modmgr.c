@@ -119,8 +119,9 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	unsigned int stubs_resolved = resolve_imports(pstub, stubs_size);
 
 	if (stubs_resolved == 0)
+    {
 		LOGSTR0("WARNING: no stubs found!!\n");
-
+    }
 	//LOGSTR0("\nUpdating module table\n");
 
 	mod_table->table[i].id = MOD_ID_START + i;

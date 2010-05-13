@@ -1,0 +1,10 @@
+# This is a config file for Half Byte Loader
+# Override for Picodrive
+# put it in the same directory as the picodrive EBOOT.PBP
+# see ms0:/hbl/hbl_config.txt for more documentation on the parameters
+
+# This prevents Mkdir from working, but also from crashing
+# You have to manualy create the folders
+# cfg, mds, srm, brm
+# before running the game
+override_sceIoMkdir=-1

@@ -5,16 +5,9 @@
 #include "tables.h"
 #include "utils.h"
 #include "test.h"
+#include "settings.h"
 
 #include "svnversion.h"
-
-/* eLoader */
-/* Entry point: _start() */
-
-// Any way to have those non globals ?
-//u32 gp = 0;
-//u32* entry_point = 0;
-//u32 hbsize = 4000000; //default value for the hb size roughly 4MB. This value is never used in theory
 
 // Menu variables
 int g_menu_enabled = 0; // this is set to 1 at runtime if a menu.bin file exists
@@ -121,7 +114,16 @@ void start_eloader(const char *path, int is_eboot)
 	SceOff offset = 0;
 	SceUID mod_id;
 
+	cls();
 	LOGSTR1("EBOOT path: %s\n", path);
+    
+    //Load Game config overrides
+    char config_path[256];
+    strcpy(config_path, path);
+    int path_len = strlen(path) - strlen("EBOOT.PBP");
+    config_path[path_len] = 0;
+    strcat(config_path, HBL_CONFIG);
+    loadConfig(config_path);
     
 	// Extracts ELF from PBP
 	if (is_eboot)		
@@ -130,7 +132,8 @@ void start_eloader(const char *path, int is_eboot)
 	else
 		elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
-	LOGSTR0("Loading module\n");
+	//weirdest thing here: if this is not the lowercase version of logstr, the non debug HBL crashes (wololo 2010/05/13)
+	logstr0("Loading module\n");
 	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
 
 	if (mod_id < 0)
@@ -172,6 +175,9 @@ int start_thread(SceSize args, void *argp)
 		
         print_to_screen("-- Done");
         LOGSTR0("START HBL\n");
+        
+        //Load config
+        loadGlobalConfig();
 
 		// Initialize module loading
 		print_to_screen("Initializing LoadModule");
@@ -209,11 +215,8 @@ void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.star
 void _start(unsigned long arglen, unsigned long *argp)
 {	
 	SceUID thid;
-    void *fb = (void *)0x444000000;
     int firmware_version = getFirmwareVersion();
-	
-    sceDisplaySetFrameBuf(fb, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
-    SetColor(0);
+	cls();
     print_to_screen("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
     
 #ifdef DEBUG

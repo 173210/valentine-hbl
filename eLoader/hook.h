@@ -46,9 +46,13 @@ int _hook_sceAudioSRCOutputBlocking (int vol,void * buf);
 int _hook_sceAudioSRCChRelease();
 int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf);
 
-// Clock manager
+// RTC
 u32 _hook_sceRtcGetTickResolution();
 int _hook_sceRtcGetCurrentTick(u64 * tick);
+int _hook_sceRtcGetCurrentClock  (pspTime  *time, int tz);
+int _hook_sceRtcSetTick (pspTime  *time, const u64  *t);
+int _hook_sceRtcConvertUtcToLocalTime  (const u64  *tickUTC, u64  *tickLocal);
+int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick);
 
 // Module manager
 SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption *option);
@@ -66,6 +70,7 @@ int _hook_scePowerGetBusClockFrequency();
 //SysMemUser
 int _hook_sceKernelDevkitVersion();
 
+int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest);
 
 //Generic success
 int _hook_generic_ok();

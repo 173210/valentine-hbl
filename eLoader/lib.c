@@ -25,6 +25,17 @@ void memcpy(void *out, void *in, int size)
 	}
 }
 
+ /* Scan s for the character.  When this loop is finished,
+    s will either point to the end of the string or the
+    character we were looking for.  */
+ char *(strchr)(const char *s, int c)
+ {
+     while (*s != '\0' && *s != (char)c)
+         s++;
+     return ( (*s == c) ? (char *) s : NULL );
+ }
+
+
 // Returns string length
 int strlen(byte *text)
 {

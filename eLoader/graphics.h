@@ -77,5 +77,7 @@ extern Color* getVramDrawBuffer();
  */
 extern Color* getVramDisplayBuffer();
 
+//clear screen
+void cls();
 
 #endif

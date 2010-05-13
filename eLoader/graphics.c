@@ -77,6 +77,13 @@ Color getPixelImage(int x, int y, Image* image)
 
 int gY = 0;
 
+void cls()
+{
+    sceDisplaySetFrameBuf((void *)0x444000000, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+    SetColor(0);
+	gY = 0;
+}
+
 void printTextScreen(int x, int y, char text[], u32 color)
 {
 	int c, i, j, l;

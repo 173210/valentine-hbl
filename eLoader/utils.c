@@ -79,4 +79,3 @@ u32 getPSPModel()
     }
     return psp_model; 
 }
-

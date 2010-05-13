@@ -4,6 +4,7 @@
 #include "malloc.h"
 #include "hook.h"
 #include "memory.h"
+#include "settings.h"
 
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
@@ -58,6 +59,18 @@ u32 setup_hook(u32 nid)
 #endif  
 
 // Overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
+        case 0x06A70004: //	sceIoMkdir
+            if (g_override_sceIoMkdir == GENERIC_SUCCESS)
+            {
+                LOGSTR0(" sceIoMkdir goes to void because of settings ");
+                hook_call = MAKE_JUMP(_hook_generic_ok);
+            }
+            break; 
+        
+	    case 0xC8186A58:  //sceKernelUtilsMd5Digest  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);
+            break;
+            
 	    case 0x3FC9AE6A:  //sceKernelDevkitVersion   (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceKernelDevkitVersion);
             break;
@@ -67,10 +80,36 @@ u32 setup_hook(u32 nid)
             hook_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
             break;
 		
+        //RTC
         case 0xC41C2853: //	sceRtcGetTickResolution (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceRtcGetTickResolution);
             break;
-		
+            
+		case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
+            break;   
+            
+        case 0x7ED29E40: //	sceRtcSetTick (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceRtcSetTick);
+            break;       
+
+        case 0x6FF40ACC: //   sceRtcGetTick	 (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceRtcGetTick);
+            break;       
+        
+        case 0x57726BC1: //	sceRtcGetDayOfWeek (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_generic_ok); //always monday in my world
+            break;       
+        
+        case 0x34885E0D: //sceRtcConvertUtcToLocalTime	 (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceRtcConvertUtcToLocalTime);
+            break;       
+  
+        case 0x4CFA57B0: //sceRtcGetCurrentClock	 (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentClock);
+            break; 
+            
+        //others
         case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceIoLseek32);
             break;
@@ -78,10 +117,6 @@ u32 setup_hook(u32 nid)
         case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
             break;
-		
-        case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
-            break;   
             
         case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
             hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
@@ -114,7 +149,11 @@ u32 setup_hook(u32 nid)
         case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
             hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
             break; 
-                  
+            
+        case 0x24331850: // kuKernelGetModel ?
+            hook_call = MAKE_JUMP(_hook_generic_ok);
+            break; 	
+            
 #ifdef HOOK_POWERFUNCTIONS
         case 0xFEE03A2F: //scePowerGetCpuClockFrequency (alias to scePowerGetCpuClockFrequencyInt)
         case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt (avoid syscall estimation)
@@ -276,24 +315,69 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
     return uid;
 }
 
+//#############
+// RTC
+// #############
+
+#define ONE_SECOND_TICK 1000000
+#define ONE_DAY_TICK 24 * 3600 * ONE_SECOND_TICK
+
 // always returns 1000000
 // based on http://forums.ps2dev.org/viewtopic.php?t=4821
 u32 _hook_sceRtcGetTickResolution() 
 {
-    return 1000000;
+    return ONE_SECOND_TICK;
+}
+
+int _hook_sceRtcGetCurrentClock  (pspTime  *time, int tz)
+{
+    //todo deal with the timezone...
+    return sceRtcGetCurrentClockLocalTime(time);
+}
+
+
+int _hook_sceRtcSetTick (pspTime  *time, const u64  *t)
+{
+//super approximate, let's hope people call this only for display purposes
+    u32 tick = (u32)*t; //get the lower 32 bits
+    time->year = 2010; //I know...
+    tick = tick % (365 * ONE_DAY_TICK);
+    time->month = tick / (30 * ONE_DAY_TICK);
+    tick = tick % (30 * ONE_DAY_TICK);
+    time->day = tick / ONE_DAY_TICK;
+    tick = tick % ONE_DAY_TICK;
+    time->hour = tick / (3600 * ONE_SECOND_TICK);
+    tick = tick % (3600 * ONE_SECOND_TICK);
+    time->minutes = tick / (60 * ONE_SECOND_TICK);
+    tick = tick % (60 * ONE_SECOND_TICK);
+    time->seconds = tick / (ONE_SECOND_TICK);
+    tick = tick % (ONE_SECOND_TICK);    
+    time->microseconds = tick;
+    return 0;
+}
+
+//dirty, assume we're utc
+int _hook_sceRtcConvertUtcToLocalTime  (const u64  *tickUTC, u64  *tickLocal)
+{
+  *tickLocal = *tickUTC;
+}
+
+int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick)
+{
+    u64 seconds = 
+        (u64) time->day * 24 * 3600
+        + (u64) time->hour * 3600 
+        + (u64) time->minutes * 60
+        + (u64) time->seconds; 
+    *tick = seconds * 1000000   + (u64) time->microseconds;
+    return 0;
 }
 
 int _hook_sceRtcGetCurrentTick(u64 * tick)
 {   	
     pspTime time;
     int ret =  sceRtcGetCurrentClockLocalTime(&time);
-    u64 seconds = 
-        (u64) time.day * 24 * 3600
-        + (u64) time.hour * 3600 
-        + (u64) time.minutes * 60
-        + (u64) time.seconds; 
-    *tick = seconds * 1000000   + (u64) time.microseconds;
-    return 0;
+    return _hook_sceRtcGetTick (&time, tick);
 }
 
 //based on http://forums.ps2dev.org/viewtopic.php?t=12490
@@ -552,7 +636,18 @@ int _hook_sceKernelExitDeleteThread(int status)
     int ret = sceKernelExitThread(status);
     //TODO add self to a list of threads to delete then let HBL handle the deletion
     return ret;
-}   	
+}   
+
+
+// ###############
+// UtilsForUser
+// ###############
+
+int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
+{
+    return md5(data,size, digest);
+}
+
 
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int flags, SceKernelLMOption *option)

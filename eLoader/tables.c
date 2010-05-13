@@ -42,7 +42,7 @@ void* init_library_table()
 // Adds NID entry to nid_table
 void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 {
-	LOGSTR1("Adding NID 0x%08lX to table... ", nid);
+	NID_LOGSTR1("Adding NID 0x%08lX to table... ", nid);
 	
 	// Check if NID already exists in table (by another estimation for example)
 	int index = get_nid_index(nid);
@@ -52,14 +52,14 @@ void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 	{
 		if (nid_table->num >= NID_TABLE_SIZE)
 		{
-			LOGSTR0("WARNING: nid_table full\n");
+			LOGSTR2("WARNING: nid_table full %d W % d\n", nid_table->num, NID_TABLE_SIZE);
 			return;
 		}
 
 		nid_table->table[nid_table->num].nid = nid;
 		nid_table->table[nid_table->num].call = call;
 		nid_table->table[nid_table->num].lib_index = lib_index;		
-		LOGSTR1("Newly added @ %d\n", nid_table->num);
+		NID_LOGSTR1("Newly added @ %d\n", nid_table->num);
 		nid_table->num++;
 	}
 
@@ -67,7 +67,7 @@ void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 	else
 	{
 		nid_table->table[index].call = call;
-		LOGSTR1("Modified @ %d\n", nid_table->num);
+		NID_LOGSTR1("Modified @ %d\n", nid_table->num);
 	}
 
 	return;
@@ -223,7 +223,9 @@ u32 get_klowest_syscall(char* lib_name)
 				lowest_offset = (SceOff)0x00269D80;
 	
 			else
+            {
 				NID_LOGSTR0("Library not hacked\n");			
+            }
 
 			if (lowest_offset > 0)
 			{
@@ -241,8 +243,9 @@ u32 get_klowest_syscall(char* lib_name)
 		sceIoClose(kdump_fd);
 	}
 	else
+    {
 		NID_LOGSTR0("Could not open kernel dump\n");
-
+    }
 	return lowest_syscall;
 }
 

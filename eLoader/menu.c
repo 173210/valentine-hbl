@@ -12,7 +12,6 @@
 #define NB_FOLDERS 20
 char folders[NB_FOLDERS][FOLDERNAME_SIZE] ;
 
-char * currentPath = "ms0:/PSP/GAME/";
 char * cacheFile = HBL_ROOT"menu.cache";
 
 int currentFile;
@@ -25,7 +24,8 @@ void *frameBuffer = (void *)0x44000000;
 void saveCache()
 {
     SceUID id = sceIoOpen(cacheFile, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777);
-    if (id < 0) return;
+    if (id < 0) 
+        return;
     sceIoWrite(id, &folders, FOLDERNAME_SIZE * NB_FOLDERS * sizeof(char));
     sceIoClose(id);
 }
@@ -87,10 +87,10 @@ void init()
 	for (i = 0; i < NB_FOLDERS; ++i)
 		folders[i][0] = 0;
 	
-  	id = sceIoDopen(currentPath);
+  	id = sceIoDopen(ebootPath);
   	if (id < 0) 
 	{
-    	LOGSTR1("FATAL: Menu can't open directory %s \n", currentPath);
+    	LOGSTR1("FATAL: Menu can't open directory %s \n", ebootPath);
         printTextScreen(0, 205 , "Unable to open GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
     	return;
@@ -138,7 +138,6 @@ void refreshMenu()
 
 void setEboot() 
 {
-  	strcpy(ebootPath, currentPath);
   	strcat(ebootPath, folders[currentFile]);
   	strcat(ebootPath, "/EBOOT.PBP");
   	LOGSTR0(ebootPath);
@@ -195,6 +194,9 @@ void _start()
             sceKernelExitGame();
         }
 
+#ifndef DEBUG    
+        printTextScreen(0, 216, "DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
+#endif        
         printTextScreen(220, 0 , "X to select, /\\ to quit", 0x00FFFFFF);
         printTextScreen(0, 227 , "Half Byte Loader BETA by m0skit0, ab5000, wololo, davee", 0x00FFFFFF);
         printTextScreen(0, 238 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);
