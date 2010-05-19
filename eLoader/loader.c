@@ -7,8 +7,9 @@
 #include "elf.h"
 #include "config.h"
 #include "tables.h"
-#include "scratchpad.h"
+//#include "scratchpad.h"
 #include "utils.h"
+#include "eloader.h"
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
@@ -39,10 +40,12 @@ void load_hbl(SceUID hbl_file)
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
-	
+
+	/*
 	// Write HBL memory block info to scratchpad
 	*((SceUID*)ADDR_HBL_BLOCK_UID) = HBL_block;
 	*((SceUID*)ADDR_HBL_BLOCK_ADDR) = run_eloader;
+	*/
 
 	// Load HBL to buffer
 	/*
@@ -209,7 +212,8 @@ void copy_hbl_stubs(void)
 		exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
 
 	//DEBUG_PRINT(" STUBS SEARCHED ", NULL, 0);
-	
+
+	/*
 	// Allocate memory for HBL stubs
 	HBL_stubs_block = sceKernelAllocPartitionMemory(2, "ValentineStubs", PSP_SMEM_High, sizeof(u32) * 2 * NUM_HBL_IMPORTS, NULL);
 	if(HBL_stubs_block < 0)
@@ -219,6 +223,9 @@ void copy_hbl_stubs(void)
 	// Write HBL stubs memory block info to scratchpad
 	*((SceUID*)ADDR_HBL_STUBS_BLOCK_UID) = HBL_stubs_block;
 	*((SceUID*)ADDR_HBL_STUBS_BLOCK_ADDR) = stub_addr;
+	*/
+
+	stub_addr = (u32*)HBL_STUBS_START;
 
 	// DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
 	for (i=0; i<NUM_HBL_IMPORTS; i++)
@@ -262,6 +269,78 @@ void get_kmem_dump()
 	}
 }
 
+void initSavedata(SceUtilitySavedataParam * savedata)
+{
+	memset(savedata, 0, sizeof(SceUtilitySavedataParam));
+	savedata->base.size = sizeof(SceUtilitySavedataParam);
+
+	savedata->base.language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
+	savedata->base.buttonSwap = PSP_UTILITY_ACCEPT_CROSS;
+	savedata->base.graphicsThread = 0x11;
+	savedata->base.accessThread = 0x13;
+	savedata->base.fontThread = 0x12;
+	savedata->base.soundThread = 0x10;
+
+	savedata->mode = PSP_UTILITY_SAVEDATA_LISTLOAD;
+	savedata->overwrite = 1;
+	savedata->focus = PSP_UTILITY_SAVEDATA_FOCUS_LATEST; // Set initial focus to the newest file (for loading)
+
+#if _PSP_FW_VERSION >= 200
+	strncpy(savedata->key, key, 16);
+#endif
+
+	strcpy(savedata->gameName, "DEMO11111");	// First part of the save name, game identifier name
+	strcpy(savedata->saveName, "0000");	// Second part of the save name, save identifier name
+
+	char nameMultiple[][20] =	// End list with ""
+	{
+	 "0000",
+	 "0001",
+	 "0002",
+	 "0003",
+	 "0004",
+	 ""
+	};
+
+	// List of multiple names
+	savedata->saveNameList = nameMultiple;
+
+	strcpy(savedata->fileName, "DATA.BIN");	// name of the data file
+
+	// Allocate buffers used to store various parts of the save data
+	savedata->dataBuf = malloc(DATABUFFLEN);
+	savedata->dataBufSize = DATABUFFLEN;
+	savedata->dataSize = DATABUFFLEN;
+}
+
+// Injects HBL to partition 5
+void inject_hbl(SceUID hbl_file, void* addr)
+{	
+	unsigned long file_size;
+	int bytes_read;
+	SceUID HBL_block;
+
+	// Get HBL size
+	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
+	
+	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
+
+	run_eloader = addr;
+
+	// Load directly to allocated memory
+	if ((bytes_read = sceIoRead(hbl_file, (void*)run_eloader, file_size)) < 0)
+		exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
+	
+	//DEBUG_PRINT(" HBL LOADED ", &bytes_read, sizeof(bytes_read));
+
+	sceIoClose(hbl_file);
+
+	LOGSTR1("HBL loaded @ 0x%08lX\n", run_eloader);
+
+	// Commit changes to RAM
+	sceKernelDcacheWritebackInvalidateAll();
+}
+
 // Entry point
 void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.start")));
 void _start(unsigned long arglen, unsigned long *argp)
@@ -285,15 +364,49 @@ void _start(unsigned long arglen, unsigned long *argp)
 	
 	else
 	{
+		LOGSTR0("Preparing savedata trick\n");
+		
+		SceUtilitySavedataParam dialog;
+	
+		initSavedata(&dialog);
+	
+		sceUtilitySavedataInitStart(&dialog);
+	
+		switch(sceUtilitySavedataGetStatus()) 
+		{
+			case PSP_UTILITY_DIALOG_VISIBLE :
+
+				sceUtilitySavedataUpdate(1);
+				break;
+
+			case PSP_UTILITY_DIALOG_QUIT :
+
+				sceUtilitySavedataShutdownStart();
+				break;
+	
+			case PSP_UTILITY_DIALOG_FINISHED :
+				sceKernelExitGame();
+	
+			case PSP_UTILITY_DIALOG_NONE :
+				sceKernelExitGame;
+		}
+
+		LOGSTR0("Savedata trick done!\n");
+		LOGSTR0("Injecting HBL\n");
+		inject_hbl(hbl_file, (void*)HBL_BUFFER);
+
+		sceUtilitySavedataShutdownStart();
+
+		/*
 		LOGSTR0("Loading HBL\n");
 		load_hbl(hbl_file);
+		*/
 	
 		LOGSTR0("Copying & resolving HBL stubs\n");
 		copy_hbl_stubs();
-
-		LOGSTR0("Passing to HBL\n");
+		
 		run_eloader(0, NULL);
-	}	
+	}
 
 	while(1)
 		sceKernelDelayThread(100000);

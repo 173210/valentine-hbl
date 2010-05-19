@@ -13,6 +13,9 @@ typedef struct
 	void* address; // Head address of block (0 if the block isn't allocated)
 } HBLMemBlock;
 
+// Intializes memory allocation system
+void init_malloc(void);
+
 // Allocate memory
 void* malloc(u32 size);
 

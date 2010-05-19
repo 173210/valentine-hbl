@@ -157,6 +157,9 @@ void start_eloader(const char *path, int is_eboot)
 int start_thread(SceSize args, void *argp)
 {
 	int num_nids;
+
+	LOGSTR0("Initializing memory allocation\n");
+	init_malloc();
 	
 	// Build NID table
     print_to_screen("Building NIDs table");
@@ -213,7 +216,7 @@ int start_thread(SceSize args, void *argp)
 // Entry point
 void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.start")));
 void _start(unsigned long arglen, unsigned long *argp)
-{	
+{
 	SceUID thid;
     int firmware_version = getFirmwareVersion();
 	cls();

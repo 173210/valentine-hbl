@@ -1,7 +1,7 @@
 #include "sdk.h"
 #include "debug.h"
 #include "eloader.h"
-#include "scratchpad.h"
+//#include "scratchpad.h"
 #include "elf.h"
 #include "tables.h"
 #include "hook.h"
@@ -14,7 +14,8 @@ void resolve_missing_stubs()
 {
 	int i, ret;
 	unsigned int num_nids;
-	u32* cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
+	//u32* cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
+	u32* cur_stub = (u32*)HBL_STUBS_START;
 	u32 nid = 0, syscall = 0;
 	char lib_name[MAX_LIBRARY_NAME_LENGTH];
 
@@ -29,20 +30,23 @@ void resolve_missing_stubs()
 	LOGSTR0("--> HBL STUBS BEFORE ESTIMATING:\n");	
 	for(i=0; i<num_nids; i++)
 	{
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
+		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
+		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
 		LOGSTR1("  0x%08lX ", *cur_stub);
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);
 		cur_stub++;
 	}
-	cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
+	//cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
+	cur_stub = (u32*)HBL_STUBS_START;
 #endif
 	
 	for (i=0; i<num_nids; i++)
 	{
 		if (*cur_stub == 0)
 		{
-			LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
+			//LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
+			LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32*)cur_stub - (u32*)HBL_STUBS_START);
 
 			// NID & library for i-th import
 			ret = get_lib_nid(i, lib_name, &nid);
@@ -73,11 +77,14 @@ void resolve_missing_stubs()
 	}
 
 #ifdef DEBUG
-	cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
+	//cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
+	cur_stub = (u32*)HBL_STUBS_START;
+	
 	LOGSTR0("--> HBL STUBS AFTER ESTIMATING:\n");	
 	for(i=0; i<num_nids; i++)
 	{
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
+		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
+		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
 		LOGSTR1("  0x%08lX ", *cur_stub);
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);

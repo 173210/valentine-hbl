@@ -1,7 +1,7 @@
 #include "sdk.h"
 #include "debug.h"
 #include "syscall.h"
-#include "scratchpad.h"
+//#include "scratchpad.h"
 
 SceUID _test_sceIoDopen(const char* path)
 {
@@ -13,7 +13,8 @@ SceUID _test_sceIoDopen(const char* path)
 	{
 		i++;
 		LOGSTR1("Reestimating sceIoDopen -> Method: %d\n", i);
-		reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0028, i);	
+		//reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0028, i);
+		reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, (u32*)0x10028, i);	
 		ret = sceIoDopen(path);
 	}	
 #endif
@@ -31,7 +32,8 @@ int _test_sceIoDread(SceUID id, SceIoDirent* entry)
 	{
 		i++;
 		LOGSTR1("Reestimating sceIoDread -> Method: %d\n", i);
-		reestimate_syscall("IoFileMgrForUser", 0xe3eb004c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0030, i);
+		//reestimate_syscall("IoFileMgrForUser", 0xe3eb004c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0030, i);
+		reestimate_syscall("IoFileMgrForUser", 0xe3eb004c, (u32*)0x10030, i);
 		ret = sceIoDread(id, entry);
 	}
 #endif
@@ -49,7 +51,8 @@ int _test_sceIoDclose(SceUID id)
 	{
 		i++;
 		LOGSTR1("Reestimating sceIoDclose -> Method: %d\n", i);
-		reestimate_syscall("IoFileMgrForUser", 0xeb092469, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0038, i);
+		//reestimate_syscall("IoFileMgrForUser", 0xeb092469, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0038, i);
+		reestimate_syscall("IoFileMgrForUser", 0xeb092469, (u32*)0x10038, i);
 		ret = sceIoDclose(id);
 	}
 #endif

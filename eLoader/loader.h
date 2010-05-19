@@ -1,10 +1,13 @@
 #ifndef ELOADER_LOADER
 #define ELOADER_LOADER
 
-// HBL stubs
-// If this value is changed, you should also change it in imports.config
-// Should get rid of this
+// HBL stubs size
+#define NUM_HBL_IMPORTS 0x29
 
-#define NUM_HBL_IMPORTS 0x2A
+// HBL loading address
+#define HBL_BUFFER 0x08700000
+
+// Fake savedata
+#define DATABUFFLEN 0x20
 
 #endif

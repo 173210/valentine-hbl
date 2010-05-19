@@ -3,26 +3,22 @@
 #include "debug.h"
 
 /* Number of allocated blocks */
-u32 nblocks = 0;
-
-/* Is the linked list initialized? */
-u8 init = 0;
+u32 nblocks;
 
 /* Blocks */
 HBLMemBlock block[MAX_ALLOCS];
+
+void init_malloc(void)
+{
+	nblocks = 0;
+	memset(block, 0, sizeof(block));
+}
 
 /* Allocate memory */
 void* malloc(SceSize size)
 {
 	int i;
 	SceUID uid;
-	
-	/* Initialize the linked list */
-	if(!init)
-	{
-		memset(block, 0, sizeof(block));
-		init = 1;
-	}
 	
 	for(i=0;i<MAX_ALLOCS;i++)
 	{
@@ -39,10 +35,12 @@ void* malloc(SceSize size)
 	LOGSTR1("Found free block %d\n", i);
 	
 	/* Allocate block */
-	uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
+	//uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
+	uid = sceKernelAllocPartitionMemory(5, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
 	if(uid < 0) // Memory allocation failed
 	{
-		uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
+		//uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
+		uid = sceKernelAllocPartitionMemory(5, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
 		if(uid < 0) // Memory allocation failed
 		{
 			LOGSTR1("WARNING: malloc failed with error 0x%08lX\n", uid);

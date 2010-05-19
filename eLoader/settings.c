@@ -236,8 +236,6 @@ int configReadParameter(char *xoname, char *xoval)
     return(lrc);
 }
 
-
-
 // Load default config
 void loadGlobalConfig()
 {

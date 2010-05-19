@@ -1,3 +1,11 @@
+2010/05/19 (m0skit0)
+- EXPERIMENTAL RELEASE
+- Tested on PSP 2000 5.00 M33 & PSP Go 6.20
+- Changed HBL to be loaded on memory partition 5 instead of the usual 2
+--> This gives us whole parition 2 memory, and should get rid of stuff being overwritten
+- I got rid of the HBL memory allocation since we actually inject HBL to partition 5
+- HBL stubs are back to scratchpad (since we can't allocate p5 memory from p2)
+
 2010/05/13 (wololo)
 - added md5 functions (they can be removed and replaced by a _hook_generic_success if we are short on ram, I only added that for gpsp, but it works without it)
 - added some more hooks for improved compatibility
