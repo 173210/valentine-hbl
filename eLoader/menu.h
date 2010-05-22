@@ -9,4 +9,8 @@
 #define EBOOT_PATH_ADDRESS 0x08D15000
 #define MENU_LOAD_ADDRESS 0x08D20000 //see linker_menu.x!
 
+#define FOLDERNAME_SIZE 30
+#define NB_FOLDERS 40
+#define MAXMENUSIZE 17
+
 #endif

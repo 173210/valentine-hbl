@@ -2,13 +2,11 @@
 #include "eloader.h"
 #include "debug.h"
 #include "menu.h"
-#include "tables.h"
 #include "utils.h"
 #include "test.h"
 #include "settings.h"
 #include "graphics.h"
 #include "svnversion.h"
-#include "lib.h"
 #include "malloc.h"
 #include "resolve.h"
 #include "memory.h"
@@ -117,7 +115,7 @@ void start_eloader(const char *path, int is_eboot)
 	SceUID mod_id;
 
 	cls();
-	LOGSTR1("EBOOT path: %s\n", (ULONG)path);
+	LOGSTR1("EBOOT path: %s\n", (u32)path);
     
     //Load Game config overrides
     char config_path[256];
@@ -209,8 +207,12 @@ int start_thread() //SceSize args, void *argp)
 	// Loop forever
     print_to_screen("Looping HBL Thread");
 
+	sceKernelExitDeleteThread(0);
+
+	/*
 	while(1)
 		sceKernelDelayThread(100000);
+	*/
 	
 	return 0;
 }

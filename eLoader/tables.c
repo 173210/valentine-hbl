@@ -17,12 +17,12 @@ HBLLibTable* library_table = NULL;
 // Initialize nid_table
 void* init_nid_table()
 {
-	nid_table = malloc(sizeof(HBLNIDTable));
+	nid_table = malloc_p5(sizeof(HBLNIDTable));
 
 	if (nid_table != NULL)
 	{
 		memset(nid_table, 0, sizeof(HBLNIDTable));
-		LOGSTR1("NID table created @ 0x%08lX\n", (ULONG)nid_table);
+		LOGSTR1("NID table created @ 0x%08lX\n", (u32)nid_table);
 	}
 
 	return nid_table;
@@ -31,12 +31,12 @@ void* init_nid_table()
 // Initialize library_table
 void* init_library_table()
 {
-	library_table = malloc(sizeof(HBLLibTable));
+	library_table = malloc_p5(sizeof(HBLLibTable));
 
 	if (library_table != NULL)
 	{
 		memset(library_table, 0, sizeof(HBLLibTable));
-		LOGSTR1("Library table created @ 0x%08lX\n", (ULONG)library_table);
+		LOGSTR1("Library table created @ 0x%08lX\n", (u32)library_table);
 	}
 
 	return library_table;
@@ -408,7 +408,7 @@ int get_nid_index(u32 nid)
 // Returns index if it's there
 int get_library_index(const char* library_name)
 {
-	LOGSTR1("Searching for library %s\n", (ULONG)library_name);
+	LOGSTR1("Searching for library %s\n", (u32)library_name);
 	if (library_name == NULL)
         return -1;
 
@@ -508,7 +508,7 @@ int build_nid_table()
 
 	do
 	{
-		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", (ULONG)pentry);
+		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", (u32)pentry);
 		
 		// While it's a valid stub header
 		while (elf_check_stub_entry(pentry))
@@ -523,7 +523,7 @@ int build_nid_table()
 				sceKernelExitGame();
 			}			
 
-			NID_LOGSTR1("-->Processing library: %s ", (ULONG)(pentry->library_name));
+			NID_LOGSTR1("-->Processing library: %s ", (u32)(pentry->library_name));
 
 			// Get actual call
 			cur_call = pentry->jump_pointer;

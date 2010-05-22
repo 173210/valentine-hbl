@@ -4,7 +4,6 @@
 #include "malloc.h"
 #include "hook.h"
 #include "settings.h"
-#include "lib.h"
 #include "utils.h"
 #include "md5.h"
 #include "memory.h"
@@ -240,7 +239,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
                              	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 { 
 	LOGSTR5("\n->Attempting to create thread named %s with entry point 0x%08lX, priority 0x%08lX, stack size 0x%08lX, and attributes 0x%08lX\n", 
-	        (ULONG)name, (ULONG)entry, currentPriority, stackSize, attr);
+	        (u32)name, (u32)entry, currentPriority, stackSize, attr);
 	
     //u32 gp_bak = 0;
 	SceUID res;
@@ -313,7 +312,7 @@ void  _hook_sceKernelExitGame()
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
-    LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (ULONG)name, type, size, (ULONG)addr);
+    LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (u32)name, type, size, (u32)addr);
     SceUID uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
     if (uid <=0)
         LOGSTR1("failed with result: 0x%08lX\n", uid);
@@ -458,7 +457,7 @@ int test_sceIoChdir()
     return 0;
 }
 
-// returns 1 if a string is anabsolute file path, 0 otherwise
+// returns 1 if a string is an absolute file path, 0 otherwise
 int path_is_absolute(const char * file)
 {
     int i;
@@ -477,13 +476,13 @@ char * relative_to_absolute(const char * file)
 {
     if (!g_module_chdir)
     {
-        char * buf = malloc(strlen(file) + 1);
+        char * buf = malloc_p2(strlen(file) + 1);
         strcpy(buf, file);
         return buf;
     }
     int len = strlen(g_module_chdir);
     
-    char * buf = malloc( len +  1 +  strlen(file) + 1);
+    char * buf = malloc_p2( len +  1 +  strlen(file) + 1);
 
     strcpy(buf, g_module_chdir);
     if(buf[len-1] !='/')
@@ -601,12 +600,13 @@ int _hook_sceKernelDevkitVersion()
 {
     //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
     u32 version = getFirmwareVersion();
-    int result = 0x01000000 * (version / 100);
-    result += 0x010000 * ((version % 100) / 10);
+	// 0x0w0y001z <==> firmware w.yz 
+    int result = 0x01000000 * version / 100;
+    result += 0x010000 * (version % 100) / 10;
     result += 0x0100 * (version % 10);
     result += 0x10;
-    return result;
-    
+	
+    return result;    
 }
 
 // see http://powermgrprx.googlecode.com/svn-history/r2/trunk/include/pspmodulemgr.h
@@ -623,6 +623,7 @@ int _hook_sceKernelGetThreadCurrentPriority()
     //TODO : real management of threads --> keep track of their priorities ?
 }
 
+// Sleep is not delay
 int _hook_sceKernelSleepThreadCB() 
 {
     while (1)
@@ -666,13 +667,13 @@ int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
 SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
 {	
 	LOGSTR0("_hook_sceKernelLoadModule\n");
-	LOGSTR1("Attempting to load %s\n", (ULONG)path);
+	LOGSTR1("Attempting to load %s\n", (u32)path);
 	
 	SceUID elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	if (elf_file < 0)
 	{
-		LOGSTR2("Error 0x%08lX opening requested module %s\n", elf_file, (ULONG)path);
+		LOGSTR2("Error 0x%08lX opening requested module %s\n", elf_file, (u32)path);
 		return elf_file;
 	}
 

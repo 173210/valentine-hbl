@@ -48,7 +48,7 @@ SceUID open_nids_file(const char* lib)
         strcat(file_path, LIB_EXTENSION);
     }
 
-	LOGSTR1("Opening %s\n", (ULONG)file_path);
+	LOGSTR1("Opening %s\n", (u32)file_path);
 
 	return sceIoOpen(file_path, PSP_O_RDONLY, 0777);
 }
@@ -326,14 +326,14 @@ u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
 // m0skit0's implementation
 u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 {
-	LOGSTR2("=> ESTIMATING %s : 0x%08lX\n", (ULONG)lib, nid);
+	LOGSTR2("=> ESTIMATING %s : 0x%08lX\n", (u32)lib, nid);
 	
 	// Finding the library on table
 	int lib_index = get_library_index(lib);
 
 	if (lib_index < 0)
 	{
-		LOGSTR1("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (ULONG)lib);
+		LOGSTR1("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (u32)lib);
         return 0;
     }
 
@@ -343,7 +343,7 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 
 	if (nid_file < 0)
 	{
-		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", (ULONG)lib);
+		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", (u32)lib);
 		return 0;
 	}
 
@@ -386,14 +386,14 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod type) 
 {
 #ifdef REESTIMATE_SYSCALL
-	LOGSTR2("=Reestimating function 0x%08lX for stub 0x%08lX: ", nid, (ULONG)stub);
+	LOGSTR2("=Reestimating function 0x%08lX for stub 0x%08lX: ", nid, (u32)stub);
     
 	// Finding the library on table
 	int lib_index = get_library_index(lib);
 
 	if (lib_index < 0)
 	{
-		LOGSTR1("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (ULONG)lib);
+		LOGSTR1("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (u32)lib);
         return 0;
     }
 
@@ -401,7 +401,7 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
 
 	if (nid_file < 0)
 	{
-		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", (ULONG)lib);
+		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", (u32)lib);
 		return 0;
 	}
 

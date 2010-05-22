@@ -29,12 +29,13 @@ void resolve_missing_stubs()
 
 	ret = config_num_nids_total(&num_nids);
 
+	/*
 #ifdef DEBUG
 	LOGSTR0("--> HBL STUBS BEFORE ESTIMATING:\n");	
 	for(i=0; i<num_nids; i++)
 	{
 		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", (ULONG)cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
+		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", (u32)cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
 		LOGSTR1("  0x%08lX ", *cur_stub);
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);
@@ -43,6 +44,7 @@ void resolve_missing_stubs()
 	//cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
 	cur_stub = (u32*)HBL_STUBS_START;
 #endif
+	*/
 	
 	for (i=0; i<num_nids; i++)
 	{
@@ -79,6 +81,7 @@ void resolve_missing_stubs()
 		cur_stub += 2;
 	}
 
+	/*
 #ifdef DEBUG
 	//cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
 	cur_stub = (u32*)HBL_STUBS_START;
@@ -87,13 +90,14 @@ void resolve_missing_stubs()
 	for(i=0; i<num_nids; i++)
 	{
 		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", (ULONG)cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
+		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", (u32)cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
 		LOGSTR1("  0x%08lX ", *cur_stub);
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);
 		cur_stub++;
 	}	
-#endif	
+#endif
+	*/
 
 	sceKernelDcacheWritebackInvalidateAll();
 
@@ -118,9 +122,17 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 	}
 }
 
-/* Resolves imports in ELF's program section already loaded in memory */
-/* Uses game's imports to do the resolving (this can be further improved) */
-/* Returns number of resolves */
+int is_utility(const char* lib_name)
+{
+	if (strcmp(lib_name, "sceMp3") == 0)
+	    return PSP_MODULE_AV_MP3;
+	else
+		return 0;
+}
+
+// Resolves imports in ELF's program section already loaded in memory
+// Uses game's imports to do the resolving (this can be further improved)
+// Returns number of resolves
 unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 {
 	unsigned int i,j,nid_index;
@@ -138,17 +150,24 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
-		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (ULONG)pstub_entry);	
+		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (u32)pstub_entry);	
 
 		cur_nid = pstub_entry->nid_pointer;
 		cur_call = pstub_entry->jump_pointer;
+
+		// Load utility if necessary
+		/*
+		int mod_id;
+		if (mod_id = is_utility(pstub_entry->library_name))
+			load_utility_module(mod_id, pstub_entry->library_name);
+		*/
 
 		/* For each stub header, browse all stubs */
 		for(j=0; j<pstub_entry->stub_size; j++)
 		{
 
 			LOGSTR1("Current nid: 0x%08lX\n", *cur_nid);
-			LOGSTR1("Current call: 0x%08lX\n", (ULONG)cur_call);
+			LOGSTR1("Current call: 0x%08lX\n", (u32)cur_call);
 
 			/* Get syscall/jump instruction for current NID */
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
@@ -181,7 +200,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 				resolving_count++;
 			}
 
-			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", (ULONG)cur_call, *cur_call, *(cur_call+1));
+			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", (u32)cur_call, *cur_call, *(cur_call+1));
 
 			sceKernelDcacheWritebackInvalidateAll();
 

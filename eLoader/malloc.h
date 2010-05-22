@@ -17,7 +17,8 @@ typedef struct
 void init_malloc(void);
 
 // Allocate memory
-void* malloc(u32 size);
+void* malloc_p2(SceSize size);
+void* malloc_p5(SceSize size);
 
 // Free memory
 void free(void* ptr);

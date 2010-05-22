@@ -1,3 +1,10 @@
+2010/05/22 (m0skit0)
+- Added scrolling menu for 40 homebrews max (thanks to MrShawman!)
+- Separate mallocs for p5 and p2 (r80 and r81 malloc code was wrong)
+- Included missing file lib.h
+- Included some code for loading utility modules (not operating yet)
+--> IMHO HBL needs a serious recoding effort...
+
 2010/05/22 (wololo)
 - Still considered as EXPERIMENTAL RELEASE
 - Made the Makefile more strict

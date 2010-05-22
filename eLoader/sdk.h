@@ -4,6 +4,9 @@
 #include <pspdebug.h>
 #include <pspaudio.h>
 #include <psputility.h>
+#include <pspumd.h>
+
+#include "lib.h"
 
 #ifndef VAL_SDK_H
 #define VAL_SDK_H
@@ -11,9 +14,11 @@
 // Typedefs
 typedef unsigned char byte;
 
+/*
 #ifndef ULONG
 #define ULONG unsigned long
 #endif
+*/
 
 #define EXIT sceKernelExitGame()
 
@@ -26,6 +31,8 @@ typedef unsigned char byte;
 # define UNUSED(x) x
 #endif
 
+//Should be defined somewhere in the sdk ???
+SceUID sceKernelGetModuleIdByAddress(u32 address);
 
 #endif
 

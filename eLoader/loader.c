@@ -7,10 +7,8 @@
 #include "elf.h"
 #include "config.h"
 #include "tables.h"
-//#include "scratchpad.h"
 #include "utils.h"
 #include "eloader.h"
-#include "lib.h"
 #include "malloc.h"
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
@@ -18,6 +16,7 @@ void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 // HBL intermediate buffer
 // int hbl_buffer[MAX_ELOADER_SIZE];
 
+/*
 // Loads HBL to memory
 void load_hbl(SceUID hbl_file)
 {	
@@ -27,10 +26,10 @@ void load_hbl(SceUID hbl_file)
 
 	// Get HBL size
 	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
-	/*
-	if (file_size >= MAX_ELOADER_SIZE)
-		exit_with_log(" HBL TOO BIG ", &file_size, sizeof(file_size));
-	*/
+	
+	//if (file_size >= MAX_ELOADER_SIZE)
+	//	exit_with_log(" HBL TOO BIG ", &file_size, sizeof(file_size));
+	
 	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
 
 	//write_debug(" HBL SIZE ", &file_size, sizeof(file_size));
@@ -42,18 +41,14 @@ void load_hbl(SceUID hbl_file)
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
-
-	/*
+	
 	// Write HBL memory block info to scratchpad
-	*((SceUID*)ADDR_HBL_BLOCK_UID) = HBL_block;
-	*((SceUID*)ADDR_HBL_BLOCK_ADDR) = run_eloader;
-	*/
+	// *((SceUID*)ADDR_HBL_BLOCK_UID) = HBL_block;
+	// *((SceUID*)ADDR_HBL_BLOCK_ADDR) = run_eloader;
 
 	// Load HBL to buffer
-	/*
-	if ((bytes_read = sceIoRead(hbl_file, (void*)hbl_buffer, file_size)) < 0)
-		exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
-	*/
+	//if ((bytes_read = sceIoRead(hbl_file, (void*)hbl_buffer, file_size)) < 0)
+	//	exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
 
 	// Load directly to allocated memory
 	if ((bytes_read = sceIoRead(hbl_file, (void*)run_eloader, file_size)) < 0)
@@ -66,11 +61,12 @@ void load_hbl(SceUID hbl_file)
 	// Copy HBL to safe memory
 	// memcpy((void*)run_eloader, (void*)hbl_buffer, bytes_read);
 
-	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", (ULONG)run_eloader);
+	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", (u32)run_eloader);
 
 	// Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
 }
+*/
 
 // Fills Stub array
 // Returns number of stubs found
@@ -81,7 +77,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 	u32 i = 0, j, count = 0;
 	u32 *cur_nid, *cur_call;
 
-	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", (ULONG)pentry);
+	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", (u32)pentry);
 
 	// Zeroing data
 	memset(stub_list, 0, list_size * sizeof(u32));
@@ -102,7 +98,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 				if(hbl_imports_list[j] == *cur_nid)
 				{
 					stub_list[j] = cur_call;
-					LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, (ULONG)cur_call, *cur_call);
+					LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, (u32)cur_call, *cur_call);
 					LOGSTR1(" 0x%08lX\n", *(cur_call+1));
 					count++;
 				}
@@ -167,7 +163,7 @@ void copy_hbl_stubs(void)
 {
 	// Temp storage
 	int i, ret;
-
+	
 	// Where are HBL stubs
 	u32* stub_addr;
 	
@@ -309,7 +305,7 @@ void initSavedata(SceUtilitySavedataParam * savedata)
 	strcpy(savedata->fileName, "DATA.BIN");	// name of the data file
 
 	// Allocate buffers used to store various parts of the save data
-	savedata->dataBuf = malloc(DATABUFFLEN);
+	savedata->dataBuf = malloc_p2(DATABUFFLEN);
 	savedata->dataBufSize = DATABUFFLEN;
 	savedata->dataSize = DATABUFFLEN;
 }
@@ -335,10 +331,75 @@ void inject_hbl(SceUID hbl_file, void* addr)
 
 	sceIoClose(hbl_file);
 
-	LOGSTR1("HBL loaded @ 0x%08lX\n", (ULONG)run_eloader);
+	LOGSTR1("HBL loaded @ 0x%08lX\n", (u32)run_eloader);
 
 	// Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
+}
+
+void save_data_trick(void)
+{
+	SceUtilitySavedataParam dialog;
+
+	initSavedata(&dialog);
+
+	sceUtilitySavedataInitStart(&dialog);
+
+	sceUtilitySavedataGetStatus();
+
+	sceUtilitySavedataUpdate(1);
+}
+
+/*
+// Does not work (?)
+void msg_dialog_trick(void)
+{
+	pspUtilityMsgDialogParams dialog;
+	
+    memset(&dialog, 0, sizeof(dialog));
+
+    dialog.base.size = sizeof(dialog);
+    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &dialog.base.language); // Prompt language
+    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_UNKNOWN, &dialog.base.buttonSwap); // X/O button swap
+
+    dialog.base.graphicsThread = 0x11;
+    dialog.base.accessThread = 0x13;
+    dialog.base.fontThread = 0x12;
+    dialog.base.soundThread = 0x10;
+	
+    dialog.mode = PSP_UTILITY_MSGDIALOG_MODE_ERROR;
+	dialog.options = PSP_UTILITY_MSGDIALOG_OPTION_ERROR;
+    dialog.errorValue = 0;
+
+    sceUtilityMsgDialogInitStart(&dialog);
+
+    for(;;) 
+	{
+	
+		switch(sceUtilityMsgDialogGetStatus()) 
+		{
+	
+			case PSP_UTILITY_DIALOG_VISIBLE:
+				sceUtilityMsgDialogUpdate(1);
+				break;
+	
+			case PSP_UTILITY_DIALOG_QUIT:
+				sceUtilityMsgDialogShutdownStart();
+				break;
+	
+			case PSP_UTILITY_DIALOG_NONE:
+				return;
+	    
+		}
+	}
+}
+*/
+
+// Unlocks p5 using savedata utility
+void unlock_p5(void)
+{
+	save_data_trick();
+	//msg_dialog_trick();
 }
 
 // Entry point
@@ -364,38 +425,11 @@ void _start()
 	
 	else
 	{
-		LOGSTR0("Preparing savedata trick\n");
+		LOGSTR0("Unlocking partition 5\n");		
+		unlock_p5();
 		
-		SceUtilitySavedataParam dialog;
-	
-		initSavedata(&dialog);
-	
-		sceUtilitySavedataInitStart(&dialog);
-	
-		switch(sceUtilitySavedataGetStatus()) 
-		{
-			case PSP_UTILITY_DIALOG_VISIBLE :
-
-				sceUtilitySavedataUpdate(1);
-				break;
-
-			case PSP_UTILITY_DIALOG_QUIT :
-
-				sceUtilitySavedataShutdownStart();
-				break;
-	
-			case PSP_UTILITY_DIALOG_FINISHED :
-				sceKernelExitGame();
-	
-			case PSP_UTILITY_DIALOG_NONE :
-				sceKernelExitGame();
-		}
-
-		LOGSTR0("Savedata trick done!\n");
-		LOGSTR0("Injecting HBL\n");
+		LOGSTR0("Injecting HBL to partition 5\n");
 		inject_hbl(hbl_file, (void*)HBL_BUFFER);
-
-		sceUtilitySavedataShutdownStart();
 
 		/*
 		LOGSTR0("Loading HBL\n");
@@ -404,6 +438,8 @@ void _start()
 	
 		LOGSTR0("Copying & resolving HBL stubs\n");
 		copy_hbl_stubs();
+		
+		sceUtilitySavedataShutdownStart();
 		
 		run_eloader(0, NULL);
 	}

@@ -4,7 +4,6 @@
 #include "tables.h"
 #include "elf.h"
 #include "modmgr.h"
-#include "lib.h"
    
 
 //a global for debug texts to avoid using the stack
@@ -74,19 +73,19 @@ void log_library(tSceLibrary lib)
 void log_modinfo(tModInfoEntry modinfo)
 {
 	LOGSTR0("\n->Module information:\n");
-	LOGSTR1("Name: %s\n", (ULONG) modinfo.module_name);
+	LOGSTR1("Name: %s\n", (u32) modinfo.module_name);
 	LOGSTR1("Version: 0x%08lX\n", modinfo.module_version);
 	LOGSTR1("Attributes: 0x%08lX\n", modinfo.module_attributes);
-	LOGSTR1("Lib entry: 0x%08lX\n", (ULONG) modinfo.library_entry);
-	LOGSTR1("Lib stubs: 0x%08lX\n", (ULONG) modinfo.library_stubs);
-    LOGSTR1("Lib stubs end: 0x%08lX\n", (ULONG) modinfo.library_stubs_end);
+	LOGSTR1("Lib entry: 0x%08lX\n", (u32) modinfo.library_entry);
+	LOGSTR1("Lib stubs: 0x%08lX\n", (u32) modinfo.library_stubs);
+    LOGSTR1("Lib stubs end: 0x%08lX\n", (u32) modinfo.library_stubs_end);
 }
 
 void log_elf_header(Elf32_Ehdr eheader)
 {
 	LOGSTR0("\n->ELF header:\n");
 	LOGSTR1("Type: 0x%08lX\n", eheader.e_type);
-	LOGSTR1("Code entry: 0x%08lX\n", (ULONG) eheader.e_entry);
+	LOGSTR1("Code entry: 0x%08lX\n", (u32) eheader.e_entry);
 	LOGSTR1("Program header table offset: 0x%08lX\n", eheader.e_phoff);
 	LOGSTR1("Program header size: 0x%08lX\n", eheader.e_phentsize);
 	LOGSTR1("Number of program headers: 0x%08lX\n", eheader.e_phnum);
@@ -102,11 +101,11 @@ void log_mod_entry(HBLModInfo modinfo)
 	LOGSTR1("ELF type: 0x%08lX\n", modinfo.type);
 	LOGSTR1("State: %d\n", modinfo.state);
 	LOGSTR1("Size: 0x%08lX\n", modinfo.size);
-	LOGSTR1("Text address: 0x%08lX\n", (ULONG) modinfo.text_addr);
-	LOGSTR1("Entry point: 0x%08lX\n", (ULONG) modinfo.text_entry);
-	LOGSTR1(".lib.stub address: 0x%08lX\n", (ULONG) modinfo.libstub_addr);
-	LOGSTR1("GP: 0x%08lX\n", (ULONG) modinfo.gp);
-	LOGSTR1("Path: %s\n", (ULONG) modinfo.path);
+	LOGSTR1("Text address: 0x%08lX\n", (u32) modinfo.text_addr);
+	LOGSTR1("Entry point: 0x%08lX\n", (u32) modinfo.text_entry);
+	LOGSTR1(".lib.stub address: 0x%08lX\n", (u32) modinfo.libstub_addr);
+	LOGSTR1("GP: 0x%08lX\n", (u32) modinfo.gp);
+	LOGSTR1("Path: %s\n", (u32) modinfo.path);
 }
 
 void log_program_header(Elf32_Phdr pheader)
@@ -114,8 +113,8 @@ void log_program_header(Elf32_Phdr pheader)
 	LOGSTR0("\n->Program header:\n");
 	LOGSTR1("Segment type: 0x%08lX\n", pheader.p_type);
 	LOGSTR1("Segment offset: 0x%08lX\n", pheader.p_offset);
-	LOGSTR1("Virtual address for segment: 0x%08lX\n", (ULONG) pheader.p_vaddr);
-	LOGSTR1("Physical address for segment: 0x%08lX\n", (ULONG) pheader.p_paddr);
+	LOGSTR1("Virtual address for segment: 0x%08lX\n", (u32) pheader.p_vaddr);
+	LOGSTR1("Physical address for segment: 0x%08lX\n", (u32) pheader.p_paddr);
 	LOGSTR1("Segment image size in file: 0x%08lX\n", pheader.p_filesz);
 	LOGSTR1("Segment image size in memory: 0x%08lX\n", pheader.p_memsz);
 	LOGSTR1("Flags: 0x%08lX\n", pheader.p_flags);
@@ -128,7 +127,7 @@ void log_elf_section_header(Elf32_Shdr shdr)
 	LOGSTR1("Name: %d\n", shdr.sh_name);
 	LOGSTR1("Type: 0x%08lX\n", shdr.sh_type);
 	LOGSTR1("Flags: 0x%08lX\n", shdr.sh_flags);
-	LOGSTR1("Address: 0x%08lX\n", (ULONG) shdr.sh_addr);
+	LOGSTR1("Address: 0x%08lX\n", (u32) shdr.sh_addr);
 	LOGSTR1("Offset in file: 0x%08lX\n", shdr.sh_offset);
 	LOGSTR1("Size: 0x%08lX\n", shdr.sh_size);
 }

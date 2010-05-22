@@ -8,11 +8,7 @@
 #include "menu.h"
 #include "eloader.h"
 #include "graphics.h"
-#include "lib.h"
 
-
-#define FOLDERNAME_SIZE 30
-#define NB_FOLDERS 20
 char folders[NB_FOLDERS][FOLDERNAME_SIZE] ;
 
 char * cacheFile = HBL_ROOT"menu.cache";
@@ -23,6 +19,35 @@ void * ebootPath;
 int nbFiles;
 
 void *frameBuffer = (void *)0x44000000;
+
+/**
+* C++ version 0.4 char* style "itoa":
+* Written by Lukás Chmela
+* Released under GPLv3.
+*/
+char* itoa(int value, char* result, int base) {
+	// check that the base if valid
+	if (base < 2 || base > 36) { *result = '\0'; return result; }
+	
+	char* ptr = result, *ptr1 = result, tmp_char;
+	int tmp_value;
+	
+	do {
+		tmp_value = value;
+		value /= base;
+		*ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * base)];
+	} while ( value );
+	
+	// Apply negative sign
+	if (tmp_value < 0) *ptr++ = '-';
+	*ptr-- = '\0';
+	while(ptr1 < ptr) {
+		tmp_char = *ptr;
+		*ptr--= *ptr1;
+		*ptr1++ = tmp_char;
+	}
+	return result;
+}
 
 void saveCache()
 {
@@ -93,7 +118,7 @@ void init()
   	id = sceIoDopen(ebootPath);
   	if (id < 0) 
 	{
-    	LOGSTR1("FATAL: Menu can't open directory %s \n", (ULONG)ebootPath);
+    	LOGSTR1("FATAL: Menu can't open directory %s \n", (u32)ebootPath);
         printTextScreen(0, 205 , "Unable to open GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
     	return;
@@ -124,18 +149,18 @@ void init()
 	
 	saveCache();
 }
-
-void refreshMenu() 
+ 
+void refreshMenu(int offSet)
 {
   	int i;
 	u32 color;
-	
-  	for (i = 0; i < nbFiles; ++i) 
+	cls();
+	for(i = offSet; i < (MAXMENUSIZE + offSet); ++i)
 	{
     	color = 0x00FFFFFF;
     	if (i == currentFile)
         	color = 0x0000FFFF;
-    	printTextScreen(0, 15 + i * 12, folders[i], color);
+    	printTextScreen(0, 15 + (i - offSet) * 12, folders[i], color);
   	}
 }
 
@@ -152,7 +177,8 @@ void _start()
 {
 	SceCtrlData pad; // variable to store the current state of the pad
 	
-
+    int menuOffSet = 0;
+	char buffer[20];
 	
     currentFile = 0;
     isSet = (u32 *) EBOOT_SET_ADDRESS;
@@ -169,7 +195,7 @@ void _start()
     //load folder's contents
     init();
     
-    refreshMenu();
+    refreshMenu(0);
 	
     sceKernelDelayThread(100000);
 	
@@ -185,12 +211,17 @@ void _start()
 		else if ((pad.Buttons & PSP_CTRL_DOWN) && (currentFile < nbFiles - 1))
 		{
             currentFile++;
-            refreshMenu();
+			if(currentFile >= (MAXMENUSIZE + menuOffSet) && (nbFiles - 1) >= (MAXMENUSIZE + menuOffSet))
+				menuOffSet++;
+			refreshMenu(menuOffSet);
+
         }
 		else if ((pad.Buttons & PSP_CTRL_UP) && (currentFile > 0) )
 		{
             currentFile--;
-            refreshMenu();
+			if(currentFile ==  menuOffSet && menuOffSet != 0)
+				menuOffSet--;
+			refreshMenu(menuOffSet);
         }
 		else if(pad.Buttons & PSP_CTRL_TRIANGLE) 
 		{
@@ -199,13 +230,19 @@ void _start()
 
 #ifndef DEBUG    
         printTextScreen(0, 216, "DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
-#endif        
+#endif
+
+		itoa((currentFile + 1),buffer,10);
+		printTextScreen(5, 0 , buffer, 0x00FFFFFF);
+		itoa(nbFiles,buffer,10);
+		printTextScreen(30, 0 , buffer, 0x00FFFFFF);
+		printTextScreen(21, 0 ,"/", 0x00FFFFFF);
+		
         printTextScreen(220, 0 , "X to select, /\\ to quit", 0x00FFFFFF);
         printTextScreen(0, 227 , "Half Byte Loader BETA by m0skit0, ab5000, wololo, davee", 0x00FFFFFF);
         printTextScreen(0, 238 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);
         printTextScreen(0, 249 , "Fanjita & Noobz, psp-hacks.com", 0x00FFFFFF);
         printTextScreen(0, 260 , "GPL License: give the sources if you distribute binaries!!!", 0x00FFFFFF);
-        
         sceKernelDelayThread(100000);
     } while (!isSet[0]);
 

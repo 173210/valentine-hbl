@@ -29,12 +29,12 @@ int get_module_index(SceUID modid)
 // Initialize module loading data structures
 void* init_load_module()
 {
-	mod_table = malloc(sizeof(HBLModTable));
+	mod_table = malloc_p5(sizeof(HBLModTable));
 
 	if (mod_table != NULL)
 	{
 		memset(mod_table, 0, sizeof(HBLModTable));
-		LOGSTR1("Module table created @ 0x%08lX\n", (ULONG)mod_table);
+		LOGSTR1("Module table created @ 0x%08lX\n", (u32)mod_table);
 	}
 
 	return mod_table;
@@ -213,3 +213,52 @@ SceUID start_module(SceUID modid)
 
 	return modid;
 }
+
+// TODO: load utility module, see also resolve.c:161
+/*
+// Returns UID for a given module name
+SceUID find_module_by_name(const char* mod_name)
+{
+	SceUID idbuffer[100];
+	int ret_count;
+	
+	if (sceKernelGetModuleIdList(idbuffer, sizeof(idbuffer)/4, &ret_count) < 0)
+		return -1;
+
+	int i;
+ 	SceKernelModuleInfo modinfo;
+
+	for (i=0; i<ret_count; i++)
+	{
+		if (sceKernelQueryModuleInfo(idbuffer[i], &modinfo) >= 0)
+		{
+			if(strcmp(modinfo.name, mod_name) == 0)
+				return idbuffer[i];
+		}
+	}
+
+	return -2;
+}
+
+// Loads and registers exports from an utility module
+int load_utility_module(int mod_id, const char* lib_name)
+{
+	int utility_mod = 0;
+	char modname[MAX_MODULE_NAME_LENGTH];
+	
+	if (mod_id == PSP_MODULE_AV_MP3)
+	{
+		strcpy(modname, "sceMp3_Library");
+	}
+
+	if (sceUtilityLoadModule(utility_mod) < 0)
+		return -1;
+	
+	SceUID ret = find_module_by_name(modname);
+
+	//TODO: locate and link exports from module
+
+	if (ret < 0)
+		return ret;
+}
+*/

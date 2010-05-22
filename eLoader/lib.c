@@ -27,22 +27,23 @@ void * memcpy(void *out, const void *in, int size)
     return out;
 }
 
- /* Scan s for the character.  When this loop is finished,
-    s will either point to the end of the string or the
-    character we were looking for.  */
- char *(strchr)(const char *s, int c)
- {
-     while (*s != '\0' && *s != (char)c)
-         s++;
-     return ( (*s == c) ? (char *) s : NULL );
- }
+//Scan s for the character.  When this loop is finished,
+//    s will either point to the end of the string or the
+//    character we were looking for
+char *(strchr)(const char *s, int c)
+{
+	while (*s != '\0' && *s != (char)c)
+		s++;
+	return ( (*s == c) ? (char *) s : NULL );
+}
 
 
 // Returns string length
-int strlen(byte *text)
+int strlen(const char *text)
 {
 	int i = 0;
-	while(*text) {
+	while(*text) 
+	{
 		text++;
 		i++;
 	}
@@ -129,7 +130,7 @@ void numtohex2(char *dst, int n)
 }
 
 // limited sprintf function - avoids pulling in large library
-int writeFormat(char *xibuff, const char *xifmt, ULONG xidata)
+int writeFormat(char *xibuff, const char *xifmt, u32 xidata)
 {
   // check for empty format
   if (xifmt[0] == '\0')
@@ -228,17 +229,17 @@ int writeFormat(char *xibuff, const char *xifmt, ULONG xidata)
 }
 
 void mysprintf11(char *xobuff, const char *xifmt,
-   ULONG xidata,
-   ULONG xidata2,
-   ULONG xidata3,
-   ULONG xidata4,
-   ULONG xidata5,
-   ULONG xidata6,
-   ULONG xidata7,
-   ULONG xidata8,
-   ULONG xidata9,
-   ULONG xidata10,
-   ULONG xidata11)
+   u32 xidata,
+   u32 xidata2,
+   u32 xidata3,
+   u32 xidata4,
+   u32 xidata5,
+   u32 xidata6,
+   u32 xidata7,
+   u32 xidata8,
+   u32 xidata9,
+   u32 xidata10,
+   u32 xidata11)
 {
   int  lparam = 0;
   char lfmt[10];
@@ -312,27 +313,27 @@ void mysprintf11(char *xobuff, const char *xifmt,
   *xobuff = '\0';
 }
 
-void mysprintf8(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2, ULONG xidata3, ULONG xidata4, ULONG xidata5, ULONG xidata6, ULONG xidata7, ULONG xidata8)
+void mysprintf8(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2, u32 xidata3, u32 xidata4, u32 xidata5, u32 xidata6, u32 xidata7, u32 xidata8)
 {
 	mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, xidata5, xidata6, xidata7, xidata8, 0, 0, 0);
 }
 
-void mysprintf4(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2, ULONG xidata3, ULONG xidata4)
+void mysprintf4(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2, u32 xidata3, u32 xidata4)
 {
 	mysprintf8(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, 0, 0, 0, 0);
 }
 
-void mysprintf3(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2, ULONG xidata3)
+void mysprintf3(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2, u32 xidata3)
 {
 	mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, 0, 0, 0, 0, 0, 0, 0,0);
 }
 
-void mysprintf2(char *xobuff, const char *xifmt, ULONG xidata, ULONG xidata2)
+void mysprintf2(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2)
 {
 	mysprintf3(xobuff, xifmt, xidata, xidata2, 0);
 }
 
-void mysprintf1(char *xobuff, const char *xifmt, ULONG xidata)
+void mysprintf1(char *xobuff, const char *xifmt, u32 xidata)
 {
 	mysprintf3(xobuff, xifmt, xidata, 0, 0);
 }
@@ -442,4 +443,3 @@ int strncmp(const char *s1, const char *s2, size_t count)
 
 	return val;
 }
-

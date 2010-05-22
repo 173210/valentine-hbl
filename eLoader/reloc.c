@@ -130,7 +130,7 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 			
 			// Allocate memory for section
 			num_entries = sec_header.sh_size / sizeof(tRelEntry);
-			reloc_entry = malloc(sec_header.sh_size);
+			reloc_entry = malloc_p5(sec_header.sh_size);
 			if(!reloc_entry)
 			{
 				LOGSTR1("\nWARNING: cannot allocate memory (size: %d) for section\n", sec_header.sh_size);

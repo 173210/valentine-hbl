@@ -2,10 +2,6 @@
 #include "eloader.h"
 #include "debug.h"
 #include "modmgr.h"
-#include <pspumd.h>
-
-//Should be defined somewhere in the sdk ???
-SceUID sceKernelGetModuleIdByAddress(u32 address);
 
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES_TO_FREE 0x20

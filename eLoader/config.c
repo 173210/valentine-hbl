@@ -1,7 +1,7 @@
+#include "sdk.h"
 #include "debug.h"
 #include "config.h"
 #include "utils.h"
-#include "lib.h"
 
 /* LOCAL GLOBALS :( */
 
@@ -43,7 +43,7 @@ int config_initialize()
     if (!file_exists(buffer))
         strcpy(buffer, IMPORTS_PATH);
    
-    LOGSTR1("Config file:%s\n", (ULONG) buffer);
+    LOGSTR1("Config file:%s\n", (u32) buffer);
     
 	g_config_file = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
 	return g_config_file;

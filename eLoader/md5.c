@@ -24,7 +24,6 @@
 #include "sdk.h"
 #include "md5.h"
 #include "malloc.h"
-#include "lib.h"
 
 #define S11 7
 #define S12 12
@@ -71,8 +70,8 @@ unsigned char *md5 (unsigned char *M, md5_size len, unsigned char *_digest)
 	int buflen = (len > MD5_BUFFER) ? MD5_BUFFER: len;
 	struct md5_ctx *context;
 
-	context = malloc (sizeof (struct md5_ctx));
-	context->buf = malloc (buflen);
+	context = malloc_p2(sizeof (struct md5_ctx));
+	context->buf = malloc_p2(buflen);
 	context->size = 0;
 	context->bits = 0;
 
@@ -98,7 +97,7 @@ unsigned char *md5 (unsigned char *M, md5_size len, unsigned char *_digest)
 
 void md5_init (struct md5_ctx *context)
 {
-	context->buf = malloc (MD5_BUFFER);
+	context->buf = malloc_p2(MD5_BUFFER);
 	memset (context->buf, '\0', MD5_BUFFER);
 	context->size = 0;
 	context->bits = 0;

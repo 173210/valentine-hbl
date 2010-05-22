@@ -51,6 +51,9 @@
 // HBL stubs address
 #define HBL_STUBS_START 0x10000
 
+// Max chars on module name
+#define MAX_MODULE_NAME_LENGTH 30
+
 //
 //Files locations
 //

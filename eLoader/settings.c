@@ -61,9 +61,9 @@ int configIntParse(const char *xival)
 /*****************************************************************************/
 /* configAddrParse : return 32-bit hex address                               */
 /*****************************************************************************/
-ULONG configAddrParse(const char *xival)
+u32 configAddrParse(const char *xival)
 {
-    ULONG lrunningvalue = 0;
+    u32 lrunningvalue = 0;
     char *lptr = (char *)xival;
     int   lhexdigit;
 
@@ -82,7 +82,7 @@ ULONG configAddrParse(const char *xival)
     if ((lptr[0] != '0') ||
         (lptr[1] != 'x'))
     {
-        PRTSTR1("Invalid address format in config.  Address must start with '0x'. Entry: %s", (ULONG)lptr);
+        PRTSTR1("Invalid address format in config.  Address must start with '0x'. Entry: %s", (u32)lptr);
     }
 
     lptr += 2;
@@ -113,12 +113,12 @@ ULONG configAddrParse(const char *xival)
 
 
 SceUID gconfigfd = -1;
-ULONG  gconfigoffset = 0;
+u32  gconfigoffset = 0;
 
 /*****************************************************************************/
 /* readLine : Read a line from a file, updating the tracked offset.          */
 /*****************************************************************************/
-int readLine(char *xobuff, int xibufflen, SceUID xifd, ULONG *xboffset)
+int readLine(char *xobuff, int xibufflen, SceUID xifd, u32 *xboffset)
 {
     int   lrc;
     char *lptr;
@@ -218,7 +218,7 @@ void configGetProcessingOptions()
     LOGSTR0("Read params\n");
     while (configReadParameter(lstr, lval))
     {
-        LOGSTR2("Parm %s = %s\n", (ULONG)lstr, (ULONG)lval);
+        LOGSTR2("Parm %s = %s\n", (u32)lstr, (u32)lval);
         if (strcmp(lstr,"override_sceIoMkdir")==0)
         {
             g_override_sceIoMkdir = configIntParse(lval);
@@ -229,7 +229,7 @@ void configGetProcessingOptions()
         }
         else
         {
-            PRTSTR1("Unrecognised config parameter: %s", (ULONG)lstr);
+            PRTSTR1("Unrecognised config parameter: %s", (u32)lstr);
         }
     }
 }
@@ -274,7 +274,7 @@ void closeConfig() {
 /*****************************************************************************/
 void loadConfig(const char * path)
 {
-    LOGSTR1("Attempt to Load Config file: %s\n", (ULONG)path);
+    LOGSTR1("Attempt to Load Config file: %s\n", (u32)path);
     closeConfig();
         
     /***************************************************************************/

@@ -1,8 +1,8 @@
+#include "sdk.h"
 #include "elf.h"
 #include "eloader.h"
 #include "debug.h"
 #include "malloc.h"
-#include "lib.h"
 
 /*****************/
 /* ELF FUNCTIONS */
@@ -98,9 +98,21 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_offset, PSP_SEEK_SET);
 
-	LOGSTR1("Address to allocate from: 0x%08lX\n", (ULONG) *addr);
-    buffer = allocate_memory(program_header.p_memsz, *addr);
-    *addr = buffer;
+	LOGSTR1("Address to allocate from: 0x%08lX\n", (u32)*addr);
+	
+	// If address set, allocate from that address
+	if (*addr != NULL)
+	{
+		buffer = *addr;
+		allocate_memory(program_header.p_memsz, buffer);
+	}
+	
+	// If no address set, malloc and store value on pointer
+	else
+	{
+		buffer = malloc_p2(program_header.p_memsz);
+		*addr = buffer;
+	}
 
 	if ((int)buffer < 0)
 	{
@@ -108,7 +120,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		return 0;
 	}
 
-	LOGSTR1("Allocated memory address from: 0x%08lX\n", (ULONG) *addr);
+	LOGSTR1("Allocated memory address from: 0x%08lX\n", (u32) *addr);
 	
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
@@ -124,7 +136,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 
 	*pstub_entry = (tStubEntry*)((u32)module_info.library_stubs + (u32)*addr);
 
-	LOGSTR1("stub_entry address: 0x%08lX\n", (ULONG)*pstub_entry);
+	LOGSTR1("stub_entry address: 0x%08lX\n", (u32)*pstub_entry);
 
 	// Return size of stubs
 	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);
