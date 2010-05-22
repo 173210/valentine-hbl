@@ -1,3 +1,10 @@
+2010/05/22 (wololo)
+- Still considered as EXPERIMENTAL RELEASE
+- Made the Makefile more strict
+- Fixed a few issues detected by gcc
+- Fixed a malloc bug that prevented Wagic from loading correctly in rev80
+- Fixed issue 129
+
 2010/05/19 (m0skit0)
 - EXPERIMENTAL RELEASE
 - Tested on PSP 2000 5.00 M33 & PSP Go 6.20

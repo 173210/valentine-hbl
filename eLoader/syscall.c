@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "tables.h"
 #include "syscall.h"
+#include "lib.h"
 
 // Searches for NID in a NIDS file and returns the index
 int find_nid_in_file(SceUID nid_file, u32 nid)
@@ -47,45 +48,17 @@ SceUID open_nids_file(const char* lib)
         strcat(file_path, LIB_EXTENSION);
     }
 
-	LOGSTR1("Opening %s\n", file_path);
+	LOGSTR1("Opening %s\n", (ULONG)file_path);
 
 	return sceIoOpen(file_path, PSP_O_RDONLY, 0777);
 }
 
-u32 find_first_free_syscall (int lib_index, u32 start_syscall) 
-{
-	int index = -1;
-    u32 syscall = start_syscall;
-    int boundary_low = 0, boundary_high = 0;
-	
-    int ret = get_syscall_boundaries(lib_index, &boundary_low,  &boundary_high);
-	
-    if (!ret)
-    {
-        LOGSTR0("--ERROR GETTING SYSCALL BOUNDARIES\n");
-        return 0;
-    }
-
-	int i = 0;
-	while ((index = get_call_index(MAKE_SYSCALL(syscall))) >= 0)
-	{
-		LOGSTR2("--ESTIMATED SYSCALL 0x%08lX ALREADY EXISTS AT INDEX %d\n", syscall, index);
-		syscall--;
-        if (!check_syscall_boundaries (syscall, boundary_low, boundary_high))
-        {
-            syscall = boundary_high - 1;
-            //Risk of infinite loop here ?
-        }
-	}
-
-    return syscall;
-}
 
 /*
  * Checks if a syscall looks normal compared to other libraries boundaries.
  * returns 1 if ok, 0 if not
 */
-int check_syscall_boundaries (u32 syscall, int boundary_low, int boundary_high) 
+int check_syscall_boundaries (u32 syscall, u32 boundary_low, u32 boundary_high) 
 {
     if (syscall <= boundary_low) 
     {
@@ -100,6 +73,35 @@ int check_syscall_boundaries (u32 syscall, int boundary_low, int boundary_high)
 
     return 1;
 }
+
+u32 find_first_free_syscall (int lib_index, u32 start_syscall) 
+{
+	int index = -1;
+    u32 syscall = start_syscall;
+    u32 boundary_low = 0, boundary_high = 0;
+	
+    int ret = get_syscall_boundaries(lib_index, &boundary_low,  &boundary_high);
+	
+    if (!ret)
+    {
+        LOGSTR0("--ERROR GETTING SYSCALL BOUNDARIES\n");
+        return 0;
+    }
+
+	while ((index = get_call_index(MAKE_SYSCALL(syscall))) >= 0)
+	{
+		LOGSTR2("--ESTIMATED SYSCALL 0x%08lX ALREADY EXISTS AT INDEX %d\n", syscall, index);
+		syscall--;
+        if (!check_syscall_boundaries (syscall, boundary_low, boundary_high))
+        {
+            syscall = boundary_high - 1;
+            //Risk of infinite loop here ?
+        }
+	}
+
+    return syscall;
+}
+
 
 // Estimate a syscall from library's closest known syscall
 u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
@@ -138,7 +140,7 @@ u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 
 	// Check which one is closer
 	int closest_index = -1;
-	u32 base_syscall = 0;
+
 	if (higher_index_file >= 0) 
 	{
 		if (lower_index_file >= 0)
@@ -296,7 +298,7 @@ u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
 	}
 	
 	int estimated_syscall;	
-	if (nid_index > library_table->table[lib_index].lowest_index)
+	if ((u32)nid_index > library_table->table[lib_index].lowest_index)
 	{
 		estimated_syscall = (int)library_table->table[lib_index].lowest_syscall + nid_index - (int)library_table->table[lib_index].lowest_index;
 	}
@@ -324,14 +326,14 @@ u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
 // m0skit0's implementation
 u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 {
-	LOGSTR2("=> ESTIMATING %s : 0x%08lX\n", lib, nid);
+	LOGSTR2("=> ESTIMATING %s : 0x%08lX\n", (ULONG)lib, nid);
 	
 	// Finding the library on table
 	int lib_index = get_library_index(lib);
 
 	if (lib_index < 0)
 	{
-		LOGSTR1("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", lib);
+		LOGSTR1("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (ULONG)lib);
         return 0;
     }
 
@@ -341,7 +343,7 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 
 	if (nid_file < 0)
 	{
-		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", lib);
+		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", (ULONG)lib);
 		return 0;
 	}
 
@@ -384,14 +386,14 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
 u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod type) 
 {
 #ifdef REESTIMATE_SYSCALL
-	LOGSTR2("=Reestimating function 0x%08lX for stub 0x%08lX: ", nid, stub);
+	LOGSTR2("=Reestimating function 0x%08lX for stub 0x%08lX: ", nid, (ULONG)stub);
     
 	// Finding the library on table
 	int lib_index = get_library_index(lib);
 
 	if (lib_index < 0)
 	{
-		LOGSTR1("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", lib);
+		LOGSTR1("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (ULONG)lib);
         return 0;
     }
 
@@ -399,7 +401,7 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
 
 	if (nid_file < 0)
 	{
-		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", lib);
+		LOGSTR1("->ERROR: couldn't open NIDS file for %s\n", (ULONG)lib);
 		return 0;
 	}
 

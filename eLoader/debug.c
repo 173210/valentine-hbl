@@ -4,7 +4,12 @@
 #include "tables.h"
 #include "elf.h"
 #include "modmgr.h"
+#include "lib.h"
    
+
+//a global for debug texts to avoid using the stack
+char g_debug_buff[512];   
+
 void init_debug()
 {
 	SceUID fd;
@@ -53,6 +58,7 @@ void exit_with_log(const char* description, void* value, unsigned int size)
 	sceKernelExitGame();
 }
 
+#ifdef DEBUG
 void log_library(tSceLibrary lib)
 {
 	LOGSTR0("\n-->Library name: ");
@@ -68,18 +74,19 @@ void log_library(tSceLibrary lib)
 void log_modinfo(tModInfoEntry modinfo)
 {
 	LOGSTR0("\n->Module information:\n");
-	LOGSTR1("Name: %s\n", modinfo.module_name);
+	LOGSTR1("Name: %s\n", (ULONG) modinfo.module_name);
 	LOGSTR1("Version: 0x%08lX\n", modinfo.module_version);
 	LOGSTR1("Attributes: 0x%08lX\n", modinfo.module_attributes);
-	LOGSTR1("Lib entry: 0x%08lX\n", modinfo.library_entry);
-	LOGSTR1("Lib stubs: 0x%08lX\n", modinfo.library_stubs);
+	LOGSTR1("Lib entry: 0x%08lX\n", (ULONG) modinfo.library_entry);
+	LOGSTR1("Lib stubs: 0x%08lX\n", (ULONG) modinfo.library_stubs);
+    LOGSTR1("Lib stubs end: 0x%08lX\n", (ULONG) modinfo.library_stubs_end);
 }
 
 void log_elf_header(Elf32_Ehdr eheader)
 {
 	LOGSTR0("\n->ELF header:\n");
 	LOGSTR1("Type: 0x%08lX\n", eheader.e_type);
-	LOGSTR1("Code entry: 0x%08lX\n", eheader.e_entry);
+	LOGSTR1("Code entry: 0x%08lX\n", (ULONG) eheader.e_entry);
 	LOGSTR1("Program header table offset: 0x%08lX\n", eheader.e_phoff);
 	LOGSTR1("Program header size: 0x%08lX\n", eheader.e_phentsize);
 	LOGSTR1("Number of program headers: 0x%08lX\n", eheader.e_phnum);
@@ -95,11 +102,11 @@ void log_mod_entry(HBLModInfo modinfo)
 	LOGSTR1("ELF type: 0x%08lX\n", modinfo.type);
 	LOGSTR1("State: %d\n", modinfo.state);
 	LOGSTR1("Size: 0x%08lX\n", modinfo.size);
-	LOGSTR1("Text address: 0x%08lX\n", modinfo.text_addr);
-	LOGSTR1("Entry point: 0x%08lX\n", modinfo.text_entry);
-	LOGSTR1(".lib.stub address: 0x%08lX\n", modinfo.libstub_addr);
-	LOGSTR1("GP: 0x%08lX\n", modinfo.gp);
-	LOGSTR1("Path: %s\n", modinfo.path);
+	LOGSTR1("Text address: 0x%08lX\n", (ULONG) modinfo.text_addr);
+	LOGSTR1("Entry point: 0x%08lX\n", (ULONG) modinfo.text_entry);
+	LOGSTR1(".lib.stub address: 0x%08lX\n", (ULONG) modinfo.libstub_addr);
+	LOGSTR1("GP: 0x%08lX\n", (ULONG) modinfo.gp);
+	LOGSTR1("Path: %s\n", (ULONG) modinfo.path);
 }
 
 void log_program_header(Elf32_Phdr pheader)
@@ -107,8 +114,8 @@ void log_program_header(Elf32_Phdr pheader)
 	LOGSTR0("\n->Program header:\n");
 	LOGSTR1("Segment type: 0x%08lX\n", pheader.p_type);
 	LOGSTR1("Segment offset: 0x%08lX\n", pheader.p_offset);
-	LOGSTR1("Virtual address for segment: 0x%08lX\n", pheader.p_vaddr);
-	LOGSTR1("Physical address for segment: 0x%08lX\n", pheader.p_paddr);
+	LOGSTR1("Virtual address for segment: 0x%08lX\n", (ULONG) pheader.p_vaddr);
+	LOGSTR1("Physical address for segment: 0x%08lX\n", (ULONG) pheader.p_paddr);
 	LOGSTR1("Segment image size in file: 0x%08lX\n", pheader.p_filesz);
 	LOGSTR1("Segment image size in memory: 0x%08lX\n", pheader.p_memsz);
 	LOGSTR1("Flags: 0x%08lX\n", pheader.p_flags);
@@ -121,10 +128,12 @@ void log_elf_section_header(Elf32_Shdr shdr)
 	LOGSTR1("Name: %d\n", shdr.sh_name);
 	LOGSTR1("Type: 0x%08lX\n", shdr.sh_type);
 	LOGSTR1("Flags: 0x%08lX\n", shdr.sh_flags);
-	LOGSTR1("Address: 0x%08lX\n", shdr.sh_addr);
+	LOGSTR1("Address: 0x%08lX\n", (ULONG) shdr.sh_addr);
 	LOGSTR1("Offset in file: 0x%08lX\n", shdr.sh_offset);
 	LOGSTR1("Size: 0x%08lX\n", shdr.sh_size);
 }
+#endif
+
 
 // LOGSTRX implementations
 
@@ -135,42 +144,37 @@ void logstr0(const char* A)
 
 void logstr1(const char* A, unsigned long B)			
 {
-    char buff[512];
-    mysprintf1(buff, A, (unsigned long)B);
-    write_debug(buff, NULL, 0);
+
+    mysprintf1(g_debug_buff, A, (unsigned long)B);
+    write_debug(g_debug_buff, NULL, 0);
 }
 
 void logstr2(const char* A, unsigned long B, unsigned long C)		
 {
-    char buff[512];
-    mysprintf2(buff, A, (unsigned long)B, (unsigned long)C);
-    write_debug(buff, NULL, 0);
+    mysprintf2(g_debug_buff, A, (unsigned long)B, (unsigned long)C);
+    write_debug(g_debug_buff, NULL, 0);
 }
 
 void logstr3(const char* A, unsigned long B, unsigned long C, unsigned long D)		
 {
-    char buff[512];
-    mysprintf3(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
-    write_debug(buff, NULL, 0);
+    mysprintf3(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
+    write_debug(g_debug_buff, NULL, 0);
 }
 
 void logstr4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E)
 {
-    char buff[512];
-    mysprintf4(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E);
-    write_debug(buff, NULL, 0);
+    mysprintf4(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E);
+    write_debug(g_debug_buff, NULL, 0);
 }
 
 void logstr5(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F)
 {
-    char buff[512];
-    mysprintf8(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, 0, 0, 0);
-    write_debug(buff, NULL, 0);
+    mysprintf8(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, 0, 0, 0);
+    write_debug(g_debug_buff, NULL, 0);
 }
 
 void logstr8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I)
 {
-    char buff[512];
-    mysprintf8(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H, (unsigned long)I);
-    write_debug(buff, NULL, 0);
+    mysprintf8(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H, (unsigned long)I);
+    write_debug(g_debug_buff, NULL, 0);
 }

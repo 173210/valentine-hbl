@@ -3,6 +3,10 @@
 #include "syscall.h"
 #include "debug.h"
 #include "modmgr.h"
+#include "malloc.h"
+#include "lib.h"
+#include "reloc.h"
+#include "resolve.h"
 
 // Loaded modules descriptor
 HBLModTable* mod_table = NULL;
@@ -11,7 +15,7 @@ HBLModTable* mod_table = NULL;
 // Return index in mod_table for module ID
 int get_module_index(SceUID modid)
 {
-	int i;
+	u32 i;
 
 	for (i=0; i<mod_table->num_loaded_mod; i++)
 	{
@@ -30,7 +34,7 @@ void* init_load_module()
 	if (mod_table != NULL)
 	{
 		memset(mod_table, 0, sizeof(HBLModTable));
-		LOGSTR1("Module table created @ 0x%08lX\n", mod_table);
+		LOGSTR1("Module table created @ 0x%08lX\n", (ULONG)mod_table);
 	}
 
 	return mod_table;
@@ -55,7 +59,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	
 	// Loading module
 	tStubEntry* pstub;
-	unsigned int hbsize, program_size, stubs_size;
+	unsigned int hbsize, program_size, stubs_size = 0;
 	unsigned int i = mod_table->num_loaded_mod;
 	
 	// Static ELF
@@ -74,7 +78,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_hdr, &pstub);
 		
-		mod_table->table[i].text_entry = (u32)elf_hdr.e_entry;
+		mod_table->table[i].text_entry = (u32 *)elf_hdr.e_entry;
 		mod_table->table[i].gp = (void*)getGP(elf_file, offset, &elf_hdr);
 	}
 
@@ -105,8 +109,8 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		}
 		
 		// Relocate ELF entry point and GP register
-		mod_table->table[i].text_entry = (u32)elf_hdr.e_entry + (u32)addr;
-        mod_table->table[i].gp = getGP(elf_file, offset, &elf_hdr) + (u32)addr;		
+		mod_table->table[i].text_entry = (u32 *)((u32)elf_hdr.e_entry + (u32)addr);
+        mod_table->table[i].gp = (u32 *) (getGP(elf_file, offset, &elf_hdr) + (u32)addr);		
 	}
 
 	// Unknown ELF type

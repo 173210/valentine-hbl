@@ -57,7 +57,7 @@ int get_call_index(u32 call);
 
 // Gets i-th nid and its associated library
 // Returns library name length
-int get_lib_nid(int index, char* lib_name, u32* pnid);
+int get_lib_nid(u32 index, char* lib_name, u32* pnid);
 
 // Return index in NID table for the call that corresponds to the NID pointed by "nid"
 // Puts call in call_buffer
@@ -74,7 +74,7 @@ int get_nid_index(u32 nid);
 
 // Checks if a library is in the global library description table
 // Returns index if it's there
-int get_library_index(char* library_name);
+int get_library_index(const char* library_name);
 
 // Fills NID Table and a part of library_table
 // Returns NIDs copied

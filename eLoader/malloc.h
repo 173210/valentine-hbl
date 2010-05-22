@@ -23,7 +23,7 @@ void* malloc(u32 size);
 void free(void* ptr);
 
 // Allocates memory from a given address
-void allocate_memory(u32 size, void* addr);
+void * allocate_memory(u32 size, void* addr);
 
 #endif
 

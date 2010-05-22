@@ -6,14 +6,17 @@
 #include "utils.h"
 #include "test.h"
 #include "settings.h"
-
+#include "graphics.h"
 #include "svnversion.h"
+#include "lib.h"
+#include "malloc.h"
+#include "resolve.h"
+#include "memory.h"
+#include "modmgr.h"
 
 // Menu variables
 int g_menu_enabled = 0; // this is set to 1 at runtime if a menu.bin file exists
-u32 * isSet = EBOOT_SET_ADDRESS;
-u32 * ebootPath = EBOOT_PATH_ADDRESS;
-u32 * menu_pointer = MENU_LOAD_ADDRESS;
+u32 * isSet = (u32 *)EBOOT_SET_ADDRESS;
 
 /* Loads a Basic menu as a thread
 * In the future, we might want the menu to be an actual homebrew
@@ -24,7 +27,6 @@ void loadMenu()
       
     // Just trying the basic functions used by the menu
     SceUID id = -1;
-    int attempts = 0;
 	SceUID menu_file;
     SceOff file_size;
 	int bytes_read;
@@ -73,10 +75,10 @@ void loadMenu()
 	sceIoLseek(menu_file, 0, PSP_SEEK_SET);
     
 	// Load MENU to buffer
-	if ((bytes_read = sceIoRead(menu_file, (void*)menu_pointer, file_size)) < 0)
+	if ((bytes_read = sceIoRead(menu_file, (void*)MENU_LOAD_ADDRESS, file_size)) < 0)
 		exit_with_log(" ERROR READING MENU ", &bytes_read, sizeof(bytes_read));
         
-    void (*start_entry)(SceSize, void*) = menu_pointer;
+    int(*start_entry)(SceSize, void*) = (void *)MENU_LOAD_ADDRESS;
 	menuThread = sceKernelCreateThread("menu", start_entry, 0x18, 0x10000, 0, NULL);
 
 	if(menuThread >= 0)
@@ -101,7 +103,7 @@ void main_loop()
 	
     //this is to avoid the stupid menu variable ebootPath to get overwritten
     char eboot_path_copy[256];
-    strcpy(eboot_path_copy, ebootPath);
+    strcpy(eboot_path_copy, (char *)EBOOT_PATH_ADDRESS);
     
     start_eloader(eboot_path_copy, 1);
 }
@@ -115,7 +117,7 @@ void start_eloader(const char *path, int is_eboot)
 	SceUID mod_id;
 
 	cls();
-	LOGSTR1("EBOOT path: %s\n", path);
+	LOGSTR1("EBOOT path: %s\n", (ULONG)path);
     
     //Load Game config overrides
     char config_path[256];
@@ -154,7 +156,7 @@ void start_eloader(const char *path, int is_eboot)
 }
 
 // HBL main thread
-int start_thread(SceSize args, void *argp)
+int start_thread() //SceSize args, void *argp)
 {
 	int num_nids;
 
@@ -214,8 +216,8 @@ int start_thread(SceSize args, void *argp)
 }
 
 // Entry point
-void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.start")));
-void _start(unsigned long arglen, unsigned long *argp)
+void _start() __attribute__ ((section (".text.start")));
+void _start()
 {
 	SceUID thid;
     int firmware_version = getFirmwareVersion();
@@ -260,7 +262,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)
-	return 0;
+	return;
 }
 
 // Big thanks to people who share information !!!

@@ -12,7 +12,7 @@ typedef u32* Elf32_Addr;
 typedef int Elf32_Off;
 typedef int Elf32_Sword;
 typedef int Elf32_Word;
-typedef short int Elf32_Half;
+typedef unsigned short int Elf32_Half;
 typedef char BYTE;
 
 /*************/
@@ -217,9 +217,6 @@ typedef struct
 /* Returns 1 if header is ELF, 0 otherwise */
 int elf_check_magic(Elf32_Ehdr* pelf_header);
 
-// Returns !=0 if stub entry is valid, 0 if it's not
-int elf_check_stub_entry(tStubEntry* pentry);
-
 /* Load static executable in memory using virtual address */
 /* Returns total size copied in memory */
 unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size);
@@ -241,6 +238,9 @@ SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset);
 
 // Get ELF GP value
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header);
+
+// Returns !=0 if stub entry is valid, 0 if it's not
+int elf_check_stub_entry(tStubEntry* pentry);
 
 #endif
 

@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "elf.h"
 #include "eloader.h"
+#include "malloc.h"
 
 // Relocates based on a MIPS relocation type
 // Returns 0 on success, -1 on fail
@@ -40,7 +41,7 @@ int relocate_entry(tRelEntry reloc_entry, void* reloc_addr)
 			
 		// 32-bit address
 		case R_MIPS_32:
-			buffer += reloc_addr;
+			buffer += (u32)reloc_addr;
 			break;
 		
 		// Jump instruction
@@ -99,8 +100,7 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 	Elf32_Shdr sec_header;
 	Elf32_Off strtab_offset;
 	Elf32_Off cur_offset;
-	char section_name[40];
-	unsigned int j, section_name_size, entries_relocated = 0, num_entries;
+	unsigned int j, entries_relocated = 0, num_entries;
 	tRelEntry* reloc_entry;
 
 	LOGSTR0("relocate_sections\n");

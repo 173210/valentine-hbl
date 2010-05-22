@@ -2,6 +2,7 @@
 #include "eloader.h"
 #include "debug.h"
 #include "malloc.h"
+#include "lib.h"
 
 /*****************/
 /* ELF FUNCTIONS */
@@ -66,7 +67,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 {
 	Elf32_Phdr program_header;
 	int excess;
-	void *buffer;
+    void * buffer;
 	tModInfoEntry module_info;
 
 	//LOGSTR1("prx_load_program -> Offset: 0x%08lX\n", start_offset);
@@ -86,10 +87,10 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		return 0;
 	*/
 	
-	LOGSTR1("Module info @ 0x%08lX offset\n", start_offset + (SceOff)program_header.p_paddr);
+	LOGSTR1("Module info @ 0x%08lX offset\n", (u32)start_offset + (u32)program_header.p_paddr);
 
 	// Read module info from PRX
-	sceIoLseek(elf_file, start_offset + (SceOff)program_header.p_paddr, PSP_SEEK_SET);
+	sceIoLseek(elf_file, (u32)start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
     LOGMODINFO(module_info);
@@ -97,21 +98,9 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_offset, PSP_SEEK_SET);
 
-	LOGSTR1("Address to allocate from: 0x%08lX\n", *addr);
-	
-	// If address set, allocate from that address
-	if (*addr != NULL)
-	{
-		buffer = *addr;
-		allocate_memory(program_header.p_memsz, buffer);
-	}
-	
-	// If no address set, malloc and store value on pointer
-	else
-	{
-		buffer = malloc(program_header.p_memsz);
-		*addr = buffer;
-	}
+	LOGSTR1("Address to allocate from: 0x%08lX\n", (ULONG) *addr);
+    buffer = allocate_memory(program_header.p_memsz, *addr);
+    *addr = buffer;
 
 	if ((int)buffer < 0)
 	{
@@ -119,7 +108,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		return 0;
 	}
 
-	LOGSTR1("Allocated memory address from: 0x%08lX\n", *addr);
+	LOGSTR1("Allocated memory address from: 0x%08lX\n", (ULONG) *addr);
 	
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
@@ -133,9 +122,9 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	if(excess > 0)
         memset(buffer, 0, excess);
 
-	*pstub_entry = (u32)module_info.library_stubs + (u32)*addr;
+	*pstub_entry = (tStubEntry*)((u32)module_info.library_stubs + (u32)*addr);
 
-	LOGSTR1("stub_entry address: 0x%08lX\n", *pstub_entry);
+	LOGSTR1("stub_entry address: 0x%08lX\n", (ULONG)*pstub_entry);
 
 	// Return size of stubs
 	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);
@@ -145,7 +134,6 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 {
 	Elf32_Phdr program_header;
-	void *buffer;
 	tModInfoEntry module_info;
 
 	// Read the program header
@@ -168,7 +156,6 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buffer)
 {
 	int i;
-	char c;
 
 	sceIoLseek(elf_file, table_offset, PSP_SEEK_SET);
 
@@ -213,7 +200,7 @@ unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		if(!strcmp(section_name, ".lib.stub"))
 		{
 			// Return values
-			*pstub = sec_header.sh_addr;
+			*pstub = (tStubEntry*) sec_header.sh_addr;
 			return sec_header.sh_size;
 		}
 
@@ -231,8 +218,6 @@ SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset)
 {
 	SceUID eboot;
 	*offset = 0;
-	char buf[2048];
-	unsigned int size = 0;
 
 	sceKernelDcacheWritebackInvalidateAll();
 

@@ -7,12 +7,15 @@
 #include "hook.h"
 #include "modmgr.h"
 #include "syscall.h"
+#include "config.h"
+#include "resolve.h"
 
 // Autoresolves HBL missing stubs
 // Some stubs are compulsory, like sceIo*
 void resolve_missing_stubs()
 {
-	int i, ret;
+	int ret;
+    u32 i;
 	unsigned int num_nids;
 	//u32* cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
 	u32* cur_stub = (u32*)HBL_STUBS_START;
@@ -31,7 +34,7 @@ void resolve_missing_stubs()
 	for(i=0; i<num_nids; i++)
 	{
 		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
+		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", (ULONG)cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
 		LOGSTR1("  0x%08lX ", *cur_stub);
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);
@@ -84,7 +87,7 @@ void resolve_missing_stubs()
 	for(i=0; i<num_nids; i++)
 	{
 		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
-		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
+		LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", (ULONG)cur_stub, (u32*)cur_stub - (u32*)HBL_STUBS_START);
 		LOGSTR1("  0x%08lX ", *cur_stub);
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);
@@ -135,7 +138,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
-		LOGSTR1("Pointer to stub entry: 0x%08lX\n", pstub_entry);	
+		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (ULONG)pstub_entry);	
 
 		cur_nid = pstub_entry->nid_pointer;
 		cur_call = pstub_entry->jump_pointer;
@@ -145,7 +148,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		{
 
 			LOGSTR1("Current nid: 0x%08lX\n", *cur_nid);
-			LOGSTR1("Current call: 0x%08lX\n", cur_call);
+			LOGSTR1("Current call: 0x%08lX\n", (ULONG)cur_call);
 
 			/* Get syscall/jump instruction for current NID */
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
@@ -163,7 +166,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			/* Syscall estimation if library available */
 			if (real_call == 0)
 			{
-				real_call = estimate_syscall(pstub_entry->library_name, *cur_nid, FROM_CLOSEST);
+				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, FROM_CLOSEST);
 			}
 
 			LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
@@ -178,7 +181,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 				resolving_count++;
 			}
 
-			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", cur_call, *cur_call, *(cur_call+1));
+			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", (ULONG)cur_call, *cur_call, *(cur_call+1));
 
 			sceKernelDcacheWritebackInvalidateAll();
 

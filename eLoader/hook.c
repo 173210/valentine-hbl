@@ -3,14 +3,19 @@
 #include "debug.h"
 #include "malloc.h"
 #include "hook.h"
-#include "memory.h"
 #include "settings.h"
+#include "lib.h"
+#include "utils.h"
+#include "md5.h"
+#include "memory.h"
 
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
 
 char* g_module_chdir = NULL;
-
+int g_pllfreq = 0;
+int g_cpufreq = 0;
+int g_busfreq = 0;
 int chdir_ok = 0;
 
 // Returns a hooked call for the given NID or zero
@@ -235,7 +240,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry,
                              	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
 { 
 	LOGSTR5("\n->Attempting to create thread named %s with entry point 0x%08lX, priority 0x%08lX, stack size 0x%08lX, and attributes 0x%08lX\n", 
-	        name, entry, currentPriority, stackSize, attr);
+	        (ULONG)name, (ULONG)entry, currentPriority, stackSize, attr);
 	
     //u32 gp_bak = 0;
 	SceUID res;
@@ -308,7 +313,7 @@ void  _hook_sceKernelExitGame()
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
-    LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid,name, type, size, addr);
+    LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (ULONG)name, type, size, (ULONG)addr);
     SceUID uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
     if (uid <=0)
         LOGSTR1("failed with result: 0x%08lX\n", uid);
@@ -329,7 +334,7 @@ u32 _hook_sceRtcGetTickResolution()
     return ONE_SECOND_TICK;
 }
 
-int _hook_sceRtcGetCurrentClock  (pspTime  *time, int tz)
+int _hook_sceRtcGetCurrentClock  (pspTime  *time, int UNUSED(tz))
 {
     //todo deal with the timezone...
     return sceRtcGetCurrentClockLocalTime(time);
@@ -339,15 +344,15 @@ int _hook_sceRtcGetCurrentClock  (pspTime  *time, int tz)
 int _hook_sceRtcSetTick (pspTime  *time, const u64  *t)
 {
 //super approximate, let's hope people call this only for display purposes
-    u32 tick = (u32)*t; //get the lower 32 bits
-    time->year = 2010; //I know...
-    tick = tick % (365 * ONE_DAY_TICK);
-    time->month = tick / (30 * ONE_DAY_TICK);
-    tick = tick % (30 * ONE_DAY_TICK);
+    u32 tick = *t; //get the lower 32 bits
+    time->year = 2097; //I know...
+    tick = tick % (365 * (u32)ONE_DAY_TICK);
+    time->month = tick / (30 * (u32)ONE_DAY_TICK);
+    tick = tick % (30 * (u32)ONE_DAY_TICK);
     time->day = tick / ONE_DAY_TICK;
     tick = tick % ONE_DAY_TICK;
-    time->hour = tick / (3600 * ONE_SECOND_TICK);
-    tick = tick % (3600 * ONE_SECOND_TICK);
+    time->hour = tick / (3600 * (u32)ONE_SECOND_TICK);
+    tick = tick % (3600 * (u32)ONE_SECOND_TICK);
     time->minutes = tick / (60 * ONE_SECOND_TICK);
     tick = tick % (60 * ONE_SECOND_TICK);
     time->seconds = tick / (ONE_SECOND_TICK);
@@ -360,6 +365,7 @@ int _hook_sceRtcSetTick (pspTime  *time, const u64  *t)
 int _hook_sceRtcConvertUtcToLocalTime  (const u64  *tickUTC, u64  *tickLocal)
 {
   *tickLocal = *tickUTC;
+  return 1;
 }
 
 int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick)
@@ -376,7 +382,7 @@ int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick)
 int _hook_sceRtcGetCurrentTick(u64 * tick)
 {   	
     pspTime time;
-    int ret =  sceRtcGetCurrentClockLocalTime(&time);
+    sceRtcGetCurrentClockLocalTime(&time);
     return _hook_sceRtcGetTick (&time, tick);
 }
 
@@ -399,7 +405,7 @@ int cur_channel_id = -1;
 // see commented code in http://forums.ps2dev.org/viewtopic.php?p=81473
 // //   int audio_channel = sceAudioChReserve(0, 2048 , PSP_AUDIO_FORMAT_STEREO);
 //   sceAudioSRCChReserve(2048, wma_samplerate, 2); 
-int _hook_sceAudioSRCChReserve (int samplecount, int freq, int channels)
+int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 {
     int format = PSP_AUDIO_FORMAT_STEREO;
     if (channels == 1) 
@@ -533,12 +539,15 @@ int _hook_sceIoChdir(const char *dirname)
         }
         g_module_chdir = result;
     }
-    return g_module_chdir;
+    
+    if (!g_module_chdir)
+    {
+        return -1;
+    }
+    
+    return 0;
 }
 
-int g_pllfreq = 0;
-int g_cpufreq = 0;
-int g_busfreq = 0;
 
 // see http://forums.ps2dev.org/viewtopic.php?p=52329
 int _hook_scePowerGetCpuClockFrequencyInt()
@@ -592,8 +601,8 @@ int _hook_sceKernelDevkitVersion()
 {
     //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
     u32 version = getFirmwareVersion();
-    int result = 0x01000000 * version / 100;
-    result += 0x010000 * (version % 100) / 10;
+    int result = 0x01000000 * (version / 100);
+    result += 0x010000 * ((version % 100) / 10);
     result += 0x0100 * (version % 10);
     result += 0x10;
     return result;
@@ -626,7 +635,7 @@ int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size,
     return sceKernelSendMsgPipe(uid, message, size, unk1, unk2, 0);
 }
 
-int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int timeout)
+int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int UNUSED(timeout))
 {
     return sceKernelTryReceiveMsgPipe(uid, message, size, unk1, unk2);
 }
@@ -645,21 +654,25 @@ int _hook_sceKernelExitDeleteThread(int status)
 
 int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
 {
-    return md5(data,size, digest);
+    if (md5(data,size, digest))
+    {
+        return 1;
+    }
+    return -1;
 }
 
 
 #ifdef LOAD_MODULE
-SceUID _hook_sceKernelLoadModule(const char *path, int flags, SceKernelLMOption *option)
+SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
 {	
 	LOGSTR0("_hook_sceKernelLoadModule\n");
-	LOGSTR1("Attempting to load %s\n", path);
+	LOGSTR1("Attempting to load %s\n", (ULONG)path);
 	
 	SceUID elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	if (elf_file < 0)
 	{
-		LOGSTR2("Error 0x%08lX opening requested module %s\n", elf_file, path);
+		LOGSTR2("Error 0x%08lX opening requested module %s\n", elf_file, (ULONG)path);
 		return elf_file;
 	}
 
@@ -672,7 +685,7 @@ SceUID _hook_sceKernelLoadModule(const char *path, int flags, SceKernelLMOption 
 	return ret;
 }
 
-int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option)
+int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUSED(argp), int *UNUSED(status), SceKernelSMOption *UNUSED(option))
 {
 	LOGSTR0("_hook_sceKernelStartModule\n");
 	

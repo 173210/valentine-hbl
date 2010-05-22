@@ -18,7 +18,7 @@ typedef enum
 // Module information
 typedef struct
 {
-	unsigned int id;		// Module ID given by HBL
+	SceUID id;		// Module ID given by HBL
 	HBLModState state;		// Current module state
 	unsigned int type;		// Static or reloc
 	unsigned long size;		// Allocated size
@@ -41,6 +41,9 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 // Start an already loaded module
 SceUID start_module(SceUID modid);
+
+//inits module loading system
+void* init_load_module();
 
 #endif
 

@@ -1,20 +1,19 @@
 #ifndef ELOADER_HOOK
 #define ELOADER_HOOK
 
-typedef struct 
-{
-    u16 year;
-    u16 month;
-    u16 day;
-    u16 hour;
-    u16 minutes;
-    u16 seconds;
-    u32 microseconds;
-} pspTime;
+#include <psprtc.h>
 
 extern int chdir_ok;
 
 int test_sceIoChdir();
+
+/* Declarations */
+//files imported by Patapon but can't find proper .h file
+int scePower_EBD177D6(int pllfreq, int cpufreq, int busfreq); 
+int	ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
+
+
+u32 setup_hook(u32 nid);
 
 /* HOOKS */
 

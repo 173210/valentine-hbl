@@ -14,8 +14,7 @@ clean:
 
 CC       = psp-gcc
 
-CFLAGS   := -D PSP -I $(INCLUDE) -W -Wall -O2 -G0 -fno-pic -mno-abicalls -w -fomit-frame-pointer
-
+CFLAGS   := -D PSP -I $(INCLUDE) -O2  -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
 
 #svn revision in code
 RESULT=$(shell svnversion -n 2> Makefile.cache)

@@ -47,10 +47,10 @@ extern Color getPixelScreen(int x, int y);
  * @return the color of the pixel
  */
 
-extern void printTextScreen(int x, int y, char text[], u32 color);
+extern void printTextScreen(int x, int y, const char * text, u32 color);
 
-extern void print_to_screen(char text[]);
-extern void print_to_screen_color(char text[], u32 color);
+void print_to_screen(const char * text);
+extern void print_to_screen_color(const char * text, u32 color);
 void PRTSTR8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I);
 void PRTSTR4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E);
 void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D);
@@ -76,6 +76,9 @@ extern Color* getVramDrawBuffer();
  * @return the start address of the current display buffer
  */
 extern Color* getVramDisplayBuffer();
+
+//clears screen with a given color
+void SetColor(int col);
 
 //clear screen
 void cls();

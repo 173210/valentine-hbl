@@ -2,6 +2,9 @@
 #include "config.h"
 #include "elf.h"
 #include "debug.h"
+#include "malloc.h"
+#include "lib.h"
+#include "utils.h"
 
 // NID table for resolving imports
 HBLNIDTable* nid_table = NULL;
@@ -19,7 +22,7 @@ void* init_nid_table()
 	if (nid_table != NULL)
 	{
 		memset(nid_table, 0, sizeof(HBLNIDTable));
-		LOGSTR1("NID table created @ 0x%08lX\n", nid_table);
+		LOGSTR1("NID table created @ 0x%08lX\n", (ULONG)nid_table);
 	}
 
 	return nid_table;
@@ -33,7 +36,7 @@ void* init_library_table()
 	if (library_table != NULL)
 	{
 		memset(library_table, 0, sizeof(HBLLibTable));
-		LOGSTR1("Library table created @ 0x%08lX\n", library_table);
+		LOGSTR1("Library table created @ 0x%08lX\n", (ULONG)library_table);
 	}
 
 	return library_table;
@@ -88,10 +91,10 @@ int get_call_index(u32 call)
 
 // Gets i-th nid and its associated library
 // Returns library name length
-int get_lib_nid(int index, char* lib_name, u32* pnid)
+int get_lib_nid(u32 index, char* lib_name, u32* pnid)
 {
 	int ret;
-	unsigned int num_libs, i = 0, count = 0, found = 0;
+	unsigned int num_libs, i = 0, count = 0;
 	tImportedLibrary cur_lib;
 
 	// DEBUG_PRINT("**GETTING NID INDEX:**", &index, sizeof(index));
@@ -403,9 +406,9 @@ int get_nid_index(u32 nid)
 
 // Checks if a library is in the global library description table
 // Returns index if it's there
-int get_library_index(char* library_name)
+int get_library_index(const char* library_name)
 {
-	LOGSTR1("Searching for library %s\n", library_name);
+	LOGSTR1("Searching for library %s\n", (ULONG)library_name);
 	if (library_name == NULL)
         return -1;
 
@@ -465,9 +468,12 @@ int get_syscall_boundaries(int lib_index, u32* low, u32* high)
 /* "pentry" points to first stub header in game */
 int build_nid_table()
 {
-	int i = 0, j, k = 0, library_index = -1;
+	int library_index = -1;
+    u32 i = 0, j, k = 0;
 	unsigned int nlib_stubs;
-	u32 *cur_nid, *cur_call, syscall_num, good_call, aux1, aux2, nid;
+	u32 *cur_nid, *cur_call, syscall_num, good_call, nid;
+    int aux1, aux2;
+    u32 aux3;
 	tSceLibrary *ret;
 	tStubEntry *pentry;	
 
@@ -484,25 +490,25 @@ int build_nid_table()
 	*/
 	
 	// Getting game's .lib.stub address
-	if (aux1 = config_initialize() < 0)
+	if ((aux1 = config_initialize()) < 0)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &aux1, sizeof(aux1));
 
-	if (aux1 = config_num_lib_stub(&nlib_stubs) < 0)
+	if ((aux1 = config_num_lib_stub(&nlib_stubs)) < 0)
 	    exit_with_log(" ERROR READING NUMBER OF LIBSTUBS FROM CONFIG ", &aux1, sizeof(aux1));
 
 	if (nlib_stubs == 0)
 		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);
 
-	if (aux2 = config_first_lib_stub(&aux1) < 0)
+	if ((aux2 = config_first_lib_stub(&aux3)) < 0)
 		exit_with_log(" ERROR GETTING FIRST LIBSTUB FROM CONFIG ", &aux2, sizeof(aux2));
 
-	pentry = (tStubEntry*) aux1;
+	pentry = (tStubEntry*) aux3;
 
 	//DEBUG_PRINT(" build_nid_table() ENTERING MAIN LOOP ", NULL, 0);
 
 	do
 	{
-		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", pentry);
+		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", (ULONG)pentry);
 		
 		// While it's a valid stub header
 		while (elf_check_stub_entry(pentry))
@@ -517,7 +523,7 @@ int build_nid_table()
 				sceKernelExitGame();
 			}			
 
-			NID_LOGSTR1("-->Processing library: %s ", pentry->library_name);
+			NID_LOGSTR1("-->Processing library: %s ", (ULONG)(pentry->library_name));
 
 			// Get actual call
 			cur_call = pentry->jump_pointer;
@@ -530,14 +536,14 @@ int build_nid_table()
 				cur_nid = pentry->nid_pointer;
 
 				// Is this library on the table?
-				library_index = get_library_index(pentry->library_name);
+				library_index = get_library_index((char *)pentry->library_name);
 
 				// New library
 				if (library_index < 0)
 				{
 					NID_LOGSTR1(" --> New: %d\n", k);
 			
-					strcpy(library_table->table[k].name, pentry->library_name);
+					strcpy(library_table->table[k].name, (char *)pentry->library_name);
 					library_table->table[k].calling_mode = SYSCALL_MODE;
 			
 					// Get number of syscalls imported
@@ -662,10 +668,10 @@ int build_nid_table()
 		// Next .lib.stub
 		if (nlib_stubs > 0)
 		{
-			aux2 = config_next_lib_stub(&aux1);
+			aux2 = config_next_lib_stub(&aux3);
 			if (aux2 < 0)
 				exit_with_log(" ERROR GETTING NEXT LIBSTUB FROM CONFIG ", &aux2, sizeof(aux2));
-			pentry = (tStubEntry*) aux1;
+			pentry = (tStubEntry*) aux3;
 		}
 		else
 			break;
@@ -675,7 +681,7 @@ int build_nid_table()
 	} while(1);
 
 #ifdef DEBUG
-	int c1, c2;
+	u32 c1, c2;
 	u32 syscall;
 	unsigned int line_count = 0;
 	

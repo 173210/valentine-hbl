@@ -2,9 +2,13 @@
 #include "eloader.h"
 #include "debug.h"
 #include "modmgr.h"
+#include <pspumd.h>
+
+//Should be defined somewhere in the sdk ???
+SceUID sceKernelGetModuleIdByAddress(u32 address);
 
 #define MODULES_START_ADDRESS 0x08804000
-#define MAX_MODULES 0x20
+#define MAX_MODULES_TO_FREE 0x20
 
 int kill_thread(SceUID thid) 
 {
@@ -62,7 +66,7 @@ int kill_module(SceUID modid)
 
 void DeleteAllThreads(void)
 {
-	int i;
+	u32 i;
 	SceUID thids[8];
 	
 	/* sgx threads */
@@ -86,7 +90,7 @@ void DeleteAllThreads(void)
 
 void DeleteAllEventFlags(void)
 {
-	int i;
+	u32 i;
 	SceUID evids[3];
 	
 	/* sgx event ids */
@@ -104,7 +108,7 @@ void DeleteAllEventFlags(void)
 
 void DeleteAllSemaphores(void)
 {
-	int i;
+	u32 i;
 	SceUID semaids[28];
 	
 	/* sgx semaphores */
@@ -202,7 +206,7 @@ void free_game_memory()
 
 	// Set inital UID to -1 and the current UID to 0
 	int i;
-	SceUID uids[MAX_MODULES];
+	SceUID uids[MAX_MODULES_TO_FREE];
 	uids[0] = -1;
 	SceUID cur_uid = 0;
 	
@@ -221,7 +225,7 @@ void free_game_memory()
 				uids[cur_uid++] = modid;
 			}
 
-			if (cur_uid == MAX_MODULES)
+			if (cur_uid == MAX_MODULES_TO_FREE)
 			{
 				LOGSTR0("\n->WARNING: Max number of modules to unload reached\n");
 				break;
@@ -249,7 +253,6 @@ void free_game_memory()
 SceSize sceKernelMaxFreeMemSize()
 {
     SceSize size, sizeblock;
-    u8 *ram;
     SceUID uid;
 
     LOGSTR0("Call to sceKernelMaxFreeMemSize()\n");
@@ -283,9 +286,8 @@ SceSize sceKernelMaxFreeMemSize()
 SceSize sceKernelTotalFreeMemSize()
 {
     SceUID blocks[1024];
-    u32 count;
+    u32 count,i;
     SceSize size, x;
-    int i;
 
     LOGSTR0("Call to sceKernelTotalFreeMemSize()\n");
     // Init variables

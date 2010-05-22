@@ -1,6 +1,7 @@
 #include "eloader.h"
 #include "malloc.h"
 #include "debug.h"
+#include "lib.h"
 
 /* Number of allocated blocks */
 u32 nblocks;
@@ -14,18 +15,50 @@ void init_malloc(void)
 	memset(block, 0, sizeof(block));
 }
 
-/* Allocate memory */
-void* malloc(SceSize size)
+SceUID _malloc(SceSize size)
 {
-	int i;
-	SceUID uid;
-	
+
+    int types[] = {PSP_SMEM_Low, PSP_SMEM_High};
+    int mem_partitions[] = {5, 2};
+    u32 i, j;
+    SceUID uid;
+    
+    for (i = 0; i < sizeof(mem_partitions)/sizeof(mem_partitions[0]); ++i)
+    {
+        for (j = 0; j < sizeof(types)/sizeof(types[0]); ++j)
+        {
+            /* Allocate block */
+            uid = sceKernelAllocPartitionMemory(mem_partitions[i], "ValentineMalloc", types[j], size, NULL); // Try to allocate from the lowest available address
+            if (uid >= 0)
+            {
+                return uid;
+            }
+        }
+    }
+    
+    return uid;
+
+}
+
+int find_free_block()
+{
+    int i;
 	for(i=0;i<MAX_ALLOCS;i++)
 	{
 		if(!block[i].address) // Found a free block
 			break;
 	}
+    return i;
+}
+
+/* Allocate memory */
+void* malloc(SceSize size)
+{
+
+	SceUID uid;
 	
+    
+	int i = find_free_block();
 	if(i == MAX_ALLOCS) // No free block found
 	{
 		LOGSTR0("WARNING: no free blocks remaining\n");
@@ -34,19 +67,12 @@ void* malloc(SceSize size)
 
 	LOGSTR1("Found free block %d\n", i);
 	
-	/* Allocate block */
-	//uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
-	uid = sceKernelAllocPartitionMemory(5, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
-	if(uid < 0) // Memory allocation failed
-	{
-		//uid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
-		uid = sceKernelAllocPartitionMemory(5, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
-		if(uid < 0) // Memory allocation failed
-		{
-			LOGSTR1("WARNING: malloc failed with error 0x%08lX\n", uid);
-			return NULL;
-		}
-	}
+    uid = _malloc(size);
+    if(uid < 0) // Memory allocation failed
+    {
+        LOGSTR1("WARNING: malloc failed with error 0x%08lX\n", uid);
+        return NULL;
+    }
 
 	LOGSTR1("Got block from kernel with UID 0x%08lX\n", uid);
 	
@@ -81,18 +107,39 @@ void free(void* ptr)
 }
 
 // Allocates memory for homebrew so it doesn't overwrite itself
-void allocate_memory(u32 size, void* addr)
+void * allocate_memory(u32 size, void* addr)
 {
 	SceUID mem;
 	
-	LOGSTR1("-->ALLOCATING MEMORY @ 0x%08lX... ", addr);
-	mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
+    int i = find_free_block();
+	if(i == MAX_ALLOCS) // No free block found
+	{
+		LOGSTR0("WARNING: no free blocks remaining\n");
+		return NULL;
+	}
+    
+    if (addr)
+    {
+        LOGSTR1("-->ALLOCATING MEMORY @ 0x%08lX... ", (ULONG)addr);
+        mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Addr, size, addr);
+    }
+    else
+    {
+        LOGSTR0("-->ALLOCATING MEMORY @ Low");
+        mem = sceKernelAllocPartitionMemory(2, "ELFMemory", PSP_SMEM_Low, size, NULL);
+    }
+    
 	if(mem < 0)
 	{
-		LOGSTR1("FAILED: 0x%08lX", mem);
+		LOGSTR1("FAILED: 0x%08lX\n", mem);
+        return NULL;
 	}
-	else
-	{
-		LOGSTR0("\n");
-	}
+
+    LOGSTR0("OK\n");
+    
+    /* Fill block info */
+	block[i].uid = mem;
+	block[i].address = sceKernelGetBlockHeadAddr(mem);
+	
+	return block[i].address;
 }

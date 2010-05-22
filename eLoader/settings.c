@@ -7,6 +7,9 @@
 #include "eloader.h"
 #include "debug.h"
 #include "menu.h"
+#include "lib.h"
+#include "graphics.h"
+
 
 /*****************************************************************************/
 /* configYnParse : return TRUE if parameter is Y, FALSE if N                 */
@@ -30,7 +33,7 @@ int configYnParse(const char *xival)
 int configIntParse(const char *xival)
 {
     int   lrunningvalue = 0;
-    char *lptr = xival;
+    char *lptr = (char *)xival;
     int minus = 1;
     
     if(*lptr == '-')
@@ -61,7 +64,7 @@ int configIntParse(const char *xival)
 ULONG configAddrParse(const char *xival)
 {
     ULONG lrunningvalue = 0;
-    char *lptr = xival;
+    char *lptr = (char *)xival;
     int   lhexdigit;
 
     /***************************************************************************/
@@ -79,16 +82,14 @@ ULONG configAddrParse(const char *xival)
     if ((lptr[0] != '0') ||
         (lptr[1] != 'x'))
     {
-        PRTSTR1("Invalid address format in config.  Address must start with '0x'. Entry: %s", lptr);
+        PRTSTR1("Invalid address format in config.  Address must start with '0x'. Entry: %s", (ULONG)lptr);
     }
 
     lptr += 2;
 
-    while ((*lptr != 0)          &&
-         ((*lptr >= '0') &&
-          (*lptr <= '9'))   ||
-         ((*lptr >= 'A') &&
-          (*lptr <= 'F')))
+    while ((*lptr != 0) &&
+            (((*lptr >= '0') && (*lptr <= '9'))   ||
+            ((*lptr >= 'A') && (*lptr <= 'F'))))
     {
         if ((*lptr >= 'A') &&
             (*lptr <= 'F'))
@@ -110,33 +111,6 @@ ULONG configAddrParse(const char *xival)
     return(lrunningvalue);
 }
 
-void configGetProcessingOptions()
-{
-    char lstr[128];
-    char lval[128];
-
-    LOGSTR0("Read params\n");
-    while (configReadParameter(lstr, lval))
-    {
-        LOGSTR2("Parm %s = %s\n", lstr, lval);
-        if (strcmp(lstr,"override_sceIoMkdir")==0)
-        {
-            g_override_sceIoMkdir = configIntParse(lval);
-        }
-		else if (strcmp(lstr,"override_sceKernelUtilsMd5Digest")==0)
-        {
-            g_override_sceKernelUtilsMd5Digest = configIntParse(lval);
-        }
-        else if (strcmp(lstr,"hb_folder")==0)
-        {
-            strcpy(g_hb_folder,lval);
-        }
-        else
-        {
-            PRTSTR1("Unrecognised config parameter: %s", lstr);
-        }
-    }
-}
 
 SceUID gconfigfd = -1;
 ULONG  gconfigoffset = 0;
@@ -236,6 +210,31 @@ int configReadParameter(char *xoname, char *xoval)
     return(lrc);
 }
 
+void configGetProcessingOptions()
+{
+    char lstr[256];
+    char lval[256];
+
+    LOGSTR0("Read params\n");
+    while (configReadParameter(lstr, lval))
+    {
+        LOGSTR2("Parm %s = %s\n", (ULONG)lstr, (ULONG)lval);
+        if (strcmp(lstr,"override_sceIoMkdir")==0)
+        {
+            g_override_sceIoMkdir = configIntParse(lval);
+        }
+        else if (strcmp(lstr,"hb_folder")==0)
+        {
+            strcpy(g_hb_folder,lval);
+        }
+        else
+        {
+            PRTSTR1("Unrecognised config parameter: %s", (ULONG)lstr);
+        }
+    }
+}
+
+
 // Load default config
 void loadGlobalConfig()
 {
@@ -275,7 +274,7 @@ void closeConfig() {
 /*****************************************************************************/
 void loadConfig(const char * path)
 {
-    LOGSTR1("Attempt to Load Config file: %s\n", path);
+    LOGSTR1("Attempt to Load Config file: %s\n", (ULONG)path);
     closeConfig();
         
     /***************************************************************************/
@@ -289,10 +288,7 @@ void loadConfig(const char * path)
     }
     print_to_screen("Config file:");
     print_to_screen(path);
-    char lstr[128];
-    char lval[128];
 
     configGetProcessingOptions();
-    sceIoClose(gconfigfd);
-    gconfigfd = -1;
+    closeConfig();
 }

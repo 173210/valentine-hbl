@@ -1,19 +1,20 @@
 #include "debug.h"
 #include "config.h"
 #include "utils.h"
+#include "lib.h"
 
 /* LOCAL GLOBALS :( */
 
 // File descriptor
-SceUID config_file = -1;
+SceUID g_config_file = -1;
 
 // Temp storage for not having to access the file again
-int num_libstubs = -1;
-int num_libraries = -1;
-int num_nids = -1;
+int g_num_libstubs = -1;
+int g_num_libraries = -1;
+int g_num_nids = -1;
 
 // Temp storage for not having to calculate again
-SceOff nids_offset = -1;
+SceOff g_nids_offset = -1;
 
 /* INTERFACE IMPLEMENTATION */
 
@@ -42,13 +43,13 @@ int config_initialize()
     if (!file_exists(buffer))
         strcpy(buffer, IMPORTS_PATH);
    
-    LOGSTR1("Config file:%s\n", buffer);
+    LOGSTR1("Config file:%s\n", (ULONG) buffer);
     
-	config_file = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
-	return config_file;
+	g_config_file = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
+	return g_config_file;
 }
 
-// Gets a u32 from offset from config
+// Gets a int from offset from config
 int config_u32(u32* buffer, SceOff offset)
 {
 	int ret = 0;
@@ -56,8 +57,8 @@ int config_u32(u32* buffer, SceOff offset)
 	if (buffer != NULL)
 	{	
 		if (offset >= 0)
-			if ((ret = sceIoLseek(config_file, offset, PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(config_file, buffer, sizeof(u32));		
+			if ((ret = sceIoLseek(g_config_file, offset, PSP_SEEK_SET)) >= 0)
+				ret = sceIoRead(g_config_file, buffer, sizeof(u32));		
 	}
 	
 	return ret;	
@@ -68,11 +69,11 @@ int config_num_lib_stub(unsigned int* pnum_lib_stub)
 {
 	int ret = 0;
 	
-	if (num_libstubs < 0)
-		ret = config_u32(&num_libstubs, NUM_LIBSTUB_OFFSET);
+	if (g_num_libstubs < 0)
+		ret = config_u32((u32*)&g_num_libstubs, NUM_LIBSTUB_OFFSET);
 
 	if ((ret >= 0) && (pnum_lib_stub != NULL))
-		*pnum_lib_stub = num_libstubs;
+		*pnum_lib_stub = g_num_libstubs;
 
 	return ret;
 }
@@ -92,7 +93,7 @@ int config_first_lib_stub(u32* plib_stub)
 int config_next_lib_stub(u32* plib_stub)
 {	
 	if (plib_stub != NULL)
-		return sceIoRead(config_file, plib_stub, sizeof(u32));	
+		return sceIoRead(g_config_file, plib_stub, sizeof(u32));	
 	else
 		return 0;
 }
@@ -102,11 +103,11 @@ int config_num_nids_total(unsigned int* pnum_nids_total)
 {
 	int ret = 0;
 	
-	if (num_nids < 0)
-		ret = config_u32(&num_nids, NUM_NIDS_OFFSET);
+	if (g_num_nids < 0)
+		ret = config_u32((u32*)&g_num_nids, NUM_NIDS_OFFSET);
 
 	if ((ret >= 0) && (pnum_nids_total != NULL))
-		*pnum_nids_total = num_nids;
+		*pnum_nids_total = g_num_nids;
 
 	return ret;
 }
@@ -118,11 +119,11 @@ int config_num_libraries(unsigned int* pnum_libraries)
 
 	//DEBUG_PRINT(" config_num_libraries ", NULL, 0);
 
-	if (num_libraries < 0)
-		ret = config_u32(&num_libraries, NUM_LIBRARIES_OFFSET);
+	if (g_num_libraries < 0)
+		ret = config_u32((u32*)&g_num_libraries, NUM_LIBRARIES_OFFSET);
 
 	if ((ret >= 0) && (pnum_libraries != NULL))
-		*pnum_libraries = num_libraries;
+		*pnum_libraries = g_num_libraries;
 	
 	return ret;
 }
@@ -134,15 +135,15 @@ int config_next_library(tImportedLibrary* plibrary_descriptor)
 
 	if (plibrary_descriptor != NULL)
 	{
-		ret = fgetsz(config_file, &(plibrary_descriptor->library_name));
+		ret = fgetsz(g_config_file, plibrary_descriptor->library_name);
 
 		if (ret == 0)
 			return -1;
 	
-		ret = sceIoRead(config_file, &(plibrary_descriptor->num_imports), sizeof(unsigned int));
+		ret = sceIoRead(g_config_file, &(plibrary_descriptor->num_imports), sizeof(unsigned int));
 
 		if (ret >= 0)
-			ret = sceIoRead(config_file, &(plibrary_descriptor->nids_offset), sizeof(SceOff));
+			ret = sceIoRead(g_config_file, &(plibrary_descriptor->nids_offset), sizeof(SceOff));
 	}
 
 	return ret;
@@ -156,12 +157,12 @@ int config_first_library(tImportedLibrary* plibrary_descriptor)
 	if (plibrary_descriptor != NULL)
 	{
 		ret = 1;
-		if (num_libstubs < 0)
+		if (g_num_libstubs < 0)
 			ret = config_num_lib_stub(NULL);
 
 		if (ret >= 0)
 		{
-			ret = sceIoLseek(config_file, (int)LIBSTUB_OFFSET + (num_libstubs * sizeof(u32)), PSP_SEEK_SET);
+			ret = sceIoLseek(g_config_file, (int)LIBSTUB_OFFSET + (g_num_libstubs * sizeof(u32)), PSP_SEEK_SET);
 			if (ret >= 0)
 				ret = config_next_library(plibrary_descriptor);
 		}
@@ -176,16 +177,16 @@ int config_nids_offset(SceOff* poffset)
 	int ret = 0;
 	tImportedLibrary first_lib;
 
-	if (nids_offset < 0)
+	if (g_nids_offset < 0)
 	{
 		ret = config_first_library(&first_lib);
 
 		if (ret >= 0)
-			nids_offset = first_lib.nids_offset;			
+			g_nids_offset = first_lib.nids_offset;			
 	}
 
 	if (poffset != NULL)
-		*poffset = nids_offset;
+		*poffset = g_nids_offset;
 
 	return ret;			
 }
@@ -198,13 +199,13 @@ int config_first_nid(u32* pnid)
 	if (pnid != NULL)
 	{
 		ret = 1;
-		if (nids_offset < 0)
+		if (g_nids_offset < 0)
 			ret = config_nids_offset(NULL);
 
 		if (ret >= 0)
 		{	
-			if ((ret = sceIoLseek(config_file, nids_offset, PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(config_file, pnid, sizeof(u32));
+			if ((ret = sceIoLseek(g_config_file, g_nids_offset, PSP_SEEK_SET)) >= 0)
+				ret = sceIoRead(g_config_file, pnid, sizeof(u32));
 		}
 	}
 
@@ -215,7 +216,7 @@ int config_first_nid(u32* pnid)
 int config_next_nid(u32* pnid)
 {	
 	if (pnid != NULL)
-		return sceIoRead(config_file, pnid, sizeof(u32));
+		return sceIoRead(g_config_file, pnid, sizeof(u32));
 
 	return 0;
 }
@@ -228,12 +229,12 @@ int config_seek_nid(int index, u32* pnid)
 	if (pnid != NULL)
 	{	
 		ret = 1;
-		if (nids_offset < 0)
+		if (g_nids_offset < 0)
 			ret = config_nids_offset(NULL);
 
 		if (ret >= 0)
-			if((ret = sceIoLseek(config_file, nids_offset + (index * sizeof(u32)), PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(config_file, pnid, sizeof(u32));
+			if((ret = sceIoLseek(g_config_file, g_nids_offset + (index * sizeof(u32)), PSP_SEEK_SET)) >= 0)
+				ret = sceIoRead(g_config_file, pnid, sizeof(u32));
 	}
 
 	return ret;
@@ -244,10 +245,10 @@ int config_close()
 {
 	int ret = 0;
 
-	if (config_file >= 0)
+	if (g_config_file >= 0)
 	{
-		ret = sceIoClose(config_file);
-		config_file = -1;
+		ret = sceIoClose(g_config_file);
+		g_config_file = -1;
 	}
 
 	return ret;

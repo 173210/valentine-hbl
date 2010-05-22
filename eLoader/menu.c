@@ -7,6 +7,9 @@
 #include "debug.h"
 #include "menu.h"
 #include "eloader.h"
+#include "graphics.h"
+#include "lib.h"
+
 
 #define FOLDERNAME_SIZE 30
 #define NB_FOLDERS 20
@@ -90,7 +93,7 @@ void init()
   	id = sceIoDopen(ebootPath);
   	if (id < 0) 
 	{
-    	LOGSTR1("FATAL: Menu can't open directory %s \n", ebootPath);
+    	LOGSTR1("FATAL: Menu can't open directory %s \n", (ULONG)ebootPath);
         printTextScreen(0, 205 , "Unable to open GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
     	return;

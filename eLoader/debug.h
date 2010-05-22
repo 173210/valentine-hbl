@@ -3,6 +3,9 @@
 
 #include "sdk.h"
 #include "eloader.h"
+#include "elf.h"
+#include "modmgr.h"
+#include "tables.h"
 
 #define DEBUG_PATH HBL_ROOT"dbglog"
 #define STDOUT 1
@@ -31,7 +34,14 @@ void logstr2(const char* A, unsigned long B, unsigned long C);
 void logstr1(const char* A, unsigned long B);
 void logstr0(const char* A);
 
+
 #ifdef DEBUG
+void log_library(tSceLibrary lib);
+void log_program_header(Elf32_Phdr pheader);
+void log_modinfo(tModInfoEntry modinfo);
+void log_elf_header(Elf32_Ehdr eheader);
+void log_mod_entry(HBLModInfo modinfo);
+void log_elf_section_header(Elf32_Shdr shdr);
 #define DEBUG_PRINT(a,b,c) write_debug(a,b,c)
 #define DEBUG_PRINT_NL(a) write_debug_newline(a)
 #define LOGSTR8(a,b,c,d,e,f,g,h,i) logstr8(a,b,c,d,e,f,g,h,i)

@@ -2,7 +2,7 @@
 #include "debug.h"
 
 // Sets a memory region to a specific value
-void memset(void *ptr, byte c, int size)
+void * memset(void *ptr, int c, size_t size)
 {
 	byte *p1 = ptr;
 	byte *p2 = ptr + size;
@@ -10,19 +10,21 @@ void memset(void *ptr, byte c, int size)
 		*p1 = c;
 		p1++;
 	}
+    return ptr;
 }
 
 // Copies one memory buffer into another
-void memcpy(void *out, void *in, int size)
+void * memcpy(void *out, const void *in, int size)
 {
 	byte *pout = out;
-	byte *pin = in;
+	byte *pin = (byte *)in;
 	int i;
 	for(i = 0; i < size; i++) {
 		*pout = *pin;
 		pout++;
 		pin++;
 	}
+    return out;
 }
 
  /* Scan s for the character.  When this loop is finished,
@@ -238,7 +240,6 @@ void mysprintf11(char *xobuff, const char *xifmt,
    ULONG xidata10,
    ULONG xidata11)
 {
-  int  loffs = 0;
   int  lparam = 0;
   char lfmt[10];
   char *lfmtptr;
@@ -442,28 +443,3 @@ int strncmp(const char *s1, const char *s2, size_t count)
 	return val;
 }
 
-// Searches for a substring in a string
-char *strstr(const char * string, const char * substring)
-{
-	char* strpos;
-
-	if (string == 0)
-		return 0;
-
-	if (strlen(substring) == 0)
-		return (char*)string;
-
-	strpos = (char*)string;
-
-	while (*strpos != 0)
-	{
-		if (strncmp(strpos, substring, strlen(substring)) == 0)
-		{
-			return strpos;
-		}
-
-		strpos++;
-	}
-
-	return 0;
-}

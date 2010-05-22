@@ -21,7 +21,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "sdk.h"
 #include "md5.h"
+#include "malloc.h"
+#include "lib.h"
 
 #define S11 7
 #define S12 12

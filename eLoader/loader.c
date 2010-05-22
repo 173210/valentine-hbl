@@ -10,6 +10,8 @@
 //#include "scratchpad.h"
 #include "utils.h"
 #include "eloader.h"
+#include "lib.h"
+#include "malloc.h"
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
@@ -36,7 +38,7 @@ void load_hbl(SceUID hbl_file)
 	// Allocate memory for HBL
 	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, MAX_ELOADER_SIZE, 0x09EC8000);
 	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_High, file_size, NULL); // Best one, but don't work, why?
-	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, 0x09EC8000);
+	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)0x09EC8000);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
@@ -64,7 +66,7 @@ void load_hbl(SceUID hbl_file)
 	// Copy HBL to safe memory
 	// memcpy((void*)run_eloader, (void*)hbl_buffer, bytes_read);
 
-	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", run_eloader);
+	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", (ULONG)run_eloader);
 
 	// Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
@@ -76,10 +78,10 @@ void load_hbl(SceUID hbl_file)
 // Both lists must have same size
 int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list, unsigned int list_size)
 {
-	int i = 0, j, count = 0;
+	u32 i = 0, j, count = 0;
 	u32 *cur_nid, *cur_call;
 
-	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", pentry);
+	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", (ULONG)pentry);
 
 	// Zeroing data
 	memset(stub_list, 0, list_size * sizeof(u32));
@@ -100,7 +102,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 				if(hbl_imports_list[j] == *cur_nid)
 				{
 					stub_list[j] = cur_call;
-					LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, cur_call, *cur_call);
+					LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, (ULONG)cur_call, *cur_call);
 					LOGSTR1(" 0x%08lX\n", *(cur_call+1));
 					count++;
 				}
@@ -118,8 +120,8 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 int load_imports(u32* hbl_imports)
 {
 	unsigned int num_imports;
-	u32 nid;
-	int i = 0, ret;
+	u32 nid, i = 0;
+	int ret;
 
 	// DEBUG_PRINT(" LOADING HBL IMPORTS FROM CONFIG ", NULL, 0);
 
@@ -165,8 +167,7 @@ void copy_hbl_stubs(void)
 {
 	// Temp storage
 	int i, ret;
-	SceUID HBL_stubs_block;
-	
+
 	// Where are HBL stubs
 	u32* stub_addr;
 	
@@ -318,7 +319,6 @@ void inject_hbl(SceUID hbl_file, void* addr)
 {	
 	unsigned long file_size;
 	int bytes_read;
-	SceUID HBL_block;
 
 	// Get HBL size
 	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
@@ -335,15 +335,15 @@ void inject_hbl(SceUID hbl_file, void* addr)
 
 	sceIoClose(hbl_file);
 
-	LOGSTR1("HBL loaded @ 0x%08lX\n", run_eloader);
+	LOGSTR1("HBL loaded @ 0x%08lX\n", (ULONG)run_eloader);
 
 	// Commit changes to RAM
 	sceKernelDcacheWritebackInvalidateAll();
 }
 
 // Entry point
-void _start(unsigned long, unsigned long *) __attribute__ ((section (".text.start")));
-void _start(unsigned long arglen, unsigned long *argp)
+void _start() __attribute__ ((section (".text.start")));
+void _start()
 {
 	SceUID hbl_file;
 
@@ -388,7 +388,7 @@ void _start(unsigned long arglen, unsigned long *argp)
 				sceKernelExitGame();
 	
 			case PSP_UTILITY_DIALOG_NONE :
-				sceKernelExitGame;
+				sceKernelExitGame();
 		}
 
 		LOGSTR0("Savedata trick done!\n");

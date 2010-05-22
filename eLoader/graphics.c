@@ -1,7 +1,7 @@
-
 #include "graphics.h"
 #include "utils.h"
 #include "debug.h"
+#include "lib.h"
 
 #define IS_ALPHA(color) (((color)&0xff000000)==0xff000000?0:1)
 #define FRAMEBUFFER_SIZE (PSP_LINE_SIZE*SCREEN_HEIGHT*4)
@@ -21,40 +21,17 @@ typedef union
 	} c;
 } color_t;
 
-typedef struct
-{
-	unsigned short u, v;
-	short x, y, z;
-} Vertex;
-
 extern u8 msx[];
-
-unsigned int __attribute__((aligned(16))) list[262144];
-static int dispBufferNumber;
-static int initialized = 0;
-
-
-static int getNextPower2(int width)
-{
-	int b = width;
-	int n;
-	for (n = 0; b != 0; n++) b >>= 1;
-	b = 1 << n;
-	if (b == 2 * width) b >>= 1;
-	return b;
-}
 
 Color* getVramDrawBuffer()
 {
 	Color* vram = (Color*) g_vram_base;
-	if (dispBufferNumber == 0) vram += FRAMEBUFFER_SIZE / sizeof(Color);
 	return vram;
 }
 
 Color* getVramDisplayBuffer()
 {
 	Color* vram = (Color*) g_vram_base;
-	if (dispBufferNumber == 1) vram += FRAMEBUFFER_SIZE / sizeof(Color);
 	return vram;
 }
 
@@ -77,21 +54,30 @@ Color getPixelImage(int x, int y, Image* image)
 
 int gY = 0;
 
+void SetColor(int col)
+{
+    gY = 0;
+	int i;
+	color_t *pixel = (color_t *)0x44000000;
+	for(i = 0; i < 512*272; i++) {
+		pixel->rgba = col;
+		pixel++;
+	}
+}
+
 void cls()
 {
-    sceDisplaySetFrameBuf((void *)0x444000000, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+    sceDisplaySetFrameBuf((void *)0x44000000, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
     SetColor(0);
 	gY = 0;
 }
 
-void printTextScreen(int x, int y, char text[], u32 color)
+void printTextScreen(int x, int y, const char * text, u32 color)
 {
 	int c, i, j, l;
 	u8 *font;
 	Color *vram_ptr;
 	Color *vram;
-	
-	// if (!initialized) return;
 
 	for (c = 0; c < strlen(text); c++) {
 		if (x < 0 || x + 8 > SCREEN_WIDTH || y < 0 || y + 8 > SCREEN_HEIGHT) break;
@@ -111,7 +97,7 @@ void printTextScreen(int x, int y, char text[], u32 color)
 	}
 }
 
-void print_to_screen_color(char text[], u32 color) 
+void print_to_screen_color(const char * text, u32 color) 
 {
 	if (gY > 272) 
 	{
@@ -126,23 +112,12 @@ void print_to_screen_color(char text[], u32 color)
 }  
 
 
-void print_to_screen(char text[]) 
+void print_to_screen(const char * text) 
 {
   	print_to_screen_color(text, 0x00FFFFFF);
 }  
 
-void *fb = (void *)0x44000000;
 
-void SetColor(int col)
-{
-    gY = 0;
-	int i;
-	color_t *pixel = (color_t *)fb;
-	for(i = 0; i < 512*272; i++) {
-		pixel->rgba = col;
-		pixel++;
-	}
-}
 
 
 void PRTSTR0(const char* A)
