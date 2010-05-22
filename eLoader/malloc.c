@@ -101,7 +101,7 @@ void* malloc_p5(SceSize size)
 // Allocates memory for homebrew so it doesn't overwrite itself
 void * allocate_memory(u32 size, void* addr)
 {
-	SceUID mem;
+	SceUID mem = 0;
 	
     int i = find_free_block();
 	if(i == MAX_ALLOCS) // No free block found
