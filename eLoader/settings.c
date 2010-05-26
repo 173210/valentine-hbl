@@ -2,14 +2,13 @@
 // settings.c : Settings variables read from file
 //
 
-#define INSTANTIATE_CONFIG_VARS  1
 #include "settings.h"
 #include "eloader.h"
 #include "debug.h"
 #include "menu.h"
 #include "lib.h"
 #include "graphics.h"
-
+#include "globals.h"
 
 /*****************************************************************************/
 /* configYnParse : return TRUE if parameter is Y, FALSE if N                 */
@@ -215,17 +214,19 @@ void configGetProcessingOptions()
     char lstr[256];
     char lval[256];
 
+    tGlobals * g = get_globals();
     LOGSTR0("Read params\n");
     while (configReadParameter(lstr, lval))
     {
         LOGSTR2("Parm %s = %s\n", (u32)lstr, (u32)lval);
         if (strcmp(lstr,"override_sceIoMkdir")==0)
         {
-            g_override_sceIoMkdir = configIntParse(lval);
+            g->override_sceIoMkdir = configIntParse(lval);
         }
         else if (strcmp(lstr,"hb_folder")==0)
         {
-            strcpy(g_hb_folder,lval);
+            //note: g->hb_folder is initialized in loadGlobalConfig
+            strcpy(g->hb_folder,lval);
         }
         else
         {
@@ -238,10 +239,11 @@ void configGetProcessingOptions()
 // Load default config
 void loadGlobalConfig()
 {
+    tGlobals * g = get_globals();
     //default values
-    g_override_sceIoMkdir = DONT_OVERRIDE;
-    g_hb_folder = (void *) EBOOT_PATH_ADDRESS;
-    strcpy(g_hb_folder, "ms0:/PSP/GAME/");
+    g->override_sceIoMkdir = DONT_OVERRIDE;
+    g->hb_folder = (void *) EBOOT_PATH_ADDRESS;
+    strcpy(g->hb_folder, "ms0:/PSP/GAME/");
     
     //load Config file
     loadConfig(HBL_ROOT HBL_CONFIG);

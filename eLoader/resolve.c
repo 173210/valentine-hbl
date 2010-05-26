@@ -9,11 +9,13 @@
 #include "syscall.h"
 #include "config.h"
 #include "resolve.h"
+#include "globals.h"
 
 // Autoresolves HBL missing stubs
 // Some stubs are compulsory, like sceIo*
 void resolve_missing_stubs()
 {
+    tGlobals * g = get_globals();
 	int ret;
     u32 i;
 	unsigned int num_nids;
@@ -66,7 +68,7 @@ void resolve_missing_stubs()
 			if (ret > 0)
 			{
 				LOGSTR0("-Found in NID table, using real call\n");
-				syscall = nid_table->table[ret].call;
+				syscall = g->nid_table.table[ret].call;
 			}
 			
 			// If not, estimate
@@ -141,8 +143,9 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32 real_call;
 	unsigned int resolving_count = 0;
 
-#ifdef HOOK_CHDIR_AND_FRIENDS    
-    chdir_ok = test_sceIoChdir();
+#ifdef HOOK_CHDIR_AND_FRIENDS 
+    tGlobals * g = get_globals();
+    g->chdir_ok = test_sceIoChdir();
 #endif
 
 	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);

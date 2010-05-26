@@ -16,17 +16,5 @@
 void loadConfig(const char * file);
 void loadGlobalConfig();
 
-#if INSTANTIATE_CONFIG_VARS==1
-#define MAYBE_EXTERN
-#else
-#define MAYBE_EXTERN extern
-#endif
-
-/*****************************************************************************/
-/* Special case control variables read from file                             */
-/*****************************************************************************/
-MAYBE_EXTERN int     g_override_sceIoMkdir;
-MAYBE_EXTERN char *  g_hb_folder;
-
 
 #endif

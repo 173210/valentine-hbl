@@ -14,7 +14,7 @@ clean:
 
 CC       = psp-gcc
 
-CFLAGS   := -D PSP -I $(INCLUDE) -O2  -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
+CFLAGS   := -D PSP -I $(INCLUDE) -O2 -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
 
 #svn revision in code
 RESULT=$(shell svnversion -n 2> Makefile.cache)
@@ -54,6 +54,10 @@ elf.o: elf.c
 	$(CC) $(CFLAGS) -S elf.c -o elf.s
 	$(ASM) elf.s -o elf.o
 
+globals.o: globals.c
+	$(CC) $(CFLAGS) -S globals.c -o globals.s
+	$(ASM) globals.s -o globals.o	
+    
 loader.o: loader.c
 	$(CC) $(CFLAGS) -S loader.c -o loader.s
 	$(ASM) loader.s -o loader.o	
@@ -131,12 +135,12 @@ menu: menu.o graphics.o font.o sdk_hbl.o linker_menu.x debug.o lib.o utils.o
 	$(PSPDEV)/bin/psp-strip -s menu.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary menu.elf menu.bin    	
     	
-hbl: eloader.o elf.o memory.o lib.o sdk_hbl.o debug.o config.o modmgr.o syscall.o malloc.o md5.o utils.o graphics.o font.o settings.o tables.o hook.o reloc.o resolve.o test.o linker_hbl.x
-	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o eloader.o elf.o syscall.o lib.o  md5.o memory.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o tables.o settings.o hook.o reloc.o resolve.o test.o -o eloader.elf
+hbl: eloader.o elf.o memory.o lib.o sdk_hbl.o debug.o config.o globals.o modmgr.o syscall.o malloc.o md5.o utils.o graphics.o font.o settings.o tables.o hook.o reloc.o resolve.o test.o linker_hbl.x
+	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o eloader.o elf.o globals.o syscall.o lib.o  md5.o memory.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o tables.o settings.o hook.o reloc.o resolve.o test.o -o eloader.elf
 	$(PSPDEV)/bin/psp-strip -s eloader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary eloader.elf hbl.bin
 	
-loader: loader.o debug.o lib.o sdk_loader.o elf.o config.o utils.o malloc.o linker_loader.x
-	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o malloc.o -o loader.elf
+loader: loader.o debug.o globals.o lib.o sdk_loader.o elf.o config.o utils.o malloc.o linker_loader.x
+	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  globals.o utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o malloc.o -o loader.elf
 	$(PSPDEV)/bin/psp-strip -s loader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary loader.elf h.bin

@@ -11,6 +11,7 @@
 #include "resolve.h"
 #include "memory.h"
 #include "modmgr.h"
+#include "globals.h"
 
 // Menu variables
 int g_menu_enabled = 0; // this is set to 1 at runtime if a menu.bin file exists
@@ -184,13 +185,6 @@ int start_thread() //SceSize args, void *argp)
 
 		// Initialize module loading
 		print_to_screen("Initializing LoadModule");
-
-		/*
-		if(init_load_module() == NULL)
-			exit_with_log(" ERROR: UNABLE TO ALLOCATE MEMORY FOR MODULE TABLES ", NULL, 0);
-		*/
-
-		init_load_module();
 
         // Start the menu or run directly the hardcoded eboot      
         if (file_exists(EBOOT_PATH))

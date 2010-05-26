@@ -5,10 +5,6 @@
 #include "elf.h"
 #include "modmgr.h"
    
-
-//a global for debug texts to avoid using the stack
-char g_debug_buff[512];   
-
 void init_debug()
 {
 	SceUID fd;
@@ -143,37 +139,42 @@ void logstr0(const char* A)
 
 void logstr1(const char* A, unsigned long B)			
 {
-
-    mysprintf1(g_debug_buff, A, (unsigned long)B);
-    write_debug(g_debug_buff, NULL, 0);
+    char debug_buff[512]; 
+    mysprintf1(debug_buff, A, (unsigned long)B);
+    write_debug(debug_buff, NULL, 0);
 }
 
 void logstr2(const char* A, unsigned long B, unsigned long C)		
 {
-    mysprintf2(g_debug_buff, A, (unsigned long)B, (unsigned long)C);
-    write_debug(g_debug_buff, NULL, 0);
+    char debug_buff[512]; 
+    mysprintf2(debug_buff, A, (unsigned long)B, (unsigned long)C);
+    write_debug(debug_buff, NULL, 0);
 }
 
 void logstr3(const char* A, unsigned long B, unsigned long C, unsigned long D)		
 {
-    mysprintf3(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
-    write_debug(g_debug_buff, NULL, 0);
+    char debug_buff[512]; 
+    mysprintf3(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
+    write_debug(debug_buff, NULL, 0);
 }
 
 void logstr4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E)
 {
-    mysprintf4(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E);
-    write_debug(g_debug_buff, NULL, 0);
+    char debug_buff[512]; 
+    mysprintf4(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E);
+    write_debug(debug_buff, NULL, 0);
 }
 
 void logstr5(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F)
 {
-    mysprintf8(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, 0, 0, 0);
-    write_debug(g_debug_buff, NULL, 0);
+    char debug_buff[512]; 
+    mysprintf8(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, 0, 0, 0);
+    write_debug(debug_buff, NULL, 0);
 }
 
 void logstr8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I)
 {
-    mysprintf8(g_debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H, (unsigned long)I);
-    write_debug(g_debug_buff, NULL, 0);
+    char debug_buff[512]; 
+    mysprintf8(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H, (unsigned long)I);
+    write_debug(debug_buff, NULL, 0);
 }

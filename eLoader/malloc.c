@@ -2,25 +2,21 @@
 #include "eloader.h"
 #include "malloc.h"
 #include "debug.h"
+#include "globals.h"
 
-/* Number of allocated blocks */
-u32 nblocks;
-
-/* Blocks */
-HBLMemBlock block[MAX_ALLOCS];
 
 void init_malloc(void)
 {
-	nblocks = 0;
-	memset(block, 0, sizeof(block));
+    //now done in init globals
 }
 
 int find_free_block()
 {
+    tGlobals * g = get_globals();
     int i;
 	for(i=0;i<MAX_ALLOCS;i++)
 	{
-		if(!block[i].address) // Found a free block
+		if(!g->block[i].address) // Found a free block
 			break;
 	}
     return i;
@@ -30,7 +26,7 @@ int find_free_block()
 void* _malloc(SceSize size, int pnum)
 {
 	SceUID uid;
-
+    tGlobals * g = get_globals();
 	LOGSTR2("-->ALLOCATING MEMORY from partition %d, size 0x%08lX... ", (u32)pnum, (u32)size);
     
 	int i = find_free_block();
@@ -59,20 +55,20 @@ void* _malloc(SceSize size, int pnum)
 	LOGSTR1("Got block from kernel with UID 0x%08lX\n", uid);
 	
 	/* Fill block info */
-	block[i].uid = uid;
-	block[i].address = sceKernelGetBlockHeadAddr(uid);
+	g->block[i].uid = uid;
+	g->block[i].address = sceKernelGetBlockHeadAddr(uid);
 	
-	return block[i].address;
+	return g->block[i].address;
 }
 
 /* Free memory */
 void free(void* ptr)
 {
 	int i;
-	
+    tGlobals * g = get_globals();	
 	for(i=0;i<MAX_ALLOCS;i++)
 	{
-		if(block[i].address == ptr) // Block found
+		if(g->block[i].address == ptr) // Block found
 			break;
 	}
 	
@@ -80,10 +76,10 @@ void free(void* ptr)
 		return;
 	
 	/* Free block */
-	sceKernelFreePartitionMemory(block[i].uid);
+	sceKernelFreePartitionMemory(g->block[i].uid);
 	
 	/* Re-initialize block */
-	memset(&block[i], 0, sizeof(block[i]));
+	memset(&(g->block[i]), 0, sizeof(g->block[i]));
 	
 	return;
 }
@@ -93,14 +89,15 @@ void* malloc_p2(SceSize size)
 	return _malloc(size, 2);
 }
 
-void* malloc_p5(SceSize size)
+void* malloc_hbl(SceSize size)
 {
-	return _malloc(size, 5);
+    return _malloc(size, 2);
 }
 
 // Allocates memory for homebrew so it doesn't overwrite itself
 void * allocate_memory(u32 size, void* addr)
 {
+    tGlobals * g = get_globals();
 	SceUID mem = 0;
 	
     int i = find_free_block();
@@ -129,8 +126,8 @@ void * allocate_memory(u32 size, void* addr)
     LOGSTR0("OK\n");
     
     /* Fill block info */
-	block[i].uid = mem;
-	block[i].address = sceKernelGetBlockHeadAddr(mem);
+	g->block[i].uid = mem;
+	g->block[i].address = sceKernelGetBlockHeadAddr(mem);
 	
-	return block[i].address;
+	return g->block[i].address;
 }

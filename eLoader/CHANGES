@@ -1,3 +1,9 @@
+2010/05/26 (wololo)
+- Put HBL back into partition 2. This fixes issue 133 (exit/sleep not working). Changes into malloc also fix issues with Wagic and some roms not loading in gpsp since rev 80
+- Move all globals into a struct in scratchpad. This fixes issue 128 (HBL too big since rev 79)
+- Fix issue 123 (devkitversion)...again :) Which should fix "firmware" errors in Daedalus
+- Added a sanity "test" homebrew. If you code some changes and this homebrew reports errors : Don't submit your code!
+
 2010/05/22 (m0skit0)
 - Added scrolling menu for 40 homebrews max (thanks to MrShawman!)
 - Separate mallocs for p5 and p2 (r80 and r81 malloc code was wrong)

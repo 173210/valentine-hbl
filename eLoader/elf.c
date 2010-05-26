@@ -99,20 +99,8 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_offset, PSP_SEEK_SET);
 
 	LOGSTR1("Address to allocate from: 0x%08lX\n", (u32)*addr);
-	
-	// If address set, allocate from that address
-	if (*addr != NULL)
-	{
-		buffer = *addr;
-		allocate_memory(program_header.p_memsz, buffer);
-	}
-	
-	// If no address set, malloc and store value on pointer
-	else
-	{
-		buffer = malloc_p2(program_header.p_memsz);
-		*addr = buffer;
-	}
+    buffer = allocate_memory(program_header.p_memsz, *addr);
+    *addr = buffer;
 
 	if ((int)buffer < 0)
 	{

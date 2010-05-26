@@ -18,7 +18,7 @@ void init_malloc(void);
 
 // Allocate memory
 void* malloc_p2(SceSize size);
-void* malloc_p5(SceSize size);
+void* malloc_hbl(SceSize size);
 
 // Free memory
 void free(void* ptr);

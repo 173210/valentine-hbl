@@ -7,20 +7,17 @@
 #include "utils.h"
 #include "md5.h"
 #include "memory.h"
+#include "globals.h"
 
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
 
-char* g_module_chdir = NULL;
-int g_pllfreq = 0;
-int g_cpufreq = 0;
-int g_busfreq = 0;
-int chdir_ok = 0;
 
 // Returns a hooked call for the given NID or zero
 u32 setup_hook(u32 nid)
 {
 	u32 hook_call = 0;
+    tGlobals * g = get_globals();
 	
 	// HOOOOOOK THAT!!!
     switch (nid) 
@@ -44,7 +41,7 @@ u32 setup_hook(u32 nid)
 
 #ifdef RETURN_TO_MENU_ON_EXIT                
         case 0x05572A5F: // sceKernelExitGame
-            if (g_menu_enabled)
+            if (g->menu_enabled)
                 hook_call = MAKE_JUMP(_hook_sceKernelExitGame);
             break;
 #endif 
@@ -64,7 +61,7 @@ u32 setup_hook(u32 nid)
 
 // Overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
         case 0x06A70004: //	sceIoMkdir
-            if (g_override_sceIoMkdir == GENERIC_SUCCESS)
+            if (g->override_sceIoMkdir == GENERIC_SUCCESS)
             {
                 LOGSTR0(" sceIoMkdir goes to void because of settings ");
                 hook_call = MAKE_JUMP(_hook_generic_ok);
@@ -208,21 +205,21 @@ u32 setup_hook(u32 nid)
 
 #ifdef HOOK_CHDIR_AND_FRIENDS    
         case 0x55F4717D: //	sceIoChdir (only if it failed)
-            if (chdir_ok)
+            if (g->chdir_ok)
                 break;
             LOGSTR0(" Chdir trick sceIoChdir\n");
             hook_call = MAKE_JUMP(_hook_sceIoChdir);
             break;
 		
         case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
-            if (chdir_ok)
+            if (g->chdir_ok)
                 break;
             LOGSTR0(" Chdir trick sceIoOpen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
             break;
 		
         case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-            if (chdir_ok)
+            if (g->chdir_ok)
                 break;
             LOGSTR0(" Chdir trick sceIoDopen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
@@ -474,17 +471,18 @@ int path_is_absolute(const char * file)
 // 2 - delete the returned char *
 char * relative_to_absolute(const char * file)
 {
-    if (!g_module_chdir)
+    tGlobals * g = get_globals();
+    if (!g->module_chdir)
     {
-        char * buf = malloc_p2(strlen(file) + 1);
+        char * buf = malloc_hbl(strlen(file) + 1);
         strcpy(buf, file);
         return buf;
     }
-    int len = strlen(g_module_chdir);
+    int len = strlen(g->module_chdir);
     
-    char * buf = malloc_p2( len +  1 +  strlen(file) + 1);
+    char * buf = malloc_hbl( len +  1 +  strlen(file) + 1);
 
-    strcpy(buf, g_module_chdir);
+    strcpy(buf, g->module_chdir);
     if(buf[len-1] !='/')
         strcat(buf, "/");
         
@@ -519,27 +517,28 @@ SceUID _hook_sceIoDopen(const char *dirname)
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)   
 {
+    tGlobals * g = get_globals();
     // save chDir into global variable
     if (path_is_absolute(dirname))
     {
-        if (g_module_chdir)
+        if (g->module_chdir)
         {
-            free(g_module_chdir);
-            g_module_chdir = 0;
+            free(g->module_chdir);
+            g->module_chdir = 0;
         }  
-        g_module_chdir = relative_to_absolute(dirname);
+        g->module_chdir = relative_to_absolute(dirname);
     }
     else
     {
         char * result = relative_to_absolute(dirname);
-         if (g_module_chdir)
+         if (g->module_chdir)
         {
-            free(g_module_chdir);
+            free(g->module_chdir);
         }
-        g_module_chdir = result;
+        g->module_chdir = result;
     }
     
-    if (!g_module_chdir)
+    if (!g->module_chdir)
     {
         return -1;
     }
@@ -551,21 +550,23 @@ int _hook_sceIoChdir(const char *dirname)
 // see http://forums.ps2dev.org/viewtopic.php?p=52329
 int _hook_scePowerGetCpuClockFrequencyInt()
 {
-    if (!g_cpufreq)
+    tGlobals * g = get_globals();
+    if (!g->cpufreq)
     {
         //that's a bit dirty :(
         _hook_scePowerSetClockFrequency(333, 333, 166);
     }
-    return g_cpufreq;
+    return g->cpufreq;
 }
 
 int _hook_scePowerGetBusClockFrequency() {
-    if (!g_busfreq)
+    tGlobals * g = get_globals();
+    if (!g->busfreq)
     {
         //that's a bit dirty :(
         _hook_scePowerSetClockFrequency(333, 333, 166);
     }
-    return g_busfreq;
+    return g->busfreq;
 }
 
 
@@ -575,9 +576,10 @@ int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
     int ret = scePower_EBD177D6(pllfreq, cpufreq, busfreq);
     if (ret >= 0)
     {
-        g_pllfreq = pllfreq;
-        g_cpufreq = cpufreq;
-        g_busfreq = busfreq;
+        tGlobals * g = get_globals();
+        g->pllfreq = pllfreq;
+        g->cpufreq = cpufreq;
+        g->busfreq = busfreq;
     }
     
     return ret;
@@ -601,8 +603,8 @@ int _hook_sceKernelDevkitVersion()
     //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
     u32 version = getFirmwareVersion();
 	// 0x0w0y001z <==> firmware w.yz 
-    int result = 0x01000000 * version / 100;
-    result += 0x010000 * (version % 100) / 10;
+    int result = 0x01000000 * (version / 100);
+ 	result += 0x010000 * ((version % 100) / 10);
     result += 0x0100 * (version % 10);
     result += 0x10;
 	
