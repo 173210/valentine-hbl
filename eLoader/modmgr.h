@@ -45,5 +45,11 @@ SceUID start_module(SceUID modid);
 //inits module loading system
 void* init_load_module();
 
+// Returns UID for a given module name
+SceUID find_module_by_name(const char* mod_name);
+
+// Loads and registers exports from an utility module
+int load_utility_module(int mod_id, const char* lib_name);
+
 #endif
 

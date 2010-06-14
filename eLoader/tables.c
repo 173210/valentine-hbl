@@ -7,11 +7,8 @@
 #include "utils.h"
 #include "globals.h"
 
-
-
-
 // Adds NID entry to nid_table
-void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
+int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 {
     tGlobals * g = get_globals();
 	NID_LOGSTR1("Adding NID 0x%08lX to table... ", nid);
@@ -25,7 +22,7 @@ void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 		if (g->nid_table.num >= NID_TABLE_SIZE)
 		{
 			LOGSTR2("WARNING: nid_table full %d W % d\n", g->nid_table.num, NID_TABLE_SIZE);
-			return;
+			return -1;
 		}
 
 		g->nid_table.table[g->nid_table.num].nid = nid;
@@ -42,7 +39,38 @@ void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 		NID_LOGSTR1("Modified @ %d\n", g->nid_table.num);
 	}
 
-	return;
+	return index;
+}
+
+// Adds a new library
+int add_library_to_table(const tSceLibrary lib)
+{
+	tGlobals* g = get_globals();
+	
+	// Check if library exists
+	int index = get_library_index(lib.name);
+
+	// Doesn't exist, insert new
+	if (index < 0)
+	{
+		// Check if there's space on the table
+		if (g->library_table.num >= MAX_LIBRARIES)
+		{
+			LOGSTR1("->WARNING: Library table full, skipping new library %s\n", (u32)lib.name);
+			return -1;
+		}
+
+		index = g->library_table.num;
+	}
+
+	// Copying new library
+	memcpy(&(g->library_table.table[index]), &lib, sizeof(lib));
+	g->library_table.num++;
+
+	LOGSTR2("Added library %s @ %d\n", (u32)g->library_table.table[index].name, index);
+	LOGLIB(g->library_table.table[index]);
+
+	return index;
 }
 
 // Returns the index on nid_table for the given call

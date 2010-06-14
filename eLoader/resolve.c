@@ -133,7 +133,6 @@ int is_utility(const char* lib_name)
 }
 
 // Resolves imports in ELF's program section already loaded in memory
-// Uses game's imports to do the resolving (this can be further improved)
 // Returns number of resolves
 unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 {
@@ -158,12 +157,12 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		cur_nid = pstub_entry->nid_pointer;
 		cur_call = pstub_entry->jump_pointer;
 
+		LOGSTR1("Current library: %s\n", (u32)pstub_entry->library_name);
+		
 		// Load utility if necessary
-		/*
-		int mod_id;
-		if (mod_id = is_utility(pstub_entry->library_name))
-			load_utility_module(mod_id, pstub_entry->library_name);
-		*/
+		int mod_id = is_utility((char*)pstub_entry->library_name);
+		if (mod_id > 0)
+			load_utility_module(mod_id, (char*)pstub_entry->library_name);
 
 		/* For each stub header, browse all stubs */
 		for(j=0; j<pstub_entry->stub_size; j++)
@@ -172,7 +171,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			LOGSTR1("Current nid: 0x%08lX\n", *cur_nid);
 			LOGSTR1("Current call: 0x%08lX\n", (u32)cur_call);
 
-			/* Get syscall/jump instruction for current NID */
+			// Get syscall/jump instruction for current NID
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
 
 			LOGSTR1("Index for NID on table: %d\n", nid_index);

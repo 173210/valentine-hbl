@@ -102,6 +102,7 @@ config = [
             [0xD1FF982A, "sceKernelStopModule"],
             [0x2E0911AA, "sceKernelUnloadModule"],
             [0xD8B73127, "sceKernelGetModuleIdByAddress"],
+            [0x644395E2, "sceKernelGetModuleIdList"],
             [0x8F2DF740, "ModuleMgrForUser_8F2DF740"], #sceKernelSelfStopUnloadModuleWithStatus, see hook.c
         ],
     } ,
@@ -186,7 +187,12 @@ config = [
     		[0xEBD177D6, "scePower_EBD177D6"], # == scePowerSetClockFrequency see hook.c
     	],
     },     
-   
+   	{
+    	:lib => "sceUtility",
+    	:functions => [
+    		[0x2A2B3DE0, "sceUtilityLoadModule"],
+    	],
+    },  
 
 ]
 

@@ -205,51 +205,98 @@ SceUID start_module(SceUID modid)
 	return modid;
 }
 
-// TODO: load utility module, see also resolve.c:161
-/*
-// Returns UID for a given module name
-SceUID find_module_by_name(const char* mod_name)
+// TODO: fake function, only works with MP3 library on 5.00
+// Returns pointer to first export entry for a given module name
+tExportEntry* find_module_exports_by_name(const char* mod_name)
 {
-	SceUID idbuffer[100];
-	int ret_count;
-	
-	if (sceKernelGetModuleIdList(idbuffer, sizeof(idbuffer)/4, &ret_count) < 0)
-		return -1;
+	LOGSTR1("-->find_module_by_name: %s\n", (u32)mod_name);
 
-	int i;
- 	SceKernelModuleInfo modinfo;
+	/*
+	char* name_found;
 
-	for (i=0; i<ret_count; i++)
+	name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
+
+	int mod_id = sceKernelGetModuleIdByAddress((void*)name_found);
+
+	if (mod_id >= 0)
 	{
-		if (sceKernelQueryModuleInfo(idbuffer[i], &modinfo) >= 0)
-		{
-			if(strcmp(modinfo.name, mod_name) == 0)
-				return idbuffer[i];
-		}
 	}
+	*/
 
-	return -2;
+	return (tExportEntry*)0x08805274;
 }
 
+// See also resolve.c:162
 // Loads and registers exports from an utility module
 int load_utility_module(int mod_id, const char* lib_name)
 {
-	int utility_mod = 0;
-	char modname[MAX_MODULE_NAME_LENGTH];
+	LOGSTR0("Loading utility module\n");
 	
-	if (mod_id == PSP_MODULE_AV_MP3)
+	//SceUID utility_id;
+	char modname[MAX_MODULE_NAME_LENGTH];
+
+	// Get utility module name
+	switch (mod_id)
 	{
-		strcpy(modname, "sceMp3_Library");
+		case PSP_MODULE_AV_MP3:
+			strcpy(modname, "sceMp3_Library");
+			break;
+
+		default:
+			LOGSTR1("Unknown/unsupported utility 0x%08lX\n", mod_id);
+			return -1;
 	}
 
-	if (sceUtilityLoadModule(utility_mod) < 0)
-		return -1;
-	
-	SceUID ret = find_module_by_name(modname);
-
-	//TODO: locate and link exports from module
-
-	if (ret < 0)
+	// Load utility
+	int ret;
+	if ((ret = sceUtilityLoadModule(mod_id)) < 0)
+	{
+		LOGSTR2("ERROR 0x%08lX: unable to load utility 0x%08lX\n", ret, mod_id);
 		return ret;
+	}
+
+	// TODO: register utility module loaded on HBL module table
+
+	// Get module exports
+	tExportEntry* pexports = find_module_exports_by_name(modname);
+
+	LOGSTR1("Module name: %s\n", (u32)pexports->name);
+	LOGSTR1("Exports size (in DWORDs): %d\n", (u8)pexports->size);
+	LOGSTR1("Number of export functions: %d\n", (u16)pexports->num_functions);
+	LOGSTR1("Pointer to exports: 0x%08lX\n", (u32)pexports->exports_pointer);
+
+	u32* pnids = (u32*)pexports->exports_pointer;
+	u32* pfunctions = (u32*)((u32)pexports->exports_pointer + (u16)pexports->num_functions * 4);
+
+	LOGSTR1("Pointer to functions: 0x%08lX\n", (u32)pfunctions);
+
+	// Insert new library on library table
+	tSceLibrary newlib;
+	memset(&newlib, 0, sizeof(newlib));
+	
+	strcpy(newlib.name, lib_name);
+	newlib.calling_mode = JUMP_MODE;
+	newlib.num_library_exports = pexports->num_functions;
+	newlib.num_known_exports = pexports->num_functions;
+
+	int lib_index = add_library_to_table(newlib);
+	if (lib_index < 0)
+	{
+		LOGSTR0("->WARNING: could not add library to table\n");
+		return lib_index;
+	}
+
+	// Insert NIDs on NID table
+	tNIDResolver entry;
+	entry.lib_index = lib_index;
+	int i;
+	for (i=0; i<(u16)pexports->num_functions; i++)
+	{
+		LOGSTR3("NID %d: 0x%08lX Function: 0x%08lX\n", i, pnids[i], pfunctions[i]);
+		entry.nid = pnids[i];
+		entry.call = MAKE_JUMP(pfunctions[i]);
+		add_nid_to_table(entry.nid, entry.call, entry.lib_index);
+	}
+
+	return 0;
 }
-*/

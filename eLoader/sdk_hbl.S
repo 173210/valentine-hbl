@@ -35,57 +35,61 @@
 	AddNID sceIoDevctl, 0x10040 # 0x54f5fb11
 	AddNID sceIoChdir, 0x10048  # 0x55f4717d
 
-# ModuleMgrForUser(4)
+# ModuleMgrForUser(5)
 	AddNID sceKernelStopModule, 0x10050           # 0xd1ff982a
 	AddNID sceKernelUnloadModule, 0x10058         # 0x2e0911aa
 	AddNID sceKernelGetModuleIdByAddress, 0x10060 # 0xd8b73127
-	AddNID ModuleMgrForUser_8F2DF740, 0x10068     # 0x8f2df740
+	AddNID sceKernelGetModuleIdList, 0x10068      # 0x644395e2
+	AddNID ModuleMgrForUser_8F2DF740, 0x10070     # 0x8f2df740
 
 # UtilsForUser(1)
-	AddNID sceKernelDcacheWritebackInvalidateAll, 0x10070 # 0xb435dec5
+	AddNID sceKernelDcacheWritebackInvalidateAll, 0x10078 # 0xb435dec5
 
 # ThreadManForUser(14)
-	AddNID sceKernelDelayThread, 0x10078       # 0xceadeb47
-	AddNID sceKernelStartThread, 0x10080       # 0xf475845d
-	AddNID sceKernelCreateThread, 0x10088      # 0x446d8de6
-	AddNID sceKernelTerminateThread, 0x10090   # 0x616403ba
-	AddNID sceKernelExitDeleteThread, 0x10098  # 0x809ce29b
-	AddNID sceKernelDeleteThread, 0x100a0      # 0x9fa03cd3
-	AddNID sceKernelDeleteSema, 0x100a8        # 0x28b6489c
-	AddNID sceKernelDeleteFpl, 0x100b0         # 0xed1410e0
-	AddNID sceKernelDeleteEventFlag, 0x100b8   # 0xef9e4c70
-	AddNID sceKernelDeleteCallback, 0x100c0    # 0xedba5844
-	AddNID sceKernelExitThread, 0x100c8        # 0xaa73c935
-	AddNID sceKernelDelayThreadCB, 0x100d0     # 0x68da9e36
-	AddNID sceKernelSendMsgPipe, 0x100d8       # 0x876dbfad
-	AddNID sceKernelTryReceiveMsgPipe, 0x100e0 # 0xdf52098f
+	AddNID sceKernelDelayThread, 0x10080       # 0xceadeb47
+	AddNID sceKernelStartThread, 0x10088       # 0xf475845d
+	AddNID sceKernelCreateThread, 0x10090      # 0x446d8de6
+	AddNID sceKernelTerminateThread, 0x10098   # 0x616403ba
+	AddNID sceKernelExitDeleteThread, 0x100a0  # 0x809ce29b
+	AddNID sceKernelDeleteThread, 0x100a8      # 0x9fa03cd3
+	AddNID sceKernelDeleteSema, 0x100b0        # 0x28b6489c
+	AddNID sceKernelDeleteFpl, 0x100b8         # 0xed1410e0
+	AddNID sceKernelDeleteEventFlag, 0x100c0   # 0xef9e4c70
+	AddNID sceKernelDeleteCallback, 0x100c8    # 0xedba5844
+	AddNID sceKernelExitThread, 0x100d0        # 0xaa73c935
+	AddNID sceKernelDelayThreadCB, 0x100d8     # 0x68da9e36
+	AddNID sceKernelSendMsgPipe, 0x100e0       # 0x876dbfad
+	AddNID sceKernelTryReceiveMsgPipe, 0x100e8 # 0xdf52098f
 
 # LoadExecForUser(1)
-	AddNID sceKernelExitGame, 0x100e8 # 0x5572a5f
+	AddNID sceKernelExitGame, 0x100f0 # 0x5572a5f
 
 # SysMemUserForUser(3)
-	AddNID sceKernelAllocPartitionMemory, 0x100f0 # 0x237dbd4f
-	AddNID sceKernelGetBlockHeadAddr, 0x100f8     # 0x9d9a5ba1
-	AddNID sceKernelFreePartitionMemory, 0x10100  # 0xb6d61d02
+	AddNID sceKernelAllocPartitionMemory, 0x100f8 # 0x237dbd4f
+	AddNID sceKernelGetBlockHeadAddr, 0x10100     # 0x9d9a5ba1
+	AddNID sceKernelFreePartitionMemory, 0x10108  # 0xb6d61d02
 
 # sceDisplay(1)
-	AddNID sceDisplaySetFrameBuf, 0x10108 # 0x289d82fe
+	AddNID sceDisplaySetFrameBuf, 0x10110 # 0x289d82fe
 
 # sceCtrl(1)
-	AddNID sceCtrlReadBufferPositive, 0x10110 # 0x1f803938
+	AddNID sceCtrlReadBufferPositive, 0x10118 # 0x1f803938
 
 # sceUmdUser(1)
-	AddNID sceUmdUnRegisterUMDCallBack, 0x10118 # 0xbd2bde07
+	AddNID sceUmdUnRegisterUMDCallBack, 0x10120 # 0xbd2bde07
 
 # sceAudio(3)
-	AddNID sceAudioChRelease, 0x10120            # 0x6fc46853
-	AddNID sceAudioOutputPannedBlocking, 0x10128 # 0x13f592bc
-	AddNID sceAudioChReserve, 0x10130            # 0x5ec81c55
+	AddNID sceAudioChRelease, 0x10128            # 0x6fc46853
+	AddNID sceAudioOutputPannedBlocking, 0x10130 # 0x13f592bc
+	AddNID sceAudioChReserve, 0x10138            # 0x5ec81c55
 
 # sceRtc(1)
-	AddNID sceRtcGetCurrentClockLocalTime, 0x10138 # 0xe7c27d1b
+	AddNID sceRtcGetCurrentClockLocalTime, 0x10140 # 0xe7c27d1b
 
 # scePower(1)
-	AddNID scePower_EBD177D6, 0x10140 # 0xebd177d6
+	AddNID scePower_EBD177D6, 0x10148 # 0xebd177d6
+
+# sceUtility(1)
+	AddNID sceUtilityLoadModule, 0x10150 # 0x2a2b3de0
 
 	.ident	"HBL-SDK"

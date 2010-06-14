@@ -89,7 +89,7 @@ int build_nid_table();
 int get_syscall_boundaries(int lib_index, u32* low, u32* high);
 
 // Adds NID entry to nid_table
-void add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
+int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
 
 // Initialize nid_table
 void* init_nid_table();
@@ -102,5 +102,8 @@ int get_higher_known_nid(unsigned int lib_index, u32 nid);
 
 // Return index in nid_table for closest lower known NID
 int get_lower_known_nid(unsigned int lib_index, u32 nid);
+
+// Adds a new library
+int add_library_to_table(const tSceLibrary lib);
 
 #endif

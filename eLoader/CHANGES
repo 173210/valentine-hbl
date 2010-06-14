@@ -1,3 +1,11 @@
+2010/05/14 (m0skit0)
+- Function to find a loaded module by name (modmgr.c)
+- PoC code to resolve utility imports (resolve.c, modmgr.c)
+--> Only works for MP3 library over 5.00 M33, and it sounds absolutely awful with WTH (lag owns)
+- Changed some defines from eloader.h to sdk.h
+- Added data stucture to parse exports (elf.h)
+- Added function to insert a library into library table (tables.c)
+
 2010/05/26 (wololo)
 - Put HBL back into partition 2. This fixes issue 133 (exit/sleep not working). Changes into malloc also fix issues with Wagic and some roms not loading in gpsp since rev 80
 - Move all globals into a struct in scratchpad. This fixes issue 128 (HBL too big since rev 79)

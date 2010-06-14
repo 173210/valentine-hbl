@@ -342,7 +342,16 @@ u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
         return 0;
     }
 
-	LOGLIB(get_globals()->library_table.table[lib_index]);
+	tGlobals *g = get_globals();
+
+	LOGLIB(g->library_table.table[lib_index]);
+
+	// Cannot estimate jump system call
+	if (g->library_table.table[lib_index].calling_mode == JUMP_MODE)
+	{
+		LOGSTR0("->WARNING: trying to estimate jump system call\n");
+		return 0;
+	}
 
 	SceUID nid_file = open_nids_file(lib);
 
