@@ -205,7 +205,7 @@ SceUID start_module(SceUID modid)
 	return modid;
 }
 
-// TODO: fake function, only works with MP3 library on 5.00
+// TODO: fake function, only works with MP3 module on 5.00
 // Returns pointer to first export entry for a given module name
 tExportEntry* find_module_exports_by_name(const char* mod_name)
 {
@@ -222,6 +222,9 @@ tExportEntry* find_module_exports_by_name(const char* mod_name)
 	{
 	}
 	*/
+
+	// Just to avoid error on non-debug compilation
+	if (mod_name == NULL) {}
 
 	return (tExportEntry*)0x08805274;
 }

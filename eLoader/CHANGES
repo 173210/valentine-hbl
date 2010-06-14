@@ -1,4 +1,4 @@
-2010/05/14 (m0skit0)
+2010/06/14 (m0skit0)
 - Function to find a loaded module by name (modmgr.c)
 - PoC code to resolve utility imports (resolve.c, modmgr.c)
 --> Only works for MP3 library over 5.00 M33, and it sounds absolutely awful with WTH (lag owns)
