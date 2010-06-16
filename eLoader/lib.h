@@ -53,6 +53,14 @@ void mysprintf2(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2);
 void mysprintf1(char *xobuff, const char *xifmt, u32 xidata);
 void mysprintf0(char *xobuff, const char *xifmt);
 
+// Searches for s1 string in memory
+// Returns pointer to string
+char* memfindsz(const char* s1, char* start, unsigned int size);
+
+// Searches for 32-bit value on memory
+// Returns pointer to value
+u32* memfindu32(const u32 val, u32* start, unsigned int size);
+
 // Compares s1 with s2, returns 0 if both equal
 int strcmp(const char *s1, const char *s2);
 

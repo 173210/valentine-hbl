@@ -1,3 +1,12 @@
+2010/06/16 (m0skit0)
+- Function to find the library exports of a loaded module by name (the real deal this time xD) (modmgr.c)
+- Added more utility loading code (EXPERIMENTAL) (resolve.c, modmgr.c)
+--> Network still not available :( Any further testing/feedback is appreciated
+- Added a couple of functions that search for string and 32-bit value on memory (lib.c)
+- Moved hook switches to hook.h
+- Added switchable hook for sceUtilityLoadModule (hook.c)
+- Added displaying real homebrew name (by MrShawman)
+
 2010/06/14 (m0skit0)
 - Function to find a loaded module by name (modmgr.c)
 - PoC code to resolve utility imports (resolve.c, modmgr.c)

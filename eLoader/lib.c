@@ -347,6 +347,41 @@ void mysprintf0(char *xobuff, const char *xifmt)
 	*xobuff = '\0';
 }
 
+// Searches for s1 string on memory
+// Returns pointer to string
+char* memfindsz(const char* s1, char* start, unsigned int size)
+{
+	unsigned int i = 0;
+	while (i < size && strcmp(start, s1) != 0)
+	{
+		start++;
+		i++;
+	}
+
+	if (i < size)
+		return start;
+	else
+		return NULL;
+}
+
+// Searches for 32-bit value on memory
+// Starting address must be word aligned
+// Returns pointer to value
+u32* memfindu32(const u32 val, u32* start, unsigned int size)
+{
+	unsigned int i = 0;
+	while (i < size && *start != val)
+	{
+		start++;
+		i++;
+	}
+
+	if (i < size)
+		return start;
+	else
+		return NULL;
+}
+
 /* * * * * * * * * * * *
  * For functions below:
  * * * * * * * * * * * *

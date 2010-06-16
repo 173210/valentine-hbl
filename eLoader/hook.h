@@ -3,6 +3,36 @@
 
 #include <psprtc.h>
 
+//Comment the following line if you don't want to hook thread creation
+#define HOOK_THREADS
+
+/*
+ * Avoiding syscall estimations
+ * The following override some major functions to avoid syscall estimations
+ * Currently (until we can get 100% syscall estimation working ?) this increases
+ * compatibility a LOT, but this alsow slows down some specific homebrews
+ * and increases the size of HBL.
+ * In the future if we can't achieve perfect syscall estimates, 
+ * we will want to move these settings in a settings file, on a per homebrew basis
+ * (see Noobz eLoader cfg file for reference on this)
+ */
+
+//this one might make emulators slow as it maps peekbufferpositive to readbufferpositive
+//Comment the following line to avoid overriding sceCtrlPeekBufferPositive
+#define HOOK_PEEKBUFFERPOSITIVE
+
+//Comment the following line to avoid overriding sceAudio*
+#define HOOK_AUDIOFUNCTIONS
+
+//Comment the following line to avoid overriding scePower*
+#define HOOK_POWERFUNCTIONS
+
+//Comment the following line to avoid overriding sceIo* (happens only if sceIoChdir fails)
+#define HOOK_CHDIR_AND_FRIENDS
+
+// Comment to avoid overriding sceUtility functions
+#define HOOK_UTILITY
+
 extern int chdir_ok;
 
 int test_sceIoChdir();
@@ -58,6 +88,7 @@ SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption
 int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
 void  _hook_sceKernelExitGame();
 int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp);
+int _hook_sceUtilityLoadModule(int id);
 
 // Power
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);

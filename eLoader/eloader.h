@@ -45,10 +45,6 @@
 // Switches
 //
 
-
-//Comment the following line if you don't want to hook thread creation
-#define HOOK_THREADS
-
 //comment the following line if you don't want to return to the menu when leaving a game (reported to crash)
 //#define RETURN_TO_MENU_ON_EXIT
 
@@ -57,36 +53,11 @@
 
 //Comment to disable HBL LoadModule system
 #define LOAD_MODULE
-
-/*
- * Avoiding syscall estimations
- * The following override some major functions to avoid syscall estimations
- * Currently (until we can get 100% syscall estimation working ?) this increases
- * compatibility a LOT, but this alsow slows down some specific homebrews
- * and increases the size of HBL.
- * In the future if we can't achieve perfect syscall estimates, 
- * we will want to move these settings in a settings file, on a per homebrew basis
- * (see Noobz eLoader cfg file for reference on this)
- */
-
-//this one might make emulators slow as it maps peekbufferpositive to readbufferpositive
-//Comment the following line to avoid overriding sceCtrlPeekBufferPositive
-#define HOOK_PEEKBUFFERPOSITIVE
-
-//Comment the following line to avoid overriding sceAudio*
-#define HOOK_AUDIOFUNCTIONS
-
-//Comment the following line to avoid overriding scePower*
-#define HOOK_POWERFUNCTIONS
-
-//Comment the following line to avoid overriding sceIo* (happens only if sceIoChdir fails)
-#define HOOK_CHDIR_AND_FRIENDS
  
 extern u32 gp;
 extern u32* entry_point;
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
 void start_eloader(const char *path, int is_eboot);
-
 
 #endif

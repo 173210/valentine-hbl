@@ -224,7 +224,14 @@ u32 setup_hook(u32 nid)
             LOGSTR0(" Chdir trick sceIoDopen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
             break;                      
-#endif	
+#endif
+
+#ifdef HOOK_UTILITY
+		case 0x2A2B3DE0: // sceUtilityLoadModule
+			LOGSTR0(" Hook sceUtilityLoadModule\n");
+			hook_call = MAKE_JUMP(_hook_sceUtilityLoadModule);
+			break;
+#endif
     }
 
 	return hook_call;
@@ -699,6 +706,15 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUS
 }
 #endif
 
+#ifdef HOOK_UTILITY
+
+int _hook_sceUtilityLoadModule(int id)
+{
+	if(id){}; //Avoid compilation errors :P
+	return 0;
+}
+
+#endif
 
 // A function that just returns "ok" but does nothing
 // Note: in Sony's world, "0" means ok

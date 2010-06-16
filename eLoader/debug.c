@@ -101,7 +101,7 @@ void log_mod_entry(HBLModInfo modinfo)
 	LOGSTR1("Entry point: 0x%08lX\n", (u32) modinfo.text_entry);
 	LOGSTR1(".lib.stub address: 0x%08lX\n", (u32) modinfo.libstub_addr);
 	LOGSTR1("GP: 0x%08lX\n", (u32) modinfo.gp);
-	LOGSTR1("Path: %s\n", (u32) modinfo.path);
+	//LOGSTR1("Path: %s\n", (u32) modinfo.path);
 }
 
 void log_program_header(Elf32_Phdr pheader)

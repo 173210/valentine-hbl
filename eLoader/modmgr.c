@@ -32,8 +32,9 @@ int get_module_index(SceUID modid)
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 {
-    tGlobals * g = get_globals();
 	LOGSTR0("\n\n->Entering load_module...\n");
+
+	tGlobals * g = get_globals();
 
 	//LOGSTR1("mod_table address: 0x%08lX\n", mod_table);
 	
@@ -153,8 +154,9 @@ void launch_module(int mod_index, void* dummy)
 // Starts an already loaded module
 SceUID start_module(SceUID modid)
 {
-    tGlobals * g = get_globals();
 	LOGSTR1("\n\n-->Starting module ID: 0x%08lX\n", modid);
+
+	tGlobals * g = get_globals();
 	
 	if (g->mod_table.num_loaded_mod == 0)
 		return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
@@ -205,66 +207,193 @@ SceUID start_module(SceUID modid)
 	return modid;
 }
 
-// TODO: fake function, only works with MP3 module on 5.00
-// Returns pointer to first export entry for a given module name
-tExportEntry* find_module_exports_by_name(const char* mod_name)
+// Fills module name and return utility ID for a given utility library name
+int get_utility_module_name(const char* lib, char* name)
 {
-	LOGSTR1("-->find_module_by_name: %s\n", (u32)mod_name);
-
-	/*
-	char* name_found;
-
-	name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
-
-	int mod_id = sceKernelGetModuleIdByAddress((void*)name_found);
-
-	if (mod_id >= 0)
+	// sceMp3_Library
+	if (strcmp(lib, "sceMp3") == 0)
 	{
+		strcpy(name, "sceMp3_Library");
+	    return PSP_MODULE_AV_MP3;
 	}
-	*/
 
-	// Just to avoid error on non-debug compilation
-	if (mod_name == NULL) {}
+	// sceNetInet_Library
+	else if (strcmp(lib, "sceNetInet") == 0 ||
+			 strcmp(lib, "sceNetInet_lib") == 0)
+	{
+		strcpy(name, "sceNetInet_Library");
+		return PSP_MODULE_NET_INET;
+	}
 
-	return (tExportEntry*)0x08805274;
+	// sceNetApctl_Library
+	else if (strcmp(lib, "sceNetApctl") == 0 ||
+	    	 strcmp(lib, "sceNetApctl_lib") == 0 ||
+	    	 strcmp(lib, "sceNetApctl_internal_user") == 0 ||
+	    	 strcmp(lib, "sceNetApctl_lib2") == 0)
+	{
+		strcpy(name, "sceNetApctl_Library");
+		return PSP_MODULE_NET_INET;
+	}
+
+	// sceNetResolver_Library
+	else if (strcmp(lib, "sceNetResolver") == 0)
+	{
+		strcpy(name, "sceNetResolver_Library");
+		return PSP_MODULE_NET_INET;
+	}
+
+	// sceNet_Library
+	else if (strcmp(lib, "sceNet") == 0 ||
+	    	 strcmp(lib, "sceNet_lib") == 0)
+	{
+		strcpy(name, "sceNet_Library");
+		return PSP_MODULE_NET_COMMON;
+	}
+
+	// sceNetAdhoc_Library
+	else if (strcmp(lib, "sceNetAdhoc") == 0 ||
+	    	 strcmp(lib, "sceNetAdhoc_lib") == 0)
+	{
+		strcpy(name, "sceNetAdhoc_Library");
+		return PSP_MODULE_NET_ADHOC;
+	}
+
+	// sceNetAdhocctl_Library
+	else if (strcmp(lib, "sceNetAdhocctl") == 0 ||
+	    	 strcmp(lib, "sceNetAdhocctl_lib") == 0)
+	{
+		strcpy(name, "sceNetAdhocctl_Library");
+		return PSP_MODULE_NET_ADHOC;
+	}
+
+	// sceNetAdhocMatching_Library
+	else if (strcmp(lib, "sceNetAdhocMatching") == 0)
+	{
+		strcpy(name, "sceNetAdhocMatching_Library");
+		return PSP_MODULE_NET_ADHOC;
+	}
+
+	// sceNetAdhocDownload_Library
+	else if (strcmp(lib, "sceNetAdhocDownload") == 0)
+	{
+		strcpy(name, "sceNetAdhocDownload_Library");
+		return PSP_MODULE_NET_ADHOC;
+	}
+
+	// sceNetAdhocDiscover_Library
+	else if (strcmp(lib, "sceNetAdhocDiscover") == 0)
+	{
+		strcpy(name, "sceNetAdhocDiscover_Library");
+		return PSP_MODULE_NET_ADHOC;
+	}	
+
+	// Not found
+	else
+		return -1;
+}
+
+// Returns pointer to first export entry for a given module name and library
+tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_name)
+{
+	// Search for module name 
+	char* name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
+
+	if (name_found == NULL)
+	{
+		LOGSTR1("->ERROR: could not find module %s\n", (u32)mod_name);
+		return NULL;
+	}
+
+	// Search for library name next to module name (1 KiB size enough I guess)
+	name_found = memfindsz(lib_name, (char*)name_found, (unsigned int)0x400);
+
+	if (name_found == NULL)
+	{
+		LOGSTR1("->ERROR: could not find library name %s\n", (u32)lib_name);
+		return NULL;
+	}
+
+	// Search for pointer to library name close to library name
+	u32* export = memfindu32((u32)name_found, (u32*)((u32)name_found - 0x400), (unsigned int)0x400);
+
+	return (tExportEntry*)export;
+}
+
+// Returns true if utility module ID is already loaded, false otherwise
+int is_utility_loaded(unsigned int mod_id)
+{
+	tGlobals *g = get_globals();
+
+	unsigned int i;
+	for (i=0; i<g->mod_table.num_utility; i++)
+	{
+		if (g->mod_table.utility[i] == mod_id)
+			return 1;
+		else if (g->mod_table.utility[i] == 0)
+			break;
+	}
+
+	return 0;
+}
+
+// Adds an entry for loaded utility module
+// Returns index of insertion
+int add_utility_to_table(unsigned int id)
+{
+	tGlobals *g = get_globals();
+
+	// Check if max utilities allowed is reached
+	if (g->mod_table.num_utility >= MAX_MODULES)
+		return -1;
+
+	g->mod_table.utility[g->mod_table.num_utility] = id;
+	g->mod_table.num_utility++;
+	return g->mod_table.num_utility - 1;
 }
 
 // See also resolve.c:162
 // Loads and registers exports from an utility module
 int load_utility_module(int mod_id, const char* lib_name)
 {
-	LOGSTR0("Loading utility module\n");
+	LOGSTR1("Loading utility module for library %s\n", (u32)lib_name);
+
+	// Check if utility module is already loaded
+	if (!is_utility_loaded(mod_id))
+	{
+		// Load utility
+		int ret;
+		if ((ret = sceUtilityLoadModule(mod_id)) < 0)
+		{
+			LOGSTR2("->ERROR 0x%08lX: unable to load utility 0x%08lX\n", ret, mod_id);
+			return ret;
+		}
+
+		// Insert and check
+		if (add_utility_to_table(mod_id) < 0)
+		{
+			LOGSTR0("->ERROR: cannot load any more utility modules\n");
+			sceUtilityUnloadModule(mod_id);
+		}
+	}
 	
 	//SceUID utility_id;
-	char modname[MAX_MODULE_NAME_LENGTH];
+	char mod_name[MAX_MODULE_NAME_LENGTH];
 
-	// Get utility module name
-	switch (mod_id)
+	if (get_utility_module_name(lib_name, mod_name) < 0)
 	{
-		case PSP_MODULE_AV_MP3:
-			strcpy(modname, "sceMp3_Library");
-			break;
-
-		default:
-			LOGSTR1("Unknown/unsupported utility 0x%08lX\n", mod_id);
-			return -1;
+		LOGSTR1("Unknown/unsupported utility 0x%08lX\n", mod_id);
+		return -1;
 	}
-
-	// Load utility
-	int ret;
-	if ((ret = sceUtilityLoadModule(mod_id)) < 0)
-	{
-		LOGSTR2("ERROR 0x%08lX: unable to load utility 0x%08lX\n", ret, mod_id);
-		return ret;
-	}
-
-	// TODO: register utility module loaded on HBL module table
 
 	// Get module exports
-	tExportEntry* pexports = find_module_exports_by_name(modname);
+	tExportEntry* pexports = find_module_exports_by_name(mod_name, lib_name);
 
-	LOGSTR1("Module name: %s\n", (u32)pexports->name);
-	LOGSTR1("Exports size (in DWORDs): %d\n", (u8)pexports->size);
+	if (pexports == NULL)
+	{
+		LOGSTR1("->ERROR: could not find module exports for %s\n", (u32)mod_name);
+		return -1;
+	}
+
 	LOGSTR1("Number of export functions: %d\n", (u16)pexports->num_functions);
 	LOGSTR1("Pointer to exports: 0x%08lX\n", (u32)pexports->exports_pointer);
 
@@ -290,15 +419,11 @@ int load_utility_module(int mod_id, const char* lib_name)
 	}
 
 	// Insert NIDs on NID table
-	tNIDResolver entry;
-	entry.lib_index = lib_index;
 	int i;
 	for (i=0; i<(u16)pexports->num_functions; i++)
 	{
 		LOGSTR3("NID %d: 0x%08lX Function: 0x%08lX\n", i, pnids[i], pfunctions[i]);
-		entry.nid = pnids[i];
-		entry.call = MAKE_JUMP(pfunctions[i]);
-		add_nid_to_table(entry.nid, entry.call, entry.lib_index);
+		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
 	}
 
 	return 0;

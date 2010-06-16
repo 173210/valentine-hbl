@@ -124,12 +124,39 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 	}
 }
 
+// Returns utility ID that loads the given library
 int is_utility(const char* lib_name)
 {
 	if (strcmp(lib_name, "sceMp3") == 0)
 	    return PSP_MODULE_AV_MP3;
+	
+	else if (strcmp(lib_name, "sceNetInet") == 0 ||
+			 strcmp(lib_name, "sceNetInet_lib") == 0 ||
+	    	 strcmp(lib_name, "sceNetApctl") == 0 ||
+	    	 strcmp(lib_name, "sceNetApctl_lib") == 0 ||
+	    	 strcmp(lib_name, "sceNetApctl_internal_user") == 0 ||
+	    	 strcmp(lib_name, "sceNetApctl_lib2") == 0 ||
+	    	 strcmp(lib_name, "sceNetResolver") == 0)
+		return PSP_MODULE_NET_INET;
+
+	else if (strcmp(lib_name, "sceNet") == 0 ||
+	    	 strcmp(lib_name, "sceNet_lib") == 0)
+		return PSP_MODULE_NET_COMMON;
+
+	else if (strcmp(lib_name, "sceNetAdhoc") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhoc_lib") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhocctl") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhocctl_lib") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhocMatching") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhocDownload") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhocDiscover") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhoc") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhoc") == 0 ||
+	    	 strcmp(lib_name, "sceNetAdhoc") == 0)
+		return PSP_MODULE_NET_ADHOC;
+	
 	else
-		return 0;
+		return -1;
 }
 
 // Resolves imports in ELF's program section already loaded in memory

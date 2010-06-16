@@ -191,6 +191,7 @@ config = [
     	:lib => "sceUtility",
     	:functions => [
     		[0x2A2B3DE0, "sceUtilityLoadModule"],
+    		[0xE49BFE92, "sceUtilityUnloadModule"],
     	],
     },  
 

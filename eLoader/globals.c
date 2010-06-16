@@ -10,9 +10,9 @@ void init_globals()
 {
     u32 size = sizeof(tGlobals);
     if ((u32)GLOBALS_ADDR < 0x14000 
-    && size + (u32)GLOBALS_ADDR >= 0x14000)
+        && size + (u32)GLOBALS_ADDR >= 0x14000)
     {
-        logstr1("globals structure doesn't fit in Scratchpad RAM: 0x%08lX\n", size);
+        logstr1("Globals structure doesn't fit in Scratchpad RAM: 0x%08lX\n", size);
         exit_with_log("Fatal error: exiting", NULL, 0);
     }
     tGlobals * globals = get_globals();

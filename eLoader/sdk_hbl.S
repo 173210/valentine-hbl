@@ -89,7 +89,8 @@
 # scePower(1)
 	AddNID scePower_EBD177D6, 0x10148 # 0xebd177d6
 
-# sceUtility(1)
-	AddNID sceUtilityLoadModule, 0x10150 # 0x2a2b3de0
+# sceUtility(2)
+	AddNID sceUtilityLoadModule, 0x10150   # 0x2a2b3de0
+	AddNID sceUtilityUnloadModule, 0x10158 # 0xe49bfe92
 
 	.ident	"HBL-SDK"

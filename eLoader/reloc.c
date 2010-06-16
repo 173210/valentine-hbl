@@ -14,7 +14,7 @@ int relocate_entry(tRelEntry reloc_entry, void* reloc_addr)
 	offset_target = (u32)reloc_entry.r_offset + (u32)reloc_addr;
 
 	// Load word to be relocated into buffer
-    u32 misalign = offset_target%4;
+	u32 misalign = offset_target % 4;
     if (misalign) 
 	{
         u32 array[2];
