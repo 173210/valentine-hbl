@@ -22,7 +22,7 @@ int nbFiles;
 
 void *frameBuffer = (void *)0x44000000;
 
-void readEbootName(const char * filename, char* name) {
+void readEbootName(const char * filename, const char * backup, char* name) {
 
 	typedef struct {
 		char signature[4];
@@ -46,42 +46,52 @@ void readEbootName(const char * filename, char* name) {
 	LOGSTR1("File is [%s]\n",(u32)filename);
 	if(!(fid = sceIoOpen(filename, PSP_O_RDONLY, 0777)))
 	{
-		LOGSTR0("File is NULL");		
+		LOGSTR0("File is NULL");
+        return;
 	} 
-	else 
-	{
-		/* PBP SECTION */
-		sceIoRead(fid, &pbpHeader, sizeof(pbpHeader)); // read in pbp header
-		if(!(pbpHeader.signature[1] == 'P' && pbpHeader.signature[2] == 'B' && pbpHeader.signature[3] == 'P')) 
-		{ 
-			strcpy(name,"Corrupt or invalid PBP");
-			LOGSTR0("File not a PBP\n");
-			return;
-		} 
 
-		/* PSF SECTION */
-		sceIoLseek(fid, pbpHeader.offset[0] , PSP_SEEK_SET ); // seeks to psf section - first entry in pbp offset table
-		sceIoRead(fid,&psfHeader, sizeof(psfHeader));											// reads in psf header
+    /* PBP SECTION */
+    sceIoRead(fid, &pbpHeader, sizeof(pbpHeader)); // read in pbp header
+    if(!(pbpHeader.signature[1] == 'P' && pbpHeader.signature[2] == 'B' && pbpHeader.signature[3] == 'P')) 
+    { 
+        strcpy(name, backup);
+        strcat(name," (Corrupt or invalid PBP)");
+        LOGSTR0("File not a PBP\n");
+        sceIoClose(fid);
+        return;
+    } 
 
-		sceIoRead(fid,&index_table,((sizeof(unsigned char) * 16 ) * psfHeader.num_entries));
-		LOGSTR1("PSF number of Entries [%d]\n", psfHeader.num_entries);
+    /* PSF SECTION */
+    sceIoLseek(fid, pbpHeader.offset[0] , PSP_SEEK_SET ); // seeks to psf section - first entry in pbp offset table
+    sceIoRead(fid,&psfHeader, sizeof(psfHeader));											// reads in psf header
 
-		// builds offset [offset_key + Offset_data_value + (data_align * 2)]
-		int seek_offset = index_table[(psfHeader.num_entries - 1)][OFFSET_KEY_NAME] + index_table[(psfHeader.num_entries - 1)][OFFSET_DATA_VALUE] + 	(index_table[(psfHeader.num_entries - 1)][DATA_ALIGN] * 2);
+    LOGSTR1("PSF number of Entries [%d]\n", psfHeader.num_entries);
+    if (psfHeader.num_entries > MAX_INDEX_TABLE_SIZE)
+    { 
+        strcpy(name, backup);
+        strcat(name," (Corrupt or invalid PBP)");
+        LOGSTR0("File not a PBP\n");
+        sceIoClose(fid);
+        return;
+    }    
+    sceIoRead(fid,&index_table,((sizeof(unsigned char) * 16 ) * psfHeader.num_entries));
+    
+    // builds offset [offset_key + Offset_data_value + (data_align * 2)]
+    int seek_offset = index_table[(psfHeader.num_entries - 1)][OFFSET_KEY_NAME] + index_table[(psfHeader.num_entries - 1)][OFFSET_DATA_VALUE] + 	(index_table[(psfHeader.num_entries - 1)][DATA_ALIGN] * 2);
 
-		// some offset are not even numbers so they read in some off the null padding
-		if (seek_offset % 2 > 0)
-		{
-			seek_offset++;
-		}
+    // some offset are not even numbers so they read in some off the null padding
+    if (seek_offset % 2 > 0)
+    {
+        seek_offset++;
+    }
 
-		LOGSTR1("PSF using offset [%d]\n", seek_offset);
-	
-		sceIoLseek(fid, seek_offset, PSP_SEEK_CUR);
-		sceIoRead(fid,name, (sizeof(char) * index_table[(psfHeader.num_entries - 1)][SIZE_OF_VALUE]));
+    LOGSTR1("PSF using offset [%d]\n", seek_offset);
 
-		LOGSTR1("Name is [%s]\n",(u32)name);
-	}
+    sceIoLseek(fid, seek_offset, PSP_SEEK_CUR);
+    sceIoRead(fid,name, (sizeof(char) * index_table[(psfHeader.num_entries - 1)][SIZE_OF_VALUE]));
+
+    LOGSTR1("Name is [%s]\n",(u32)name);
+
 
 	sceIoClose(fid);
 }
@@ -180,7 +190,7 @@ int not_homebrew(const char * name)
 int init(char* menuData)
 {
 
- 	int i;
+ 	int i, j;
 	SceUID id;
 	SceIoDirent entry;
 	nbFiles = 0;
@@ -217,11 +227,9 @@ int init(char* menuData)
 	char EbootName[MAX_NAME_SIZE];
 
 	// clear the array, seems to be alot of trash left in memory
-	for(i = 0; i < NB_FOLDERS; i++ ) 
-	{
-		memset(&menuData[i * MAX_NAME_SIZE],'\0',MAX_NAME_SIZE);
-	}
-
+	memset(menuData,'\0',MAX_NAME_SIZE * NB_FOLDERS);
+    
+    j = 0;
 	for(i = 0; i < nbFiles; i++) 
 	{
 		memset(fileBuffer,'\0',FILE_BUFFER_SIZE);
@@ -232,8 +240,11 @@ int init(char* menuData)
 		strcat(fileBuffer, folders[i]);
 		strcat(fileBuffer, "/EBOOT.PBP");
 
-		readEbootName(fileBuffer, EbootName);
-		strcpy(&menuData[MAX_NAME_SIZE*i],EbootName);
+		readEbootName(fileBuffer, folders[i], EbootName);
+        if (EbootName[0]) {
+            strcpy(&menuData[MAX_NAME_SIZE*j],EbootName);
+            j++;
+        }
 
 	}
 
