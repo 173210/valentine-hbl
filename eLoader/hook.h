@@ -6,6 +6,12 @@
 //Comment the following line if you don't want to hook thread creation
 #define HOOK_THREADS
 
+//Comment the following line if you don't want to monitor sleeping threads
+#define DELETE_EXIT_THREADS
+
+//Comment the following line if you don't want to monitor audio thread creation
+#define MONITOR_AUDIO_THREADS
+
 /*
  * Avoiding syscall estimations
  * The following override some major functions to avoid syscall estimations
@@ -35,7 +41,10 @@
 
 extern int chdir_ok;
 
+//Own functions
 int test_sceIoChdir();
+void threads_cleanup();
+void ram_cleanup();
 
 /* Declarations */
 //files imported by Patapon but can't find proper .h file
@@ -47,18 +56,24 @@ u32 setup_hook(u32 nid);
 
 /* HOOKS */
 
+//LoadExecForUser
+int _hook_sceKernelRegisterExitCallback(int cbid);
+void  _hook_sceKernelExitGame();
+
 // Thread manager
-SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option);
+SceUID _hook_sceKernelCreateThread(const char *name, void * entry, int currentPriority, int stackSize, SceUInt attr, SceKernelThreadOptParam *option);
 int	_hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp);
-int _hook_sceKernelTerminateDeleteThread(SceUID thid);
+int _hook_sceKernelExitThread(int status);
+int _hook_sceKernelExitDeleteThread(int status);
 int _hook_sceKernelSleepThreadCB();
 int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2);
 int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int timeout);
-int _hook_sceKernelExitDeleteThread(int status);
 int _hook_sceKernelGetThreadCurrentPriority();
+int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction func, void *arg);
 
 // Memory manager
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr);
+int _hook_sceKernelFreePartitionMemory(SceUID uid);
 
 // File I/O manager 
 int _hook_sceIoLseek32 (SceUID  fd, int offset, int whence);
@@ -74,6 +89,8 @@ int _hook_sceAudioSRCChReserve (int samplecount, int freq, int channels);
 int _hook_sceAudioSRCOutputBlocking (int vol,void * buf);
 int _hook_sceAudioSRCChRelease();
 int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf);
+int _hook_sceAudioChReserve(int channel, int samplecount, int format);
+int _hook_sceAudioChRelease(int channel);
 
 // RTC
 u32 _hook_sceRtcGetTickResolution();
@@ -86,7 +103,6 @@ int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick);
 // Module manager
 SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption *option);
 int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
-void  _hook_sceKernelExitGame();
 int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp);
 int _hook_sceUtilityLoadModule(int id);
 

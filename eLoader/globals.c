@@ -15,6 +15,14 @@ void init_globals()
         logstr1("Globals structure doesn't fit in Scratchpad RAM: 0x%08lX\n", size);
         exit_with_log("Fatal error: exiting", NULL, 0);
     }
-    tGlobals * globals = get_globals();
-    memset(globals, 0, sizeof(tGlobals)); 
+    tGlobals * g = get_globals();
+    memset(g, 0, sizeof(tGlobals)); 
+    strcpy(g->menupath,"ms0:/hbl/menu/EBOOT.PBP");
+    strcpy(g->menubackground, "ms0:/hbl/menu.png");
+    
+    g->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
+    g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);
+    g->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);
+    g->audioSema = sceKernelCreateSema("hblaudiosema",0,1,1,0);
+    g->curr_channel_id = -1;
 }

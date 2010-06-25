@@ -129,12 +129,18 @@ config = [
             [0x68DA9E36, "sceKernelDelayThreadCB"],
             [0x876DBFAD, "sceKernelSendMsgPipe"],
             [0xDF52098F, "sceKernelTryReceiveMsgPipe"],
+            [0x293B45B8, "sceKernelGetThreadId"],
+            [0xE81CAF8F, "sceKernelCreateCallback"],
+            [0x3F53E640, "sceKernelSignalSema"],
+            [0x4E3A1105, "sceKernelWaitSema"],
+            [0xD6DA4BA1, "sceKernelCreateSema"],
         ],
     }   , 
     { 
         :lib => "LoadExecForUser",
         :functions => [
-            [0x05572A5F, "sceKernelExitGame"],       
+            [0x05572A5F, "sceKernelExitGame"],   
+            [0x4AC57943, "sceKernelRegisterExitCallback"],            
         ],
     },    
     { 

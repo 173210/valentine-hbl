@@ -1,5 +1,6 @@
 #include "eloader.h"
 #include "elf.h"
+#include "hook.h"
 #include "syscall.h"
 #include "debug.h"
 #include "modmgr.h"
@@ -8,10 +9,7 @@
 #include "reloc.h"
 #include "resolve.h"
 #include "globals.h"
-
-// Loaded modules descriptor
-//HBLModTable* mod_table = NULL;
-//HBLModTable mod_table;
+#include "svnversion.h"
 
 // Return index in mod_table for module ID
 int get_module_index(SceUID modid)
@@ -52,6 +50,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	tStubEntry* pstub;
 	unsigned int hbsize, program_size, stubs_size = 0;
 	unsigned int i = g->mod_table.num_loaded_mod;
+    strcpy(g->mod_table.table[i].path, path); 
 	
 	// Static ELF
 	if(elf_hdr.e_type == (Elf32_Half) ELF_STATIC)
@@ -123,8 +122,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	g->mod_table.table[i].state = LOADED;
 	g->mod_table.table[i].size = program_size;
 	g->mod_table.table[i].text_addr = addr;
-	g->mod_table.table[i].libstub_addr = pstub;	
-	strcpy(g->mod_table.table[i].path, path);	
+	g->mod_table.table[i].libstub_addr = pstub;		
 	g->mod_table.num_loaded_mod++;
 
 	//LOGSTR0("Module table updated\n");
@@ -179,15 +177,54 @@ SceUID start_module(SceUID modid)
 	// Attempt at launching the module without thread creation (crashes on sceSystemMemoryManager ¿?)
 	/*
 	void (*launch_module)(int argc, char* argv) = g->mod_table.table[index].text_entry;
-	launch_module(g->mod_table.table[index].path + 1, g->mod_table.table[index].path);
+	//launch_module(g->mod_table.table[index].path + 1, g->mod_table.table[index].path);
+    launch_module(strlen(g->mod_table.table[index].path) + 1, g->mod_table.table[index].path);
 	*/
 
-	SceUID thid = sceKernelCreateThread("hblmodule", g->mod_table.table[index].text_entry, 0x30, 0x1000, 0, NULL);
+    //The hook is called here to handle thread moniotoring
+	SceUID thid = _hook_sceKernelCreateThread("hblmodule", g->mod_table.table[index].text_entry, 0x30, 0x1000, 0, NULL);
+    
+    char largbuff[512];
+    memset(largbuff, 512, 0);
+    strcpy(largbuff, g->mod_table.table[index].path);
+    int larglen = strlen(largbuff);
 
+    /** menu code thanks to Noobz & Fanjita */
+    /***************************************************************************/
+	/* If this is the menu, then put the pointer to the menu API block into    */
+	/* argv[1]                                                                 */
+	/***************************************************************************/
+	if (strcmp(largbuff, g->menupath) == 0)
+	{
+
+		char * lptr = largbuff + larglen + 1;
+
+		LOGSTR1("lptr: %08lX\n", (u32)lptr);
+
+		mysprintf1(lptr, "%08lX", (u32)(&(g->menu_api)));
+
+		larglen += 9;
+
+		LOGSTR1("new larglen: %08lX\n", larglen);
+
+		/*************************************************************************/
+		/* Now fill in some structure fields.                                    */
+		/*************************************************************************/
+		g->menu_api.APIVersion = 1;
+		strcpy(g->menu_api.VersionName, "Half Byte Loader R"SVNVERSION );
+		strcpy(g->menu_api.Credits, "M0skit0, Wololo, ab5000");
+		g->menu_api.BackgroundFilename = g->menubackground;
+        g->menu_api.filename = g->hb_filename;
+	}
+    
+    LOGSTR1("argv[0]: '%s'\n", (u32)largbuff);
+    LOGSTR1("argc:  %08lX\n", (u32)larglen);
+    
 	if(thid >= 0)
 	{
 		LOGSTR1("->MODULE MAIN THID: 0x%08lX ", thid);
-		thid = sceKernelStartThread(thid, strlen(g->mod_table.table[index].path) + 1, (void *)g->mod_table.table[index].path);
+        //The hook is called here to handle thread monitoring
+		thid = _hook_sceKernelStartThread(thid, larglen, (void *)largbuff);
 		if (thid < 0)
 		{
 			LOGSTR1(" HB Thread couldn't start. Error 0x%08lX\n", thid);

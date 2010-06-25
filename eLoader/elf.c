@@ -1,8 +1,38 @@
 #include "sdk.h"
 #include "elf.h"
-#include "eloader.h"
 #include "debug.h"
+#include "eloader.h"
+#include "hook.h"
 #include "malloc.h"
+
+
+
+//utility
+// Allocates memory for homebrew so it doesn't overwrite itself
+//This function is inly used in elf.c. Let's move it to malloc.c ONLY if other files start to need it
+void * allocate_memory(u32 size, void* addr)
+{
+    int type = PSP_SMEM_Low;
+    if (addr) 
+    {
+        type = PSP_SMEM_Addr;
+    }
+    
+    LOGSTR2("-->ALLOCATING MEMORY @ 0x%08lX size 0x%08lX... ", (u32)addr, size);
+    //hook is used to monitor ram usage and free it on exit
+    SceUID mem = _hook_sceKernelAllocPartitionMemory(2, "ELFMemory", type, size, addr);
+    
+	if (mem < 0)
+	{
+		LOGSTR1("FAILED: 0x%08lX\n", mem);
+        return NULL;
+	}
+
+    LOGSTR0("OK\n");
+	
+	return sceKernelGetBlockHeadAddr(mem);
+}
+
 
 /*****************/
 /* ELF FUNCTIONS */
@@ -102,7 +132,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
     buffer = allocate_memory(program_header.p_memsz, *addr);
     *addr = buffer;
 
-	if ((int)buffer < 0)
+	if (!buffer)
 	{
 		LOGSTR0("Failed to allocate memory for the module\n");
 		return 0;

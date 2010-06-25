@@ -4,13 +4,23 @@
 #include "sdk.h"
 #include "loader.h"
 #include "debug.h"
-#include "elf.h"
 #include "config.h"
 #include "tables.h"
 #include "utils.h"
 #include "eloader.h"
 #include "malloc.h"
 #include "globals.h"
+
+
+//This function is copied from elf.c to avoid compiling the entire elf.c dependencies for just one function
+// Returns !=0 if stub entry is valid, 0 if it's not
+// Just checks if pointers are not NULL
+int elf_check_stub_entry(tStubEntry* pentry)
+{
+	return ((pentry->library_name) &&
+	(pentry->nid_pointer) &&
+	(pentry->jump_pointer));
+}
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
@@ -44,20 +54,11 @@ void load_hbl(SceUID hbl_file)
 	g->hbl_block_uid = HBL_block;
 	g->hbl_block_addr = (u32)run_eloader;
 
-	// Load HBL to buffer
-	//if ((bytes_read = sceIoRead(hbl_file, (void*)hbl_buffer, file_size)) < 0)
-	//	exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
-
-	// Load directly to allocated memory
+	// Load HBL to allocated memory
 	if ((bytes_read = sceIoRead(hbl_file, (void*)run_eloader, file_size)) < 0)
 		exit_with_log(" ERROR READING HBL ", &bytes_read, sizeof(bytes_read));
 	
-	//DEBUG_PRINT(" HBL LOADED ", &bytes_read, sizeof(bytes_read));
-
 	sceIoClose(hbl_file);
-
-	// Copy HBL to safe memory
-	// memcpy((void*)run_eloader, (void*)hbl_buffer, bytes_read);
 
 	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", (u32)run_eloader);
 
@@ -154,8 +155,6 @@ int load_imports(u32* hbl_imports)
 }
 
 // Copies stubs used by HBL to scratchpad
-// This function highly depends on sdk_hbl.S and imports.config contents
-// This behaviour must be fixed
 void copy_hbl_stubs(void)
 {
 	// Temp storage

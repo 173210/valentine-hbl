@@ -7,7 +7,7 @@ INCLUDE=$(PSPSDK)/include
 # make or make dev to compile with debug info
 all: base
 nonids: base
-base:    hbl loader menu
+base:    hbl loader
 
 clean:
 	rm -rf *~ *.o *.elf *.bin *.s
@@ -101,10 +101,6 @@ malloc.o: malloc.c
 md5.o: md5.c
 	$(CC) $(CFLAGS) -S md5.c -o md5.s
 	$(ASM) md5.s -o md5.o    
-    
-menu.o: menu.c
-	$(CC) $(CFLAGS) -S menu.c -o menu.s
-	$(ASM) menu.s -o menu.o
 
 utils.o: utils.c
 	$(CC) $(CFLAGS) -S utils.c -o utils.s
@@ -129,18 +125,13 @@ settings.o: settings.c
 test.o: test.c
 	$(CC) $(CFLAGS) -S test.c -o test.s
 	$(ASM) test.s -o test.o
-
-menu: menu.o graphics.o font.o sdk_hbl.o linker_menu.x debug.o lib.o utils.o
-	$(PSPDEV)/bin/psp-ld -T linker_menu.x -L$(PSPSDK)/lib menu.o graphics.o font.o lib.o sdk_hbl.o debug.o utils.o -o menu.elf
-	$(PSPDEV)/bin/psp-strip -s menu.elf
-	$(PSPDEV)/bin/psp-objcopy -O binary menu.elf menu.bin    	
-    	
+  	    	
 hbl: eloader.o elf.o memory.o lib.o sdk_hbl.o debug.o config.o globals.o modmgr.o syscall.o malloc.o md5.o utils.o graphics.o font.o settings.o tables.o hook.o reloc.o resolve.o test.o linker_hbl.x
 	$(PSPDEV)/bin/psp-ld -T linker_hbl.x -L$(PSPSDK)/lib utils.o eloader.o elf.o globals.o syscall.o lib.o  md5.o memory.o sdk_hbl.o debug.o config.o modmgr.o malloc.o graphics.o font.o tables.o settings.o hook.o reloc.o resolve.o test.o -o eloader.elf
 	$(PSPDEV)/bin/psp-strip -s eloader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary eloader.elf hbl.bin
 	
-loader: loader.o debug.o globals.o lib.o sdk_loader.o elf.o config.o utils.o malloc.o linker_loader.x
-	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  globals.o utils.o loader.o debug.o lib.o sdk_loader.o elf.o config.o malloc.o -o loader.elf
+loader: loader.o debug.o globals.o lib.o sdk_loader.o config.o utils.o malloc.o linker_loader.x
+	$(PSPDEV)/bin/psp-ld -T linker_loader.x -L$(PSPSDK)/lib  globals.o utils.o loader.o debug.o lib.o sdk_loader.o config.o malloc.o -o loader.elf
 	$(PSPDEV)/bin/psp-strip -s loader.elf
 	$(PSPDEV)/bin/psp-objcopy -O binary loader.elf h.bin

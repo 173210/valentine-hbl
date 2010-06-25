@@ -45,9 +45,6 @@
 // Switches
 //
 
-//comment the following line if you don't want to return to the menu when leaving a game (reported to crash)
-//#define RETURN_TO_MENU_ON_EXIT
-
 //Comment the following line to avoid reestimation
 #define REESTIMATE_SYSCALL
 
@@ -58,6 +55,6 @@ extern u32 gp;
 extern u32* entry_point;
 
 // Should receive a file path (plain ELFs or EBOOT.PBP)
-void start_eloader(const char *path, int is_eboot);
+void run_eboot(const char *path, int is_eboot);
 
 #endif

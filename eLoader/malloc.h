@@ -22,9 +22,8 @@ void* malloc_hbl(SceSize size);
 
 // Free memory
 void free(void* ptr);
-
-// Allocates memory from a given address
-void * allocate_memory(u32 size, void* addr);
+//Free all allocated blocks (for cleanup);
+void free_all_mallocs();
 
 #endif
 

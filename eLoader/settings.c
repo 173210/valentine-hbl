@@ -5,7 +5,6 @@
 #include "settings.h"
 #include "eloader.h"
 #include "debug.h"
-#include "menu.h"
 #include "lib.h"
 #include "graphics.h"
 #include "globals.h"
@@ -223,10 +222,14 @@ void configGetProcessingOptions()
         {
             g->override_sceIoMkdir = configIntParse(lval);
         }
+        else if (strcmp(lstr,"return_to_xmb_on_exit")==0)
+        {
+            g->return_to_xmb_on_exit = configIntParse(lval);
+        }        
         else if (strcmp(lstr,"hb_folder")==0)
         {
             //note: g->hb_folder is initialized in loadGlobalConfig
-            strcpy(g->hb_folder,lval);
+            strcpy(g->hb_filename,lval);
         }
         else
         {
@@ -242,8 +245,8 @@ void loadGlobalConfig()
     tGlobals * g = get_globals();
     //default values
     g->override_sceIoMkdir = DONT_OVERRIDE;
-    g->hb_folder = (void *) EBOOT_PATH_ADDRESS;
-    strcpy(g->hb_folder, "ms0:/PSP/GAME/");
+    g->return_to_xmb_on_exit = 0;
+    strcpy(g->hb_filename, "ms0:/PSP/GAME/");
     
     //load Config file
     loadConfig(HBL_ROOT HBL_CONFIG);

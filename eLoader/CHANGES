@@ -1,3 +1,8 @@
+2010/06/25 (wololo)
+- Moved the menu outside of HBL, it is now a homebrew so that anybody respecting the API can code their own menu as a "standard" homebrew.
+- Added possibility to go back to the menu after playing a homebrew
+-- This feature is experimental and there are known bugs about it, please check the issues list!
+
 2010/06/16 (m0skit0)
 - Function to find the library exports of a loaded module by name (the real deal this time xD) (modmgr.c)
 - Added more utility loading code (EXPERIMENTAL) (resolve.c, modmgr.c)

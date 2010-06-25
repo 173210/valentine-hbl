@@ -11,8 +11,11 @@ int kill_thread(SceUID thid)
     int ret = sceKernelTerminateThread(thid);
     if (ret < 0)
     {
-        LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
-        return ret;
+        if (ret != (int)0x800201A2) //if thread already dormant, let's assume it's not really an error, we still want to delete it!
+        {
+            LOGSTR2("--> ERROR 0x%08lX TERMINATING THREAD ID 0x%08lX\n", ret, thid);
+            return ret;
+        }
     }
 
     ret = sceKernelDeleteThread(thid);

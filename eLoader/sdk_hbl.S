@@ -45,7 +45,7 @@
 # UtilsForUser(1)
 	AddNID sceKernelDcacheWritebackInvalidateAll, 0x10078 # 0xb435dec5
 
-# ThreadManForUser(14)
+# ThreadManForUser(19)
 	AddNID sceKernelDelayThread, 0x10080       # 0xceadeb47
 	AddNID sceKernelStartThread, 0x10088       # 0xf475845d
 	AddNID sceKernelCreateThread, 0x10090      # 0x446d8de6
@@ -60,37 +60,43 @@
 	AddNID sceKernelDelayThreadCB, 0x100d8     # 0x68da9e36
 	AddNID sceKernelSendMsgPipe, 0x100e0       # 0x876dbfad
 	AddNID sceKernelTryReceiveMsgPipe, 0x100e8 # 0xdf52098f
+	AddNID sceKernelGetThreadId, 0x100f0       # 0x293b45b8
+	AddNID sceKernelCreateCallback, 0x100f8    # 0xe81caf8f
+	AddNID sceKernelSignalSema, 0x10100        # 0x3f53e640
+	AddNID sceKernelWaitSema, 0x10108          # 0x4e3a1105
+	AddNID sceKernelCreateSema, 0x10110        # 0xd6da4ba1
 
-# LoadExecForUser(1)
-	AddNID sceKernelExitGame, 0x100f0 # 0x5572a5f
+# LoadExecForUser(2)
+	AddNID sceKernelExitGame, 0x10118             # 0x5572a5f
+	AddNID sceKernelRegisterExitCallback, 0x10120 # 0x4ac57943
 
 # SysMemUserForUser(3)
-	AddNID sceKernelAllocPartitionMemory, 0x100f8 # 0x237dbd4f
-	AddNID sceKernelGetBlockHeadAddr, 0x10100     # 0x9d9a5ba1
-	AddNID sceKernelFreePartitionMemory, 0x10108  # 0xb6d61d02
+	AddNID sceKernelAllocPartitionMemory, 0x10128 # 0x237dbd4f
+	AddNID sceKernelGetBlockHeadAddr, 0x10130     # 0x9d9a5ba1
+	AddNID sceKernelFreePartitionMemory, 0x10138  # 0xb6d61d02
 
 # sceDisplay(1)
-	AddNID sceDisplaySetFrameBuf, 0x10110 # 0x289d82fe
+	AddNID sceDisplaySetFrameBuf, 0x10140 # 0x289d82fe
 
 # sceCtrl(1)
-	AddNID sceCtrlReadBufferPositive, 0x10118 # 0x1f803938
+	AddNID sceCtrlReadBufferPositive, 0x10148 # 0x1f803938
 
 # sceUmdUser(1)
-	AddNID sceUmdUnRegisterUMDCallBack, 0x10120 # 0xbd2bde07
+	AddNID sceUmdUnRegisterUMDCallBack, 0x10150 # 0xbd2bde07
 
 # sceAudio(3)
-	AddNID sceAudioChRelease, 0x10128            # 0x6fc46853
-	AddNID sceAudioOutputPannedBlocking, 0x10130 # 0x13f592bc
-	AddNID sceAudioChReserve, 0x10138            # 0x5ec81c55
+	AddNID sceAudioChRelease, 0x10158            # 0x6fc46853
+	AddNID sceAudioOutputPannedBlocking, 0x10160 # 0x13f592bc
+	AddNID sceAudioChReserve, 0x10168            # 0x5ec81c55
 
 # sceRtc(1)
-	AddNID sceRtcGetCurrentClockLocalTime, 0x10140 # 0xe7c27d1b
+	AddNID sceRtcGetCurrentClockLocalTime, 0x10170 # 0xe7c27d1b
 
 # scePower(1)
-	AddNID scePower_EBD177D6, 0x10148 # 0xebd177d6
+	AddNID scePower_EBD177D6, 0x10178 # 0xebd177d6
 
 # sceUtility(2)
-	AddNID sceUtilityLoadModule, 0x10150   # 0x2a2b3de0
-	AddNID sceUtilityUnloadModule, 0x10158 # 0xe49bfe92
+	AddNID sceUtilityLoadModule, 0x10180   # 0x2a2b3de0
+	AddNID sceUtilityUnloadModule, 0x10188 # 0xe49bfe92
 
 	.ident	"HBL-SDK"

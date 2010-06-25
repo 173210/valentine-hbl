@@ -9,9 +9,22 @@
 #include "memory.h"
 #include "globals.h"
 
+//Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!
+
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
 
+
+//Checks if the homebrew should return to xmb on exit
+// yes if user specified it in the cfg file AND it is not the menu
+int force_return_to_xmb()
+{
+    tGlobals * g = get_globals();
+    unsigned int i = g->mod_table.num_loaded_mod;
+    if (!g->return_to_xmb_on_exit) return 0;
+    if (strcmp(g->mod_table.table[i].path, g->menupath) == 0) return 0;
+    return 1;
+}
 
 // Returns a hooked call for the given NID or zero
 u32 setup_hook(u32 nid)
@@ -27,9 +40,13 @@ u32 setup_hook(u32 nid)
         case 0x237DBD4F: // sceKernelAllocPartitionMemory
             LOGSTR0(" mem trick ");
             hook_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
-            break;                     
+            break;     
             
-#ifdef HOOK_THREADS
+        case 0xB6D61D02: // sceKernelFreePartitionMemory
+            LOGSTR0(" mem trick ");
+            hook_call = MAKE_JUMP(_hook_sceKernelFreePartitionMemory);
+            break;              
+            
         case 0x446D8DE6: // sceKernelCreateThread
             hook_call = MAKE_JUMP(_hook_sceKernelCreateThread);
             break;
@@ -37,15 +54,38 @@ u32 setup_hook(u32 nid)
 		case 0xF475845D: // sceKernelStartThread
 			hook_call = MAKE_JUMP(_hook_sceKernelStartThread);
 			break;
-#endif
-
-#ifdef RETURN_TO_MENU_ON_EXIT                
+            
+ 		case 0xAA73C935: // sceKernelExitThread
+			hook_call = MAKE_JUMP(_hook_sceKernelExitThread);
+			break;
+            
+ 		case 0x809CE29B: // sceKernelExitDeleteThread
+			hook_call = MAKE_JUMP(_hook_sceKernelExitDeleteThread);
+			break;
+            
         case 0x05572A5F: // sceKernelExitGame
-            if (g->menu_enabled)
+            if (!force_return_to_xmb())
                 hook_call = MAKE_JUMP(_hook_sceKernelExitGame);
             break;
-#endif 
+        case 0xE81CAF8F: //	sceKernelCreateCallback
+            if (!force_return_to_xmb())
+                hook_call = MAKE_JUMP(_hook_sceKernelCreateCallback);
+            break;   
+        case 0x4AC57943: //	sceKernelRegisterExitCallback   
+            if (!force_return_to_xmb())
+                hook_call = MAKE_JUMP(_hook_sceKernelRegisterExitCallback);
+            break;          
+//Audio monitors
+        case 0x6FC46853: //	sceAudioChRelease  
+            if (!force_return_to_xmb())
+                hook_call = MAKE_JUMP(_hook_sceAudioChRelease);
+            break; 
+        case 0x5EC81C55: //	sceAudioChReserve  
+            if (!force_return_to_xmb())
+                hook_call = MAKE_JUMP(_hook_sceAudioChReserve);
+            break; 
 
+            
 #ifdef LOAD_MODULE
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
 		case 0x977DE386: // sceKernelLoadModule
@@ -124,7 +164,7 @@ u32 setup_hook(u32 nid)
             break;  
             
         case 0x383F7BCC: // sceKernelTerminateDeleteThread  (avoid syscall estimation)
-            hook_call = MAKE_JUMP(kill_thread);
+            hook_call = MAKE_JUMP(kill_thread); //TODO Take into account with thread monitors ?
             break;    
         
         case 0xD675EBB8: // sceKernelSelfStopUnloadModule (avoid syscall estimation) - not sure about this one
@@ -141,11 +181,7 @@ u32 setup_hook(u32 nid)
 
         case 0x74829B76: // sceKernelReceiveMsgPipe (avoid syscall estimation)  
             hook_call = MAKE_JUMP(_hook_sceKernelReceiveMsgPipe);
-            break;    
-
-        case 0x809CE29B : // sceKernelExitDeleteThread (avoid syscall estimation)  
-            hook_call = MAKE_JUMP(_hook_sceKernelExitDeleteThread);
-            break;               
+            break;                 
            
         case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
             hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
@@ -237,91 +273,501 @@ u32 setup_hook(u32 nid)
 	return hook_call;
 }
 
-#ifdef HOOK_THREADS
-
-SceUID _hook_sceKernelCreateThread(const char *name, SceKernelThreadEntry entry, int currentPriority,
-                             	   int stackSize, SceUInt attr, SceKernelThreadOptParam *option)
-{ 
-	LOGSTR5("\n->Attempting to create thread named %s with entry point 0x%08lX, priority 0x%08lX, stack size 0x%08lX, and attributes 0x%08lX\n", 
-	        (u32)name, (u32)entry, currentPriority, stackSize, attr);
-	
-    //u32 gp_bak = 0;
-	SceUID res;
-
-
-	/*
-    if (gp) 
-	{
-        GET_GP(gp_bak);
-        SET_GP(gp);
-    }
-	
-    entry_point = entry;
-	*/
-	
-    res = sceKernelCreateThread(name, entry, currentPriority, stackSize, attr, option);
-
-	if (res < 0)
-	{
-		LOGSTR1("Thread creation failed with error 0x%08lX\n", res);
-	}
-	else
-	{
-		LOGSTR1("Thread successfully created with ID 0x%08lX\n", res);		
-	}
-
-	/*
-    if (gp) 
-	{
-        SET_GP(gp_bak);
-    }
-	*/
-	
-    return res;
-}
-
-int	_hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
+// Thread hooks original code thanks to Noobz & Fanjita, adapted by wololo
+/*****************************************************************************/
+/* Special exitThread handling:                                              */
+/*                                                                           */
+/*   Delete the thread from the list of tracked threads, then pass on the    */
+/*   call.                                                                   */
+/*                                                                           */
+/* See also hookExitDeleteThread below                                       */
+/*****************************************************************************/
+int _hook_sceKernelExitThread(int status)
 {
-	SceUID res;
+	u32 i, ii;
+	int lfoundit = 0;
+	int lthreadid = sceKernelGetThreadId();
+    
+    tGlobals * g = get_globals();
 
-	LOGSTR1("\n->Attempting to start thread ID 0x%08lX\n", thid);
+	LOGSTR1("Enter hookExitThread : %08lX\n", lthreadid);
 
-	res = sceKernelStartThread(thid, arglen, argp);
+	sceKernelWaitSema(g->thrSema, 1, 0);
 
-	if (res < 0)
+	for (ii = 0; ii < g->numRunThreads; ii++)
 	{
-		LOGSTR1("Thread starting failed with error 0x%08lX\n", res);
-	}
-	else
-	{
-		LOGSTR1("Thread successfully started!\n", res);	
+		if (g->runningThreads[ii] == lthreadid)
+		{
+			lfoundit = 1;
+			g->numRunThreads --;
+			LOGSTR1("Running threads: %d\n", g->numRunThreads);
+		}
+
+		if ((lfoundit) && (ii <= (SIZE_THREAD_TRACKING_ARRAY - 2)))
+		{
+			g->runningThreads[ii] = g->runningThreads[ii+1];
+		}
 	}
 
-	return res;
-}
+	g->runningThreads[g->numRunThreads] = 0;
+
+    
+#ifdef DELETE_EXIT_THREADS
+	LOGSTR1("Num exit thr: %08lX\n", g->numExitThreads);
+
+	/*************************************************************************/
+	/* Add to exited list                                                    */
+	/*************************************************************************/
+	if (g->numExitThreads < SIZE_THREAD_TRACKING_ARRAY)
+	{
+		LOGSTR0("Set array\n");
+		g->exitedThreads[g->numExitThreads] = lthreadid;
+		g->numExitThreads++;
+
+		LOGSTR1("Exited threads: %d\n", g->numExitThreads);
+	}
+#endif    
+    
+#ifdef MONITOR_AUDIO_THREADS
+	// Ditlew
+	for (i=0;i<8;i++)
+	{
+		sceKernelWaitSema(g->audioSema, 1, 0);
+		if (g->audio_threads[i] == lthreadid)
+		{
+			_hook_sceAudioChRelease(i);
+		}
+		sceKernelSignalSema(g->audioSema, 1);
+	}
 #endif
+    
+	sceKernelSignalSema(g->thrSema, 1);
 
-#ifdef RETURN_TO_MENU_ON_EXIT
+	LOGSTR0("Exit hookExitThread\n");
+
+	return (sceKernelExitThread(status));
+}
+
+/*****************************************************************************/
+/* Special exitThread handling:                                              */
+/*                                                                           */
+/*   Delete the thread from the list of tracked threads, then pass on the    */
+/*   call.                                                                   */
+/*                                                                           */
+/* See also hookExitThread above                                             */
+/*****************************************************************************/
+int _hook_sceKernelExitDeleteThread(int status)
+{
+	u32 i, ii;
+	int lfoundit = 0;
+	int lthreadid = sceKernelGetThreadId();
+    
+    tGlobals * g = get_globals();
+
+	LOGSTR1("Enter hookExitDeleteThread : %08lX\n", lthreadid);
+
+	sceKernelWaitSema(g->thrSema, 1, 0);
+
+	for (ii = 0; ii < g->numRunThreads; ii++)
+	{
+		if (g->runningThreads[ii] == lthreadid)
+		{
+			lfoundit = 1;
+			g->numRunThreads --;
+			LOGSTR1("Running threads: %d\n", g->numRunThreads);
+		}
+
+		if ((lfoundit) && (ii <= (SIZE_THREAD_TRACKING_ARRAY - 2)))
+		{
+			g->runningThreads[ii] = g->runningThreads[ii+1];
+		}
+	}
+
+	g->runningThreads[g->numRunThreads] = 0;
+
+
+
+	LOGSTR0("Exit hookExitDeleteThread\n");
+
+#ifdef MONITOR_AUDIO_THREADS
+	// Ditlew
+	for (i=0;i<8;i++)
+	{
+		sceKernelWaitSema(g->audioSema, 1, 0);
+		if (g->audio_threads[i] == lthreadid)
+		{
+			_hook_sceAudioChRelease(i);
+		}
+		sceKernelSignalSema(g->audioSema, 1);
+	}
+#endif   
+    
+	//return (sceKernelExitDeleteThread(status)); //Patapon does not import this function
+    
+#ifdef DELETE_EXIT_THREADS
+	LOGSTR1("Num exit thr: %08lX\n", g->numExitThreads);
+
+	/*************************************************************************/
+	/* Add to exited list                                                    */
+	/*************************************************************************/
+	if (g->numExitThreads < SIZE_THREAD_TRACKING_ARRAY)
+	{
+		LOGSTR0("Set array\n");
+		g->exitedThreads[g->numExitThreads] = lthreadid;
+		g->numExitThreads++;
+
+		LOGSTR1("Exited threads: %d\n", g->numExitThreads);
+	}
+#endif       
+    
+	sceKernelSignalSema(g->thrSema, 1);    
+    return (sceKernelExitThread(status));
+
+}
+
+
+/*****************************************************************************/
+/* Special createThread handling:                                            */
+/*                                                                           */
+/*   Pass on the call                                                        */
+/*   Add the thread to the list of pending threads.                          */
+/*****************************************************************************/
+SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
+        int initPriority, int stackSize, SceUInt attr,
+        SceKernelThreadOptParam *option)
+{
+
+    tGlobals * g = get_globals();
+
+	SceUID lreturn = sceKernelCreateThread(name, entry, initPriority, stackSize, attr, option);
+
+    if (lreturn < 0)
+    {
+        return lreturn;
+    }
+    
+
+    LOGSTR1("API returned %08lX\n", lreturn);
+
+    /*************************************************************************/
+    /* Add to pending list                                                   */
+    /*************************************************************************/
+    sceKernelWaitSema(g->thrSema, 1, 0);
+    if (g->numPendThreads < SIZE_THREAD_TRACKING_ARRAY)
+    {
+      LOGSTR0("Set array\n");
+      g->pendingThreads[g->numPendThreads] = lreturn;
+      g->numPendThreads++;
+
+      LOGSTR1("Pending threads: %d\n", g->numPendThreads);
+    }
+
+    sceKernelSignalSema(g->thrSema, 1);
+    return(lreturn);
+
+}
+
+/*****************************************************************************/
+/* Special startThread handling:                                             */
+/*                                                                           */
+/*   Remove the thread from the list of pending threads.                     */
+/*   Add the thread to the list of tracked threads, then pass on the call.   */
+/*****************************************************************************/
+int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
+{
+  u32 ii;
+  int lfoundit = 0;
+    tGlobals * g = get_globals();
+  
+  LOGSTR1("Enter hookRunThread: %08lX\n", thid);
+
+  sceKernelWaitSema(g->thrSema, 1, 0);
+
+  LOGSTR1("Number of pending threads: %08lX\n", g->numPendThreads);
+
+  /***************************************************************************/
+  /* Remove from pending list                                                */
+  /***************************************************************************/
+  for (ii = 0; ii < g->numPendThreads; ii++)
+  {
+    if (g->pendingThreads[ii] == thid)
+    {
+      lfoundit = 1;
+      g->numPendThreads --;
+      LOGSTR1("Pending threads: %d\n", g->numPendThreads);
+    }
+
+    if ((lfoundit) && (ii <= (SIZE_THREAD_TRACKING_ARRAY - 2)))
+    {
+      g->pendingThreads[ii] = g->pendingThreads[ii+1];
+    }
+  }
+
+	if (lfoundit)
+	{
+		g->pendingThreads[g->numPendThreads] = 0;
+
+		/***************************************************************************/
+		/* Add to running list                                                     */
+		/***************************************************************************/
+		LOGSTR1("Number of running threads: %08lX\n", g->numRunThreads);
+		if (g->numRunThreads < SIZE_THREAD_TRACKING_ARRAY)
+		{
+			g->runningThreads[g->numRunThreads] = thid;
+			g->numRunThreads++;
+				LOGSTR1("Running threads: %d\n", g->numRunThreads);
+		}
+	}
+
+  sceKernelSignalSema(g->thrSema, 1);
+
+
+  LOGSTR1("Exit hookRunThread: %08lX\n", thid);
+
+  return sceKernelStartThread(thid, arglen, argp);
+
+}
+
+
+
+//Cleans up Threads and allocated Ram
+void threads_cleanup()
+{
+
+    tGlobals * g = get_globals();
+    int lthisthread = sceKernelGetThreadId();
+    u32 i;
+    LOGSTR0("Threads cleanup\n");
+    sceKernelWaitSema(g->thrSema, 1, 0);
+#ifdef MONITOR_AUDIO_THREADS
+	// Ditlew
+    LOGSTR0("cleaning audio threads\n");
+	for (i=0;i<8;i++)
+	{
+		//sceKernelWaitSema(g->audioSema, 1, 0);
+		_hook_sceAudioChRelease(i);
+		//sceKernelSignalSema(g->audioSema, 1);
+	}
+#endif    
+    
+    LOGSTR0("Running Threads cleanup\n");
+    while (g->numRunThreads > 0)
+    {
+        LOGSTR1("%d running threads remain\n", g->numRunThreads);
+        if (g->runningThreads[g->numRunThreads - 1] != lthisthread)
+        {
+            LOGSTR1("Kill thread ID %08lX\n", g->runningThreads[g->numRunThreads - 1]);
+            kill_thread(g->runningThreads[g->numRunThreads - 1]);
+        }
+        else
+        {
+        LOGSTR0("Not killing myself - yet\n");
+        }
+        g->numRunThreads --;
+    }
+
+  
+    LOGSTR0("Pending Threads cleanup\n");
+    while (g->numPendThreads > 0)
+    {
+        LOGSTR1("%d pending threads remain\n", g->numPendThreads);
+        /*************************************************************************/
+        /* This test shouldn't really apply to pending threads, but do it        */
+        /* anyway                                                                */
+        /*************************************************************************/
+        if (g->pendingThreads[g->numPendThreads - 1] != lthisthread)
+        {
+            LOGSTR1("Kill thread ID %08lX\n", g->pendingThreads[g->numPendThreads - 1]);
+            sceKernelDeleteThread(g->pendingThreads[g->numPendThreads - 1]);
+        }
+        else
+        {
+            LOGSTR0("Not killing myself - yet\n");
+        }
+        g->numPendThreads --;
+    }
+      
+#ifdef DELETE_EXIT_THREADS
+    LOGSTR0("Sleeping Threads cleanup\n");
+    /***************************************************************************/
+    /* Delete the threads that exitted but haven't been deleted yet            */
+    /***************************************************************************/
+    while (g->numExitThreads > 0)
+    {
+        LOGSTR1("%d exited threads remain\n", g->numExitThreads);
+        if (g->exitedThreads[g->numExitThreads - 1] != lthisthread)
+        {
+            LOGSTR1("Delete thread ID %08lX\n", g->exitedThreads[g->numExitThreads - 1]);
+            sceKernelDeleteThread(g->exitedThreads[g->numExitThreads - 1]);
+        }
+        else
+        {
+            LOGSTR0("Not killing myself - yet\n");
+        }
+        g->numExitThreads --;
+    }
+#endif  
+
+    sceKernelSignalSema(g->thrSema, 1);
+    LOGSTR0("Threads cleanup Done\n");
+}
+
+void ram_cleanup() 
+{
+    LOGSTR0("Ram Cleanup\n");
+    tGlobals * g = get_globals();
+    u32 ii;
+    sceKernelWaitSema(g->memSema, 1, 0);
+    for (ii=0; ii < g->osAllocNum; ii++)
+    {
+        sceKernelFreePartitionMemory(g->osAllocs[ii]);
+    }
+    g->osAllocNum = 0;
+    sceKernelSignalSema(g->memSema, 1);
+    LOGSTR0("Ram Cleanup Done\n");  
+}
+
+//To return to the menu instead of exiting the game
 void  _hook_sceKernelExitGame() 
 {
-	SceUID thid = sceKernelCreateThread("HBL", main_loop, 0x18, 0x10000, 0, NULL);
-	
-	if (thid >= 0)
-	{
-		thid = sceKernelStartThread(thid, 0, NULL);
+
+    tGlobals * g = get_globals();
+    /***************************************************************************/
+    /* Call any exit callback first.                                           */
+    /***************************************************************************/
+    if (!g->calledexitcb && g->exitcallback)
+    {
+        LOGSTR1("Call exit CB: %08lX\n", (u32) g->exitcallback);
+        g->calledexitcb = 1;
+        g->exitcallback(0,0,NULL);
     }
+
+    threads_cleanup();
+    ram_cleanup();
     sceKernelExitDeleteThread(0);
 }
-#endif
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
+    tGlobals * g = get_globals();
     LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (u32)name, type, size, (u32)addr);
+    sceKernelWaitSema(g->memSema, 1, 0);
     SceUID uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
     if (uid <=0)
+    {
         LOGSTR1("failed with result: 0x%08lX\n", uid);
+    }    
+    else
+    {
+        
+        /***********************************************************************/
+        /* Succeeded OS alloc.  Record the block ID in the tracking list.      */
+        /* (Don't worry if there's no space to record it, we'll just have to   */
+        /* leak it).                                                           */
+        /***********************************************************************/
+        if (g->osAllocNum < MAX_OS_ALLOCS)
+        {
+            g->osAllocs[g->osAllocNum] = uid;
+            g->osAllocNum ++;
+            LOGSTR1("Num tracked OS blocks now: %08lX\n", g->osAllocNum);
+        }
+        else
+        {
+            LOGSTR0("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
+        }
+    }
+    sceKernelSignalSema(g->memSema, 1);
     return uid;
 }
+
+int _hook_sceKernelFreePartitionMemory(SceUID uid)
+  {
+    tGlobals * g = get_globals();
+    u32 ii;
+    int lfound = 0;
+    sceKernelWaitSema(g->memSema, 1, 0);
+    int lret = sceKernelFreePartitionMemory(uid);
+
+    /*************************************************************************/
+    /* Remove UID from list of alloc'd mem.                                  */
+    /*************************************************************************/
+    for (ii = 0; ii < g->osAllocNum; ii++)
+    {
+      if (g->osAllocs[ii] == uid)
+      {
+        lfound = 1;
+      }
+
+      if (lfound && (ii < (MAX_OS_ALLOCS-2)))
+      {
+        g->osAllocs[ii] = g->osAllocs[ii+1];
+      }
+    }
+
+    if (lfound)
+    {
+        g->osAllocNum --;
+    }
+    sceKernelSignalSema(g->memSema, 1);
+    return lret;
+    
+  }
+
+  
+/*****************************************************************************/
+/* Create a callback.  Record the details so that we can refer to it if      */
+/* need be.                                                                  */
+/*****************************************************************************/
+int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction func, void *arg)
+{
+    tGlobals * g = get_globals();
+    int lrc = sceKernelCreateCallback(name, func, arg);
+
+    LOGSTR1("Enter createcallback: %s\n", (u32)name);
+
+    sceKernelWaitSema(g->cbSema, 1, 0);
+    if (g->callbackcount < MAX_CALLBACKS)
+    {
+        g->callbackids[g->callbackcount] = lrc;
+        g->callbackfuncs[g->callbackcount] = func;
+        g->callbackcount ++;
+    }
+    sceKernelSignalSema(g->cbSema, 1);
+
+    LOGSTR2("Exit createcallback: %s ID: %08lX\n", (u32) name, lrc);
+
+    return(lrc);
+}
+
+/*****************************************************************************/
+/* Register an ExitGame handler                                              */
+/*****************************************************************************/
+int _hook_sceKernelRegisterExitCallback(int cbid)
+{
+    tGlobals * g = get_globals();
+    int lrc = 0;
+    int i;
+
+    LOGSTR1("Enter registerexitCB: %08lX\n", cbid);
+
+    sceKernelWaitSema(g->cbSema, 1, 0);
+    for (i = 0; i < g->callbackcount; i++)
+    {
+        if (g->callbackids[i] == cbid)
+        {
+            LOGSTR1("Found matching CB, func: %08lX\n", (u32) g->callbackfuncs[i]);
+            g->exitcallback = g->callbackfuncs[i];
+            break;
+        }
+    }
+    lrc = sceKernelRegisterExitCallback(cbid);
+    sceKernelSignalSema(g->cbSema, 1);
+
+    LOGSTR2("Exit registerexitCB: %08lX ret: %08lX\n", cbid, lrc);
+
+    return(lrc);
+}  
+  
 
 //#############
 // RTC
@@ -402,9 +848,34 @@ int _hook_sceCtrlPeekBufferPositive(SceCtrlData* pad_data,int count)
     return sceCtrlReadBufferPositive(pad_data,count);
 }
 
-int audio_channels[8] = {0,0,0,0,0,0,0,0};
-int cur_channel_id = -1;
+
 //audio hooks
+
+int _hook_sceAudioChReserve(int channel, int samplecount, int format)
+{
+	int lreturn = sceAudioChReserve(channel,samplecount,format);
+
+#ifdef MONITOR_AUDIO_THREADS
+    tGlobals * g = get_globals();
+	if (lreturn >= 0)
+	{
+	    if (lreturn >= 8)
+		{
+			LOGSTR1("AudioChReserve return out of range: %08lX\n", lreturn);
+			//waitForButtons();
+		}
+		else
+		{
+			sceKernelWaitSema(g->audioSema, 1, 0);
+			g->audio_threads[lreturn] = sceKernelGetThreadId();
+			sceKernelSignalSema(g->audioSema, 1);
+		}
+	}
+#endif
+
+	return lreturn;
+}
+
 // see commented code in http://forums.ps2dev.org/viewtopic.php?p=81473
 // //   int audio_channel = sceAudioChReserve(0, 2048 , PSP_AUDIO_FORMAT_STEREO);
 //   sceAudioSRCChReserve(2048, wma_samplerate, 2); 
@@ -413,17 +884,12 @@ int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
     int format = PSP_AUDIO_FORMAT_STEREO;
     if (channels == 1) 
         format = PSP_AUDIO_FORMAT_MONO;
-    int result =  sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, samplecount, format);
-    if (result >= 0)
+    int result =  _hook_sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, samplecount, format);
+    if (result >=0 && result < 8)
     {
-        cur_channel_id++;
-        if (cur_channel_id > 7)
-        {
-            LOGSTR0("FATAL: cur_channel_id > 7 in _hook_sceAudioSRCChReserve\n");
-            return -1;
-        } 
-        audio_channels[cur_channel_id] = result;
-    }   
+        tGlobals * g = get_globals();
+        g->curr_channel_id = result;
+    }
     return result;
 } 
 
@@ -431,7 +897,8 @@ int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 //   //      sceAudioOutputBlocking(audio_channel, PSP_AUDIO_VOLUME_MAX, wma_output_buffer[wma_output_index]); 
 int _hook_sceAudioSRCOutputBlocking (int vol,void * buf)
 {
-    return sceAudioOutputPannedBlocking(audio_channels[cur_channel_id],vol, vol, buf);
+    tGlobals * g = get_globals();
+    return sceAudioOutputPannedBlocking(g->curr_channel_id,vol, vol, buf);
 }
 
 //quite straightforward
@@ -440,16 +907,36 @@ int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf)
     return sceAudioOutputPannedBlocking(channel,vol, vol, buf);
 }
 
+// Ditlew
+int _hook_sceAudioChRelease(int channel)
+{
+	int lreturn;
+
+	lreturn = sceAudioChRelease( channel );
+
+#ifdef MONITOR_AUDIO_THREADS
+	if (lreturn >= 0)
+	{
+        tGlobals * g = get_globals();
+		sceKernelWaitSema(g->audioSema, 1, 0);  
+		g->audio_threads[channel] = 0;
+		sceKernelSignalSema(g->audioSema, 1);
+	}
+#endif
+	return lreturn;
+}
+
 //
 int _hook_sceAudioSRCChRelease()
 {
-    if (cur_channel_id < 0)
+    tGlobals * g = get_globals();
+    if (g->curr_channel_id < 0 || g->curr_channel_id > 7)
     {
-        LOGSTR0("FATAL: cur_channel_id < 0 in _hook_sceAudioSRCChRelease\n");
+        LOGSTR0("FATAL: curr_channel_id < 0 in _hook_sceAudioSRCChRelease\n");
         return -1;
     } 
-    int result = sceAudioChRelease(audio_channels[cur_channel_id]);
-    cur_channel_id--;
+    int result = _hook_sceAudioChRelease(g->curr_channel_id);
+    g->curr_channel_id--;
     return result;
 }  
 
@@ -650,12 +1137,6 @@ int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size,
     return sceKernelTryReceiveMsgPipe(uid, message, size, unk1, unk2);
 }
 
-int _hook_sceKernelExitDeleteThread(int status)
-{
-    int ret = sceKernelExitThread(status);
-    //TODO add self to a list of threads to delete then let HBL handle the deletion
-    return ret;
-}   
 
 
 // ###############
