@@ -14,6 +14,7 @@
 #include "globals.h"
 
 
+
 // HBL entry point
 // Needs path to ELF or EBOOT
 void run_eboot(const char *path, int is_eboot)
@@ -84,13 +85,39 @@ void wait_for_eboot_end()
 
 void cleanup()
 {
+
     tGlobals * g = get_globals();
     threads_cleanup();
     ram_cleanup();
     free_all_mallocs();
-  
+    
+    //unload utility modules
+    int i;
+    int modid;
+	for (i=g->mod_table.num_utility-1; i>=0; i--)
+	{
+		if ((modid = g->mod_table.utility[i]) && modid != PSP_MODULE_AV_MP3) //some utilities cannot be re-loaded after being unloaded ?
+        {
+            LOGSTR1("UNLoad utility module id  %d \n", modid);
+			int ret = sceUtilityUnloadModule(modid);
+            if (ret < 0) 
+            {
+                LOGSTR2("WARNING! error unloading module %d: 0x%08lX\n",g->mod_table.utility[i], ret);
+                print_to_screen("WARNING! ERROR UNLOADING UTILITY");
+                sceKernelDelayThread(1000000); 
+            }
+            else
+            {
+                g->mod_table.utility[i] = 0;
+                g->mod_table.utility[i] = g->mod_table.utility[g->mod_table.num_utility-1];
+                g->mod_table.utility[g->mod_table.num_utility-1] = 0;
+                g->mod_table.num_utility--;
+            }
+        }
+	}
     //cleanup globals
-    memset(&(g->mod_table), 0, sizeof(HBLModTable));
+    g->mod_table.num_loaded_mod = 0;
+    memset(&(g->mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
     g->calledexitcb = 0;
     g->exitcallback = 0;
 
@@ -198,9 +225,9 @@ int start_thread() //SceSize args, void *argp)
     }
 
     //...otherwise launch the menu
-    int initial_free_ram = sceKernelTotalFreeMemSize();
     while (!exit)
     {
+        int initial_free_ram = sceKernelTotalFreeMemSize();
         //Load default config
         loadGlobalConfig();
         //run menu
@@ -213,6 +240,7 @@ int start_thread() //SceSize args, void *argp)
             continue;
         }
         
+        initial_free_ram = sceKernelTotalFreeMemSize();
         char filename[512];
         strcpy(filename, g->hb_filename);
         LOGSTR1("Eboot is: %s\n", (u32)filename);

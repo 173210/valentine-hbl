@@ -212,7 +212,7 @@ SceUID start_module(SceUID modid)
 		/*************************************************************************/
 		g->menu_api.APIVersion = 1;
 		strcpy(g->menu_api.VersionName, "Half Byte Loader R"SVNVERSION );
-		strcpy(g->menu_api.Credits, "M0skit0, Wololo, ab5000");
+		strcpy(g->menu_api.Credits, "m0skit0, ab5000, wololo, davee");
 		g->menu_api.BackgroundFilename = g->menubackground;
         g->menu_api.filename = g->hb_filename;
 	}

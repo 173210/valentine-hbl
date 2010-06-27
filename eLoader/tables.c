@@ -61,11 +61,12 @@ int add_library_to_table(const tSceLibrary lib)
 		}
 
 		index = g->library_table.num;
+        g->library_table.num++;
 	}
 
 	// Copying new library
 	memcpy(&(g->library_table.table[index]), &lib, sizeof(lib));
-	g->library_table.num++;
+
 
 	LOGSTR2("Added library %s @ %d\n", (u32)g->library_table.table[index].name, index);
 	LOGLIB(g->library_table.table[index]);

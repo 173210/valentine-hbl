@@ -11,6 +11,6 @@ void free_game_memory();
 SceSize sceKernelMaxFreeMemSize();
 SceSize sceKernelTotalFreeMemSize();
 int kill_thread(SceUID thid);
-
+void UnloadModules();
 #endif
 

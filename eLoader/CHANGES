@@ -1,3 +1,6 @@
+2010/06/27 (wololo)
+- unload utility modules when exiting a homebrew (partially fixes issue 179)
+
 2010/06/25 (wololo)
 - Moved the menu outside of HBL, it is now a homebrew so that anybody respecting the API can code their own menu as a "standard" homebrew.
 - Added possibility to go back to the menu after playing a homebrew

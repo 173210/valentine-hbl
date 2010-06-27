@@ -185,24 +185,8 @@ void DeleteAndUnassignCallbacks(void)
     }
 }
 
-void free_game_memory()
+void UnloadModules()
 {
-#ifdef DEBUG
-    int free;
-    int max_free;
-	free = sceKernelTotalFreeMemSize();
-    max_free = sceKernelMaxFreeMemSize();
-	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", free, max_free);
-#endif
-
-	DeleteAllThreads();
-
-	DeleteAllEventFlags();
-
-	DeleteAllSemaphores();
-
-	DeleteAndUnassignCallbacks();
-
 	// Set inital UID to -1 and the current UID to 0
 	int i;
 	SceUID uids[MAX_MODULES_TO_FREE];
@@ -237,6 +221,27 @@ void free_game_memory()
 	{
 		kill_module(uids[i]);
 	}
+}
+
+void free_game_memory()
+{
+#ifdef DEBUG
+    int free;
+    int max_free;
+	free = sceKernelTotalFreeMemSize();
+    max_free = sceKernelMaxFreeMemSize();
+	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", free, max_free);
+#endif
+
+	DeleteAllThreads();
+
+	DeleteAllEventFlags();
+
+	DeleteAllSemaphores();
+
+	DeleteAndUnassignCallbacks();
+
+    UnloadModules();
 
 #ifdef DEBUG
 	free = sceKernelTotalFreeMemSize();
