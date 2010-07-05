@@ -263,10 +263,33 @@ u32 setup_hook(u32 nid)
 #endif
 
 #ifdef HOOK_UTILITY
+		case 0xC629AF26: //sceUtilityLoadAvModule
+			LOGSTR0(" Hook sceUtilityLoadAvModule\n");
+			hook_call = MAKE_JUMP(_hook_sceUtilityLoadAvModule);
+			break;
+
+		case 0x0D5BC6D2: //sceUtilityLoadUsbModule		
+			LOGSTR0(" Hook sceUtilityLoadUsbModule\n");
+			hook_call = MAKE_JUMP(_hook_sceUtilityLoadUsbModule);
+			break;
+
+		case 0x1579a159: //sceUtilityLoadNetModule
+			LOGSTR0(" Hook sceUtilityLoadNetModule\n");
+			hook_call = MAKE_JUMP(_hook_sceUtilityLoadNetModule);
+			break;
+
 		case 0x2A2B3DE0: // sceUtilityLoadModule
 			LOGSTR0(" Hook sceUtilityLoadModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadModule);
 			break;
+			
+		case 0xF7D8D092: //sceUtilityUnloadAvModule
+		case 0xF64910F0: //sceUtilityUnloadUsbModule
+		case 0x64d50c56: //sceUtilityUnloadNetModule
+		case 0xE49BFE92: // sceUtilityUnloadModule
+			LOGSTR0(" Hook sceUtilityUnloadModule\n");
+			hook_call = MAKE_JUMP(_hook_sceUtilityUnloadModule);
+			break;			
 #endif
     }
 
@@ -1170,7 +1193,7 @@ SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelL
 	SceOff offset = 0;
 	LOGSTR1("_hook_sceKernelLoadModule offset: 0x%08lX\n", offset);
 	SceUID ret = load_module(elf_file, path, NULL, offset);
-
+    sceIoClose(elf_file);
 	LOGSTR1("load_module returned 0x%08lX\n", ret);
 
 	return ret;
@@ -1190,6 +1213,42 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUS
 #ifdef HOOK_UTILITY
 
 int _hook_sceUtilityLoadModule(int id)
+{
+/*   if ((id == PSP_MODULE_NET_COMMON)
+     || (id == PSP_MODULE_NET_INET)
+     || (id == PSP_MODULE_NET_ADHOC)
+     || (id == PSP_MODULE_AV_MP3)) */
+	if (is_utility_loaded(id))
+    {
+		return 0;
+    }
+    return SCE_KERNEL_ERROR_ERROR;
+}
+
+int _hook_sceUtilityLoadNetModule(int id)
+{
+	if ((id == PSP_NET_MODULE_COMMON)
+		|| (id == PSP_NET_MODULE_INET)
+		|| (id == PSP_NET_MODULE_ADHOC))
+		return 0;
+
+	return SCE_KERNEL_ERROR_ERROR;
+}
+
+int _hook_sceUtilityLoadAvModule(int id)
+{
+	if (id == PSP_AV_MODULE_MP3)
+		return 0;
+    return SCE_KERNEL_ERROR_ERROR;
+}
+
+int _hook_sceUtilityLoadUsbModule(int id)
+{
+	if(id){}; //Avoid compilation errors :P
+	return SCE_KERNEL_ERROR_ERROR;
+}
+
+int _hook_sceUtilityUnloadModule(int id)
 {
 	if(id){}; //Avoid compilation errors :P
 	return 0;

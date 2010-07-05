@@ -105,6 +105,10 @@ SceUID _hook_sceKernelLoadModule (const char *path, int flags, SceKernelLMOption
 int	_hook_sceKernelStartModule(SceUID modid, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
 int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp);
 int _hook_sceUtilityLoadModule(int id);
+int _hook_sceUtilityLoadNetModule(int id);
+int _hook_sceUtilityLoadAvModule(int id);
+int _hook_sceUtilityLoadUsbModule(int id);
+int _hook_sceUtilityUnloadModule(int id);
 
 // Power
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);

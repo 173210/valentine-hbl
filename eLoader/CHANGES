@@ -1,3 +1,8 @@
+2010/07/05 (wololo)
+- added JJS's patch for network modules. This partially fixes issue 109. Thanks a lot man!
+-- see the subject at http://advancedpsp.tk/foro_es/viewtopic.php?f=37&t=784
+- removed the code that attempts to delete callbacks. Based on my experiments with psplink, I'm assuming that unloading the patapon module simply unloads the callbacks as well. This fixes issue 45
+
 2010/06/27 (wololo)
 - unload utility modules when exiting a homebrew (partially fixes issue 179)
 

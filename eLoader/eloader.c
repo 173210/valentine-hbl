@@ -45,6 +45,9 @@ void run_eboot(const char *path, int is_eboot)
 	LOGSTR0("Loading module\n");
 	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
 
+	// No need for ELF file anymore
+	sceIoClose(elf_file);
+
 	if (mod_id < 0)
 	{
 		LOGSTR1("ERROR 0x%08lX loading main module\n", mod_id);
@@ -126,7 +129,7 @@ void cleanup()
 
 void ramcheck(int expected_free_ram) {
     int free_ram = sceKernelTotalFreeMemSize();
-    if (expected_free_ram > free_ram)
+    if (expected_free_ram > free_ram && !is_utility_loaded(PSP_MODULE_AV_MP3)) //for now, we admit that mp3 utility needs to be loaded all the time...
     {
         LOGSTR2("WARNING! Memory leak: %d -> %d\n", expected_free_ram, free_ram);
         print_to_screen("WARNING! MEMORY LEAK");

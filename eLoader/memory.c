@@ -150,43 +150,29 @@ void DeleteAllSemaphores(void)
 	}
 }
 
-void DeleteAndUnassignCallbacks(void)
-{
-	SceUID ret; 
-	
-	/* clear msevent */
-	u32 msevent_cbid = *(SceUID*)(0x08B7BC04);
-	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
-	ret = sceKernelDeleteCallback(msevent_cbid);
-	
-	if (ret < 0)
-    {
-		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", msevent_cbid, ret);
-    }
-    
-	/* there is another msevent callback */
-	msevent_cbid = *(SceUID*)(0x08B82C0C);
-	sceIoDevctl("fatms0:", 0x02415822, &msevent_cbid, sizeof(msevent_cbid), 0, 0);
-	ret = sceKernelDeleteCallback(msevent_cbid);
-
-	if (ret < 0)
-    {
-		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", msevent_cbid, ret);
-	}
-    
-	/* umd callback */
-	SceUID umd_cbid = *(SceUID*)(0x08B70D9C);
-	sceUmdUnRegisterUMDCallBack(umd_cbid);
-	ret = sceKernelDeleteCallback(umd_cbid);
-
-	if (ret < 0)
-    {
-		LOGSTR2("Unable to delete callback 0x%08lX, error 0x%08lX\n", umd_cbid, ret);
-    }
-}
-
 void UnloadModules()
 {
+	// Unload user modules first
+	// The more basic modules got a lower ID, so this should be the correct 
+	// order to unload
+	SceUID result;
+	int m = PSP_MODULE_AV_G729;
+	while (m >= PSP_MODULE_AV_AVCODEC)
+	{
+		result = sceUtilityUnloadModule(m);
+		LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);
+		m--;
+	}
+
+	m = PSP_MODULE_NET_SSL;
+	while (m >= PSP_MODULE_NET_COMMON)
+	{
+		result = sceUtilityUnloadModule(m);
+		LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);
+		m--;
+	}
+
+
 	// Set inital UID to -1 and the current UID to 0
 	int i;
 	SceUID uids[MAX_MODULES_TO_FREE];
@@ -238,8 +224,6 @@ void free_game_memory()
 	DeleteAllEventFlags();
 
 	DeleteAllSemaphores();
-
-	DeleteAndUnassignCallbacks();
 
     UnloadModules();
 

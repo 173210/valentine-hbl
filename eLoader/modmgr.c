@@ -44,6 +44,10 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	Elf32_Ehdr elf_hdr;
 	sceIoRead(elf_file, &elf_hdr, sizeof(elf_hdr));
 
+	// Check for module encryption
+	if (strncmp(elf_hdr.e_ident, "~PSP", 4) == 0)
+		return SCE_KERNEL_ERROR_ERROR;
+
 	LOGELFHEADER(elf_hdr);
 	
 	// Loading module
@@ -106,7 +110,8 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Unknown ELF type
 	else
 	{
-		exit_with_log(" UNKNOWN ELF TYPE ", NULL, 0);
+        LOGSTR1("Uknown ELF type: 0x%08lX\n", elf_hdr.e_type);
+		return SCE_KERNEL_ERROR_ERROR;
 	}
 	
 	// Resolve ELF's stubs with game's stubs and syscall estimation
@@ -130,9 +135,6 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	LOGSTR1("\n->Actual number of loaded modules: %d\n", g->mod_table.num_loaded_mod);
 	LOGSTR1("Last loaded module [%d]:\n", i);
 	LOGMODENTRY(g->mod_table.table[i]);
-  
-	// No need for ELF file anymore
-	sceIoClose(elf_file);
 
 	sceKernelDcacheWritebackInvalidateAll();
 	
@@ -388,12 +390,7 @@ int add_utility_to_table(unsigned int id)
 	return g->mod_table.num_utility - 1;
 }
 
-// See also resolve.c:162
-// Loads and registers exports from an utility module
-int load_utility_module(int mod_id, const char* lib_name)
-{
-	LOGSTR1("Loading utility module for library %s\n", (u32)lib_name);
-
+int load_utility_in_cache(int mod_id) {
 	// Check if utility module is already loaded
 	if (!is_utility_loaded(mod_id))
 	{
@@ -410,8 +407,28 @@ int load_utility_module(int mod_id, const char* lib_name)
 		{
 			LOGSTR0("->ERROR: cannot load any more utility modules\n");
 			sceUtilityUnloadModule(mod_id);
+            return -1;
 		}
 	}
+    return 1;
+}
+
+// See also resolve.c:162
+// Loads and registers exports from an utility module
+int load_utility_module(int mod_id, const char* lib_name)
+{
+	LOGSTR1("Loading utility module for library %s\n", (u32)lib_name);
+
+    //force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
+    if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729)
+    {
+        LOGSTR0("Force-Loading AVCODEC\n");
+        load_utility_in_cache(PSP_MODULE_AV_AVCODEC);
+    }
+    
+    int ret = load_utility_in_cache(mod_id);
+    if (ret <0)
+        return ret;
 	
 	//SceUID utility_id;
 	char mod_name[MAX_MODULE_NAME_LENGTH];

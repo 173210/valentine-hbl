@@ -111,12 +111,9 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
     // DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));
     
 	// Check if kernel mode
-	// No go, does not apply to PRXs
-	/*
 	if ((unsigned int)program_header.p_paddr & 0x80000000)
 		return 0;
-	*/
-	
+		
 	LOGSTR1("Module info @ 0x%08lX offset\n", (u32)start_offset + (u32)program_header.p_paddr);
 
 	// Read module info from PRX
