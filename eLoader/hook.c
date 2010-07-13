@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "md5.h"
 #include "memory.h"
+#include "resolve.h"
 #include "globals.h"
 
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!
@@ -156,7 +157,10 @@ u32 setup_hook(u32 nid)
             break;
 		
         case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
+            if (g->override_sceCtrlPeekBufferPositive == OVERRIDE)
+            {
+                hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
+            }
             break;
             
         case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
@@ -635,6 +639,60 @@ void threads_cleanup()
     LOGSTR0("Threads cleanup Done\n");
 }
 
+//Resolve the call for a function and runs it without parameters
+// This is quite ugly, so if you find a better way of doing this I'm all ears
+int run_nid (u32 nid){
+    tGlobals * g = get_globals();
+    // Is it known by HBL?
+    int ret = get_nid_index(nid);
+    LOGSTR1("NID: 0x%08lX\n", nid);
+    if (ret <= 0)
+    {
+        LOGSTR1("Unknown NID: 0x%08lX\n", nid);
+        return 0;
+    }
+    u32 syscall = g->nid_table.table[ret].call;
+
+    if (!syscall) 
+    {
+        LOGSTR1("No syscall for NID: 0x%08lX\n", nid);
+        return 0;
+    }
+    
+    u32 cur_stub[2];
+    resolve_call(cur_stub, syscall);
+    sceKernelDcacheWritebackInvalidateAll();
+    logstr1("call is: 0x%08lX\n", cur_stub[0]);
+    void (*function)() = (void *)(&cur_stub);
+    function();
+    return 1;
+}
+
+//Force close Net modules
+void net_term()
+{
+    //Call the closing functions only if the matching library is loaded
+    
+    if (get_library_index("sceNetApctl") >= 0)
+    {
+        run_nid(0xB3EDD0EC); //sceNetApctlTerm();
+    }
+    
+    if (get_library_index("sceNetResolver") >= 0)
+    {        
+        run_nid(0x6138194A); //sceNetResolverTerm();
+    }    
+    if (get_library_index("sceNetInet") >= 0)
+    {   
+        run_nid(0xA9ED66B9); //sceNetInetTerm();
+    }
+    
+    if (get_library_index("sceNet") >= 0)
+    {   
+        run_nid(0x281928A9); //sceNetTerm();
+    }
+}
+
 void ram_cleanup() 
 {
     LOGSTR0("Ram Cleanup\n");
@@ -665,6 +723,7 @@ void  _hook_sceKernelExitGame()
         g->exitcallback(0,0,NULL);
     }
 
+    net_term();
     threads_cleanup();
     ram_cleanup();
     sceKernelExitDeleteThread(0);

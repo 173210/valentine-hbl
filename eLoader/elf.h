@@ -238,6 +238,9 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 // Returns total size copied in memory
 unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr);
 
+// Get index of section if you know the section name
+int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, char* section_name_to_find);
+
 /* Copies the string pointed by table_offset into "buffer" */
 /* WARNING: modifies file pointer. This behaviour MUST be changed */
 unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buffer);

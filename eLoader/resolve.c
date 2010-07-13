@@ -52,7 +52,6 @@ void resolve_missing_stubs()
 	{
 		if (*cur_stub == 0)
 		{
-			//LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
 			LOGSTR1("-Resolving unknown import 0x%08lX: ", (u32*)cur_stub - (u32*)HBL_STUBS_START);
 
 			// NID & library for i-th import

@@ -30,4 +30,10 @@ return_to_xmb_on_exit=0
 
 # override_sceIoMkdir
 # values: 0, -1
-# overrides_sceIoMkdir=-1
+# override_sceIoMkdir=-1
+
+# override_sceCtrlPeekBufferPositive
+# values: 0, 1
+# 0: attempt to estimate syscall (emulators will be faster, but there's a risk that the game doesn't start)
+# 1: Use the override (sceCtrlReadBufferPositive). Slower but guaranteed to work
+override_sceCtrlPeekBufferPositive=1

@@ -1,3 +1,8 @@
+2010/07/12 (wololo)
+- Added JJS's patch for Static elfs loading. This improves compatibility with some games
+- Fixed issue 269 (Exit from Doom crashes)
+- override_sceCtrlPeekBufferPositive is now an option in hbl_config.txt, for those who want to take the risk and get more speed in emulators
+
 2010/07/05 (wololo)
 - added JJS's patch for network modules. This partially fixes issue 109. Thanks a lot man!
 -- see the subject at http://advancedpsp.tk/foro_es/viewtopic.php?f=37&t=784

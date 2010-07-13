@@ -17,15 +17,15 @@ CC       = psp-gcc
 CFLAGS   := -D PSP -I $(INCLUDE) -O2 -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
 
 #svn revision in code
-RESULT=$(shell svnversion -n 2> Makefile.cache)
-ifeq ($(RESULT),)
+SVNVERSION=$(shell svnversion -n 2> Makefile.cache)
+ifeq ($(SVNVERSION),)
 #try windows with tortoise svn
 base:
 	@echo svnrevision not found, trying SubWCRev
 	@SubWCRev . svnversion.txt svnversion.h
 else
 #linux
-CFLAGS += -DSVNVERSION=\"$(RESULT)\"
+CFLAGS += -DSVNVERSION=\"$(SVNVERSION)\"
 endif
 
 

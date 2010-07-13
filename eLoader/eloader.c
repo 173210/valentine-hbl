@@ -97,7 +97,8 @@ void cleanup()
     //unload utility modules
     int i;
     int modid;
-	for (i=g->mod_table.num_utility-1; i>=0; i--)
+    u32 num_utility = g->mod_table.num_utility;
+	for (i=num_utility-1; i>=0; i--)
 	{
 		if ((modid = g->mod_table.utility[i]) && modid != PSP_MODULE_AV_MP3) //some utilities cannot be re-loaded after being unloaded ?
         {
@@ -121,6 +122,7 @@ void cleanup()
     //cleanup globals
     g->mod_table.num_loaded_mod = 0;
     memset(&(g->mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
+    memset(&(g->library_table), 0, sizeof(HBLLibTable));
     g->calledexitcb = 0;
     g->exitcallback = 0;
 

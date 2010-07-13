@@ -81,6 +81,7 @@ typedef struct
     int curr_channel_id;
     //settings.c
     int override_sceIoMkdir;
+    int override_sceCtrlPeekBufferPositive;
     int return_to_xmb_on_exit;    
     //malloc.c
     u32 nblocks; //Number of allocated blocks

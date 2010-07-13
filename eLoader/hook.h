@@ -23,10 +23,6 @@
  * (see Noobz eLoader cfg file for reference on this)
  */
 
-//this one might make emulators slow as it maps peekbufferpositive to readbufferpositive
-//Comment the following line to avoid overriding sceCtrlPeekBufferPositive
-#define HOOK_PEEKBUFFERPOSITIVE
-
 //Comment the following line to avoid overriding sceAudio*
 #define HOOK_AUDIOFUNCTIONS
 

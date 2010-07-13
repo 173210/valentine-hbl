@@ -222,6 +222,10 @@ void configGetProcessingOptions()
         {
             g->override_sceIoMkdir = configIntParse(lval);
         }
+        else if (strcmp(lstr,"override_sceCtrlPeekBufferPositive")==0)
+        {
+            g->override_sceCtrlPeekBufferPositive = configIntParse(lval);
+        }        
         else if (strcmp(lstr,"return_to_xmb_on_exit")==0)
         {
             g->return_to_xmb_on_exit = configIntParse(lval);
@@ -245,6 +249,7 @@ void loadGlobalConfig()
     tGlobals * g = get_globals();
     //default values
     g->override_sceIoMkdir = DONT_OVERRIDE;
+    g->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;    
     g->return_to_xmb_on_exit = 0;
     strcpy(g->hb_filename, "ms0:/PSP/GAME/");
     

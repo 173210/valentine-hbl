@@ -67,27 +67,39 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	int excess;
 	void *buffer;
 
-	// Read the program header
-	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
-	sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
-    
-	// Loads program segment at virtual address
-	sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
-	buffer = (void *) program_header.p_vaddr;
-	allocate_memory(program_header.p_memsz, buffer);
-	sceIoRead(elf_file, buffer, program_header.p_filesz);
+	// Initialize size return value
+	*size = 0;
 
-	// Sets the buffer pointer to end of program segment
-	buffer = buffer + program_header.p_filesz + 1;
+	// Clean memory
+    memset((void*)0x08900000, 0x00, (0x09EC8000 - 0x08900000));	
+	
+	int i;
+	for (i = 0; i < pelf_header->e_phnum; i++)
+	{
+		LOGSTR2("Reading program section %d of %d\n", i, pelf_header->e_phnum);
 
-	// Fills excess memory with zeroes
-	excess = program_header.p_memsz - program_header.p_filesz;
-	if(excess > 0)
-        memset(buffer, 0, excess);
+		// Read the program header
+		sceIoLseek(elf_file, start_offset + pelf_header->e_phoff + (sizeof(Elf32_Phdr) * i), PSP_SEEK_SET);
+		sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
+		
+		// Loads program segment at virtual address
+		sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
+		buffer = (void *) program_header.p_vaddr;
+		allocate_memory(program_header.p_memsz, buffer);
+		sceIoRead(elf_file, buffer, program_header.p_filesz);
 
-	*size = program_header.p_memsz;
+		// Sets the buffer pointer to end of program segment
+		buffer = buffer + program_header.p_filesz + 1;
 
-	return program_header.p_memsz;
+		// Fills excess memory with zeroes
+		excess = program_header.p_memsz - program_header.p_filesz;
+		if(excess > 0)
+			memset(buffer, 0, excess);
+
+		*size += program_header.p_memsz;
+	}
+		
+	return *size;
 }
 
 // Loads relocatable executable in memory using fixed address
@@ -120,6 +132,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	sceIoLseek(elf_file, (u32)start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
+	
     LOGMODINFO(module_info);
     
 	// Loads program segment at fixed address
@@ -157,23 +170,77 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);
 }
 
+// Get index of section if you know the section name
+int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, char* section_name_to_find)
+{
+	#define SECTION_NAME_MAX_LENGTH 50
+
+	Elf32_Shdr section_header;
+	Elf32_Shdr section_header_names;
+	char section_name[SECTION_NAME_MAX_LENGTH]; // Should be enough to hold the name
+	unsigned int section_name_length = strlen(section_name_to_find);
+
+	if (section_name_length > SECTION_NAME_MAX_LENGTH)
+	{
+		// Section name too long
+		LOGSTR2("Section name to find is too long (strlen = %d, max = %d)\n", section_name_length, SECTION_NAME_MAX_LENGTH);
+		return -1;
+	}
+
+	// Seek to the section name table
+	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (pelf_header->e_shstrndx * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
+	sceIoRead(elf_file, &section_header_names, sizeof(Elf32_Shdr));
+
+	// Read section names and compare them
+	int i;
+	for (i = 0; i < pelf_header->e_shnum; i++)
+	{
+		// Get name index from current section header
+		sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (i * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
+		sceIoRead(elf_file, &section_header, sizeof(Elf32_Shdr));
+
+		// Seek to the name entry in the name table
+		sceIoLseek(elf_file, start_offset + section_header_names.sh_offset + section_header.sh_name, PSP_SEEK_SET);
+
+		// Read name in (is the section name length stored anywhere?)
+		sceIoRead(elf_file, section_name, section_name_length);
+
+		if (strncmp(section_name, section_name_to_find, section_name_length) == 0)
+		{
+			LOGSTR1("Found section index %d\n", i);
+			return i;
+		}
+	}
+
+	// Section not found
+	LOGSTR0("ERROR: Section could not be found!\n");
+	return -1;
+}
+
 // Get module GP
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
-{
-	Elf32_Phdr program_header;
+{	
+	Elf32_Shdr section_header;
 	tModInfoEntry module_info;
+	int section_index = -1;
 
-	// Read the program header
-	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
-	sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
+    section_index = elf_get_section_index_by_section_name(elf_file, start_offset, pelf_header, ".rodata.sceModuleInfo");
+	if (section_index < 0)
+	{
+		// Module info not found in sections
+		LOGSTR0("ERROR: section rodata.sceModuleInfo not found\n");
+		return 0;
+	}
+	
+	// Read in section header
+    sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (section_index * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
+	sceIoRead(elf_file, &section_header, sizeof(Elf32_Shdr));
 
-    // DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));    
+	// Read in module info
+    sceIoLseek(elf_file, start_offset + section_header.sh_offset, PSP_SEEK_SET);
+    sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
-	// Read module info from PRX
-	sceIoLseek(elf_file, start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
-	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
-
-    // LOGMODINFO(module_info);
+    LOGMODINFO(module_info);
 	
     return (u32) module_info.gp;
 }
