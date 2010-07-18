@@ -213,7 +213,8 @@ u32 setup_hook(u32 nid)
             hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
             break;      
             
-// Hooks to a function that does nothing but says "ok"            
+// Hooks to a function that does nothing but says "ok"     
+        case 0xD3075926: //scePowerIsLowBattery (avoid syscall estimation)  
         case 0x87440F5E: // scePowerIsPowerOnline  - Assuming it's not super necessary
         case 0x04B7766E: //	scePowerRegisterCallback - Assuming it's already done by the game
         case 0xD6D016EF: // scePowerLock - Assuming it's not super necessary
@@ -963,10 +964,12 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 //   sceAudioSRCChReserve(2048, wma_samplerate, 2); 
 int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 {
+    
     int format = PSP_AUDIO_FORMAT_STEREO;
     if (channels == 1) 
         format = PSP_AUDIO_FORMAT_MONO;
-    int result =  _hook_sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, samplecount, format);
+    //samplecount needs to be 64 bytes aligned, see http://code.google.com/p/valentine-hbl/issues/detail?id=270    
+    int result =  _hook_sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, PSP_AUDIO_SAMPLE_ALIGN(samplecount), format);
     if (result >=0 && result < 8)
     {
         tGlobals * g = get_globals();
@@ -1201,7 +1204,7 @@ int _hook_sceKernelGetThreadCurrentPriority()
     //TODO : real management of threads --> keep track of their priorities ?
 }
 
-// Sleep is not delay
+// Sleep is not delay... can we fix this?
 int _hook_sceKernelSleepThreadCB() 
 {
     while (1)

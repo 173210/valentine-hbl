@@ -1,3 +1,22 @@
+2010/07/18 (wololo)
+- Fix for issue 270 Sound in picodrive (needs to be 44KHz though, check the settings in picodrive!)
+- Fix a bug introduced in R94 with libraries unloading. This fixes issues 280 and 283 (goEar and pspkvm)
+- Fix for issue 284 (can't save in snes9xTYL). Thanks JJS and SeanC994
+
+I ran the following tests on a pspGo 6.20 with the distrib version:
+Doom Runs, can exit, Network found
+Wagic Runs with sound, can exit
+CSPSP Runs, play exit
+GPSP Runs, play NO Exit
+Daedalus Runs (slow), play no exit (?)
+Picodrive Runs with sound (no mp3 support yet I think) 
+FCEUltra Runs, load rom, can exit
+ScummVM Runs, loads game, can exit
+TOME Starts, can exit
+Snes9xTYL Starts (sometimes crash at startup?) play, can exit, can save 
+kvm Starts. didn't find a way to quit (except "pause game" feature on the Go)
+GoEar Starts, but I can't seem to connect.
+
 2010/07/12 (wololo)
 - Added JJS's patch for Static elfs loading. This improves compatibility with some games
 - Fixed issue 269 (Exit from Doom crashes)

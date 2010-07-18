@@ -10,7 +10,7 @@
 # define MAX_LIBRARY_EXPORTS 155
 
 // Size of NID-to-call table
-#define NID_TABLE_SIZE 400
+#define NID_TABLE_SIZE 600
 
 // Invalid/unknown NID
 #define INVALID_NID 0xFFFFFFFF

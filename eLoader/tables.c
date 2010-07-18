@@ -21,7 +21,7 @@ int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 	{
 		if (g->nid_table.num >= NID_TABLE_SIZE)
 		{
-			LOGSTR2("WARNING: nid_table full %d W % d\n", g->nid_table.num, NID_TABLE_SIZE);
+            exit_with_log("FATAL:NID TABLE IS FULL", NULL, 0);
 			return -1;
 		}
 
@@ -417,7 +417,7 @@ int get_library_index(const char* library_name)
         return -1;
 
 	int i;
-    for (i=0; i<MAX_LIBRARIES; i++)
+    for (i=0; i<(int) g->library_table.num; i++)
     {
 		//LOGSTR1("Current library: %s\n", g->library_table.table[i].library_name);
         if (g->library_table.table[i].name == NULL)
@@ -445,7 +445,7 @@ int get_syscall_boundaries(int lib_index, u32* low, u32* high)
     *low = 0;
     *high = 0;
     
-    for (i=0; i<MAX_LIBRARIES; i++)
+    for (i=0; i<(int)g->library_table.num; i++)
     {
         if (i == lib_index)
             continue;

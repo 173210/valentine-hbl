@@ -86,7 +86,7 @@ void wait_for_eboot_end()
     LOGSTR0("Threads are dead\n");
 }
 
-void cleanup()
+void cleanup(u32 num_lib)
 {
 
     tGlobals * g = get_globals();
@@ -122,7 +122,8 @@ void cleanup()
     //cleanup globals
     g->mod_table.num_loaded_mod = 0;
     memset(&(g->mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
-    memset(&(g->library_table), 0, sizeof(HBLLibTable));
+    g->library_table.num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
+    //memset(&(g->library_table), 0, sizeof(HBLLibTable));
     g->calledexitcb = 0;
     g->exitcallback = 0;
 
@@ -218,6 +219,8 @@ int start_thread() //SceSize args, void *argp)
     print_to_screen("-- Done");
     LOGSTR0("START HBL\n");
 
+    u32 num_lib = g->library_table.num;
+    
     //Run the hardcoded eboot if it exists...
     if (file_exists(EBOOT_PATH))
     {
@@ -238,7 +241,7 @@ int start_thread() //SceSize args, void *argp)
         //run menu
         run_menu();
         wait_for_eboot_end();
-        cleanup();
+        cleanup(num_lib);
         ramcheck(initial_free_ram);
         if (strcmp("quit", g->hb_filename) == 0){
             exit = 1;
@@ -257,7 +260,7 @@ int start_thread() //SceSize args, void *argp)
         run_eboot(filename, 1);
         LOGSTR0("Eboot Started OK\n");
         wait_for_eboot_end();
-        cleanup();
+        cleanup(num_lib);
         ramcheck(initial_free_ram);      
     }
 	
