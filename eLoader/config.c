@@ -25,20 +25,33 @@ int config_initialize()
     u32 firmware_v = getFirmwareVersion();
 	
     strcpy(buffer, IMPORTS_PATH);
-    if (firmware_v == 500)
-        strcat(buffer, "_50x");
-	
-    else if (firmware_v == 550)
-        strcat(buffer, "_550");
 
-	else if (firmware_v == 555)
-        strcat(buffer, "_555");
-	
-    else if (firmware_v == 570)
-        strcat(buffer, "_570");
-	
-    else if (firmware_v >= 600)
-        strcat(buffer, "_6xx");
+	switch (firmware_v)
+	{
+		case 500:
+			strcat(buffer, "_50x");
+			break;
+
+		case 503:	
+		case 550:
+			strcat(buffer, "_550");
+			break;
+
+		case 551:
+		case 555:
+			strcat(buffer, "_555");
+			break;
+		
+		case 570:
+			strcat(buffer, "_570");
+			break;
+		
+		case 600:
+		case 610:
+		case 620:
+			strcat(buffer, "_6xx");
+			break;
+	}
         
     if (!file_exists(buffer))
         strcpy(buffer, IMPORTS_PATH);

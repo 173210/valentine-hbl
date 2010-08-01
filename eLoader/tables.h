@@ -36,6 +36,7 @@ typedef struct
 	u32 lowest_nid;								// NID associated to lowest syscall
 	unsigned int lowest_index;					// Lowest NID index nids_table
     u32 highest_syscall;                        // Highest syscall number found
+	u32 gap;                                    // Offset between the syscall for the highest and the lowest nid index in 6.20
 } tSceLibrary;
 
 typedef struct
@@ -43,6 +44,33 @@ typedef struct
 	unsigned int num;
 	tSceLibrary table[MAX_LIBRARIES];
 } HBLLibTable;
+
+typedef enum
+{
+	LIBRARY_INTERRUPTMANAGER = 0,
+	LIBRARY_THREADMANFORUSER,
+	LIBRARY_STDIOFORUSER,
+	LIBRARY_IOFILEMGRFORUSER,
+	LIBRARY_MODULEMGRFORUSER,
+	LIBRARY_SYSMEMUSERFORUSER,
+	LIBRARY_SCESUSPENDFORUSER,
+	LIBRARY_UTILSFORUSER,
+	LIBRARY_LOADEXECFORUSER,
+	LIBRARY_SCEGE_USER,
+	LIBRARY_SCERTC,
+	LIBRARY_SCEAUDIO,
+	LIBRARY_SCEDISPLAY,
+	LIBRARY_SCECTRL,
+	LIBRARY_SCEHPRM,
+	LIBRARY_SCEPOWER,
+	LIBRARY_SCEOPENPSID,
+	LIBRARY_SCEWLANDRV,
+	LIBRARY_SCEUMDUSER,
+	LIBRARY_SCEUTILITY,
+	LIBRARY_SCESASCORE,
+	LIBRARY_SCEIMPOSE,
+	LIBRARY_SCEREG
+} HBLLibraryIndex;
 
 // Auxiliary structures to help with syscall estimation
 extern HBLLibTable* library_table;

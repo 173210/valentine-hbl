@@ -1,3 +1,6 @@
+2010/08/01 (wololo)
+- JJS' patch for syscall estimation. Improves syscall estimation on psp2000 < 6.20, psp3000 < 6.20, and pspGo all firmwares
+
 2010/07/18 (wololo)
 - Fix for issue 270 Sound in picodrive (needs to be 44KHz though, check the settings in picodrive!)
 - Fix a bug introduced in R94 with libraries unloading. This fixes issues 280 and 283 (goEar and pspkvm)

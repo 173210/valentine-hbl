@@ -22,7 +22,7 @@ u32 psp_model = 1;
  */
 u32 getFirmwareVersion()
 {
-    if (firmware_version != 1) return firmware_version;
+	if (firmware_version != 1) return firmware_version;
 
     firmware_version = 0;
     u32 value = *(u32*)0x09E7b68c;
@@ -33,13 +33,13 @@ u32 getFirmwareVersion()
 		    firmware_version = 500;
 		    break;  
 		case 0x4CFA7F33:
-		    firmware_version = 550; //actually 5.03
+		    firmware_version = 503;
 		    break;               
 		case 0xA67D3F99:
 		    firmware_version = 550;
 		    break;
 		case 0x67D3F99F:
-		    firmware_version = 555; //actually 5.51
+		    firmware_version = 551;
 		    break;
 		case 0xCFA7F33F:
 		    firmware_version = 555;
@@ -50,10 +50,10 @@ u32 getFirmwareVersion()
 		case 0x22B5CE0D:
 		    firmware_version = 600;
 		    break;
-		case 0x32A80E1B  :
+		case 0x32A80E1B:
 		    firmware_version = 610;
 		    break;     
-		case 0x73880F1B  :
+		case 0x73880F1B:
 		    firmware_version = 620;
 		    break;            
     }

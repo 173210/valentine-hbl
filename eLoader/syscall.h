@@ -24,5 +24,7 @@ u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file);
 */
 u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod type);
 
+SceUID open_nids_file(const char* lib);
+
 #endif
 

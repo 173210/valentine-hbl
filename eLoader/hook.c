@@ -9,6 +9,7 @@
 #include "memory.h"
 #include "resolve.h"
 #include "globals.h"
+#include "syscall.h"
 
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!
 
@@ -33,7 +34,9 @@ u32 setup_hook(u32 nid)
 	u32 hook_call = 0;
     tGlobals * g = get_globals();
 	
-	// HOOOOOOK THAT!!!
+    //We have 2 switch blocks
+    // The first one is for nids that need to be hooked in all cases
+    //The second one is for firmwares that don't have perfect syscall estimation
     switch (nid) 
 	{
 
@@ -78,14 +81,13 @@ u32 setup_hook(u32 nid)
             break;          
 //Audio monitors
         case 0x6FC46853: //	sceAudioChRelease  
-            if (!force_return_to_xmb())
+			if (!force_return_to_xmb())
                 hook_call = MAKE_JUMP(_hook_sceAudioChRelease);
             break; 
         case 0x5EC81C55: //	sceAudioChReserve  
             if (!force_return_to_xmb())
                 hook_call = MAKE_JUMP(_hook_sceAudioChReserve);
             break; 
-
             
 #ifdef LOAD_MODULE
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
@@ -100,172 +102,6 @@ u32 setup_hook(u32 nid)
 			break;
 #endif  
 
-// Overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
-        case 0x06A70004: //	sceIoMkdir
-            if (g->override_sceIoMkdir == GENERIC_SUCCESS)
-            {
-                LOGSTR0(" sceIoMkdir goes to void because of settings ");
-                hook_call = MAKE_JUMP(_hook_generic_ok);
-            }
-            break; 
-        
-	    case 0xC8186A58:  //sceKernelUtilsMd5Digest  (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);
-            break;
-            
-	    case 0x3FC9AE6A:  //sceKernelDevkitVersion   (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceKernelDevkitVersion);
-            break;
-            
-        case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
-            LOGSTR0(" mem trick ");
-            hook_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
-            break;
-		
-        //RTC
-        case 0xC41C2853: //	sceRtcGetTickResolution (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcGetTickResolution);
-            break;
-            
-		case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
-            break;   
-            
-        case 0x7ED29E40: //	sceRtcSetTick (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcSetTick);
-            break;       
-
-        case 0x6FF40ACC: //   sceRtcGetTick	 (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcGetTick);
-            break;       
-        
-        case 0x57726BC1: //	sceRtcGetDayOfWeek (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_generic_ok); //always monday in my world
-            break;       
-        
-        case 0x34885E0D: //sceRtcConvertUtcToLocalTime	 (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcConvertUtcToLocalTime);
-            break;       
-  
-        case 0x4CFA57B0: //sceRtcGetCurrentClock	 (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentClock);
-            break; 
-            
-        //others
-        case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceIoLseek32);
-            break;
-		
-        case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
-            if (g->override_sceCtrlPeekBufferPositive == OVERRIDE)
-            {
-                hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
-            }
-            break;
-            
-        case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
-            hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
-            break;  
-            
-        case 0x383F7BCC: // sceKernelTerminateDeleteThread  (avoid syscall estimation)
-            hook_call = MAKE_JUMP(kill_thread); //TODO Take into account with thread monitors ?
-            break;    
-        
-        case 0xD675EBB8: // sceKernelSelfStopUnloadModule (avoid syscall estimation) - not sure about this one
-            hook_call = MAKE_JUMP(_hook_sceKernelSelfStopUnloadModule);
-            break;               
-
-        case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)          
-            hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
-            break; 
-            
-        case 0x884C9F90: //	sceKernelTrySendMsgPipe (avoid syscall estimation)  
-            hook_call = MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);
-            break;    
-
-        case 0x74829B76: // sceKernelReceiveMsgPipe (avoid syscall estimation)  
-            hook_call = MAKE_JUMP(_hook_sceKernelReceiveMsgPipe);
-            break;                 
-           
-        case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
-            hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
-            break; 
-            
-        case 0x24331850: // kuKernelGetModel ?
-            hook_call = MAKE_JUMP(_hook_generic_ok);
-            break; 	
-            
-#ifdef HOOK_POWERFUNCTIONS
-        case 0xFEE03A2F: //scePowerGetCpuClockFrequency (alias to scePowerGetCpuClockFrequencyInt)
-        case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_scePowerGetCpuClockFrequencyInt);
-            break;  
-
-        case 0x478FE6F5:// scePowerGetBusClockFrequency     (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_scePowerGetBusClockFrequency);
-            break;         
-
-        case 0x2085D15D: //scePowerGetBatteryLifePercent  (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
-            break;   
-
-        case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
-            break;      
-            
-// Hooks to a function that does nothing but says "ok"     
-        case 0xD3075926: //scePowerIsLowBattery (avoid syscall estimation)  
-        case 0x87440F5E: // scePowerIsPowerOnline  - Assuming it's not super necessary
-        case 0x04B7766E: //	scePowerRegisterCallback - Assuming it's already done by the game
-        case 0xD6D016EF: // scePowerLock - Assuming it's not super necessary
-        case 0xCA3D34C1: // scePowerUnlock - Assuming it's not super necessary
-            hook_call = MAKE_JUMP(_hook_generic_ok);
-            break; 	   
-
-#endif            
-  
-#ifdef HOOK_AUDIOFUNCTIONS                    
-        case 0x38553111: //sceAudioSRCChReserve(avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceAudioSRCChReserve);
-            break;
-		
-        case 0x5C37C0AE: //	sceAudioSRCChRelease (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceAudioSRCChRelease);
-            break;
-		
-        case 0xE0727056: // sceAudioSRCOutputBlocking (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
-            break;
-  
-        case 0x136CAF51: // sceAudioOutputBlocking (avoid syscall estimation)
-            hook_call = MAKE_JUMP(_hook_sceAudioOutputBlocking);
-            break;  
-              
-
-#endif   
-
-#ifdef HOOK_CHDIR_AND_FRIENDS    
-        case 0x55F4717D: //	sceIoChdir (only if it failed)
-            if (g->chdir_ok)
-                break;
-            LOGSTR0(" Chdir trick sceIoChdir\n");
-            hook_call = MAKE_JUMP(_hook_sceIoChdir);
-            break;
-		
-        case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
-            if (g->chdir_ok)
-                break;
-            LOGSTR0(" Chdir trick sceIoOpen\n");                        
-            hook_call = MAKE_JUMP(_hook_sceIoOpen);
-            break;
-		
-        case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-            if (g->chdir_ok)
-                break;
-            LOGSTR0(" Chdir trick sceIoDopen\n");                        
-            hook_call = MAKE_JUMP(_hook_sceIoDopen);
-            break;                      
-#endif
 
 #ifdef HOOK_UTILITY
 		case 0xC629AF26: //sceUtilityLoadAvModule
@@ -295,6 +131,184 @@ u32 setup_hook(u32 nid)
 			LOGSTR0(" Hook sceUtilityUnloadModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityUnloadModule);
 			break;			
+#endif            
+    }
+    
+    if (hook_call) 
+        return hook_call;
+            
+    // Overrides below this point don't need to be done if we have perfect syscall estimation      
+    if (g->syscalls_known)
+        return 0;
+ 
+    switch (nid) 
+	{ 
+
+// Overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
+        case 0x06A70004: //	sceIoMkdir
+            if (g->override_sceIoMkdir == GENERIC_SUCCESS)
+            {
+                LOGSTR0(" sceIoMkdir goes to void because of settings ");
+                hook_call = MAKE_JUMP(_hook_generic_ok);
+            }
+            break; 
+        
+	    case 0xC8186A58:  //sceKernelUtilsMd5Digest  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);
+            break;
+            
+	    case 0x3FC9AE6A:  //sceKernelDevkitVersion   (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelDevkitVersion);
+            break;
+            
+        case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
+            LOGSTR0(" mem trick ");
+            hook_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
+            break;
+		
+        //RTC
+        case 0xC41C2853: //	sceRtcGetTickResolution (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceRtcGetTickResolution);
+            break;
+            
+		case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
+            break;   
+            
+        case 0x7ED29E40: //	sceRtcSetTick (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceRtcSetTick);
+            break;       
+
+        case 0x6FF40ACC: //   sceRtcGetTick	 (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceRtcGetTick);
+            break;       
+        
+        case 0x57726BC1: //	sceRtcGetDayOfWeek (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok); //always monday in my world
+            break;       
+        
+        case 0x34885E0D: //sceRtcConvertUtcToLocalTime	 (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceRtcConvertUtcToLocalTime);
+            break;       
+  
+        case 0x4CFA57B0: //sceRtcGetCurrentClock	 (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentClock);
+            break; 
+            
+        //others
+        case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceIoLseek32);
+            break;
+		
+        case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
+			if (g->override_sceCtrlPeekBufferPositive == OVERRIDE)
+            {
+                hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
+            }
+            break;
+            
+        case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
+			hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
+            break;  
+            
+        case 0x383F7BCC: // sceKernelTerminateDeleteThread  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(kill_thread); //TODO Take into account with thread monitors ?
+            break;    
+        
+        case 0xD675EBB8: // sceKernelSelfStopUnloadModule (avoid syscall estimation) - not sure about this one
+            hook_call = MAKE_JUMP(_hook_sceKernelSelfStopUnloadModule);
+            break;               
+
+        case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)          
+			hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
+            break; 
+            
+        case 0x884C9F90: //	sceKernelTrySendMsgPipe (avoid syscall estimation)  
+            hook_call = MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);
+            break;    
+
+        case 0x74829B76: // sceKernelReceiveMsgPipe (avoid syscall estimation)  
+			hook_call = MAKE_JUMP(_hook_sceKernelReceiveMsgPipe);
+            break;                 
+           
+        case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
+			hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
+            break; 
+            
+        case 0x24331850: // kuKernelGetModel ?
+            hook_call = MAKE_JUMP(_hook_generic_ok);
+            break; 	
+            
+#ifdef HOOK_POWERFUNCTIONS
+        case 0xFEE03A2F: //scePowerGetCpuClockFrequency (alias to scePowerGetCpuClockFrequencyInt)
+        case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_scePowerGetCpuClockFrequencyInt);
+            break;  
+
+        case 0x478FE6F5:// scePowerGetBusClockFrequency     (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_scePowerGetBusClockFrequency);
+            break;         
+
+        case 0x2085D15D: //scePowerGetBatteryLifePercent  (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
+            break;   
+
+        case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
+            break;      
+            
+// Hooks to a function that does nothing but says "ok"     
+        case 0xD3075926: //scePowerIsLowBattery (avoid syscall estimation)  
+        case 0x87440F5E: // scePowerIsPowerOnline  - Assuming it's not super necessary
+        case 0x04B7766E: //	scePowerRegisterCallback - Assuming it's already done by the game
+        case 0xD6D016EF: // scePowerLock - Assuming it's not super necessary
+        case 0xCA3D34C1: // scePowerUnlock - Assuming it's not super necessary
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break; 	   
+
+#endif            
+  
+#ifdef HOOK_AUDIOFUNCTIONS                    
+        case 0x38553111: //sceAudioSRCChReserve(avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceAudioSRCChReserve);
+            break;
+		
+        case 0x5C37C0AE: //	sceAudioSRCChRelease (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceAudioSRCChRelease);
+            break;
+		
+        case 0xE0727056: // sceAudioSRCOutputBlocking (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
+            break;
+  
+        case 0x136CAF51: // sceAudioOutputBlocking (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceAudioOutputBlocking);
+            break;  
+              
+
+#endif   
+
+#ifdef HOOK_CHDIR_AND_FRIENDS    
+        case 0x55F4717D: //	sceIoChdir (only if it failed)
+            if (g->chdir_ok)
+                break;
+            LOGSTR0(" Chdir trick sceIoChdir\n");
+            hook_call = MAKE_JUMP(_hook_sceIoChdir);
+            break;
+		
+        case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
+            if (g->chdir_ok)
+                break;
+            LOGSTR0(" Chdir trick sceIoOpen\n");                        
+            hook_call = MAKE_JUMP(_hook_sceIoOpen);
+            break;
+		
+        case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
+            if (g->chdir_ok)
+                break;
+            LOGSTR0(" Chdir trick sceIoDopen\n");                        
+            hook_call = MAKE_JUMP(_hook_sceIoDopen);
+            break;                      
 #endif
     }
 
@@ -694,6 +708,23 @@ void net_term()
     }
 }
 
+// Release the kernel audio channel
+void audio_term()
+{
+	tGlobals * g = get_globals();
+
+	if (g->syscalls_known)
+	{
+		// sceAudioSRCChRelease
+		if (!run_nid(0x5C37C0AE))
+		{
+			estimate_syscall("sceAudio", 0x5C37C0AE, FROM_LOWEST);
+			run_nid(0x5C37C0AE);
+		}
+	}
+}
+	
+
 void ram_cleanup() 
 {
     LOGSTR0("Ram Cleanup\n");
@@ -725,6 +756,7 @@ void  _hook_sceKernelExitGame()
     }
 
     net_term();
+    audio_term();
     threads_cleanup();
     ram_cleanup();
     sceKernelExitDeleteThread(0);

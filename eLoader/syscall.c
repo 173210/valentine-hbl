@@ -28,26 +28,33 @@ SceUID open_nids_file(const char* lib)
 {
 	char file_path[MAX_LIBRARY_NAME_LENGTH + 100];
 	
-	// Constructing the file path
-	strcpy(file_path, LIB_PATH);
     int firmware_v = getFirmwareVersion();
 	
-    if (firmware_v >= 500 && firmware_v < 600)
-        strcat(file_path, "_5xx/");
-    else if (firmware_v >= 600)
-        strcat(file_path, "_6xx/");
+	int i = 0;
 
-	strcat(file_path, lib);
-	strcat(file_path, LIB_EXTENSION);
-    
-    // Rollback to default name in case of error
-    if (!file_exists(file_path))
-    {
-        strcpy(file_path, LIB_PATH);
-        strcat(file_path, "/");
-        strcat(file_path, lib);
-        strcat(file_path, LIB_EXTENSION);
-    }
+    //We try to open a lib file base on the version of the firmware as precisely as possible,
+    //then fallback to less precise versions. for example,try in this order:
+    // libs_503, libs_50x, libs_5xx, libs 
+	do 
+	{
+		switch (i)
+		{
+			case 0:
+				mysprintf4(file_path, "%s_%d/%s%s", (u32)LIB_PATH, firmware_v, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+			case 1:
+				mysprintf4(file_path, "%s_%dx/%s%s", (u32)LIB_PATH, firmware_v / 10, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+			case 2:
+				mysprintf4(file_path, "%s_%dxx/%s%s", (u32)LIB_PATH, firmware_v / 100, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+			case 3:
+				mysprintf3(file_path, "%s/%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+		}
+		i++;
+	}
+	while ((i < 4) && !file_exists(file_path));
 
 	LOGSTR1("Opening %s\n", (u32)file_path);
 
@@ -303,19 +310,21 @@ u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
 	}
 	
 	int estimated_syscall;	
-	if ((u32)nid_index > g->library_table.table[lib_index].lowest_index)
+	if ((u32)nid_index >= g->library_table.table[lib_index].lowest_index)
 	{
 		estimated_syscall = (int)g->library_table.table[lib_index].lowest_syscall + nid_index - (int)g->library_table.table[lib_index].lowest_index;
 	}
 	else
 	{
-		estimated_syscall = (int)g->library_table.table[lib_index].lowest_syscall + nid_index + (int)g->library_table.table[lib_index].num_library_exports - (int)g->library_table.table[lib_index].lowest_index;
+		estimated_syscall = (int)g->library_table.table[lib_index].lowest_syscall + nid_index + (int)g->library_table.table[lib_index].num_library_exports - (int)g->library_table.table[lib_index].lowest_index + (int)g->library_table.table[lib_index].gap;
 	}
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);
 
 	// Check if estimated syscall already exists (should be very rare)
-    estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
+	// This is not needed if the syscalls are known to be there
+	if (!g->syscalls_known)
+		estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
 
 	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
 

@@ -94,7 +94,7 @@ typedef struct
     //tables.c
     HBLNIDTable nid_table;
     HBLLibTable library_table;
-    
+    int syscalls_known;
 } tGlobals;
 
 

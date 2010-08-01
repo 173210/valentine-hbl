@@ -304,6 +304,11 @@ void _start()
 	{
         print_to_screen("PSP Go Detected");
     }
+
+	// Select syscall estimation method
+	// For later I would propose a per-library flag.
+    tGlobals * g = get_globals();
+	g->syscalls_known = ((getFirmwareVersion() <= 610) || (getPSPModel() == PSP_GO));
     
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);

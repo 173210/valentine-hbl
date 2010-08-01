@@ -6,6 +6,7 @@
 #include "lib.h"
 #include "utils.h"
 #include "globals.h"
+#include "syscall.h"
 
 // Adds NID entry to nid_table
 int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
@@ -156,99 +157,347 @@ u32 get_good_call(u32* call_pointer)
 	return *call_pointer;
 }
 
-// Gets lowest syscall from kernel dump
-u32 get_klowest_syscall(char* lib_name)
+
+int get_library_offset(u32 library, int psplink_running)
 {
-	SceUID kdump_fd;
-	SceSize kdump_size;
-	SceOff lowest_offset = 0;
-	u32 lowest_syscall = 0xFFFFFFFF;
+	// This could be in external files later on
 
-	kdump_fd = sceIoOpen(HBL_ROOT"kmem.dump", PSP_O_CREAT | PSP_O_RDONLY, 0777);
-	if (kdump_fd >= 0)
+	short offset_570[] =    { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 247, 228, 41 };
+	short offset_570_go[] = { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 363, 228, 41 };
+
+	short offset_500[] =    { -503, -494, -351, -340, -303, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 245, 226, 42 };
+	short offset_550[] =    { -504, -495, -352, -341, -304, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 246, 227, 42 };
+	short offset_600[] =    { -523, -514, -363, -352, -315, -293, -268, -262, -214, -205, -187, -39, -140, -117, -12, -97, 0, 15, 69, 83, 271, 249, 41 };
+	short offset_600_go[] = { -523, -514, -363, -352, -315, -293, -268, -262, -214, -205, -187, -39, -140, -117, -12, -97, 0, 15, 69, 83, 383, 361, 41 };
+
+	short offset_500_psplink[] = { -542, -533, -390, -379, -342, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -48, 0, 15, 69, 83, 265, 246, 42 };
+	short offset_550_psplink[] = { -543, -534, -391, -380, -343, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 266, 247, 42 };
+
+	switch (getFirmwareVersion())
 	{
-		kdump_size = sceIoLseek(kdump_fd, 0, PSP_SEEK_END);
+		case 500:
+		case 503:
+			if (psplink_running)
+				return offset_500_psplink[library];
+			else 
+				return offset_500[library];
 
-		if (kdump_size > 0)
-		{
-			if (strcmp(lib_name, "LoadExecForUser") == 0)
-				lowest_offset = (SceOff)0x000203AC;
-	
-			else if (strcmp(lib_name, "UtilsForUser") == 0)
-				lowest_offset = (SceOff)0x0002044C;
-	
-			else if (strcmp(lib_name, "sceSuspendForUser") == 0)
-				lowest_offset = (SceOff)0x0002049C;
-	
-			else if (strcmp(lib_name, "SysMemUserForUser") == 0)
-				lowest_offset = (SceOff)0x000204EC;
-	
-			else if (strcmp(lib_name, "ModuleMgrForUser") == 0)
-				lowest_offset = (SceOff)0x000205DC;
-	
-			else if (strcmp(lib_name, "IoFileMgrForUser") == 0)
-				lowest_offset = (SceOff)0x0002071C;
-	
-			else if (strcmp(lib_name, "StdioForUser") == 0)
-				lowest_offset = (SceOff)0x000207BC;
-	
-			else if (strcmp(lib_name, "ThreadManForUser") == 0)
-				lowest_offset = (SceOff)0x000208FC;
-	
-			else if (strcmp(lib_name, "InterruptManager") == 0)
-				lowest_offset = (SceOff)0x0002094C;
-	
-			else if (strcmp(lib_name, "sceDisplay") == 0)
-				lowest_offset = (SceOff)0x0002A8F8;
-	
-			else if (strcmp(lib_name, "sceRtc") == 0)
-				lowest_offset = (SceOff)0x0002B0D8;
-	
-			else if (strcmp(lib_name, "sceCtrl") == 0)
-				lowest_offset = (SceOff)0x000BEDA0;
-	
-			else if (strcmp(lib_name, "sceWlanDrv_lib") == 0)
-				lowest_offset = (SceOff)0x00159DA8;
-	
-			else if (strcmp(lib_name, "sceWlanDrv") == 0)
-				lowest_offset = (SceOff)0x00159E00;
-	
-			else if (strcmp(lib_name, "sceReg") == 0)
-				lowest_offset = (SceOff)0x001889A0;
-	
-			else if (strcmp(lib_name, "sceUtility") == 0)
-				lowest_offset = (SceOff)0x001E5CD0;
-	
-			else if (strcmp(lib_name, "sceUmdUser") == 0)
-				lowest_offset = (SceOff)0x001E6408;
-	
-			else if (strcmp(lib_name, "sceNetIfhandle_lib") == 0)
-				lowest_offset = (SceOff)0x00269D80;
-	
+		case 550:
+		case 551:
+		case 555:
+			if (psplink_running)
+				return offset_550_psplink[library];
 			else
-            {
-				NID_LOGSTR0("Library not hacked\n");			
-            }
+				return offset_550[library];
 
-			if (lowest_offset > 0)
-			{
-				NID_LOGSTR1("Lowest offset: 0x%08lX\n", lowest_offset);
-				sceIoLseek(kdump_fd, lowest_offset, PSP_SEEK_SET);
-				sceIoRead(kdump_fd, &lowest_syscall, sizeof(lowest_syscall));
-				NID_LOGSTR1("Kernel dump says lowest syscall is: 0x%08lX\n", lowest_syscall);
-			}			
+		case 570:
+			if (getPSPModel() == PSP_GO)
+				return offset_570_go[library];
+			else
+				return offset_570[library];
+
+		case 600:
+		case 610:
+			if (getPSPModel() == PSP_GO)
+				return offset_600_go[library];
+			else
+				return offset_600[library];
+	}
+
+	return 0;
+}
+
+
+// Gets lowest syscall from kernel dump
+u32 get_klowest_syscall(tSceLibrary* library)
+{
+	library->gap = 0; // For < 6.20 and in case of error
+
+	u32 lowest_syscall = 0xFFFFFFFF;
+	tGlobals * g = get_globals();
+
+	LOGSTR1("Get lowest syscall for %s\n", (u32)library->name);
+
+	if (g->syscalls_known)
+	{
+		if (getFirmwareVersion() <= 610)
+		{
+			// Syscalls can be calculated from the library offsets on FW <= 6.10
+			tSceLibrary* lib_base = &(g->library_table.table[20]);
+			LOGSTR1("Base syscall is %d\n", lib_base->lowest_syscall);
+
+			// Detect if PSPLink is running by analyzing the position of sceImpose, it is > 245 on CFW
+			int psplink_running = ((getFirmwareVersion() <= 550) 
+				&& ((g->library_table.table[17].lowest_syscall - lib_base->lowest_syscall) > 245));
+
+			if (psplink_running)
+				LOGSTR0("Using offsets for CFW\n");
+
+			if (strcmp(library->name, "InterruptManager") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_INTERRUPTMANAGER, psplink_running);
+
+			else if (strcmp(library->name, "ThreadManForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_THREADMANFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "StdioForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_STDIOFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "IoFileMgrForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_IOFILEMGRFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "ModuleMgrForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_MODULEMGRFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "SysMemUserForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SYSMEMUSERFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "sceSuspendForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCESUSPENDFORUSER, psplink_running);
+			
+			else if (strcmp(library->name, "UtilsForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_UTILSFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "LoadExecForUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_LOADEXECFORUSER, psplink_running);
+
+			else if (strcmp(library->name, "sceGe_user") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEGE_USER, psplink_running);
+
+			else if (strcmp(library->name, "sceRtc") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCERTC, psplink_running);
+
+			else if (strcmp(library->name, "sceAudio") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEAUDIO, psplink_running);
+
+			else if (strcmp(library->name, "sceDisplay") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEDISPLAY, psplink_running);
+
+			else if (strcmp(library->name, "sceCtrl") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCECTRL, psplink_running);
+
+			else if (strcmp(library->name, "sceHprm") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEHPRM, psplink_running);
+
+			else if (strcmp(library->name, "scePower") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEPOWER, psplink_running);
+
+			else if (strcmp(library->name, "sceOpenPSID") == 0)
+				lowest_syscall = lib_base->lowest_syscall;
+
+			else if (strcmp(library->name, "sceWlanDrv") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEWLANDRV, psplink_running);
+
+			else if (strcmp(library->name, "sceUmdUser") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEUMDUSER, psplink_running);
+
+			else if (strcmp(library->name, "sceUtility") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEUTILITY, psplink_running);
+
+			else if (strcmp(library->name, "sceSasCore") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCESASCORE, psplink_running);
+
+			else if (strcmp(library->name, "sceImpose") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEIMPOSE, psplink_running);
+
+			else if (strcmp(library->name, "sceReg") == 0)
+				lowest_syscall = lib_base->lowest_syscall + get_library_offset(LIBRARY_SCEREG, psplink_running);
+
 		}
 		else
 		{
-			NID_LOGSTR0("Kmemdump empty\n");
+			// Read the lowest syscalls from the GO kernel memory dump, only for 6.20
+			SceUID kdump_fd;
+			SceSize kdump_size;
+			SceOff lowest_offset = 0;
+			SceOff next_library_offset = 0;
+			u32 next_library_base_syscall = 0;
+
+			kdump_fd = sceIoOpen(HBL_ROOT"kmem.dump", PSP_O_CREAT | PSP_O_RDONLY, 0777);
+			if (kdump_fd >= 0)
+			{
+				kdump_size = sceIoLseek(kdump_fd, 0, PSP_SEEK_END);
+
+				if (kdump_size > 0)
+				{
+					// Libraries are listed in the same order as in the 6.20 kernel
+
+					if (strcmp(library->name, "InterruptManager") == 0)
+					{
+						lowest_offset = (SceOff)0x0002094C;
+						next_library_offset = (SceOff)0x000208FC;
+					}
+					else if (strcmp(library->name, "ThreadManForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x000208FC;
+						next_library_offset = (SceOff)0x000207BC;
+					}
+					else if (strcmp(library->name, "StdioForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x000207BC;
+						next_library_offset = (SceOff)0x0002071C;
+					}
+					else if (strcmp(library->name, "IoFileMgrForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x0002071C;
+						next_library_offset = (SceOff)0x000205DC;
+					}
+					else if (strcmp(library->name, "ModuleMgrForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x000205DC;
+						next_library_offset = (SceOff)0x000204EC;
+					}
+					else if (strcmp(library->name, "SysMemUserForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x000204EC;
+						next_library_offset = (SceOff)0x0002049C;
+					}
+					else if (strcmp(library->name, "sceSuspendForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x0002049C;
+						next_library_offset = (SceOff)0x0002044C;
+					}
+					else if (strcmp(library->name, "UtilsForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x0002044C;
+						next_library_offset = (SceOff)0x000203AC;
+					}
+					else if (strcmp(library->name, "LoadExecForUser") == 0)
+					{
+						lowest_offset = (SceOff)0x000203AC;
+						// Unknown library @ 0x0002B630
+						next_library_offset = (SceOff)0x0002B630;
+					}
+					else if (strcmp(library->name, "sceGe_user") == 0)
+					{
+						lowest_offset = (SceOff)0x0002B420;
+						next_library_offset = (SceOff)0x0002B0D8;
+					}
+					else if (strcmp(library->name, "sceRtc") == 0)
+					{
+						lowest_offset = (SceOff)0x0002B0D8;
+						next_library_offset = (SceOff)0x0002A8F8;
+					}
+					else if (strcmp(library->name, "sceDisplay") == 0)
+					{
+						lowest_offset = (SceOff)0x0002A8F8;
+						next_library_offset = (SceOff)0x000BEDA0;
+					}
+					else if (strcmp(library->name, "sceCtrl") == 0)
+					{
+						lowest_offset = (SceOff)0x000BEDA0;
+						next_library_offset = (SceOff)0x000BE858;
+					}
+					else if (strcmp(library->name, "scePower") == 0)
+					{
+						lowest_offset = (SceOff)0x000BE858;
+						next_library_offset = (SceOff)0x000F8010;
+					}
+					else if (strcmp(library->name, "sceAudio") == 0)
+					{
+						lowest_offset = (SceOff)0x000F8010;
+						next_library_offset = (SceOff)0x0015A9A0;
+					}
+					else if (strcmp(library->name, "sceHprm") == 0)
+					{
+						lowest_offset = (SceOff)0x0015A9A0;	
+						next_library_offset = (SceOff)0x0015A670;
+					}
+					else if (strcmp(library->name, "sceOpenPSID") == 0)
+					{
+						lowest_offset = (SceOff)0x0015A670;
+						// Unknown library @ 0x0015A2E0 with 15 exports
+						next_library_offset = (SceOff)0x0015A2E0;
+					}
+					else if (strcmp(library->name, "sceWlanDrv") == 0)
+					{
+						lowest_offset = (SceOff)0x00159E00;
+						next_library_offset = (SceOff)0x00159DA8;
+					}
+					else if (strcmp(library->name, "sceWlanDrv_lib") == 0)
+					{
+						lowest_offset = (SceOff)0x00159DA8;
+						next_library_offset = (SceOff)0x001889A0;
+					}
+					else if (strcmp(library->name, "sceReg") == 0)
+					{
+						lowest_offset = (SceOff)0x001889A0;
+						// Unknown library @ 0x001882C8 with 8 exports
+						next_library_offset = (SceOff)0x001882C8;
+					}
+					else if (strcmp(library->name, "sceUmdUser") == 0)
+					{
+						lowest_offset = (SceOff)0x001E6408;
+						next_library_offset = (SceOff)0x001E5CD0;
+					}
+					else if (strcmp(library->name, "sceUtility") == 0)
+					{
+						lowest_offset = (SceOff)0x001E5CD0;
+						// Unknown library @ 0x001E5C78
+						next_library_offset = (SceOff)0x001E5C78;
+					}
+					else if (strcmp(library->name, "sceSasCore") == 0)
+					{
+						lowest_offset = (SceOff)0x0026A4D0;
+						// Unknown library @ 0x0026A420
+						next_library_offset = (SceOff)0x0026A420;
+					}
+					else if (strcmp(library->name, "sceImpose") == 0)
+					{
+						lowest_offset = (SceOff)0x0025B3A0;
+						// Unknown library @ 0x0025B2F0
+						next_library_offset = (SceOff)0x0025B2F0;
+					}
+					else
+					{
+						LOGSTR0("Library not hacked\n");			
+					}
+
+					if (lowest_offset > 0)
+					{
+						LOGSTR1("Lowest offset: 0x%08lX\n", lowest_offset);
+						sceIoLseek(kdump_fd, lowest_offset, PSP_SEEK_SET);
+						sceIoRead(kdump_fd, &lowest_syscall, sizeof(lowest_syscall));
+						LOGSTR1("Kernel dump says lowest syscall is: 0x%08lX\n", lowest_syscall);
+
+						// Read next library base
+						NID_LOGSTR1("Next library offset: 0x%08lX\n", next_library_offset);
+						sceIoLseek(kdump_fd, next_library_offset, PSP_SEEK_SET);
+						sceIoRead(kdump_fd, &next_library_base_syscall, sizeof(next_library_base_syscall));
+						LOGSTR1("Kernel dump says next libraries syscall is: 0x%08lX\n", next_library_base_syscall);
+
+						// Does the library fit without need to wrap around?
+						int position_of_first_nid = library->lowest_syscall - library->lowest_index;
+						int position_of_last_nid = position_of_first_nid + library->num_library_exports - 1;
+						if ((position_of_first_nid >= (int)lowest_syscall) && (position_of_last_nid < (int)next_library_base_syscall))
+						{
+							// The library fits without wrap around, so the gap can be
+							// ignored and the lowest syscall must be adjusted.
+							library->gap = 0;
+							lowest_syscall = position_of_first_nid;
+						}
+						else
+						{
+							// Library wraps around, calculate gap
+							library->gap = next_library_base_syscall - lowest_syscall - library->num_library_exports;
+						}
+
+						LOGSTR1("The gap is: %d\n", library->gap);
+					}			
+				}
+				else
+				{
+					LOGSTR0("Kmemdump empty\n");
+				}
+				
+				sceIoClose(kdump_fd);
+			}
+			else
+			{
+				LOGSTR0("Could not open kernel dump\n");
+			}
 		}
-		
-		sceIoClose(kdump_fd);
 	}
-	else
-    {
-		NID_LOGSTR0("Could not open kernel dump\n");
-    }
+
 	return lowest_syscall;
 }
 
@@ -303,34 +552,17 @@ int get_lower_known_nid(unsigned int lib_index, u32 nid)
 // Fills remaining information on a library
 tSceLibrary* complete_library(tSceLibrary* plibrary)
 {
-	char file_path[MAX_LIBRARY_NAME_LENGTH + 100];
 	SceUID nid_file;
 	u32 nid;
 	unsigned int i;
 	u32 lowest_syscall;
 	int syscall_gap;
 	int index;
-	
-	// Constructing the file path
-	strcpy(file_path, LIB_PATH);
-	if (getFirmwareVersion() >= 600)
-	{
-		strcat(file_path, "_6xx/");
-	}
-	else
-	{
-		strcat(file_path, "_5xx/");
-	}	 
-	
-	strcat(file_path, plibrary->name);
-	strcat(file_path, LIB_EXTENSION);
 
-	NID_LOGSTR0(">> Opening file ");
-	NID_LOGSTR0(file_path);
-	NID_LOGSTR0("\n");
+	nid_file = open_nids_file(plibrary->name);
 
 	// Opening the NID file
-	if ((nid_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777)) >= 0)
+	if (nid_file > -1)
 	{
 		// Calculate number of NIDs (size of file/4)
 		plibrary->num_library_exports = sceIoLseek(nid_file, 0, PSP_SEEK_END) / sizeof(u32);
@@ -349,10 +581,15 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 		}
 
 		NID_LOGSTR0("Getting lowest syscall from kernel dump\n");
-		lowest_syscall = get_klowest_syscall(plibrary->name);
+		lowest_syscall = get_klowest_syscall(plibrary);
 		if ((lowest_syscall & SYSCALL_MASK_RESOLVE) == 0)
 		{
 			syscall_gap = plibrary->lowest_syscall - lowest_syscall;
+
+			// We must consider the gap here too
+			if ((int)plibrary->lowest_index < syscall_gap)
+				syscall_gap -= plibrary->gap;
+
 			if (syscall_gap < 0)
 			{
 				NID_LOGSTR2("WARNING: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
@@ -379,6 +616,9 @@ tSceLibrary* complete_library(tSceLibrary* plibrary)
 				plibrary->lowest_index = index;
 				plibrary->lowest_nid = nid;
 				plibrary->lowest_syscall = lowest_syscall;
+
+				// Add to nid table
+				add_nid_to_table(nid, MAKE_SYSCALL(lowest_syscall), get_library_index(plibrary->name));
 			}
 		}
 		
@@ -589,10 +829,6 @@ int build_nid_table()
 						cur_call += 2;
 					}
 
-					// Fill remaining data
-					NID_LOGSTR0("Completing library...\n");
-					ret = complete_library(&(g->library_table.table[k]));
-
 					// New library
 					g->library_table.num++;
 
@@ -674,41 +910,106 @@ int build_nid_table()
 		
 	} while(1);
 
+	// Fill remaining data after the syscall for sceOpenPSID is known
+	u32 m;
+	for (m = 0; m < g->library_table.num; m++)
+	{
+	  LOGSTR1("Completing library...%d\n", m);
+	  ret = complete_library(&(g->library_table.table[m]));
+	}
+	sceKernelDcacheWritebackInvalidateAll();
+
+
 #ifdef DEBUG
 	u32 c1, c2;
 	u32 syscall;
-	unsigned int line_count = 0;
-	
-	NID_LOGSTR0("\n==LIBRARY TABLE DUMP==\n");
-	c1 = 0;
-	while (c1 < k)
-	{
-		NID_LOGSTR1("->Index: %d\n", c1);
-		LOGLIB(g->library_table.table[c1]);
+	int estimated_correctly = 0;
 
-		NID_LOGSTR0("\nNID list:\n");
+	LOGSTR0("\n==LIBRARY TABLE DUMP==\n");
+	c1 = 0;
+	while (c1 < g->library_table.num)
+	{
+		LOGSTR2("->Index: %d, name %s\n", c1, (u32)g->library_table.table[c1].name);
+		LOGSTR2("predicted syscall range from 0x%08lX to 0x%08lX\n", g->library_table.table[c1].lowest_syscall, g->library_table.table[c1].lowest_syscall + g->library_table.table[c1].num_library_exports + g->library_table.table[c1].gap - 1); 
+
+		int nid_file = open_nids_file(g->library_table.table[c1].name);
+
 		c2 = 0;
-		while (c2 <= i)
+		while (c2 < g->nid_table.num)
 		{
+			int position = 0;
+			int foundNid = 0;
+
 			if (g->nid_table.table[c2].lib_index == c1)
 			{
 				if (g->nid_table.table[c2].call & SYSCALL_MASK_RESOLVE)
 					syscall = g->nid_table.table[c2].call;
 				else
 					syscall = GET_SYSCALL_NUMBER(g->nid_table.table[c2].call);
-				NID_LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, g->nid_table.table[c2].nid, syscall);
-				
-				line_count++;
-				if (line_count == 3)
+
+				LOGSTR3("[%d] 0x%08lX 0x%08lX ", c2, g->nid_table.table[c2].nid, syscall);
+
+				// Check nid in table against the estimated nids
+				if (g->syscalls_known && (nid_file > -1))
 				{
-					line_count = 0;
-					NID_LOGSTR0("\n");
+					sceIoLseek(nid_file, 0, PSP_SEEK_SET);
+					u32 current_nid = 0;
+					i = 0;
+					position = 0;
+					foundNid = 0;
+
+					for (i = g->library_table.table[c1].lowest_index; i < g->library_table.table[c1].num_library_exports; i++)
+					{
+						sceIoLseek(nid_file, 4 * i, PSP_SEEK_SET);
+						sceIoRead(nid_file, &current_nid, sizeof(u32));
+						if (current_nid == g->nid_table.table[c2].nid)
+						{
+							foundNid = 1;
+							break;
+						}
+						else
+							position++;
+					}
+
+
+					if (!foundNid)
+					{
+						// gap
+						position += g->library_table.table[c1].gap;
+
+						sceIoLseek(nid_file, 0, PSP_SEEK_SET);
+						for (i = 0; i < g->library_table.table[c1].lowest_index; i++)
+						{
+							sceIoLseek(nid_file, 4 * i, PSP_SEEK_SET);
+							sceIoRead(nid_file, &current_nid, sizeof(u32));
+
+							if (current_nid == g->nid_table.table[c2].nid)
+							{
+								foundNid = 1;
+								break;
+							}
+							else
+								position++;
+						}
+					}
+
+					estimated_correctly = ((g->library_table.table[c1].lowest_syscall + position) == syscall);
+
+					// format: estimated call, index in nid-file, correctly estimated?
+					LOGSTR3("0x%08lX %d %s\n", (g->library_table.table[c1].lowest_syscall + position), i, estimated_correctly ? (u32)"YES" : (u32)"NO");
 				}
+				else
+					LOGSTR0("\n");
+
 			}
+
 			c2++;
 		}
+
+		sceIoClose(nid_file);            
+
 		c1++;
-		NID_LOGSTR0("\n\n");
+		LOGSTR0("\n\n");
 	}
 #endif
 
