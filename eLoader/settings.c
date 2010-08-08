@@ -8,6 +8,7 @@
 #include "lib.h"
 #include "graphics.h"
 #include "globals.h"
+#include "utils.h"
 
 /*****************************************************************************/
 /* configYnParse : return TRUE if parameter is Y, FALSE if N                 */
@@ -57,7 +58,7 @@ int configIntParse(const char *xival)
 }
 
 /*****************************************************************************/
-/* configAddrParse : return 32-bit hex address                               */
+/* configAddrParse : return 32-bit hex (address)                               */
 /*****************************************************************************/
 u32 configAddrParse(const char *xival)
 {
@@ -229,7 +230,15 @@ void configGetProcessingOptions()
         else if (strcmp(lstr,"return_to_xmb_on_exit")==0)
         {
             g->return_to_xmb_on_exit = configIntParse(lval);
-        }        
+        }   
+        else if (strcmp(lstr,"force_exit_buttons")==0)
+        {
+            g->force_exit_buttons = configAddrParse(lval);
+        }   
+        else if (strcmp(lstr,"syscalls_known")==0)
+        {
+            g->syscalls_known = configIntParse(lval);
+        }           
         else if (strcmp(lstr,"hb_folder")==0)
         {
             //note: g->hb_folder is initialized in loadGlobalConfig
@@ -251,6 +260,8 @@ void loadGlobalConfig()
     g->override_sceIoMkdir = DONT_OVERRIDE;
     g->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;    
     g->return_to_xmb_on_exit = 0;
+    g->force_exit_buttons = 0;
+    g->syscalls_known = ((getFirmwareVersion() <= 610) || (getPSPModel() == PSP_GO));
     strcpy(g->hb_filename, "ms0:/PSP/GAME/");
     
     //load Config file

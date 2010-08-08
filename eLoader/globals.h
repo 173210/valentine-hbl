@@ -82,7 +82,8 @@ typedef struct
     //settings.c
     int override_sceIoMkdir;
     int override_sceCtrlPeekBufferPositive;
-    int return_to_xmb_on_exit;    
+    int return_to_xmb_on_exit;
+    u32 force_exit_buttons;
     //malloc.c
     u32 nblocks; //Number of allocated blocks
     HBLMemBlock block[MAX_ALLOCS]; /* Blocks */

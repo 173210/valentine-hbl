@@ -1,5 +1,6 @@
 #include "globals.h"
 #include "debug.h"
+#include "utils.h"
 
 tGlobals * get_globals() 
 {
@@ -25,7 +26,11 @@ void init_globals()
     tGlobals * g = get_globals();
     memset(g, 0, sizeof(tGlobals)); 
     strcpy(g->menupath,"ms0:/hbl/menu/EBOOT.PBP");
-    
+
+	// Select syscall estimation method
+	// For later I would propose a per-library flag.    
+    g->syscalls_known = ((getFirmwareVersion() <= 610) || (getPSPModel() == PSP_GO));
+
     g->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
     g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);
     g->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);

@@ -198,8 +198,20 @@ config = [
     	:functions => [
     		[0x2A2B3DE0, "sceUtilityLoadModule"],
     		[0xE49BFE92, "sceUtilityUnloadModule"],
+            [0x67AF3428, "sceUtilityMsgDialogShutdownStart"],
+            [0x9A1C91D7, "sceUtilityMsgDialogGetStatus"],
+            [0x95FC253B, "sceUtilityMsgDialogUpdate"],
+            [0x2AD8E239, "sceUtilityMsgDialogInitStart"],
     	],
     },  
+   	{
+    	:lib => "sceGe_user",
+    	:functions => [
+    		[0x1F6752AD, "sceGeEdramGetSize"],
+    		[0xE47E40E4, "sceGeEdramGetAddr"],
+    	],
+    },     
+    
 
 ]
 

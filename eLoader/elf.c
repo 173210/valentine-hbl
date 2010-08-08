@@ -89,7 +89,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 		// Sets the buffer pointer to end of program segment
-		buffer = buffer + program_header.p_filesz + 1;
+		buffer = buffer + program_header.p_filesz;
 
 		// Fills excess memory with zeroes
 		excess = program_header.p_memsz - program_header.p_filesz;

@@ -1,3 +1,9 @@
+2010/08/08 (wololo)
+- fix for issue 296 (off by 1 error). No visible change
+- fix for issue 137 (reset graphics). Fixes graphic issues with PSP Rhythm, Spider solitaire, FCE Ultra,...
+- added an option for "force exit". Allows to come back to HBL menu for homebrews that don't have an exit menu. This is an attempt to mitigate issue 181 (exit button not working anymore)
+- syscalls_known can now be overriden in the config file for tests purposes (untested)
+
 2010/08/01 (wololo)
 - JJS' patch for syscall estimation. Improves syscall estimation on psp2000 < 6.20, psp3000 < 6.20, and pspGo all firmwares
 

@@ -740,10 +740,18 @@ void ram_cleanup()
     LOGSTR0("Ram Cleanup Done\n");  
 }
 
+
+void exit_everything_but_me()
+{    
+    net_term();
+    audio_term();
+    threads_cleanup();
+    ram_cleanup();
+}
+
 //To return to the menu instead of exiting the game
 void  _hook_sceKernelExitGame() 
 {
-
     tGlobals * g = get_globals();
     /***************************************************************************/
     /* Call any exit callback first.                                           */
@@ -755,10 +763,7 @@ void  _hook_sceKernelExitGame()
         g->exitcallback(0,0,NULL);
     }
 
-    net_term();
-    audio_term();
-    threads_cleanup();
-    ram_cleanup();
+    exit_everything_but_me();
     sceKernelExitDeleteThread(0);
 }
 

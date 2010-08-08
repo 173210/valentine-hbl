@@ -95,8 +95,16 @@
 # scePower(1)
 	AddNID scePower_EBD177D6, 0x10178 # 0xebd177d6
 
-# sceUtility(2)
-	AddNID sceUtilityLoadModule, 0x10180   # 0x2a2b3de0
-	AddNID sceUtilityUnloadModule, 0x10188 # 0xe49bfe92
+# sceUtility(6)
+	AddNID sceUtilityLoadModule, 0x10180             # 0x2a2b3de0
+	AddNID sceUtilityUnloadModule, 0x10188           # 0xe49bfe92
+	AddNID sceUtilityMsgDialogShutdownStart, 0x10190 # 0x67af3428
+	AddNID sceUtilityMsgDialogGetStatus, 0x10198     # 0x9a1c91d7
+	AddNID sceUtilityMsgDialogUpdate, 0x101a0        # 0x95fc253b
+	AddNID sceUtilityMsgDialogInitStart, 0x101a8     # 0x2ad8e239
+
+# sceGe_user(2)
+	AddNID sceGeEdramGetSize, 0x101b0 # 0x1f6752ad
+	AddNID sceGeEdramGetAddr, 0x101b8 # 0xe47e40e4
 
 	.ident	"HBL-SDK"

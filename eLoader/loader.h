@@ -2,6 +2,6 @@
 #define ELOADER_LOADER
 
 // HBL stubs size
-#define NUM_HBL_IMPORTS 0x32
+#define NUM_HBL_IMPORTS 0x38
 
 #endif

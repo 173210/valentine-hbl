@@ -49,6 +49,7 @@ int	ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *st
 
 
 u32 setup_hook(u32 nid);
+void exit_everything_but_me();
 
 /* HOOKS */
 

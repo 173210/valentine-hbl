@@ -43,6 +43,12 @@ void run_eboot(const char *path, int is_eboot)
 		elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	LOGSTR0("Loading module\n");
+    
+    //clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
+    //if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
+    // I don't think they change based on each psp model
+    memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());    
+    
 	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
 
 	// No need for ELF file anymore
@@ -53,7 +59,7 @@ void run_eboot(const char *path, int is_eboot)
 		LOGSTR1("ERROR 0x%08lX loading main module\n", mod_id);
 		EXIT;
 	}
-
+    
 	mod_id = start_module(mod_id);
 
 	if (mod_id < 0)
@@ -74,9 +80,20 @@ void wait_for_eboot_end()
   /* Sleep until all threads have exited.                                    */
   /***************************************************************************/
     int lwait = 1;
+    SceCtrlData pad;
     while(lwait)
     {
         //sceKernelWaitSema(gThrSema, 1, 0);
+        
+        //Check for force exit to the menu
+        if (g->force_exit_buttons)
+        {
+            sceCtrlReadBufferPositive(&pad, 1);
+            if (pad.Buttons == g->force_exit_buttons)
+            {
+                exit_everything_but_me();
+            }
+        }
         lwait = g->numRunThreads + g->numPendThreads;
         //sceKernelSignalSema(gThrSema, 1);
 
@@ -305,10 +322,6 @@ void _start()
         print_to_screen("PSP Go Detected");
     }
 
-	// Select syscall estimation method
-	// For later I would propose a per-library flag.
-    tGlobals * g = get_globals();
-	g->syscalls_known = ((getFirmwareVersion() <= 610) || (getPSPModel() == PSP_GO));
     
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);

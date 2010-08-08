@@ -195,19 +195,19 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		{
 
 			LOGSTR1("Current nid: 0x%08lX\n", *cur_nid);
-			LOGSTR1("Current call: 0x%08lX\n", (u32)cur_call);
+			NID_LOGSTR1("Current call: 0x%08lX\n", (u32)cur_call);
 
 			// Get syscall/jump instruction for current NID
 			nid_index = get_call_nidtable(*cur_nid, &real_call);
 
-			LOGSTR1("Index for NID on table: %d\n", nid_index);
+			NID_LOGSTR1("Index for NID on table: %d\n", nid_index);
             
 			u32 hook_call = setup_hook(*cur_nid);
 
 			if (hook_call != 0)
 				real_call = hook_call;
 
-			LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
+			NID_LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
             
 			/* If NID not found in game imports */
 			/* Syscall estimation if library available */
@@ -216,7 +216,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
 			}
 
-			LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
+			NID_LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
 
 			/* If it's an instruction, resolve it */
 			/* 0xC -> syscall 0 */

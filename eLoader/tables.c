@@ -920,7 +920,7 @@ int build_nid_table()
 	sceKernelDcacheWritebackInvalidateAll();
 
 
-#ifdef DEBUG
+#ifdef NID_DEBUG
 	u32 c1, c2;
 	u32 syscall;
 	int estimated_correctly = 0;
