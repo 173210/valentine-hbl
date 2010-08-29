@@ -54,6 +54,7 @@ typedef struct
     u32 hbl_block_addr;
     //eLoader.c
     int menu_enabled;
+	int exit_callback_called;
     //hook.c
     char* module_chdir; //cwd of the currently running module
     int pllfreq; // currentpll frequency
@@ -96,6 +97,7 @@ typedef struct
     HBLNIDTable nid_table;
     HBLLibTable library_table;
     int syscalls_known;
+	int syscalls_from_p5;
 } tGlobals;
 
 

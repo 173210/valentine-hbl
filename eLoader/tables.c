@@ -163,7 +163,7 @@ int get_library_offset(u32 library, int psplink_running)
 	// This could be in external files later on
 
 	short offset_570[] =    { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 247, 228, 41 };
-	short offset_570_go[] = { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 363, 228, 41 };
+	short offset_570_go[] = { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 363, 344, 41 };
 
 	short offset_500[] =    { -503, -494, -351, -340, -303, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 245, 226, 42 };
 	short offset_550[] =    { -504, -495, -352, -341, -304, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 246, 227, 42 };
@@ -747,6 +747,13 @@ int build_nid_table()
 		// While it's a valid stub header
 		while (elf_check_stub_entry(pentry))
 		{
+			if (pentry->import_flags != 0x11)
+			{
+				// Variable import, skip it
+				pentry = (tStubEntry*)((int)pentry + sizeof(u32));
+				continue;
+			}
+
 			// Even if the stub appears to be valid, we shouldn't overflow the static arrays
 			if ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES))
 			{

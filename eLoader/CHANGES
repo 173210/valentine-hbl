@@ -1,3 +1,13 @@
+2010/08/29 (JJS)
+- Added Nymphaeas patch that allows to exit HBL to the XMB by using the HOME exit menu ( http://advancedpsp.tk/foro_es/viewtopic.php?f=37&t=1046 )
+- Added code to get additional syscalls using the stubs of utility dialogs loaded into p5.
+-- This means sceCtrlPeekBufferPositive can now always be used and the option to override it is now obsolete for all 6.20 users.
+-- Also all relevant sceIO* functions should be perfectly estimated now.
+- Fix for issue 43 (crash on start from MS on the GO). Kernel dump is now saved to ef0.
+- Fix for issue 306 (control issues). Hopefully fixed by replacing the sceCtrlReadBufferPositive call with sceCtrlPeekBufferPositive.
+- Corrected 5.70 nids files. Thanks n00b81!
+- Corrected scesuspendforuser.nids for 5.xx and 6.xx.
+
 2010/08/08 (wololo)
 - fix for issue 296 (off by 1 error). No visible change
 - fix for issue 137 (reset graphics). Fixes graphic issues with PSP Rhythm, Spider solitaire, FCE Ultra,...

@@ -80,6 +80,7 @@ void wait_for_eboot_end()
   /* Sleep until all threads have exited.                                    */
   /***************************************************************************/
     int lwait = 1;
+	int exit_callback_timeout = 0;
     SceCtrlData pad;
     while(lwait)
     {
@@ -88,12 +89,24 @@ void wait_for_eboot_end()
         //Check for force exit to the menu
         if (g->force_exit_buttons)
         {
-            sceCtrlReadBufferPositive(&pad, 1);
+			sceCtrlPeekBufferPositive(&pad, 1);
             if (pad.Buttons == g->force_exit_buttons)
             {
                 exit_everything_but_me();
             }
         }
+
+		// Quit if the exit callback was called and has finished processing
+		if (g->exit_callback_called == 2)
+		{
+			// Increment the time the homebrew is taking to exit
+			exit_callback_timeout++;
+
+			// Force quit if the timeout is reached or no exit callback was defined
+			if (!g->exitcallback || (exit_callback_timeout > 20))
+				exit_everything_but_me();
+		}
+
         lwait = g->numRunThreads + g->numPendThreads;
         //sceKernelSignalSema(gThrSema, 1);
 
@@ -205,12 +218,60 @@ void run_menu()
     run_eboot(g->menupath, 1);       
 }
 
+// HBL exit callback
+int hbl_exit_callback(int arg1, int arg2, void *arg)
+{
+	// Avoid compiler warnings
+	arg1 = arg1;
+	arg2 = arg2;
+	arg = arg;
+
+	tGlobals * g = get_globals();
+
+	LOGSTR0("HBL Exit Callback Called\n");
+
+	// Signal that the callback is being run now
+	g->exit_callback_called = 1;
+
+	if (g->exitcallback)
+    {
+        LOGSTR1("Call exit CB: %08lX\n", (u32) g->exitcallback);
+        g->calledexitcb = 1;
+        g->exitcallback(0, 0, NULL);
+    }
+
+	// Signal that the callback has finished
+	g->exit_callback_called = 2;
+
+	return 0;
+}
+
+// HBL callback thread
+int callback_thread(SceSize args, void *argp)
+{
+	// Avoid compiler warnings
+	args = args;
+	argp = argp;
+
+	int cbid, ret;
+
+    //Setup HBL exit callback
+	cbid = sceKernelCreateCallback("HBLexitcallback", hbl_exit_callback, NULL);
+	ret = sceKernelRegisterExitCallback(cbid);
+	
+	LOGSTR2("Setup HBL Callback:\n  cbid=%08lX\n  ret=%08lX\n", cbid, ret);
+	
+	_hook_sceKernelSleepThreadCB();
+	
+	return 0;
+}
 
 // HBL main thread
 int start_thread() //SceSize args, void *argp)
 {
 	int num_nids;
     int exit = 0;
+	int thid;
     tGlobals * g = get_globals();
 	LOGSTR0("Initializing memory allocation\n");
 	init_malloc();
@@ -234,6 +295,17 @@ int start_thread() //SceSize args, void *argp)
     free_game_memory();
     
     print_to_screen("-- Done");
+
+    // Start Callback Thread
+	thid = sceKernelCreateThread("HBLexitcallbackthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
+	if(thid > -1)
+	{
+		LOGSTR1("Callback Thread Created\n  thid=%08lX\n", thid);
+		sceKernelStartThread(thid, 0, 0);
+	} 
+	else 
+		LOGSTR1("Failed Callback Thread Creation\n  thid=%08lX\n", thid);
+
     LOGSTR0("START HBL\n");
 
     u32 num_lib = g->library_table.num;
@@ -241,12 +313,12 @@ int start_thread() //SceSize args, void *argp)
     //Run the hardcoded eboot if it exists...
     if (file_exists(EBOOT_PATH))
     {
+        exit = 1;
         g->return_to_xmb_on_exit = 1;
         run_eboot(EBOOT_PATH, 1);
-        //we wait infinitely here
-        while(1)
+        //we wait infinitely here, or until exit callback is called
+        while(!g->exit_callback_called)
             sceKernelDelayThread(100000);
-        
     }
 
     //...otherwise launch the menu
@@ -260,7 +332,7 @@ int start_thread() //SceSize args, void *argp)
         wait_for_eboot_end();
         cleanup(num_lib);
         ramcheck(initial_free_ram);
-        if (strcmp("quit", g->hb_filename) == 0){
+        if (strcmp("quit", g->hb_filename) == 0 || g->exit_callback_called){
             exit = 1;
             continue;
         }
@@ -278,7 +350,9 @@ int start_thread() //SceSize args, void *argp)
         LOGSTR0("Eboot Started OK\n");
         wait_for_eboot_end();
         cleanup(num_lib);
-        ramcheck(initial_free_ram);      
+        ramcheck(initial_free_ram);
+        if (g->exit_callback_called)
+			exit = 1;      
     }
 	
 	sceKernelExitGame();

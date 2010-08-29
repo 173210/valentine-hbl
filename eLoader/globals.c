@@ -29,7 +29,10 @@ void init_globals()
 
 	// Select syscall estimation method
 	// For later I would propose a per-library flag.    
-    g->syscalls_known = ((getFirmwareVersion() <= 610) || (getPSPModel() == PSP_GO));
+    g->syscalls_known = ((getFirmwareVersion() <= 610) || ((getPSPModel() == PSP_GO) && (getFirmwareVersion() == 620)));
+	g->syscalls_from_p5 = ((getFirmwareVersion() == 620) && (getPSPModel() == PSP_OTHER));
+
+	g->exit_callback_called = 0;
 
     g->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
     g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);

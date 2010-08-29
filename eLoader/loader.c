@@ -77,34 +77,44 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 
 	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", (u32)pentry);
 
-	// Zeroing data
-	memset(stub_list, 0, list_size * sizeof(u32));
-
 	// While it's a valid stub header
 	while(elf_check_stub_entry(pentry))
 	{
-		// Get current NID and stub pointer
-		cur_nid = pentry->nid_pointer;
-		cur_call = pentry->jump_pointer;
-
-		// Browse all stubs defined by this header
-		for(i=0; i<pentry->stub_size; i++)
+		if (pentry->import_flags != 0x11)
 		{
-			// Compare each NID in game imports with HBL imports
-			for(j=0; j<list_size; j++)
+			// Variable import, skip it
+			pentry = (tStubEntry*)((int)pentry + sizeof(u32));
+		}
+		else
+		{
+			// Get current NID and stub pointer
+			cur_nid = pentry->nid_pointer;
+			cur_call = pentry->jump_pointer;
+	
+			// Browse all stubs defined by this header
+			for(i=0; i<pentry->stub_size; i++)
 			{
-				if(hbl_imports_list[j] == *cur_nid)
+				// Compare each NID in game imports with HBL imports
+				for(j=0; j<list_size; j++)
 				{
-					stub_list[j] = cur_call;
-					LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, (u32)cur_call, *cur_call);
-					LOGSTR1(" 0x%08lX\n", *(cur_call+1));
-					count++;
+					if(hbl_imports_list[j] == *cur_nid)
+					{
+						// Don't replace already found nids
+						if (stub_list[j] != 0)
+							continue;
+
+						stub_list[j] = cur_call;
+						LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, (u32)cur_call, *cur_call);
+						LOGSTR1(" 0x%08lX\n", *(cur_call+1));
+						count++;
+					}
 				}
-			}
-			cur_nid++;
-			cur_call += 2;
-		}		
-		pentry++;
+				cur_nid++;
+				cur_call += 2;
+			}	
+
+			pentry++;
+		}
 	}
 
 	return count;
@@ -199,12 +209,38 @@ void copy_hbl_stubs(void)
 	if (ret < 0)
 		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));
 
-	ret = search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);	
+	// Reset stub list
+	memset(stub_list, 0, NUM_HBL_IMPORTS * sizeof(u32));
 
-	if (ret == 0)
-		exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
+	// Get number of import libraries
+	unsigned int num_lib_stubs = 0;
+	config_num_lib_stub(&num_lib_stubs);
+	LOGSTR1("Loading %d stubs\n", num_lib_stubs);
 
-	//DEBUG_PRINT(" STUBS SEARCHED ", NULL, 0);
+	// Read in first stub address
+	ret = config_first_lib_stub(&pgame_lib_stub);
+
+	// Loop through all stubs and fill in stub list
+	i = 0;
+
+	do
+	{
+		if (ret == 0)
+			exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
+
+		search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);	
+
+		ret = config_next_lib_stub(&pgame_lib_stub);
+
+		i++;
+	}
+	while (i < (int)num_lib_stubs);
+	
+	
+	// Config finished
+	config_close();
+
+	LOGSTR0(" ****STUBS SEARCHED\n");
 
 
 	stub_addr = (u32*)HBL_STUBS_START;
@@ -220,8 +256,6 @@ void copy_hbl_stubs(void)
 		sceKernelDelayThread(100);
 	}
 
-	// Config finished
-	config_close();
 
 	sceKernelDcacheWritebackInvalidateAll();
 }
@@ -252,6 +286,327 @@ void get_kmem_dump()
 }
 
 
+
+
+// Clear the video memory
+void clear_vram()
+{
+	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
+}
+
+
+// Disable double buffering so that message dialogs can be seen
+void disable_double_buffering()
+{
+	// Get the current front buffer. The dialog gets drawn to the curent backbuffer,
+	// so just set the backbuffer as new frontbuffer to display the dialog.
+	// This disables double buffering though.
+	void* topaddr;
+	int bufferwidth;
+	int pixelformat;
+	sceDisplayGetFrameBuf(&topaddr, &bufferwidth, &pixelformat, 0);
+
+	int buffer;
+	if ((u32)topaddr == 0x04000000)
+		buffer = 0x04044000;
+	else
+		buffer = 0x04000000;
+
+	sceDisplaySetFrameBuf((void*)buffer, bufferwidth, pixelformat, 0);
+}
+
+
+
+// Initializes the savedata dialog loop, opens p5
+void p5_open_savedata(int mode)
+{
+	SceUtilitySavedataParam dialog;
+
+	memset(&dialog, 0, sizeof(SceUtilitySavedataParam));
+	dialog.base.size = sizeof(SceUtilitySavedataParam);
+
+    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &dialog.base.language); // Prompt language
+    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_UNKNOWN, &dialog.base.buttonSwap); // X/O button swap
+
+	dialog.base.graphicsThread = 0x11;
+	dialog.base.accessThread = 0x13;
+	dialog.base.fontThread = 0x12;
+	dialog.base.soundThread = 0x10;
+
+	dialog.mode = mode;
+	dialog.overwrite = 1;
+	dialog.focus = PSP_UTILITY_SAVEDATA_FOCUS_LATEST; // Set initial focus to the newest file (for loading)
+
+	strcpy(dialog.gameName, "DEMO11111");	// First part of the save name, game identifier name
+	strcpy(dialog.saveName, "0000");	// Second part of the save name, save identifier name
+
+	char nameMultiple[][20] =	// End list with ""
+	{
+	 "0000",
+	 "0001",
+	 "0002",
+	 "0003",
+	 "0004",
+	 ""
+	};
+
+	// List of multiple names
+	dialog.saveNameList = nameMultiple;
+
+	strcpy(dialog.fileName, "DATA.BIN");	// name of the data file
+
+	// Allocate buffers used to store various parts of the save data
+	dialog.dataBuf = NULL;//malloc_p2(0x20);
+	dialog.dataBufSize = 0;//0x20;
+	dialog.dataSize = 0;//0x20;
+
+	sceUtilitySavedataInitStart(&dialog);
+
+	// Wait for the dialog to initialize
+	while (sceUtilitySavedataGetStatus() < 2)
+		sceDisplayWaitVblankStart();
+}
+
+
+// Initializes the message dialog loop, opens p5
+void p5_open_messagedialog(void)
+{
+	pspUtilityMsgDialogParams dialog;
+	
+    memset(&dialog, 0, sizeof(dialog));
+
+    dialog.base.size = sizeof(dialog);
+    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &dialog.base.language); // Prompt language
+    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_UNKNOWN, &dialog.base.buttonSwap); // X/O button swap
+
+    dialog.base.graphicsThread = 0x11;
+    dialog.base.accessThread = 0x13;
+    dialog.base.fontThread = 0x12;
+    dialog.base.soundThread = 0x10;
+
+/*
+    dialog.mode = PSP_UTILITY_MSGDIALOG_MODE_ERROR;
+	dialog.options = PSP_UTILITY_MSGDIALOG_OPTION_ERROR;
+    dialog.errorValue = 0;
+*/
+
+    dialog.mode = PSP_UTILITY_MSGDIALOG_MODE_TEXT;
+	dialog.options = PSP_UTILITY_MSGDIALOG_OPTION_TEXT;
+    dialog.errorValue = 0;
+	strcpy(dialog.message, "Hello everybody!");
+
+    sceUtilityMsgDialogInitStart(&dialog);
+
+	// Wait for the dialog to initialize
+	while (sceUtilityMsgDialogGetStatus() < 2)
+		sceDisplayWaitVblankStart();
+}
+
+
+// Runs the savedata dialog loop
+void p5_close_savedata()
+{
+	LOGSTR0("entering savedata dialog loop\n");
+
+	int running = 1;
+	int last_status = -1;
+
+	while(running) 
+	{
+		int status = sceUtilitySavedataGetStatus();
+		
+		if (status != last_status)
+		{
+			LOGSTR2("status changed from %d to %d\n", last_status, status);
+			last_status = status;
+		}
+
+		switch(status) 
+		{
+			case PSP_UTILITY_DIALOG_VISIBLE:
+				sceUtilitySavedataUpdate(1);
+				break;
+
+			case PSP_UTILITY_DIALOG_QUIT:
+				sceUtilitySavedataShutdownStart();
+				break;
+
+			case PSP_UTILITY_DIALOG_NONE:
+				running = 0;
+				break;
+
+			case PSP_UTILITY_DIALOG_FINISHED:
+				break;
+		}
+
+		sceDisplayWaitVblankStart();
+	}
+
+	LOGSTR0("dialog has shut down\n");
+}
+
+
+// Runs the message dialog loop
+void p5_close_messagedialog()
+{
+	// Do not call any additional file IO functions in here!
+
+	// This debug line will cause the dialog to not show at all
+	logstr0("entering message dialog loop\n");
+	int running = 1;
+	int last_status = -1;
+
+	while (running)
+	{
+		int status = sceUtilityMsgDialogGetStatus();
+
+		if (status != last_status)
+		{
+			// This will cause the dialog to get stuck on PSP_UTILITY_DIALOG_FINISHED
+			//LOGSTR2("status changed from %d to %d\n", last_status, status);
+			last_status = status;
+		}
+
+		switch(status) 
+		{
+			case PSP_UTILITY_DIALOG_VISIBLE:
+				sceUtilityMsgDialogUpdate(1);
+				break;
+	
+			case PSP_UTILITY_DIALOG_QUIT:
+				sceUtilityMsgDialogShutdownStart();
+				break;
+	
+			case PSP_UTILITY_DIALOG_NONE:
+				running = 0;
+				break;
+
+			case PSP_UTILITY_DIALOG_FINISHED:
+				break;
+		}
+
+		sceDisplayWaitVblankStart();
+	}
+
+	//LOGSTR0("dialog has shut down\n");
+}
+
+
+// Write the p5 memory partition to a file
+void p5_dump_memory(char* filename)
+{
+	SceUID file;
+	file = sceIoOpen(filename, PSP_O_CREAT | PSP_O_WRONLY, 0777);
+	sceIoWrite(file, (void*)0x08400000, 0x00400000);
+	sceIoClose(file);
+}
+
+
+// Change the stub pointers so that they point into their new memory location
+void p5_relocate_stubs(void* destination, void* source)
+{
+	tStubEntry* pentry = (tStubEntry*)destination;
+	int offset = (int)destination - (int)source;
+
+	LOGSTR2("Relocating stub addresses from 0x%08lX to 0x%08lX\n", (u32)source, (u32)destination);
+
+	while (elf_check_stub_entry(pentry))
+	{
+		if (pentry->import_flags != 0x11)
+		{
+			// Variable import
+			pentry = (tStubEntry*)((int)pentry + 4);
+		}
+		else
+		{
+			LOGSTR4("current stub: 0x%08lX 0x%08lX 0x%08lX 0x%08lX ", (u32)pentry->library_name, (u32)pentry->import_flags, (u32)pentry->library_version, (u32)pentry->import_stubs);
+			LOGSTR3("0x%08lX 0x%08lX 0x%08lX\n", (u32)pentry->stub_size, (u32)pentry->nid_pointer, (u32)pentry->jump_pointer);
+
+			pentry->library_name = (Elf32_Addr)((int)pentry->library_name + offset);
+			pentry->nid_pointer = (Elf32_Addr)((int)pentry->nid_pointer + offset);
+			pentry->jump_pointer = (Elf32_Addr)((int)pentry->jump_pointer + offset);
+
+			LOGSTR3("relocated to: 0x%08lX 0x%08lX 0x%08lX\n", (u32)pentry->library_name, (u32)pentry->nid_pointer, (u32)pentry->jump_pointer);
+
+			pentry++;
+		}
+	}
+}
+
+
+// This just copies 128 kiB around the stub address to p2 memory
+void p5_copy_stubs(void* destination, void* source)
+{
+	memcpy((void*)((int)destination - 0x10000), (void*)((int)source - 0x10000), 0x20000);
+}
+
+
+// Copy the stubs fro the message dialog
+void p5_copy_stubs_message()
+{
+	// Addresses are for 6.20 (in comments for 5.50)
+
+	void* scePaf_Module = (void*)0x084C36A0;//0x084c2660;
+	void* sceVshCommonUtil_Module = (void*)0x0876D970;//0x0876b130;
+	void* sceDialogmain_Module = (void*)0x087758AC;//0x0877238c;
+
+	p5_open_messagedialog();
+
+	//p5_dump_memory("ms0:/p5_message_dialog.dump");
+
+	p5_copy_stubs((void*)0x09d10000, scePaf_Module);
+	p5_copy_stubs((void*)0x09d30000, sceVshCommonUtil_Module);
+	p5_copy_stubs((void*)0x09d50000, sceDialogmain_Module);
+
+	p5_close_messagedialog();
+
+	p5_relocate_stubs((void*)0x09d10000, scePaf_Module);
+	p5_relocate_stubs((void*)0x09d30000, sceVshCommonUtil_Module);
+	p5_relocate_stubs((void*)0x09d50000, sceDialogmain_Module);
+}
+
+
+// Copy stubs for the savedata dialog with autoload mode 
+void p5_copy_stubs_savedata()
+{
+	// Addresses are for 6.20 (in comments for 5.50)
+
+	void* sceVshSDAuto_Module = (void*)0x08413ECC;//0x08412cdc;
+
+	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
+
+	//p5_dump_memory("ms0:/p5_savedata_autoload.dump");
+
+	p5_copy_stubs((void*)0x09d70000, sceVshSDAuto_Module);
+
+	p5_close_savedata();
+
+	p5_relocate_stubs((void*)0x09d70000, sceVshSDAuto_Module);
+}
+
+
+// Copy the dialog stubs from p5 into p2 memory
+void p5_get_stubs()
+{
+	p5_copy_stubs_message();
+	p5_copy_stubs_savedata();
+}
+
+
+void p5_fake_stub_addresses()
+{
+	// Set the stub addresses to 0 to avoid errors on <6.20 PSPs
+	// This terminates the stub search immediately instead of
+	// looping through random bits of memory
+	memset((void*)0x09d10000, 0, 2 * sizeof(u32));
+	memset((void*)0x09d30000, 0, 2 * sizeof(u32));
+	memset((void*)0x09d50000, 0, 2 * sizeof(u32));
+	memset((void*)0x09d70000, 0, 2 * sizeof(u32));
+}
+
+
+
+
 // Entry point
 void _start() __attribute__ ((section (".text.start")));
 void _start()
@@ -259,11 +614,9 @@ void _start()
 	SceUID hbl_file;
 
 	LOGSTR0("Loader running\n");
-	// Erase previous kernel dump
-	init_kdump();
 
-	// If PSPGo, do a kmem dump
-	if (getPSPModel() == PSP_GO)
+	// If PSPGo on 6.20, do a kmem dump
+	if ((getFirmwareVersion() == 620) && (getPSPModel() == PSP_GO))
 		get_kmem_dump();
 	
     //reset the contents of the debug file;
@@ -271,6 +624,16 @@ void _start()
     
     //init global variables
     init_globals();
+
+	// Get additional syscalls from utility dialogs
+	if (getFirmwareVersion() >= 600)
+	{
+		tGlobals * g = get_globals();
+		if (g->syscalls_from_p5)
+			p5_get_stubs();
+		else
+			p5_fake_stub_addresses();
+	}
 
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));

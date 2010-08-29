@@ -192,7 +192,8 @@ u32 setup_hook(u32 nid)
             break;       
   
         case 0x4CFA57B0: //sceRtcGetCurrentClock	 (avoid syscall estimation)
-			hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentClock);
+			if (!g->syscalls_from_p5)
+				hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentClock);
             break; 
             
         //others
@@ -201,7 +202,7 @@ u32 setup_hook(u32 nid)
             break;
 		
         case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
-			if (g->override_sceCtrlPeekBufferPositive == OVERRIDE)
+			if ((!g->syscalls_from_p5) && (g->override_sceCtrlPeekBufferPositive == OVERRIDE))
             {
                 hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
             }
@@ -250,7 +251,8 @@ u32 setup_hook(u32 nid)
             break;         
 
         case 0x2085D15D: //scePowerGetBatteryLifePercent  (avoid syscall estimation)
-			hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
+			if (!g->syscalls_from_p5)
+				hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
             break;   
 
         case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)
@@ -752,17 +754,20 @@ void exit_everything_but_me()
 //To return to the menu instead of exiting the game
 void  _hook_sceKernelExitGame() 
 {
-    tGlobals * g = get_globals();
     /***************************************************************************/
-    /* Call any exit callback first.                                           */
+    /* Call any exit callback first. Or not, it should only be called when     */
+	/* quitting through the HOME exit screen.                                  */
     /***************************************************************************/
+/*
+	tGlobals * g = get_globals();
     if (!g->calledexitcb && g->exitcallback)
     {
         LOGSTR1("Call exit CB: %08lX\n", (u32) g->exitcallback);
         g->calledexitcb = 1;
         g->exitcallback(0,0,NULL);
     }
-
+*/
+	LOGSTR0("_hook_sceKernelExitGame called\n");
     exit_everything_but_me();
     sceKernelExitDeleteThread(0);
 }
@@ -865,7 +870,6 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 int _hook_sceKernelRegisterExitCallback(int cbid)
 {
     tGlobals * g = get_globals();
-    int lrc = 0;
     int i;
 
     LOGSTR1("Enter registerexitCB: %08lX\n", cbid);
@@ -880,12 +884,11 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
             break;
         }
     }
-    lrc = sceKernelRegisterExitCallback(cbid);
     sceKernelSignalSema(g->cbSema, 1);
 
-    LOGSTR2("Exit registerexitCB: %08lX ret: %08lX\n", cbid, lrc);
+    LOGSTR1("Exit registerexitCB: %08lX\n",cbid);
 
-    return(lrc);
+    return(0);
 }  
   
 

@@ -78,33 +78,34 @@
 # sceDisplay(1)
 	AddNID sceDisplaySetFrameBuf, 0x10140 # 0x289d82fe
 
-# sceCtrl(1)
+# sceCtrl(2)
 	AddNID sceCtrlReadBufferPositive, 0x10148 # 0x1f803938
+	AddNID sceCtrlPeekBufferPositive, 0x10150 # 0x3a622550
 
 # sceUmdUser(1)
-	AddNID sceUmdUnRegisterUMDCallBack, 0x10150 # 0xbd2bde07
+	AddNID sceUmdUnRegisterUMDCallBack, 0x10158 # 0xbd2bde07
 
 # sceAudio(3)
-	AddNID sceAudioChRelease, 0x10158            # 0x6fc46853
-	AddNID sceAudioOutputPannedBlocking, 0x10160 # 0x13f592bc
-	AddNID sceAudioChReserve, 0x10168            # 0x5ec81c55
+	AddNID sceAudioChRelease, 0x10160            # 0x6fc46853
+	AddNID sceAudioOutputPannedBlocking, 0x10168 # 0x13f592bc
+	AddNID sceAudioChReserve, 0x10170            # 0x5ec81c55
 
 # sceRtc(1)
-	AddNID sceRtcGetCurrentClockLocalTime, 0x10170 # 0xe7c27d1b
+	AddNID sceRtcGetCurrentClockLocalTime, 0x10178 # 0xe7c27d1b
 
 # scePower(1)
-	AddNID scePower_EBD177D6, 0x10178 # 0xebd177d6
+	AddNID scePower_EBD177D6, 0x10180 # 0xebd177d6
 
 # sceUtility(6)
-	AddNID sceUtilityLoadModule, 0x10180             # 0x2a2b3de0
-	AddNID sceUtilityUnloadModule, 0x10188           # 0xe49bfe92
-	AddNID sceUtilityMsgDialogShutdownStart, 0x10190 # 0x67af3428
-	AddNID sceUtilityMsgDialogGetStatus, 0x10198     # 0x9a1c91d7
-	AddNID sceUtilityMsgDialogUpdate, 0x101a0        # 0x95fc253b
-	AddNID sceUtilityMsgDialogInitStart, 0x101a8     # 0x2ad8e239
+	AddNID sceUtilityLoadModule, 0x10188             # 0x2a2b3de0
+	AddNID sceUtilityUnloadModule, 0x10190           # 0xe49bfe92
+	AddNID sceUtilityMsgDialogShutdownStart, 0x10198 # 0x67af3428
+	AddNID sceUtilityMsgDialogGetStatus, 0x101a0     # 0x9a1c91d7
+	AddNID sceUtilityMsgDialogUpdate, 0x101a8        # 0x95fc253b
+	AddNID sceUtilityMsgDialogInitStart, 0x101b0     # 0x2ad8e239
 
 # sceGe_user(2)
-	AddNID sceGeEdramGetSize, 0x101b0 # 0x1f6752ad
-	AddNID sceGeEdramGetAddr, 0x101b8 # 0xe47e40e4
+	AddNID sceGeEdramGetSize, 0x101b8 # 0x1f6752ad
+	AddNID sceGeEdramGetAddr, 0x101c0 # 0xe47e40e4
 
 	.ident	"HBL-SDK"
