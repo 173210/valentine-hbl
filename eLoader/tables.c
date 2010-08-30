@@ -312,7 +312,7 @@ u32 get_klowest_syscall(tSceLibrary* library)
 			SceOff next_library_offset = 0;
 			u32 next_library_base_syscall = 0;
 
-			kdump_fd = sceIoOpen(HBL_ROOT"kmem.dump", PSP_O_CREAT | PSP_O_RDONLY, 0777);
+			kdump_fd = sceIoOpen(KDUMP_PATH, PSP_O_CREAT | PSP_O_RDONLY, 0777);
 			if (kdump_fd >= 0)
 			{
 				kdump_size = sceIoLseek(kdump_fd, 0, PSP_SEEK_END);
