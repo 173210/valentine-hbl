@@ -5,7 +5,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-  . = 0x08D20000;
+  . = 0x08810000;
   .text.start : {
     *(.text.start)
   }
@@ -22,4 +22,3 @@ SECTIONS
     *(.bss)
   }
 }
-

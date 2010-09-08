@@ -2,6 +2,7 @@
 #include "eloader.h"
 #include "debug.h"
 #include "modmgr.h"
+#include <exploit_config.h>
 
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES_TO_FREE 0x20
@@ -66,92 +67,46 @@ int kill_module(SceUID modid)
 void DeleteAllThreads(void)
 {
 	u32 i;
-	SceUID thids[8];
-	
-	/* sgx threads */
-	thids[0] = *(SceUID*)(0x08B46140);
-	thids[1] = *(SceUID*)(0x08C38224);
-	thids[2] = *(SceUID*)(0x08C32174);
-	thids[3] = *(SceUID*)(0x08C2C0C4);
-	thids[4] = *(SceUID*)(0x08C26014);
-	thids[5] = *(SceUID*)(0x08B465E4);
-	/* file thread */
-	thids[6] = *(SceUID*)(0x08B7BBF4);
-	// user_main
-	thids[7] = *(SceUID*)(0x08B44C28);
+	u32 thaddrs[] = TH_ADDR_LIST;
 	
 	/* lets kill these threads now */
-	for (i = 0; i < (sizeof(thids)/sizeof(u32)); i++)
+	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
-		kill_thread(thids[i]);
+		kill_thread(*(SceUID*)(thaddrs[i]));
 	}
 }
 
 void DeleteAllEventFlags(void)
 {
 	u32 i;
-	SceUID evids[3];
-	
-	/* sgx event ids */
-	evids[0] = *(SceUID*)(0x08B46634);
-	evids[1] = *(SceUID*)(0x08B465F4);
-	/* callback event id */
-	evids[2] = *(SceUID*)(0x08B7BC00);
+	u32 evaddrs[] = EV_ADDR_LIST;
 	
 	/* killin' tiem */
-	for (i = 0; i < (sizeof(evids)/sizeof(u32)); i++)
+	for (i = 0; i < (sizeof(evaddrs)/sizeof(u32)); i++)
 	{
-		kill_event_flag(evids[i]);
+		kill_event_flag(*(SceUID*)(evaddrs[i]));
 	}
 }
 
 void DeleteAllSemaphores(void)
 {
 	u32 i;
-	SceUID semaids[28];
+	u32 semaaddrs[] = SEMA_ADDR_LIST;
 	
 	/* sgx semaphores */
-	semaids[0] = *(SceUID*)(0x08C3822C);
-	semaids[1] = *(SceUID*)(0x08C38228);
-	semaids[2] = *(SceUID*)(0x08C3217C);
-	semaids[3] = *(SceUID*)(0x08C32178);
-	semaids[4] = *(SceUID*)(0x08C2C0CC);
-	semaids[5] = *(SceUID*)(0x08C2C0C8);
-	semaids[6] = *(SceUID*)(0x08C2601C);
-	semaids[7] = *(SceUID*)(0x08C26018);
-	semaids[8] = *(SceUID*)(0x08B4656C);
-	semaids[9] = *(SceUID*)(0x08B46594);
-	semaids[10] = *(SceUID*)(0x08B46630);
-	semaids[11] = *(SceUID*)(0x08B465F0);
-	semaids[12] = *(SceUID*)(0x08B465EC);
-	semaids[13] = *(SceUID*)(0x08B465E8);
-	semaids[14] = *(SceUID*)(0x08B4612C);
-	semaids[15] = *(SceUID*)(0x08C24C90);
-	semaids[16] = *(SceUID*)(0x08C24C60);
-	
-	/* this annoying "Semaphore.cpp" */
-	semaids[17] = *(SceUID*)(0x09E658C8);
-	semaids[18] = *(SceUID*)(0x09E641C4);
-	semaids[19] = *(SceUID*)(0x09E640B4);
-	semaids[20] = *(SceUID*)(0x08B7BC18);
-	semaids[21] = *(SceUID*)(0x08B64AB0);
-	semaids[22] = *(SceUID*)(0x08B64AA4);
-	semaids[23] = *(SceUID*)(0x08B64A98);
-	semaids[24] = *(SceUID*)(0x08B64A8C);
-	semaids[25] = *(SceUID*)(0x08B64A80);
-	semaids[26] = *(SceUID*)(0x08B64A74);
-	semaids[27] = *(SceUID*)(0x08B64A68);
+
 	
 	/* lets destroy these now */
-	for (i = 0; i < (sizeof(semaids)/sizeof(u32)); i++)
+	for (i = 0; i < (sizeof(semaaddrs)/sizeof(u32)); i++)
 	{
 		/* boom headshot */
-		kill_sema(semaids[i]);
+		kill_sema(*(SceUID*)(semaaddrs[i]));
 	}
 }
 
 void UnloadModules()
 {
+#ifdef UNLOAD_ADDITIONAL_MODULES
 	// Unload user modules first
 	// The more basic modules got a lower ID, so this should be the correct 
 	// order to unload
@@ -171,7 +126,7 @@ void UnloadModules()
 		LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);
 		m--;
 	}
-
+#endif
 
 	// Set inital UID to -1 and the current UID to 0
 	int i;
@@ -209,6 +164,19 @@ void UnloadModules()
 	}
 }
 
+#ifdef GAME_FREEMEM_ADDR
+void FreeMem()
+{
+
+	SceUID memid = *(SceUID*)(GAME_FREEMEM_ADDR);
+	sceKernelFreePartitionMemory(memid);
+
+	// Might need to add this function to sdk, via eLoaderConf.rb, depending on the exploit
+	sceKernelReleaseSubIntrHandler(30,0);
+
+}
+#endif
+
 void free_game_memory()
 {
 #ifdef DEBUG
@@ -217,6 +185,10 @@ void free_game_memory()
 	free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
 	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", free, max_free);
+#endif
+
+#ifdef GAME_FREEMEM_ADDR
+	FreeMem();
 #endif
 
 	DeleteAllThreads();

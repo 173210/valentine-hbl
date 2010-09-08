@@ -10,6 +10,7 @@
 #include "eloader.h"
 #include "malloc.h"
 #include "globals.h"
+#include <exploit_config.h>
 
 
 //This function is copied from elf.c to avoid compiling the entire elf.c dependencies for just one function
@@ -45,7 +46,7 @@ void load_hbl(SceUID hbl_file)
 	// Allocate memory for HBL
 	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, MAX_ELOADER_SIZE, 0x09EC8000);
 	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_High, file_size, NULL); // Best one, but don't work, why?
-	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)0x09EC8000);
+	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDRESS);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
@@ -80,7 +81,7 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 	// While it's a valid stub header
 	while(elf_check_stub_entry(pentry))
 	{
-		if (pentry->import_flags != 0x11)
+		if ((pentry->import_flags != 0x11) && (pentry->import_flags != 0))
 		{
 			// Variable import, skip it
 			pentry = (tStubEntry*)((int)pentry + sizeof(u32));
@@ -295,28 +296,6 @@ void clear_vram()
 }
 
 
-// Disable double buffering so that message dialogs can be seen
-void disable_double_buffering()
-{
-	// Get the current front buffer. The dialog gets drawn to the curent backbuffer,
-	// so just set the backbuffer as new frontbuffer to display the dialog.
-	// This disables double buffering though.
-	void* topaddr;
-	int bufferwidth;
-	int pixelformat;
-	sceDisplayGetFrameBuf(&topaddr, &bufferwidth, &pixelformat, 0);
-
-	int buffer;
-	if ((u32)topaddr == 0x04000000)
-		buffer = 0x04044000;
-	else
-		buffer = 0x04000000;
-
-	sceDisplaySetFrameBuf((void*)buffer, bufferwidth, pixelformat, 0);
-}
-
-
-
 // Initializes the savedata dialog loop, opens p5
 void p5_open_savedata(int mode)
 {
@@ -368,40 +347,6 @@ void p5_open_savedata(int mode)
 }
 
 
-// Initializes the message dialog loop, opens p5
-void p5_open_messagedialog(void)
-{
-	pspUtilityMsgDialogParams dialog;
-	
-    memset(&dialog, 0, sizeof(dialog));
-
-    dialog.base.size = sizeof(dialog);
-    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &dialog.base.language); // Prompt language
-    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_UNKNOWN, &dialog.base.buttonSwap); // X/O button swap
-
-    dialog.base.graphicsThread = 0x11;
-    dialog.base.accessThread = 0x13;
-    dialog.base.fontThread = 0x12;
-    dialog.base.soundThread = 0x10;
-
-/*
-    dialog.mode = PSP_UTILITY_MSGDIALOG_MODE_ERROR;
-	dialog.options = PSP_UTILITY_MSGDIALOG_OPTION_ERROR;
-    dialog.errorValue = 0;
-*/
-
-    dialog.mode = PSP_UTILITY_MSGDIALOG_MODE_TEXT;
-	dialog.options = PSP_UTILITY_MSGDIALOG_OPTION_TEXT;
-    dialog.errorValue = 0;
-	strcpy(dialog.message, "Hello everybody!");
-
-    sceUtilityMsgDialogInitStart(&dialog);
-
-	// Wait for the dialog to initialize
-	while (sceUtilityMsgDialogGetStatus() < 2)
-		sceDisplayWaitVblankStart();
-}
-
 
 // Runs the savedata dialog loop
 void p5_close_savedata()
@@ -445,51 +390,6 @@ void p5_close_savedata()
 	LOGSTR0("dialog has shut down\n");
 }
 
-
-// Runs the message dialog loop
-void p5_close_messagedialog()
-{
-	// Do not call any additional file IO functions in here!
-
-	// This debug line will cause the dialog to not show at all
-	logstr0("entering message dialog loop\n");
-	int running = 1;
-	int last_status = -1;
-
-	while (running)
-	{
-		int status = sceUtilityMsgDialogGetStatus();
-
-		if (status != last_status)
-		{
-			// This will cause the dialog to get stuck on PSP_UTILITY_DIALOG_FINISHED
-			//LOGSTR2("status changed from %d to %d\n", last_status, status);
-			last_status = status;
-		}
-
-		switch(status) 
-		{
-			case PSP_UTILITY_DIALOG_VISIBLE:
-				sceUtilityMsgDialogUpdate(1);
-				break;
-	
-			case PSP_UTILITY_DIALOG_QUIT:
-				sceUtilityMsgDialogShutdownStart();
-				break;
-	
-			case PSP_UTILITY_DIALOG_NONE:
-				running = 0;
-				break;
-
-			case PSP_UTILITY_DIALOG_FINISHED:
-				break;
-		}
-
-		sceDisplayWaitVblankStart();
-	}
-
-	//LOGSTR0("dialog has shut down\n");
-}
 
 
 // Write the p5 memory partition to a file
@@ -541,39 +441,53 @@ void p5_copy_stubs(void* destination, void* source)
 }
 
 
-// Copy the stubs fro the message dialog
-void p5_copy_stubs_message()
+
+void* p5_find_stub_in_memory(char* library, void* start_address, u32 size) 
 {
-	// Addresses are for 6.20 (in comments for 5.50)
+	char* name_address = NULL;
+	void* stub_address = NULL;
 
-	void* scePaf_Module = (void*)0x084C36A0;//0x084c2660;
-	void* sceVshCommonUtil_Module = (void*)0x0876D970;//0x0876b130;
-	void* sceDialogmain_Module = (void*)0x087758AC;//0x0877238c;
+	name_address = memfindsz(library, (char*)start_address, size);
 
-	p5_open_messagedialog();
+	if (name_address)
+	{
+		// Stub pointer is 40 bytes after the library names char[0]
+		stub_address = (void*)*(u32*)(name_address + 40);
+	}
+	
+	return stub_address;
+}
 
-	//p5_dump_memory("ms0:/p5_message_dialog.dump");
+
+
+// Copy stubs for the savedata dialog with save mode 
+void p5_copy_stubs_savedata_dialog()
+{
+	p5_open_savedata(PSP_UTILITY_SAVEDATA_SAVE);
+
+	void* scePaf_Module = p5_find_stub_in_memory("scePaf_Module", (void*)0x084C0000, 0x00010000);
+	void* sceVshCommonUtil_Module = p5_find_stub_in_memory("sceVshCommonUtil_Module", (void*)0x08760000, 0x00010000);
+	void* sceDialogmain_Module = p5_find_stub_in_memory("sceDialogmain_Module", (void*)0x08770000, 0x00010000);
+
+	//p5_dump_memory("ms0:/p5_savedata_save.dump");
 
 	p5_copy_stubs((void*)0x09d10000, scePaf_Module);
 	p5_copy_stubs((void*)0x09d30000, sceVshCommonUtil_Module);
 	p5_copy_stubs((void*)0x09d50000, sceDialogmain_Module);
 
-	p5_close_messagedialog();
+	p5_close_savedata();
 
 	p5_relocate_stubs((void*)0x09d10000, scePaf_Module);
 	p5_relocate_stubs((void*)0x09d30000, sceVshCommonUtil_Module);
 	p5_relocate_stubs((void*)0x09d50000, sceDialogmain_Module);
 }
 
-
 // Copy stubs for the savedata dialog with autoload mode 
 void p5_copy_stubs_savedata()
 {
-	// Addresses are for 6.20 (in comments for 5.50)
-
-	void* sceVshSDAuto_Module = (void*)0x08413ECC;//0x08412cdc;
-
 	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
+
+	void* sceVshSDAuto_Module = p5_find_stub_in_memory("sceVshSDAuto_Module", (void*)0x08410000, 0x00010000);
 
 	//p5_dump_memory("ms0:/p5_savedata_autoload.dump");
 
@@ -584,12 +498,11 @@ void p5_copy_stubs_savedata()
 	p5_relocate_stubs((void*)0x09d70000, sceVshSDAuto_Module);
 }
 
-
 // Copy the dialog stubs from p5 into p2 memory
 void p5_get_stubs()
 {
-	p5_copy_stubs_message();
 	p5_copy_stubs_savedata();
+	p5_copy_stubs_savedata_dialog();
 }
 
 
@@ -626,28 +539,19 @@ void _start()
     init_globals();
 
 	// Get additional syscalls from utility dialogs
-	if (getFirmwareVersion() >= 600)
-	{
-		tGlobals * g = get_globals();
-		if (g->syscalls_from_p5)
-			p5_get_stubs();
-		else
-			p5_fake_stub_addresses();
-	}
+	p5_get_stubs();
 
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
 	
 	else
 	{
-
 		LOGSTR0("Loading HBL\n");
 		load_hbl(hbl_file);
-
 	
 		LOGSTR0("Copying & resolving HBL stubs\n");
 		copy_hbl_stubs();
-
+        LOGSTR0("HBL stubs copied, running eLoader\n");
 		run_eloader(0, NULL);
 	}
 

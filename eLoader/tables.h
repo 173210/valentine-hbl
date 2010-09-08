@@ -69,8 +69,19 @@ typedef enum
 	LIBRARY_SCEUTILITY,
 	LIBRARY_SCESASCORE,
 	LIBRARY_SCEIMPOSE,
-	LIBRARY_SCEREG
+	LIBRARY_SCEREG,
+	LIBRARY_SCEWLANDRV_LIB
 } HBLLibraryIndex;
+
+
+typedef struct
+{
+	u32 lowest_syscall;
+	char padding[16];
+	u16 offset_to_zero_index;
+	u16 gap;
+} HBLKernelLibraryStruct;
+
 
 // Auxiliary structures to help with syscall estimation
 extern HBLLibTable* library_table;
@@ -95,7 +106,7 @@ u32 get_call_nidtable(u32 nid, u32* call_buffer);
 u32 get_good_call(u32* call_pointer);
 
 // Fills remaining information on a library
-tSceLibrary* complete_library(tSceLibrary* plibrary);
+tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index);
 
 // Returns index of NID in table
 int get_nid_index(u32 nid);

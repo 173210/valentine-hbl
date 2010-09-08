@@ -5,7 +5,140 @@
 root = "../../"
 
 # .lib.stub addresses
-stub_addresses = {
+exploit_stubs_map = {
+	# Everybody's Golf 1
+	"everybody" => {
+		"50x" =>
+			[
+				0x08A384EC, #main
+				0x09E6DE8C, #sceNet_Library
+				0x09E6419C, #sceATRAC3plus_Library
+				0x0880043C, #sceKernelLibrary
+				0x09E7769C, #sceNetAdhoc_Library
+				0x09E7DEAC, #sceNetAdhocctl_Library
+				0x09E82C2C, #sceNetAdhocMatching_Library
+				0x09E8A67C, #sceMpeg_library	
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module	
+			],	
+		"550" =>
+			[
+				0x08A384EC, #main
+				0x09E6DE8C, #sceNet_Library
+				0x09E6419C, #sceATRAC3plus_Library
+				0x0880046C, #sceKernelLibrary
+				0x09E7769C, #sceNetAdhoc_Library
+				0x09E7DEAC, #sceNetAdhocctl_Library
+				0x09E82C2C, #sceNetAdhocMatching_Library
+				0x09E8A67C, #sceMpeg_library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module				
+			],	
+		"6xx" =>
+			[			
+				0x08A384EC, #main
+				0x09E6DE8C, #sceNet_Library
+				0x09E6419C, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09E7769C, #sceNetAdhoc_Library
+				0x09E7DEAC, #sceNetAdhocctl_Library
+				0x09E82C2C, #sceNetAdhocMatching_Library
+				0x09E8A67C, #sceMpeg_library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module				
+			],	
+	},
+	# Hotshots golf 1 Exploit (wololo)
+	"hotshots" => {
+		"5xx" =>
+			[
+                0x08A35EAC, #main
+                0x09E6678C, #sceNet_Library
+                0x09E5CA9C, #sceATRAC3plus_Library
+                0x0880046C, #sceKernelLibrary
+                0x09E6FF9C, #sceNetAdhoc_Library
+                0x09E767AC, #sceNetAdhocctl_Library
+                0x09E7B52C, #sceNetAdhocMatching_Library
+                0x09E82F7C, #sceMpeg_library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module					
+			],	
+		"6xx" =>
+			[
+                0x08A35EAC, #main
+                0x09E6678C, #sceNet_Library
+                0x09E5CA9C, #sceATRAC3plus_Library
+                0x088009A0, #sceKernelLibrary
+                0x09E6FF9C, #sceNetAdhoc_Library
+                0x09E767AC, #sceNetAdhocctl_Library
+                0x09E7B52C, #sceNetAdhocMatching_Library
+                0x09E82F7C, #sceMpeg_library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+			],
+		
+	},
+	# Minna no golf 1 Exploit (j416)
+	"minna" => {
+		"5xx" =>
+			[
+				0x08A1CCCC,
+				0x0880843C,
+				0x09E8809C,
+				0x09EE8C7C,
+				0x09E91D8C,
+				0x09E9B59C,
+				0x09EA1DAC,
+				0x09EA6AEC,
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module				
+			],	
+		"6xx" =>
+			[
+				0x08A1CCCC,
+				0x0880843C,
+				0x09E8809C,
+				0x09EE8C7C,
+				0x09E91D8C,
+				0x09E9B59C,
+				0x09EA1DAC,
+				0x09EA6AEC,
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module				
+			],
+		
+	},
+	
+	# Patapon 2 Demo Exploit (malloxis & wololo)
+	"patapon2" => {
         "50x" =>
                 [
 					0x08A88D74, # Labo
@@ -18,7 +151,13 @@ stub_addresses = {
 					0x09eaf6f0, # sceNetAdhocMatching_Library
 					0x09eb3400, # sceNetAdhocDownload_Library
 					0x09eb483c, # sceNetAdhocDiscover_Library
-					0x09ec6b70  # sceFont_Library
+					0x09ec6b70, # sceFont_Library
+					# Relocated message dialog stubs
+					0x09d10000, # scePaf_Module
+					0x09d30000, # sceVshCommonUtil_Module
+					0x09d50000, # sceDialogmain_Module
+					# Relocated savegame dialog stub
+					0x09d70000  # sceVshSDAuto_Module											
 				 ],
         "550" =>
                 [
@@ -32,7 +171,14 @@ stub_addresses = {
 					0x09eaf6f0, # sceNetAdhocMatching_Library
 					0x09eb3400, # sceNetAdhocDownload_Library
 					0x09eb483c, # sceNetAdhocDiscover_Library
-					0x09ec6b70  # sceFont_Library
+					0x09ec6b70, # sceFont_Library
+					# Relocated message dialog stubs
+					0x09d10000, # scePaf_Module
+					0x09d30000, # sceVshCommonUtil_Module
+					0x09d50000, # sceDialogmain_Module
+					# Relocated savegame dialog stub
+					0x09d70000  # sceVshSDAuto_Module						
+					
 				 ],
 		"555" =>
                 [
@@ -46,7 +192,14 @@ stub_addresses = {
 					0x09eaf6f0, # sceNetAdhocMatching_Library
 					0x09eb3400, # sceNetAdhocDownload_Library
 					0x09eb483c, # sceNetAdhocDiscover_Library
-					0x09ec6b70  # sceFont_Library
+					0x09ec6b70, # sceFont_Library
+					# Relocated message dialog stubs
+					0x09d10000, # scePaf_Module
+					0x09d30000, # sceVshCommonUtil_Module
+					0x09d50000, # sceDialogmain_Module
+					# Relocated savegame dialog stub
+					0x09d70000  # sceVshSDAuto_Module						
+					
 				 ],
         "570" =>
                 [
@@ -60,7 +213,13 @@ stub_addresses = {
 					0x09eaf9c0, # sceNetAdhocMatching_Library
 					0x09eb3E90, # sceNetAdhocDownload_Library
 					0x09eb533c, # sceNetAdhocDiscover_Library
-					0x09ec6b70  # sceFont_Library
+					0x09ec6b70, # sceFont_Library
+					# Relocated message dialog stubs
+					0x09d10000, # scePaf_Module
+					0x09d30000, # sceVshCommonUtil_Module
+					0x09d50000, # sceDialogmain_Module
+					# Relocated savegame dialog stub
+					0x09d70000  # sceVshSDAuto_Module						
 				 ],
         "6xx" =>
                 [
@@ -81,11 +240,18 @@ stub_addresses = {
 					0x09d50000, # sceDialogmain_Module
 					# Relocated savegame dialog stub
 					0x09d70000  # sceVshSDAuto_Module
-				 ],                 
+				 ],   
+    },				 
 }
 
 # HBL stubs
 config = [
+	{
+		:lib => "InterruptManager",
+		:functions => [
+			[0xD61E6961, "sceKernelReleaseSubIntrHandler"],
+		],
+	},
     { 
         :lib => "IoFileMgrForUser",
         :functions => [
@@ -242,7 +408,7 @@ class Integer
 end      
 
 
-curr_addr = 0x10000; #0x0880FF00 # 0x00013F00
+
 nb_nids = 0;
 nids_offset = 0;
 config.each {|libinfo | 
@@ -266,84 +432,90 @@ out_loader_h.puts %Q{
 
 puts "#define NUM_HBL_IMPORTS"  + " 0x"  + nb_nids.to_s(16);
 
-out = File.new( root + "sdk_hbl.S", "w")
-out.binmode();
-out_conf = {};
-stub_addresses.each { |k, v|
-    out_conf[k] = File.new( root + "config/imports.config_" + k  , "w");
-	out_conf[k].binmode;
-    out_conf[k].write(v.size.mips(4));
-    out_conf[k].write(config.size.mips(4));
-    out_conf[k].write(nb_nids.mips(4));
-    v.each{ |stub_addr|
-        out_conf[k].write(stub_addr.mips(4));
-    }
-}
 
-out.puts %Q{# This file was automatically generated by eLoaderconf.rb
-# If you want to edit this file, edit eLoaderconf.rb instead
-.macro AddNID funcname, offset
+# Game Specific config files
+exploit_stubs_map.each { |folder, stub_addresses|
+    curr_addr = 0x10000; #0x0880FF00 # 0x00013F00
+	out = File.new( root + folder +  "/sdk_hbl.S", "w")
+	out.binmode();
+	out_conf = {};
+	stub_addresses.each { |k, v|
+		out_conf[k] = File.new( root + folder + "/config/imports.config_" + k  , "w");
+        puts root + folder + "/config/imports.config_" + k;
+		out_conf[k].binmode;
+		out_conf[k].write(v.size.mips(4));
+		out_conf[k].write(config.size.mips(4));
+		out_conf[k].write(nb_nids.mips(4));
+		v.each{ |stub_addr|
+			out_conf[k].write(stub_addr.mips(4));
+		}
+	}
 
-	.globl  \\funcname
-	.ent    \\funcname
-\\funcname = \\offset
-#\\funcname:
-#	lui $v0, 0x1            # Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
-#	lw $v0, 0x18 ($v0)      # Get HBL stubs address, see eloader.c or loader.c for more info
-#	addi $v0, $v0, \\offset # Add offset
-#	jr $v0                  # Jump to stub
-#	nop                     # Leave this delay slot empty!
-	.end	\\funcname
+	out.puts %Q{# This file was automatically generated by eLoaderconf.rb
+	# If you want to edit this file, edit eLoaderconf.rb instead
+	.macro AddNID funcname, offset
 
-.endm
+		.globl  \\funcname
+		.ent    \\funcname
+	\\funcname = \\offset
+	#\\funcname:
+	#	lui $v0, 0x1            # Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
+	#	lw $v0, 0x18 ($v0)      # Get HBL stubs address, see eloader.c or loader.c for more info
+	#	addi $v0, $v0, \\offset # Add offset
+	#	jr $v0                  # Jump to stub
+	#	nop                     # Leave this delay slot empty!
+		.end	\\funcname
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
-	.text
-	.align	2
+	.endm
 
-}
+		.file	1 "sdk.c"
+		.section .mdebug.eabi32
+		.section .gcc_compiled_long32
+		.previous
+		.text
+		.align	2
+
+	}
 
 
 
 
-out_conf.each { |k, v|
-	nids_offset_file = nids_offset + 12 + stub_addresses[k].size * 4;
+	out_conf.each { |k, v|
+		nids_offset_file = nids_offset + 12 + stub_addresses[k].size * 4;
+		config.each {|libinfo | 
+			lib = libinfo[:lib];
+			v.write(lib);
+			v.write("\0");
+			v.write(libinfo[:functions].size.mips(4));
+			v.write(nids_offset_file.mips(8));
+			nids_offset_file = nids_offset_file + libinfo[:functions].size * 4
+		}
+	}
+
+
 	config.each {|libinfo | 
-		lib = libinfo[:lib];
-        v.write(lib);
-        v.write("\0");
-        v.write(libinfo[:functions].size.mips(4));
-        v.write(nids_offset_file.mips(8));
-		nids_offset_file = nids_offset_file + libinfo[:functions].size * 4
-    }
-}
+		out.puts;
+		out.puts("# " + libinfo[:lib] + "(" + libinfo[:functions].size.to_s + ")");
+		max = 0
+		libinfo[:functions].each {|nidinfo | 
+			if nidinfo[1].size > max then max = nidinfo[1].size end
+		}
+		libinfo[:functions].each {|nidinfo | 
+			out.puts("\tAddNID #{nidinfo[1]}, 0x" +  curr_addr.to_s(16).rjust(4, "0") + " " * (max - nidinfo[1].size) + " # 0x" + nidinfo[0].to_s(16));   
+			out_conf.each { |k, v|        
+				v.write(nidinfo[0].mips(4));
+			}
+			curr_addr += 8;
+		}
+		
+	}
 
 
-config.each {|libinfo | 
-    out.puts;
-    out.puts("# " + libinfo[:lib] + "(" + libinfo[:functions].size.to_s + ")");
-    max = 0
-    libinfo[:functions].each {|nidinfo | 
-        if nidinfo[1].size > max then max = nidinfo[1].size end
-    }
-    libinfo[:functions].each {|nidinfo | 
-        out.puts("\tAddNID #{nidinfo[1]}, 0x" +  curr_addr.to_s(16).rjust(4, "0") + " " * (max - nidinfo[1].size) + " # 0x" + nidinfo[0].to_s(16));   
-        out_conf.each { |k, v|        
-            v.write(nidinfo[0].mips(4));
-        }
-        curr_addr += 8;
-    }
-    
-}
+	out.puts %Q{
+		.ident	"HBL-SDK"
+	}
 
-
-out.puts %Q{
-	.ident	"HBL-SDK"
-}
-
-out_conf.each { |k , v |
- v.close
+	out_conf.each { |k , v |
+	 v.close
+	}
 }

@@ -1,3 +1,9 @@
+2010/09/08 (Wololo)
+- Adpated the code to J416's Exploit in minna no golf, Freddy's Exploit in Everybody's golf, and Wololo's exploit in hotshots golf. Adapted by JJS and Wololo
+-- This is majorly untested, but I'm afraid of losing the many code changes involed here. I basically tested this on the patapon exploit and the hotshots exploit on a psp go 6.20
+-- This improves HBL portability, although lots remain to be done
+-- This officially makes HBL compatible with OFW 6.30 and 6.31
+
 2010/08/29 (JJS)
 - Added Nymphaeas patch that allows to exit HBL to the XMB by using the HOME exit menu ( http://advancedpsp.tk/foro_es/viewtopic.php?f=37&t=1046 )
 - Added code to get additional syscalls using the stubs of utility dialogs loaded into p5.

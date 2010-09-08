@@ -1,5 +1,8 @@
 #include "utils.h"
 #include "debug.h"
+#include <exploit_config.h>
+
+//TODO move these global variables into g!!!
 
 // "cache" for the firmware version
 // 1 means: not set yet
@@ -18,45 +21,75 @@ u32 psp_model = 1;
  * http://advancedpsp.tk/foro_es/viewtopic.php?f=37&t=293
  *
  * It is important to call this function (once) early, before that point in memory gets erased
- * This code is experimental, it hasn't been run on "enough" psps to be sure it works
  */
 u32 getFirmwareVersion()
 {
 	if (firmware_version != 1) return firmware_version;
 
     firmware_version = 0;
-    u32 value = *(u32*)0x09E7b68c;
+    
+#ifdef DETECT_FIRMWARE_ADDR    
+    u32 value = *(u32*)DETECT_FIRMWARE_ADDR;
 
     switch (value) 
     {
-		case 0xB533E9FC:
+#ifdef DETECT_FIRMWARE_500    
+		case DETECT_FIRMWARE_500:
 		    firmware_version = 500;
 		    break;  
-		case 0x4CFA7F33:
+#endif
+#ifdef DETECT_FIRMWARE_503            
+		case DETECT_FIRMWARE_503:
 		    firmware_version = 503;
-		    break;               
-		case 0xA67D3F99:
+		    break;   
+#endif
+#ifdef DETECT_FIRMWARE_550              
+		case DETECT_FIRMWARE_550:
 		    firmware_version = 550;
 		    break;
-		case 0x67D3F99F:
+#endif
+#ifdef DETECT_FIRMWARE_551              
+		case DETECT_FIRMWARE_551:
 		    firmware_version = 551;
 		    break;
-		case 0xCFA7F33F:
+#endif
+#ifdef DETECT_FIRMWARE_555              
+		case DETECT_FIRMWARE_555:
 		    firmware_version = 555;
 		    break;   
-		case 0xC5B13597:
+#endif
+#ifdef DETECT_FIRMWARE_570              
+		case DETECT_FIRMWARE_570:
 		    firmware_version = 570;
 		    break;   
-		case 0x22B5CE0D:
+#endif
+#ifdef DETECT_FIRMWARE_600              
+		case DETECT_FIRMWARE_600:
 		    firmware_version = 600;
 		    break;
-		case 0x32A80E1B:
+#endif
+#ifdef DETECT_FIRMWARE_610              
+		case DETECT_FIRMWARE_610:
 		    firmware_version = 610;
 		    break;     
-		case 0x73880F1B:
+#endif
+#ifdef DETECT_FIRMWARE_620              
+		case DETECT_FIRMWARE_620:
 		    firmware_version = 620;
-		    break;            
+		    break;          
+#endif
+#ifdef DETECT_FIRMWARE_630 
+		case DETECT_FIRMWARE_630:
+		    firmware_version = 630;
+		    break;    
+#endif
+#ifdef DETECT_FIRMWARE_631
+		case DETECT_FIRMWARE_631:
+		    firmware_version = 631;
+		    break;     
+#endif            
     }
+#endif
     return firmware_version; 
 }
 
@@ -65,7 +98,8 @@ u32 getPSPModel()
     if (psp_model!= 1) return psp_model;
 
     psp_model = 0;
-    u32 value = *(u32*)0x08B46140;
+#ifdef DETECT_MODEL_ADDR 
+    u32 value = *(u32*)DETECT_MODEL_ADDR;
     value = value >> 24;
 
     switch (value) 
@@ -77,5 +111,6 @@ u32 getPSPModel()
 		    psp_model = PSP_OTHER;
 		    break;           
     }
+#endif    
     return psp_model; 
 }
