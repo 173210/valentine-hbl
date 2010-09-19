@@ -21,44 +21,37 @@ SceOff g_nids_offset = -1;
 // Initialize config_file
 int config_initialize()
 {	
-    char buffer[512];
+    char file_path[512];
+    int i = 0;
     u32 firmware_v = getFirmwareVersion();
 	
-    strcpy(buffer, IMPORTS_PATH);
-
-	switch (firmware_v)
+    //We try to open a lib file base on the version of the firmware as precisely as possible,
+    //then fallback to less precise versions. for example,try in this order:
+    // libs_503, libs_50x, libs_5xx, libs 
+	do 
 	{
-		case 500:
-			strcat(buffer, "_50x");
-			break;
-
-		case 503:	
-		case 550:
-			strcat(buffer, "_550");
-			break;
-
-		case 551:
-		case 555:
-			strcat(buffer, "_555");
-			break;
-		
-		case 570:
-			strcat(buffer, "_570");
-			break;
-		
-		case 600:
-		case 610:
-		case 620:
-			strcat(buffer, "_6xx");
-			break;
+		switch (i)
+		{
+			case 0:
+				mysprintf2(file_path, "%s_%d", (u32)IMPORTS_PATH, firmware_v);
+				break;
+			case 1:
+				mysprintf2(file_path, "%s_%dx", (u32)IMPORTS_PATH, firmware_v / 10);
+				break;
+			case 2:
+				mysprintf2(file_path, "%s_%dxx", (u32)IMPORTS_PATH, firmware_v / 100);
+				break;
+			case 3:
+				mysprintf1(file_path, "%s", (u32)IMPORTS_PATH);
+				break;
+		}
+		i++;
 	}
-        
-    if (!file_exists(buffer))
-        strcpy(buffer, IMPORTS_PATH);
+	while ((i < 4) && !file_exists(file_path));    
    
-    LOGSTR1("Config file:%s\n", (u32) buffer);
+    LOGSTR1("Config file:%s\n", (u32) file_path);
     
-	g_config_file = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
+	g_config_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777);
 	return g_config_file;
 }
 

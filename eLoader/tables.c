@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "syscall.h"
 #include "graphics.h"
+#include <exploit_config.h>
 
 // Adds NID entry to nid_table
 int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
@@ -207,8 +208,8 @@ int get_library_index_from_name(char* name)
 		return LIBRARY_SCEIMPOSE;
 	else if (strcmp(name, "sceReg") == 0)
 		return LIBRARY_SCEREG;
-	else if (strcmp(name, "sceWlanDrv_lib") == 0)
-		return LIBRARY_SCEWLANDRV_LIB;
+	else if (strcmp(name, "sceChnnlsv") == 0)
+		return LIBRARY_SCECHNNLSV;
 	else
 		return -1;
 }
@@ -216,82 +217,84 @@ int get_library_index_from_name(char* name)
 
 int get_library_kernel_memory_offset(char* library_name)
 {
-	u32 offset_620[] = { 0x0002094C, 0x000208FC, 0x000207BC, 0x0002071C, 0x000205DC, 0x000204EC, 0x0002049C, 0x0002044C, 0x000203AC, 0x0002B420, 0x0002B0D8, 0x000F8010, 0x0002A8F8, 0x000BEDA0, 0x0015A9A0, 0x000BE858, 0x0015A670, 0x00159E00, 0x001E6408, 0x001E5CD0, 0x0026A4D0, 0x0025B3A0, 0x001889A0 };
-	
-	// Incomplete
-	u32 offset_630[] = { 0x0002096C, 0x0002091C, 0x000207DC, 0x0002073C, 0x000205FC, 0x0002050C, 0x000204BC, 0x0002046C, 0x000203CC, 0x0002B420, 0x0002B0D8, 0x000F8D10, 0x0002A8F8, 0x000BF7A0, 0,          0,          0,          0x0015AB00, 0x001E7608, 0x001E6ED0, 0,          0,          0          };
+	u32 offset_620[] = SYSCALL_KERNEL_OFFSETS_620;
+	u32 offset_630[] = SYSCALL_KERNEL_OFFSETS_630;
 
 	int library_index = get_library_index_from_name(library_name);
 
-	switch (getFirmwareVersion())
+	if (library_index > -1)
 	{
-		case 620:
-			return offset_620[library_index];
+		switch (getFirmwareVersion())
+		{
+			case 620:
+				return offset_620[library_index];
 
-		case 630:
-		case 631:
-			return offset_630[library_index];
+			case 630:
+			case 631:
+				return offset_630[library_index];
+		}
 	}
 
-	return 0;
+	return -1;
 }
 
 
-int get_library_offset(char* library_name, int psplink_running)
+int get_library_offset(char* library_name, int is_cfw)
 {
-	// For Patapon 2, but mostly the same for the golf exploit
+	short offset_570[] = SYSCALL_OFFSETS_570;
+	short offset_570_go[] = SYSCALL_OFFSETS_570_GO;
 
-	short offset_570[] =    { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 247, 228, 41 };
-	short offset_570_go[] = { -522, -513, -361, -350, -313, -291, -268, -262, -214, -205, -187, -140, -113, -90, -70, -58, 0, 15, 68, 82, 363, 344, 41 };
+	short offset_500[] = SYSCALL_OFFSETS_500;
+	short offset_500_cfw[] = SYSCALL_OFFSETS_500_CFW;
 
-	short offset_500[] =    { -503, -494, -351, -340, -303, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 245, 226, 42 };
-	short offset_550[] =    { -504, -495, -352, -341, -304, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 246, 227, 42 };
-	short offset_600[] =    { -523, -514, -363, -352, -315, -293, -268, -262, -214, -205, -187, -39, -140, -117, -12, -97, 0, 15, 69, 83, 271, 249, 41 };
-	short offset_600_go[] = { -523, -514, -363, -352, -315, -293, -268, -262, -214, -205, -187, -39, -140, -117, -12, -97, 0, 15, 69, 83, 383, 361, 41 };
+	short offset_550[] = SYSCALL_OFFSETS_550;
+	short offset_550_cfw[] = SYSCALL_OFFSETS_550_CFW;
 
-	short offset_500_psplink[] = { -542, -533, -390, -379, -342, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -48, 0, 15, 69, 83, 265, 246, 42 };
-	short offset_550_psplink[] = { -543, -534, -391, -380, -343, -282, -260, -254, -210, -201, -183, -136, -109, -86, -70, -58, 0, 15, 69, 83, 266, 247, 42 };
-
+	short offset_600[] = SYSCALL_OFFSETS_600;
+	short offset_600_go[] = SYSCALL_OFFSETS_600_GO;
 
 	int library_index = get_library_index_from_name(library_name);
 
-	switch (getFirmwareVersion())
+	if (library_index > -1)
 	{
-		case 500:
-		case 503:
-			if (psplink_running)
-				return offset_500_psplink[library_index];
-			else 
-				return offset_500[library_index];
+		switch (getFirmwareVersion())
+		{
+			case 500:
+			case 503:
+				if (is_cfw)
+					return offset_500_cfw[library_index];
+				else 
+					return offset_500[library_index];
 
-		case 550:
-		case 551:
-		case 555:
-			if (psplink_running)
-				return offset_550_psplink[library_index];
-			else
-				return offset_550[library_index];
+			case 550:
+			case 551:
+			case 555:
+				if (is_cfw)
+					return offset_550_cfw[library_index];
+				else
+					return offset_550[library_index];
 
-		case 570:
-			if (getPSPModel() == PSP_GO)
-				return offset_570_go[library_index];
-			else
-				return offset_570[library_index];
+			case 570:
+				if (getPSPModel() == PSP_GO)
+					return offset_570_go[library_index];
+				else
+					return offset_570[library_index];
 
-		case 600:
-		case 610:
-			if (getPSPModel() == PSP_GO)
-				return offset_600_go[library_index];
-			else
-				return offset_600[library_index];
+			case 600:
+			case 610:
+				if (getPSPModel() == PSP_GO)
+					return offset_600_go[library_index];
+				else
+					return offset_600[library_index];
+		}
 	}
 
-	return 0;
+	return -1;
 }
 
 
 // Gets lowest syscall from kernel dump
-u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index)
+u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int is_cfw)
 {
 	library->gap = 0; // For < 6.20 and in case of error
 
@@ -307,22 +310,15 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index)
 			// Syscalls can be calculated from the library offsets on FW <= 6.10
 			tSceLibrary* lib_base = &(g->library_table.table[reference_library_index]);
 
-			// FIXME: Find other test for golf exploit
-			// Detect if PSPLink is running by analyzing the position of sceImpose, it is > 245 on CFW
-			int psplink_running = ((getFirmwareVersion() <= 550) 
-				&& ((g->library_table.table[17].lowest_syscall - lib_base->lowest_syscall) > 245));
+			int base_syscall = lib_base->lowest_syscall - get_library_offset(lib_base->name, is_cfw);
 
-			int base_syscall = lib_base->lowest_syscall - get_library_offset(lib_base->name, psplink_running);
-			LOGSTR1("Base syscall is %d\n", base_syscall);
+			lowest_syscall = base_syscall + get_library_offset(library->name, is_cfw);
 
-			if (psplink_running)
-				LOGSTR0("Using offsets for PSPLink\n");
-
-			lowest_syscall = base_syscall + get_library_offset(library->name, psplink_running);
+			LOGSTR1("Lowest syscall is %d\n", lowest_syscall);
 		}
 		else
 		{
-			// Read the lowest syscalls from the GO kernel memory dump, only for 6.20
+			// Read the lowest syscalls from the GO kernel memory dump, only for 6.20+
 			SceUID kdump_fd;
 			SceSize kdump_size;
 			SceOff lowest_offset = 0;
@@ -426,7 +422,7 @@ int get_lower_known_nid(unsigned int lib_index, u32 nid)
 }
 
 // Fills remaining information on a library
-tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index)
+tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index, int is_cfw)
 {
 	SceUID nid_file;
 	u32 nid;
@@ -456,8 +452,8 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index
 			i++;
 		}
 
-		NID_LOGSTR0("Getting lowest syscall from kernel dump\n");
-		lowest_syscall = get_klowest_syscall(plibrary, reference_library_index);
+		NID_LOGSTR0("Getting lowest syscall\n");
+		lowest_syscall = get_klowest_syscall(plibrary, reference_library_index, is_cfw);
 		if ((lowest_syscall & SYSCALL_MASK_RESOLVE) == 0)
 		{
 			syscall_gap = plibrary->lowest_syscall - lowest_syscall;
@@ -468,7 +464,9 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index
 
 			if (syscall_gap < 0)
 			{
-				NID_LOGSTR2("WARNING: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
+				// This is actually a serious error indicating that the syscall offset or
+				// memory address is wrong
+				LOGSTR2("ERROR: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
 				        plibrary->lowest_syscall);
 			}
 			
@@ -800,57 +798,56 @@ int build_nid_table()
 
 
 	u32 m;
-
-	int reference_library_index = -1;
+	int reference_library_index = get_library_index(SYSCALL_REFERENCE_LIBRARY);
 
 	if (g->syscalls_known && (getFirmwareVersion() <= 610))
 	{
-		// FIXME: Find a better place for this, maybe split complete_library into two functions
-		// Find library that has its syscalls at the extremes of the library
-		// to get a base offset for perfect syscall estimation
+		// Write out a library table
+		int is_aligned = 0;
+		int base_syscall = g->library_table.table[reference_library_index].lowest_syscall;
+		int firmware_version = getFirmwareVersion();
+
 		for (m = 0; m < g->library_table.num; m++)
 		{
-			SceUID nid_file = open_nids_file(g->library_table.table[m].name);
-			if (nid_file > -1)
-			{
-				g->library_table.table[m].num_library_exports = sceIoLseek(nid_file, 0, PSP_SEEK_END) / sizeof(u32);
-				sceIoClose(nid_file);
+			int nidsfile = open_nids_file(g->library_table.table[m].name);
+			int num_library_exports = sceIoLseek(nidsfile, 0, PSP_SEEK_END) / sizeof(u32);
+			sceIoClose(nidsfile);
 
-				// FIXME: This is a hack so that sceSAScore is skipped as reference library because
-				// its offset is different from the one in Patapon
-				if (strcmp(g->library_table.table[m].name, "sceSasCore") == 0)
-					continue;
+			if (num_library_exports < 0)
+			  num_library_exports = -1;
 
-				if (g->library_table.table[m].num_library_exports == (g->library_table.table[m].highest_syscall - g->library_table.table[m].lowest_syscall + 1))
-				{
-					reference_library_index = m;
-					break;
-				}
-			}
+			is_aligned = ((g->library_table.table[m].highest_syscall - g->library_table.table[m].lowest_syscall) == (u32)num_library_exports - 1);
+			logstr4("%d %s %d %d ", firmware_version, (u32)g->library_table.table[m].name, is_aligned, (u32)num_library_exports);
+			logstr1("%d ", g->library_table.table[m].highest_syscall - g->library_table.table[m].lowest_syscall + 1);
+			logstr4("%d %d %d %d\n", g->library_table.table[m].lowest_syscall - base_syscall, g->library_table.table[m].highest_syscall - base_syscall, g->library_table.table[m].lowest_syscall, g->library_table.table[m].highest_syscall);
 		}
 
-		if (reference_library_index > -1)
-		{
-			LOGSTR1("Reference library is %s\n", (u32)g->library_table.table[reference_library_index].name);
-		}
-		else
-		{
-			// Fall back to FROM_CLOSEST estimation if no reference library can be found
-			LOGSTR0("ERROR: No suitable reference library found!\n");
-			g->syscalls_known = 0;
-		}
+		logstr0("\n");
 	}
+
+
+	// On CFW there is a higher syscall difference between SysmemUserForUser 
+	// and lower libraries than without it.
+	int sysmem_lowest_syscall = g->library_table.table[get_library_index("SysMemUserForUser")].lowest_syscall;
+	int interrupt_lowest_syscall = g->library_table.table[get_library_index("InterruptManager")].lowest_syscall;
+
+	int is_cfw = ((getFirmwareVersion() <= 550) 
+		&& (sysmem_lowest_syscall - interrupt_lowest_syscall > 244));
+
+	if (is_cfw)
+		print_to_screen("Using offsets for Custom Firmware");
+
 
 	// Fill remaining data after the reference library is known
 	for (m = 0; m < g->library_table.num; m++)
 	{
 		LOGSTR1("Completing library...%d\n", m);
-		ret = complete_library(&(g->library_table.table[m]), reference_library_index);
+		ret = complete_library(&(g->library_table.table[m]), reference_library_index, is_cfw);
 	}
 	sceKernelDcacheWritebackInvalidateAll();
 
 
-#ifdef NID_DEBUG
+#ifdef DEBUG
 	u32 c1, c2;
 	u32 syscall;
 	int estimated_correctly = 0;

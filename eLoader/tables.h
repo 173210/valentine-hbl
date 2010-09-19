@@ -70,7 +70,7 @@ typedef enum
 	LIBRARY_SCESASCORE,
 	LIBRARY_SCEIMPOSE,
 	LIBRARY_SCEREG,
-	LIBRARY_SCEWLANDRV_LIB
+	LIBRARY_SCECHNNLSV
 } HBLLibraryIndex;
 
 
@@ -106,7 +106,7 @@ u32 get_call_nidtable(u32 nid, u32* call_buffer);
 u32 get_good_call(u32* call_pointer);
 
 // Fills remaining information on a library
-tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index);
+tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index, int is_cfw);
 
 // Returns index of NID in table
 int get_nid_index(u32 nid);

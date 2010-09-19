@@ -1,3 +1,8 @@
+2010/09/19 (Wololo)
+- JJS's patch for perfect syscalls on the golf exploit
+- Changed loading address for minna no golf exploit, per J416's recommendation
+- moved some global variables into scratchpad, which should solve firmware detection issues (issue 323)
+
 2010/09/08 (Wololo)
 - Adpated the code to J416's Exploit in minna no golf, Freddy's Exploit in Everybody's golf, and Wololo's exploit in hotshots golf. Adapted by JJS and Wololo
 -- This is majorly untested, but I'm afraid of losing the many code changes involed here. I basically tested this on the patapon exploit and the hotshots exploit on a psp go 6.20

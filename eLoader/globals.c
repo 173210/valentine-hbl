@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "debug.h"
 #include "utils.h"
+#include <exploit_config.h>
 
 tGlobals * get_globals() 
 {
@@ -27,10 +28,40 @@ void init_globals()
     memset(g, 0, sizeof(tGlobals)); 
     strcpy(g->menupath,"ms0:/hbl/menu/EBOOT.PBP");
 
+	// Intialize firmware and model
+	g->firmware_version = 1;
+	g->psp_model = 1;
+
 	// Select syscall estimation method
-	// For later I would propose a per-library flag.    
-    g->syscalls_known = ((getFirmwareVersion() <= 610) || ((getPSPModel() == PSP_GO) && (getFirmwareVersion() == 620)));
-	g->syscalls_from_p5 = ((getFirmwareVersion() == 620) && (getPSPModel() == PSP_OTHER));
+	g->syscalls_known = 0;
+
+	int i;
+	unsigned short syscalls_known_for_firmwares[] = SYSCALLS_KNOWN_FOR_FIRMWARES;
+	unsigned short syscalls_known_for_go_firmwares[] = SYSCALLS_KNOWN_FOR_GO_FIRMWARES;
+
+	unsigned short* firmware_array;
+	int firmware_array_size;
+	if (getPSPModel() == PSP_GO)
+	{
+		firmware_array = syscalls_known_for_go_firmwares;
+		firmware_array_size = sizeof(syscalls_known_for_go_firmwares) / sizeof(unsigned short);
+	}
+	else
+	{
+		firmware_array = syscalls_known_for_firmwares;
+		firmware_array_size = sizeof(syscalls_known_for_firmwares) / sizeof(unsigned short);
+	}		
+	
+	for (i = 0; i < firmware_array_size; i++)
+	{
+		if (firmware_array[i] == getFirmwareVersion())
+		{
+			g->syscalls_known = 1;
+			break;
+		}
+	}
+
+	g->syscalls_from_p5 = 1; // Always available
 
 	g->exit_callback_called = 0;
 

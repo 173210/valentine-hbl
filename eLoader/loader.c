@@ -506,20 +506,6 @@ void p5_get_stubs()
 }
 
 
-void p5_fake_stub_addresses()
-{
-	// Set the stub addresses to 0 to avoid errors on <6.20 PSPs
-	// This terminates the stub search immediately instead of
-	// looping through random bits of memory
-	memset((void*)0x09d10000, 0, 2 * sizeof(u32));
-	memset((void*)0x09d30000, 0, 2 * sizeof(u32));
-	memset((void*)0x09d50000, 0, 2 * sizeof(u32));
-	memset((void*)0x09d70000, 0, 2 * sizeof(u32));
-}
-
-
-
-
 // Entry point
 void _start() __attribute__ ((section (".text.start")));
 void _start()
@@ -528,15 +514,15 @@ void _start()
 
 	LOGSTR0("Loader running\n");
 
-	// If PSPGo on 6.20, do a kmem dump
-	if ((getFirmwareVersion() == 620) && (getPSPModel() == PSP_GO))
-		get_kmem_dump();
-	
     //reset the contents of the debug file;
     init_debug();
     
     //init global variables
     init_globals();
+
+	// If PSPGo on 6.20+, do a kmem dump
+	if ((getFirmwareVersion() >= 620) && (getPSPModel() == PSP_GO))
+		get_kmem_dump();
 
 	// Get additional syscalls from utility dialogs
 	p5_get_stubs();

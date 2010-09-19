@@ -49,6 +49,9 @@ typedef struct
 
 typedef struct 
 {
+	// firmware and model
+	u32 firmware_version;
+	u32 psp_model;
     //uids
     SceUID hbl_block_uid;
     u32 hbl_block_addr;
