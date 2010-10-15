@@ -15,10 +15,10 @@
 
 //This function is copied from elf.c to avoid compiling the entire elf.c dependencies for just one function
 // Returns !=0 if stub entry is valid, 0 if it's not
-// Just checks if pointers are not NULL
 int elf_check_stub_entry(tStubEntry* pentry)
 {
-	return ((pentry->library_name) &&
+	return ( 
+    valid_umem_pointer((u32)(pentry->library_name)) &&
 	(pentry->nid_pointer) &&
 	(pentry->jump_pointer));
 }
@@ -35,17 +35,12 @@ void load_hbl(SceUID hbl_file)
 
 	// Get HBL size
 	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
-	
-	//if (file_size >= MAX_ELOADER_SIZE)
-	//	exit_with_log(" HBL TOO BIG ", &file_size, sizeof(file_size));
-	
+
 	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
 
 	//write_debug(" HBL SIZE ", &file_size, sizeof(file_size));
 	
 	// Allocate memory for HBL
-	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, MAX_ELOADER_SIZE, 0x09EC8000);
-	// HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_High, file_size, NULL); // Best one, but don't work, why?
 	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDRESS);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
@@ -78,6 +73,19 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 
 	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", (u32)pentry);
 
+    //Some sanity checks
+    if (!valid_umem_pointer((u32)pentry)) 
+    {
+        LOGSTR1("0x%08lX is not a valid user memory address, will ignore this list, please check your list of stubs \n", (u32)pentry);
+        return 0;
+    }
+    
+    if(!elf_check_stub_entry(pentry)) 
+    {
+        LOGSTR1("First entry for 0x%08lX is incorrect, will ignore this list, please check your list of stubs \n", (u32)pentry);
+        return 0;
+    }
+    
 	// While it's a valid stub header
 	while(elf_check_stub_entry(pentry))
 	{
@@ -459,6 +467,21 @@ void* p5_find_stub_in_memory(char* library, void* start_address, u32 size)
 }
 
 
+// These are the addresses were we copy p5 stuff
+// This might overwrite some important things in ram, 
+// so overwrite these values in exploit_config.h if needed
+#ifndef RELOC_MODULE_ADDR_1
+#define RELOC_MODULE_ADDR_1 0x09d10000
+#endif
+#ifndef RELOC_MODULE_ADDR_2
+#define RELOC_MODULE_ADDR_2 0x09d30000
+#endif
+#ifndef RELOC_MODULE_ADDR_3
+#define RELOC_MODULE_ADDR_3 0x09d50000
+#endif
+#ifndef RELOC_MODULE_ADDR_4
+#define RELOC_MODULE_ADDR_4 0x09d70000
+#endif
 
 // Copy stubs for the savedata dialog with save mode 
 void p5_copy_stubs_savedata_dialog()
@@ -471,15 +494,15 @@ void p5_copy_stubs_savedata_dialog()
 
 	//p5_dump_memory("ms0:/p5_savedata_save.dump");
 
-	p5_copy_stubs((void*)0x09d10000, scePaf_Module);
-	p5_copy_stubs((void*)0x09d30000, sceVshCommonUtil_Module);
-	p5_copy_stubs((void*)0x09d50000, sceDialogmain_Module);
+	p5_copy_stubs((void*)RELOC_MODULE_ADDR_1, scePaf_Module);
+	p5_copy_stubs((void*)RELOC_MODULE_ADDR_2, sceVshCommonUtil_Module);
+	p5_copy_stubs((void*)RELOC_MODULE_ADDR_3, sceDialogmain_Module);
 
 	p5_close_savedata();
 
-	p5_relocate_stubs((void*)0x09d10000, scePaf_Module);
-	p5_relocate_stubs((void*)0x09d30000, sceVshCommonUtil_Module);
-	p5_relocate_stubs((void*)0x09d50000, sceDialogmain_Module);
+	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_1, scePaf_Module);
+	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_2, sceVshCommonUtil_Module);
+	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_3, sceDialogmain_Module);
 }
 
 // Copy stubs for the savedata dialog with autoload mode 
@@ -491,11 +514,11 @@ void p5_copy_stubs_savedata()
 
 	//p5_dump_memory("ms0:/p5_savedata_autoload.dump");
 
-	p5_copy_stubs((void*)0x09d70000, sceVshSDAuto_Module);
+	p5_copy_stubs((void*)RELOC_MODULE_ADDR_4, sceVshSDAuto_Module);
 
 	p5_close_savedata();
 
-	p5_relocate_stubs((void*)0x09d70000, sceVshSDAuto_Module);
+	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_4, sceVshSDAuto_Module);
 }
 
 // Copy the dialog stubs from p5 into p2 memory

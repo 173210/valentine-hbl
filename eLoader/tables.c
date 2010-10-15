@@ -644,8 +644,8 @@ int build_nid_table()
 			cur_call = pentry->jump_pointer;
 			good_call = get_good_call(cur_call);
 
-			// Only process if syscall
-			if (!(good_call & SYSCALL_MASK_RESOLVE))
+			// Only process if syscall and if the import is already resolved
+			if (!(good_call & SYSCALL_MASK_RESOLVE) && (GET_SYSCALL_NUMBER(good_call) != SYSCALL_IMPORT_NOT_RESOLVED_YET))
 			{		
 				// Get current NID
 				cur_nid = pentry->nid_pointer;
@@ -825,6 +825,7 @@ int build_nid_table()
 		logstr0("\n");
 	}
 
+	//sceKernelExitGame();
 
 	// On CFW there is a higher syscall difference between SysmemUserForUser 
 	// and lower libraries than without it.

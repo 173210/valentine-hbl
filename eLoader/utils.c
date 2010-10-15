@@ -110,3 +110,9 @@ u32 getPSPModel()
 
     return g->psp_model; 
 }
+
+int valid_umem_pointer(u32 addr) 
+{
+    return (addr >= 0x08800000) &&
+    (addr < 0x0A000000);
+}

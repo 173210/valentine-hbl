@@ -23,7 +23,8 @@ libraries = [
 "sceNetAdhocMatching_Library",
 "sceVideocodec_Driver",
 "sceMpegbase_Driver",
-"sceMpeg_library", ];
+"sceMpeg_library",
+"sceFont_Library", ];
 
 
 class Integer

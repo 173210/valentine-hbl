@@ -60,6 +60,48 @@ exploit_stubs_map = {
 				0x09d70000  # sceVshSDAuto_Module				
 			],	
 	},
+	# Everybody's Golf 2
+	"everybody2" => {
+		"50x" =>
+			[
+				0x08ACF408, #main
+				0x09E9E630, #sceATRAC3plus_Library
+				0x0880043C, #sceKernelLibrary
+				0x09EAB0C0, #sceFont_Library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module	
+			],
+		"550" =>
+			[
+				0x08ACF408, #main
+				0x09E9E630, #sceATRAC3plus_Library
+				0x0880046C, #sceKernelLibrary
+				0x09EAB0C0, #sceFont_Library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module	
+			],
+		"6xx" =>
+			[
+				0x08ACF408, #main
+				0x09E9EC30, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09EAB0C0, #sceFont_Library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module	
+			],
+	},	
 	# Hotshots golf 1 Exploit (wololo)
 	"hotshots" => {
 		"5xx" =>
@@ -98,6 +140,23 @@ exploit_stubs_map = {
 			],
 		
 	},
+    # Hotshots golf 2 Exploit (wololo)
+	"hotshots2" => {
+		"5xx" =>
+			[
+                0x08ACFA7C, #main
+                0x09E88630, #sceATRAC3plus_Library
+                0x0880043C, #sceKernelLibrary
+                0x09E950C0, #sceFont_Library   
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module	                
+    		],	
+	},
+    
 	# Minna no golf 1 Exploit (j416)
 	"minna" => {
 		"5xx" =>
@@ -134,9 +193,7 @@ exploit_stubs_map = {
 				# Relocated savegame dialog stub
 				0x09d70000  # sceVshSDAuto_Module				
 			],
-		
 	},
-	
 	# Patapon 2 Demo Exploit (malloxis & wololo)
 	"patapon2" => {
         "50x" =>
@@ -439,9 +496,11 @@ exploit_stubs_map.each { |folder, stub_addresses|
 	out = File.new( root + folder +  "/sdk_hbl.S", "w")
 	out.binmode();
 	out_conf = {};
+    config_folder = root + folder + "/config";
+    Dir.mkdir(config_folder) unless File.directory?(config_folder);
 	stub_addresses.each { |k, v|
-		out_conf[k] = File.new( root + folder + "/config/imports.config_" + k  , "w");
-        puts root + folder + "/config/imports.config_" + k;
+		out_conf[k] = File.new( config_folder + "/imports.config_" + k  , "w");
+        puts config_folder + "/imports.config_" + k;
 		out_conf[k].binmode;
 		out_conf[k].write(v.size.mips(4));
 		out_conf[k].write(config.size.mips(4));

@@ -54,6 +54,7 @@ int kill_sema(SceUID sema)
 
 int kill_module(SceUID modid) 
 {
+    LOGSTR1("Killing module 0x%08lX...", modid);
 	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
 	int ret = sceKernelUnloadModule(modid);
 	if (ret < 0)
@@ -61,6 +62,7 @@ int kill_module(SceUID modid)
 		LOGSTR2("--> ERROR 0x%08lX UNLOADING MODULE ID 0x%08lX\n", ret, modid);
         return 0;
 	}
+    LOGSTR0("done!\n");
     return 1;
 }
 
@@ -122,8 +124,9 @@ void UnloadModules()
 	m = PSP_MODULE_NET_SSL;
 	while (m >= PSP_MODULE_NET_COMMON)
 	{
+        LOGSTR1("unloading utility module 0x%08lX...", m);
 		result = sceUtilityUnloadModule(m);
-		LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);
+		LOGSTR1("result 0x%08lX\n", result);
 		m--;
 	}
 #endif

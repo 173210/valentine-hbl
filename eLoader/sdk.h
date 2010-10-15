@@ -26,6 +26,9 @@ typedef unsigned char byte;
 #define SYSCALL_MASK_IMPORT 0x01000000
 #define SYSCALL_MASK_RESOLVE 0xFFF00000
 
+// This marks libraries that are not yet linked
+#define SYSCALL_IMPORT_NOT_RESOLVED_YET 0x15
+
 // Macros to construct call and jump instructions
 #define MAKE_CALL(f) (0x0c000000 | (((u32)(f) >> 2)  & 0x03ffffff))
 #define MAKE_JUMP(f) (0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff))

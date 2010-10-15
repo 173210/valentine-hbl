@@ -4,6 +4,7 @@
 #include "eloader.h"
 #include "hook.h"
 #include "malloc.h"
+#include "utils.h"
 
 
 
@@ -54,7 +55,8 @@ int elf_check_magic(Elf32_Ehdr* pelf_header)
 // Just checks if pointers are not NULL
 int elf_check_stub_entry(tStubEntry* pentry)
 {
-	return ((pentry->library_name) &&
+	return (
+    valid_umem_pointer((u32)(pentry->library_name)) &&
 	(pentry->nid_pointer) &&
 	(pentry->jump_pointer));
 }

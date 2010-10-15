@@ -9,4 +9,6 @@
 u32 getFirmwareVersion();
 u32 getPSPModel();
 
+//Returns 1 if address is a valid PSP umem address, 0 otherwise
+int valid_umem_pointer(u32 addr);
 #endif
