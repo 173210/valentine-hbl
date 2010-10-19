@@ -410,6 +410,18 @@ void p5_dump_memory(char* filename)
 }
 
 
+// Check the stub for validity, special version for p5 memory addresses
+// Returns !=0 if stub entry is valid, 0 if it's not
+int p5_elf_check_stub_entry(tStubEntry* pentry)
+{
+	return ( 
+    ((u32)(pentry->library_name) > 0x08400000) &&
+	((u32)(pentry->library_name) < 0x08800000) &&
+	(pentry->nid_pointer) &&
+	(pentry->jump_pointer));
+}
+
+
 // Change the stub pointers so that they point into their new memory location
 void p5_relocate_stubs(void* destination, void* source)
 {
@@ -418,7 +430,7 @@ void p5_relocate_stubs(void* destination, void* source)
 
 	LOGSTR2("Relocating stub addresses from 0x%08lX to 0x%08lX\n", (u32)source, (u32)destination);
 
-	while (elf_check_stub_entry(pentry))
+	while (p5_elf_check_stub_entry(pentry))
 	{
 		if (pentry->import_flags != 0x11)
 		{

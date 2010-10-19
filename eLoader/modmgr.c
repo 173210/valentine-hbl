@@ -86,7 +86,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		LOGSTR1("load_module -> Offset: 0x%08lX\n", offset);
 		
 		// Load PRX program section
-		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, &program_size, &addr)) == 0)
+		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, (u32*)&program_size, &addr)) == 0)
 			return SCE_KERNEL_ERROR_ERROR;
 
 		sceKernelDcacheWritebackInvalidateAll();

@@ -153,8 +153,21 @@ exploit_stubs_map = {
 				0x09d30000, # sceVshCommonUtil_Module
 				0x09d50000, # sceDialogmain_Module
 				# Relocated savegame dialog stub
-				0x09d70000  # sceVshSDAuto_Module	                
-    		],	
+				0x09d70000  # sceVshSDAuto_Module
+    		],
+		"6xx" =>
+			[
+				0x08ACFA7C, #main
+				0x09E88C30, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09E950C0, #sceFont_Library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+    		],
 	},
     
 	# Minna no golf 1 Exploit (j416)
@@ -174,7 +187,7 @@ exploit_stubs_map = {
 				0x09d30000, # sceVshCommonUtil_Module
 				0x09d50000, # sceDialogmain_Module
 				# Relocated savegame dialog stub
-				0x09d70000  # sceVshSDAuto_Module				
+				0x09d70000  # sceVshSDAuto_Module
 			],	
 		"6xx" =>
 			[
@@ -191,10 +204,55 @@ exploit_stubs_map = {
 				0x09d30000, # sceVshCommonUtil_Module
 				0x09d50000, # sceDialogmain_Module
 				# Relocated savegame dialog stub
-				0x09d70000  # sceVshSDAuto_Module				
+				0x09d70000  # sceVshSDAuto_Module
 			],
 	},
-	# Patapon 2 Demo Exploit (malloxis & wololo)
+	# Minna no golf 2 original release Exploit (j416)	
+	"minna2" => {
+		"550" =>
+			[
+				0x08ACCB08, #main
+				0x09E32630, #sceATRAC3plus_Library
+				0x0880046C, #sceKernelLibrary
+				0x09E3F0B0, #sceFont_Library			
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+			],
+		"6xx" =>
+			[
+				0x08ACCB08, #main
+				0x09E32C30, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09E3F0B0, #sceFont_Library		
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+    		],
+	},
+	# Minna no golf 2 "the best" budget release Exploit (j416)	
+	"minna2best" => {
+		"6xx" =>
+			[
+				0x08ACD4A4, #main
+				0x09E93C30, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09EA00B0, #sceFont_Library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+    		],
+	},
+    # Patapon 2 Demo Exploit (malloxis & wololo)
 	"patapon2" => {
         "50x" =>
                 [
