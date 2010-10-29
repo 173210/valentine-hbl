@@ -13,85 +13,57 @@
 // 2 is PSPGO
 // 3 is other
 
-/* Attempt to get the firmware version by checking a specific address in Ram
- * The address and values are based on a series of memdump that can mostly be found here:
- * http://advancedpsp.tk/foro_es/viewtopic.php?f=37&t=293
- *
- * It is important to call this function (once) early, before that point in memory gets erased
- */
+
+// New method by neur0n to get the firmware version from the 
+// module_sdk_version export of sceKernelLibrary
+// http://wololo.net/talk/viewtopic.php?f=4&t=128
 u32 getFirmwareVersion()
 {
-    tGlobals * g = get_globals();
+   tGlobals * g = get_globals();
 
-	if (g->firmware_version != 1) 
-		return g->firmware_version;
+   if (g->firmware_version != 1) 
+      return g->firmware_version;
 
-    g->firmware_version = 0;
+   g->firmware_version = 0;
+
+   u8 cnt;
+   u32 version = 0;
+   u8 i;
+   u32* addr = (u32 *)memfindsz("sceKernelLibrary", (char*)0x08800300, 0x00001000);
+
+   SceLibraryEntryTable *Entry = (SceLibraryEntryTable *) addr[8];
+
+   cnt = Entry->vstubcount + Entry->stubcount;
+   u32** pointer =(u32**) Entry->entrytable;
+
+//   LOGSTR1("Entry is 0x%08lX \n",(u32)Entry);
+//   LOGSTR1("cnt is 0x%08lX \n",(u32)cnt);
+//   LOGSTR1("pointer is 0x%08lX \n",(u32)pointer);
+
+   for(i=0;i< cnt;i++)
+   {
+      if( (u32)pointer[i]== 0x11B97506)
+      {
+         version = *(pointer[i + cnt]);
+         break;
+      }
+   }
+   LOGSTR1("Detected firmware version is 0x%08lX\n", (u32)version);
+
+   if(version)
+   {
+      g->firmware_version = ((version >> 24) * 100)
+         + (((version & 0x00FF0000) >> 16) * 10)    
+         + ((version & 0x0000FF00) >> 8);
+   }
+   else
+   {
+      LOGSTR0("Warning: Cannot find module_sdk_version function \n");
+   }
     
-#ifdef DETECT_FIRMWARE_ADDR    
-    u32 value = *(u32*)DETECT_FIRMWARE_ADDR;
-
-    switch (value) 
-    {
-#ifdef DETECT_FIRMWARE_500    
-		case DETECT_FIRMWARE_500:
-		    g->firmware_version = 500;
-		    break;  
-#endif
-#ifdef DETECT_FIRMWARE_503            
-		case DETECT_FIRMWARE_503:
-		    g->firmware_version = 503;
-		    break;   
-#endif
-#ifdef DETECT_FIRMWARE_550              
-		case DETECT_FIRMWARE_550:
-		    g->firmware_version = 550;
-		    break;
-#endif
-#ifdef DETECT_FIRMWARE_551              
-		case DETECT_FIRMWARE_551:
-		    g->firmware_version = 551;
-		    break;
-#endif
-#ifdef DETECT_FIRMWARE_555              
-		case DETECT_FIRMWARE_555:
-		    g->firmware_version = 555;
-		    break;   
-#endif
-#ifdef DETECT_FIRMWARE_570              
-		case DETECT_FIRMWARE_570:
-		    g->firmware_version = 570;
-		    break;   
-#endif
-#ifdef DETECT_FIRMWARE_600              
-		case DETECT_FIRMWARE_600:
-		    g->firmware_version = 600;
-		    break;
-#endif
-#ifdef DETECT_FIRMWARE_610              
-		case DETECT_FIRMWARE_610:
-		    g->firmware_version = 610;
-		    break;     
-#endif
-#ifdef DETECT_FIRMWARE_620              
-		case DETECT_FIRMWARE_620:
-		    g->firmware_version = 620;
-		    break;          
-#endif
-#ifdef DETECT_FIRMWARE_630 
-		case DETECT_FIRMWARE_630:
-		    g->firmware_version = 630;
-		    break;    
-#endif
-#ifdef DETECT_FIRMWARE_631
-		case DETECT_FIRMWARE_631:
-		    g->firmware_version = 631;
-		    break;     
-#endif            
-    }
-#endif
-    return g->firmware_version; 
+    return g->firmware_version;
 }
+
 
 u32 getPSPModel()
 {

@@ -45,6 +45,8 @@ typedef struct
 	tSceLibrary table[MAX_LIBRARIES];
 } HBLLibTable;
 
+
+// Arrays for perfect syscall estimation are ordered by this enum
 typedef enum
 {
 	LIBRARY_INTERRUPTMANAGER = 0,
@@ -74,12 +76,14 @@ typedef enum
 } HBLLibraryIndex;
 
 
+// Describes the information found at the memory address
+// for the lowest syscall in the GO kernel memory dump
 typedef struct
 {
-	u32 lowest_syscall;
-	char padding[16];
-	u16 offset_to_zero_index;
-	u16 gap;
+	u32 lowest_syscall;			// Lowest syscall assigned to the library
+	char padding[16];			// Unknown/unimportant data
+	u16 offset_to_zero_index;	// Random padding to the first NIDs syscall
+	u16 gap;					// Random Padding (1 to 4) between the last and the first NIDs syscall
 } HBLKernelLibraryStruct;
 
 

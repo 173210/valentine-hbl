@@ -274,6 +274,26 @@ exploit_stubs_map = {
 					# Relocated savegame dialog stub
 					0x09d70000  # sceVshSDAuto_Module											
 				 ],
+        "503" =>
+                [
+					0x08A88D74, # Labo
+					0x0880046c, # sceKernelLibrary
+					0x09e76e30, # sceATRAC3plus_Library
+					0x09e82a20, # sceMpeg_library
+					0x09e91460, # sceNet_Library
+					0x09ea2db0, # sceNetAdhoc_Library
+					0x09ea9100, # sceNetAdhocctl_Library
+					0x09eaf6f0, # sceNetAdhocMatching_Library
+					0x09eb3400, # sceNetAdhocDownload_Library
+					0x09eb483c, # sceNetAdhocDiscover_Library
+					0x09ec6b70, # sceFont_Library
+					# Relocated message dialog stubs
+					0x09d10000, # scePaf_Module
+					0x09d30000, # sceVshCommonUtil_Module
+					0x09d50000, # sceDialogmain_Module
+					# Relocated savegame dialog stub
+					0x09d70000  # sceVshSDAuto_Module						
+				 ],				 
         "550" =>
                 [
 					0x08A88D74, # Labo
@@ -293,9 +313,8 @@ exploit_stubs_map = {
 					0x09d50000, # sceDialogmain_Module
 					# Relocated savegame dialog stub
 					0x09d70000  # sceVshSDAuto_Module						
-					
 				 ],
-		"555" =>
+		"55x" =>
                 [
 					0x08A88D74, # Labo
 					0x0880046c, # sceKernelLibrary

@@ -800,6 +800,7 @@ int build_nid_table()
 	u32 m;
 	int reference_library_index = get_library_index(SYSCALL_REFERENCE_LIBRARY);
 
+#ifdef DEBUG
 	if (g->syscalls_known && (getFirmwareVersion() <= 610))
 	{
 		// Write out a library table
@@ -817,15 +818,14 @@ int build_nid_table()
 			  num_library_exports = -1;
 
 			is_aligned = ((g->library_table.table[m].highest_syscall - g->library_table.table[m].lowest_syscall) == (u32)num_library_exports - 1);
-			logstr4("%d %s %d %d ", firmware_version, (u32)g->library_table.table[m].name, is_aligned, (u32)num_library_exports);
-			logstr1("%d ", g->library_table.table[m].highest_syscall - g->library_table.table[m].lowest_syscall + 1);
-			logstr4("%d %d %d %d\n", g->library_table.table[m].lowest_syscall - base_syscall, g->library_table.table[m].highest_syscall - base_syscall, g->library_table.table[m].lowest_syscall, g->library_table.table[m].highest_syscall);
+			LOGSTR4("%d %s %d %d ", firmware_version, (u32)g->library_table.table[m].name, is_aligned, (u32)num_library_exports);
+			LOGSTR1("%d ", g->library_table.table[m].highest_syscall - g->library_table.table[m].lowest_syscall + 1);
+			LOGSTR4("%d %d %d %d\n", g->library_table.table[m].lowest_syscall - base_syscall, g->library_table.table[m].highest_syscall - base_syscall, g->library_table.table[m].lowest_syscall, g->library_table.table[m].highest_syscall);
 		}
 
-		logstr0("\n");
+		LOGSTR0("\n");
 	}
-
-	//sceKernelExitGame();
+#endif
 
 	// On CFW there is a higher syscall difference between SysmemUserForUser 
 	// and lower libraries than without it.

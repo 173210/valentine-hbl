@@ -261,8 +261,6 @@ void loadGlobalConfig()
     g->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;    
     g->return_to_xmb_on_exit = 0;
     g->force_exit_buttons = 0;
-    g->syscalls_known = ((getFirmwareVersion() <= 610) || ((getPSPModel() == PSP_GO) && (getFirmwareVersion() == 620)));
-	g->syscalls_from_p5 = ((getFirmwareVersion() == 620) && (getPSPModel() != PSP_GO));
     strcpy(g->hb_filename, "ms0:/PSP/GAME/");
     
     //load Config file
