@@ -435,6 +435,8 @@ void p5_relocate_stubs(void* destination, void* source)
 		if (pentry->import_flags != 0x11)
 		{
 			// Variable import
+			// relocate it to pass the the user memory pointer check
+			pentry->library_name = (Elf32_Addr)((int)pentry->library_name + offset);
 			pentry = (tStubEntry*)((int)pentry + 4);
 		}
 		else
