@@ -172,10 +172,20 @@ void FreeMem()
 {
 
 	SceUID memid = *(SceUID*)(GAME_FREEMEM_ADDR);
-	sceKernelFreePartitionMemory(memid);
+	int ret = sceKernelFreePartitionMemory(memid);
+	if (ret < 0)
+	{
+		LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, memid);
+	}
 
 	// Might need to add this function to sdk, via eLoaderConf.rb, depending on the exploit
-	sceKernelReleaseSubIntrHandler(30,0);
+
+	// On all games
+	sceKernelReleaseSubIntrHandler(25, 0);
+	sceKernelReleaseSubIntrHandler(25, 1);
+
+	// Only on Golf 1+2
+	sceKernelReleaseSubIntrHandler(30, 0);
 
 }
 #endif

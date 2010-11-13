@@ -679,7 +679,7 @@ int run_nid (u32 nid){
     u32 cur_stub[2];
     resolve_call(cur_stub, syscall);
     sceKernelDcacheWritebackInvalidateAll();
-    logstr1("call is: 0x%08lX\n", cur_stub[0]);
+    LOGSTR1("call is: 0x%08lX\n", cur_stub[0]);
     void (*function)() = (void *)(&cur_stub);
     function();
     return 1;
@@ -777,14 +777,36 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
     tGlobals * g = get_globals();
     LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (u32)name, type, size, (u32)addr);
     sceKernelWaitSema(g->memSema, 1, 0);
-    SceUID uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
-    if (uid <=0)
-    {
-        LOGSTR1("failed with result: 0x%08lX\n", uid);
-    }    
-    else
-    {
-        
+
+	// Try to allocate the requested memory. If the allocation fails due to an insufficient
+	// amount of free memory try again with 10kB less until the allocation succeeds.
+	// Don't allow to go under 80 % of the initial amount of memory.
+	SceUID uid;
+	SceSize original_size = size;
+	do 
+	{
+		uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
+		if (uid <= 0)
+		{
+			// Allocation failes, check if we can go lower for another try
+			if ((size > 10000) && ((size - 10000) > original_size - (original_size / 5)))
+			{
+				// Try again with 10kB less
+				size -= 10000;
+			}
+			else
+			{
+				// Limit reached, break out of loop
+				break;
+			}
+		}
+	}
+    while (uid <= 0);
+
+	LOGSTR3("-> final allocation made for %d of %d requested bytes with result 0x%08lX\n", size, original_size, uid);
+
+	if (uid > 0)
+	{
         /***********************************************************************/
         /* Succeeded OS alloc.  Record the block ID in the tracking list.      */
         /* (Don't worry if there's no space to record it, we'll just have to   */
