@@ -138,7 +138,60 @@ exploit_stubs_map = {
 				# Relocated savegame dialog stub
 				0x09d70000  # sceVshSDAuto_Module
 			],
-		
+	},
+	# Hotshots golf 1 Exploit - Alternative version (wololo/JJS)
+	"hotshotsalt" => {
+		"5xx" =>
+			[
+				0x08A35FEC, #main
+				0x09E66B8C, #sceNet_Library
+				0x09E5CE9C, #sceATRAC3plus_Library
+				0x0880043C, #sceKernelLibrary
+				0x09E7039C, #sceNetAdhoc_Library
+				0x09E76BAC, #sceNetAdhocctl_Library
+				0x09E7B92C, #sceNetAdhocMatching_Library
+				0x09E8337C, #sceMpeg_library			
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+			],
+		"550" =>
+			[
+				0x08A35FEC, #main
+				0x09E6698C, #sceNet_Library
+				0x09E5CC9C, #sceATRAC3plus_Library
+				0x0880046C, #sceKernelLibrary
+				0x09E7019C, #sceNetAdhoc_Library
+				0x09E769AC, #sceNetAdhocctl_Library
+				0x09E7B72C, #sceNetAdhocMatching_Library
+				0x09E8317C, #sceMpeg_library
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+			],
+		"6xx" =>
+			[
+				0x08A35FEC, #main
+				0x09E6698C, #sceNet_Library
+				0x09E5CC9C, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09E7019C, #sceNetAdhoc_Library
+				0x09E769AC, #sceNetAdhocctl_Library
+				0x09E7B72C, #sceNetAdhocMatching_Library
+				0x09E8317C, #sceMpeg_library			
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module
+			],			
 	},
     # Hotshots golf 2 Exploit (wololo)
 	"hotshots2" => {
