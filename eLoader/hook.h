@@ -41,6 +41,8 @@ extern int chdir_ok;
 int test_sceIoChdir();
 void threads_cleanup();
 void ram_cleanup();
+void files_cleanup();
+void subinterrupthandler_cleanup();
 
 /* Declarations */
 //files imported by Patapon but can't find proper .h file
@@ -77,6 +79,7 @@ int _hook_sceIoLseek32 (SceUID  fd, int offset, int whence);
 SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode);
 SceUID _hook_sceIoDopen(const char *dirname);
 int _hook_sceIoChdir(const char *dirname) ;
+int _hook_sceIoClose(SceUID fd);
 
 // Control manager
 int _hook_sceCtrlPeekBufferPositive(SceCtrlData* pad_data,int count);

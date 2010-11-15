@@ -69,5 +69,6 @@ void init_globals()
     g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);
     g->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);
     g->audioSema = sceKernelCreateSema("hblaudiosema",0,1,1,0);
+	g->ioSema = sceKernelCreateSema("hbliosema",0,1,1,0);
     g->curr_channel_id = -1;
 }

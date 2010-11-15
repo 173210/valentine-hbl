@@ -130,8 +130,21 @@ u32 setup_hook(u32 nid)
 		case 0xE49BFE92: // sceUtilityUnloadModule
 			LOGSTR0(" Hook sceUtilityUnloadModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityUnloadModule);
-			break;			
+			break;	
 #endif            
+
+		// Hook these to keep track of open files when the homebrew quits
+
+		case 0x109F50BC: //	sceIoOpen
+            LOGSTR0("Hook sceIoOpen\n");                        
+            hook_call = MAKE_JUMP(_hook_sceIoOpen);
+            break;          
+
+		case 0x810C4BC3: //	sceIoClose
+            LOGSTR0("Hook sceIoClose\n");                        
+            hook_call = MAKE_JUMP(_hook_sceIoClose);
+            break;  
+
     }
     
     if (hook_call) 
@@ -297,14 +310,16 @@ u32 setup_hook(u32 nid)
             LOGSTR0(" Chdir trick sceIoChdir\n");
             hook_call = MAKE_JUMP(_hook_sceIoChdir);
             break;
-		
+
+/*
         case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
             if (g->chdir_ok)
                 break;
             LOGSTR0(" Chdir trick sceIoOpen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
             break;
-		
+*/
+
         case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
             if (g->chdir_ok)
                 break;
@@ -656,6 +671,96 @@ void threads_cleanup()
     LOGSTR0("Threads cleanup Done\n");
 }
 
+
+SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
+{
+    tGlobals * g = get_globals();
+
+    sceKernelWaitSema(g->ioSema, 1, 0);
+	SceUID result = sceIoOpen(file, flags, mode);
+
+	// Add to tracked files array if files was opened successfully
+	if (result > -1)
+	{
+		if (g->numOpenFiles < SIZE_IO_TRACKING_ARRAY - 1)
+		{
+			int i;
+			for (i = 0; i < SIZE_IO_TRACKING_ARRAY; i++)
+			{
+				if (g->openFiles[i] == 0)
+				{
+					g->openFiles[i] = result;
+					g->numOpenFiles++;
+					break;
+				}
+			}
+		}
+		else
+		{
+			LOGSTR0("WARNING: file list full, cannot add newly opened file\n");
+		}
+	}
+
+	sceKernelSignalSema(g->ioSema, 1);
+	//LOGSTR4("_hook_sceIoOpen(%s, %d, %d) = 0x%08lX\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
+	return result;
+}
+
+
+int _hook_sceIoClose(SceUID fd)
+{
+    tGlobals * g = get_globals();
+
+	sceKernelWaitSema(g->ioSema, 1, 0);
+	SceUID result = sceIoClose(fd);
+
+	// Remove from tracked files array if closing was successfull
+	if (result > -1)
+	{
+		int i;
+		for (i = 0; i < SIZE_IO_TRACKING_ARRAY; i++)
+		{
+			if (g->openFiles[i] == fd)
+			{
+				g->openFiles[i] = 0;
+				g->numOpenFiles--;
+				break;
+			}
+		}
+	}
+
+	sceKernelSignalSema(g->ioSema, 1);
+	//LOGSTR2("_hook_sceIoClose(0x%08lX) = 0x%08lX\n", (u32)fd, (u32)result);
+	return result;
+}
+
+
+// Close all files that remained open after the homebrew quits
+void files_cleanup()
+{
+	LOGSTR0("Files Cleanup\n");
+    tGlobals * g = get_globals();
+
+	sceKernelWaitSema(g->ioSema, 1, 0);
+	int i;
+	for (i = 0; i < SIZE_IO_TRACKING_ARRAY; i++)
+	{
+		if (g->openFiles[i] != 0)
+		{
+			sceIoClose(g->openFiles[i]);
+			LOGSTR1("closing file UID 0x%08lX\n", (u32)g->openFiles[i]);
+			g->openFiles[i] = 0;
+		}
+	}
+
+	g->numOpenFiles = 0;
+	sceKernelSignalSema(g->ioSema, 1);
+	LOGSTR0("Files Cleanup Done\n");
+}
+
+
+
+
 //Resolve the call for a function and runs it without parameters
 // This is quite ugly, so if you find a better way of doing this I'm all ears
 int run_nid (u32 nid){
@@ -679,7 +784,11 @@ int run_nid (u32 nid){
     u32 cur_stub[2];
     resolve_call(cur_stub, syscall);
     sceKernelDcacheWritebackInvalidateAll();
-    LOGSTR1("call is: 0x%08lX\n", cur_stub[0]);
+	
+	// This debug line must also be present in the release build!
+	// Otherwise the PSP will freeze and turn off when jumping to function().
+    logstr1("call is: 0x%08lX\n", cur_stub[0]);
+
     void (*function)() = (void *)(&cur_stub);
     function();
     return 1;
@@ -743,12 +852,33 @@ void ram_cleanup()
 }
 
 
+// Release all subinterrupt handler
+void subinterrupthandler_cleanup()
+{
+    LOGSTR0("Subinterrupthandler Cleanup\n");
+	int i, j;
+	for (i = 0; i < 66; i++) // 66 is the highest value of enum PspInterrupts
+	{
+		for (j = 0; j < 30; j++) // 30 is the highest value of enum PspSubInterrupts 
+		{
+			if (sceKernelReleaseSubIntrHandler(i, j) > -1)
+			{
+				LOGSTR2("Subinterrupt handler released for %d, %d\n", i, j);
+			}
+		}
+	}
+    LOGSTR0("Subinterrupthandler Cleanup Done\n");
+}
+
+
 void exit_everything_but_me()
-{    
+{
     net_term();
     audio_term();
+	subinterrupthandler_cleanup();
     threads_cleanup();
     ram_cleanup();
+	files_cleanup();
 }
 
 //To return to the menu instead of exiting the game
@@ -1130,6 +1260,9 @@ char * relative_to_absolute(const char * file)
     strcat(buf,file);
     return buf;
 }
+/* Commented this out in favour of the other sceIoOpen hook
+   This should be obsolete anyway as the p5 stubs contain all
+   relevant sceIo* syscalls.
 
 //hook this ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
@@ -1142,7 +1275,7 @@ SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
     free(buf);
     return ret;
 }
-
+*/
 //hook this ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoDopen(const char *dirname)   
 {

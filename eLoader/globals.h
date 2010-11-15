@@ -27,6 +27,7 @@ in a safe memory zone. If you need globals, it is better to have them here
 
 #define MAX_OS_ALLOCS   400
 #define SIZE_THREAD_TRACKING_ARRAY  20
+#define SIZE_IO_TRACKING_ARRAY 10
 #define MAX_CALLBACKS 20
 
 
@@ -70,6 +71,8 @@ typedef struct
     u32 numPendThreads;
     u32 numRunThreads;
     u32 numExitThreads;
+	SceUID openFiles[SIZE_IO_TRACKING_ARRAY];
+	u32 numOpenFiles;
     SceUID osAllocs[MAX_OS_ALLOCS];
     u32    osAllocNum;
     SceKernelCallbackFunction callbackfuncs[MAX_CALLBACKS];
@@ -81,6 +84,7 @@ typedef struct
     SceUID thrSema;
     SceUID cbSema;
     SceUID audioSema;
+	SceUID ioSema;
     int audio_threads[8];
     int curr_channel_id;
     //settings.c

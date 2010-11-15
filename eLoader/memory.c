@@ -2,6 +2,7 @@
 #include "eloader.h"
 #include "debug.h"
 #include "modmgr.h"
+#include "hook.h"
 #include <exploit_config.h>
 
 #define MODULES_START_ADDRESS 0x08804000
@@ -177,16 +178,6 @@ void FreeMem()
 	{
 		LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, memid);
 	}
-
-	// Might need to add this function to sdk, via eLoaderConf.rb, depending on the exploit
-
-	// On all games
-	sceKernelReleaseSubIntrHandler(25, 0);
-	sceKernelReleaseSubIntrHandler(25, 1);
-
-	// Only on Golf 1+2
-	sceKernelReleaseSubIntrHandler(30, 0);
-
 }
 #endif
 
@@ -203,6 +194,8 @@ void free_game_memory()
 #ifdef GAME_FREEMEM_ADDR
 	FreeMem();
 #endif
+
+	subinterrupthandler_cleanup();
 
 	DeleteAllThreads();
 
