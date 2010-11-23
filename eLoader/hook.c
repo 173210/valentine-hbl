@@ -461,7 +461,9 @@ int _hook_sceKernelExitDeleteThread(int status)
 	}
 #endif   
     
-	//return (sceKernelExitDeleteThread(status)); //Patapon does not import this function
+	//return (sceKernelExitDeleteThread(status));
+	// (Patapon does not import this function)
+	// But modules on p5 do.
     
 #ifdef DELETE_EXIT_THREADS
 	LOGSTR1("Num exit thr: %08lX\n", g->numExitThreads);
@@ -480,7 +482,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 #endif       
     
 	sceKernelSignalSema(g->thrSema, 1);    
-    return (sceKernelExitThread(status));
+    return (sceKernelExitDeleteThread(status));
 
 }
 
@@ -857,9 +859,9 @@ void subinterrupthandler_cleanup()
 {
     LOGSTR0("Subinterrupthandler Cleanup\n");
 	int i, j;
-	for (i = 0; i < 66; i++) // 66 is the highest value of enum PspInterrupts
+	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
 	{
-		for (j = 0; j < 30; j++) // 30 is the highest value of enum PspSubInterrupts 
+		for (j = 0; j <= 30; j++) // 30 is the highest value of enum PspSubInterrupts 
 		{
 			if (sceKernelReleaseSubIntrHandler(i, j) > -1)
 			{
