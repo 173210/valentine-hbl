@@ -6,6 +6,61 @@ root = "../../"
 
 # .lib.stub addresses
 exploit_stubs_map = {
+	# Everybody's Sukkiri exploit by Darxploit, Flyer, minomushi, some1
+	"sukkiri" => {
+		"5xx" =>
+			[
+				0x088BE3AC, #main
+				0x09D03760, #sceNet_Library
+				0x09CC6230, #sceATRAC3plus_Library
+				#0x0880046C, #sceKernelLibrary
+				0x09D150B0, #sceNetAdhoc_Library
+				0x09D1B400, #sceNetAdhocctl_Library
+				0x09D25700, #sceNetAdhocDownload_Library
+				0x09D219F0, #sceNetAdhocMatching_Library
+				# Relocated message dialog stubs
+				0x08EE0000, # scePaf_Module
+				0x08F00000, # sceVshCommonUtil_Module
+				0x08F20000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x08F40000  # sceVshSDAuto_Module				
+			],		
+		"570" =>
+			[
+				0x088BE3AC, #main
+				0x09D039E0, #sceNet_Library
+				0x09CC6240, #sceATRAC3plus_Library
+				0x088005BC, #sceKernelLibrary
+				0x09D150F0, #sceNetAdhoc_Library
+				0x09D1B500, #sceNetAdhocctl_Library
+				0x09D26190, #sceNetAdhocDownload_Library
+				0x09D21CC0, #sceNetAdhocMatching_Library
+				0x09CD2570, #sceFont_Library
+				# Relocated message dialog stubs
+				0x08EE0000, # scePaf_Module
+				0x08F00000, # sceVshCommonUtil_Module
+				0x08F20000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x08F40000  # sceVshSDAuto_Module					
+			],
+		"6xx" =>
+			[		
+				0x088BE3AC, #main
+				0x09D03E40, #sceNet_Library
+				0x09CC6830, #sceATRAC3plus_Library
+				0x088009A0, #sceKernelLibrary
+				0x09D150F0, #sceNetAdhoc_Library
+				0x09D1B570, #sceNetAdhocctl_Library
+				0x09D26290, #sceNetAdhocDownload_Library
+				0x09D21E10, #sceNetAdhocMatching_Library
+				# Relocated message dialog stubs
+				0x08EE0000, # scePaf_Module
+				0x08F00000, # sceVshCommonUtil_Module
+				0x08F20000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x08F40000  # sceVshSDAuto_Module					
+			],
+	},
 	# Everybody's Golf 1
 	"everybody" => {
 		"50x" =>
@@ -570,9 +625,7 @@ config = [
     		[0x1F6752AD, "sceGeEdramGetSize"],
     		[0xE47E40E4, "sceGeEdramGetAddr"],
     	],
-    },     
-    
-
+    }
 ]
 
 # Don't change the stuff below unless you know what you do

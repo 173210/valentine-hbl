@@ -1,3 +1,55 @@
+2010/12/20 (JJS)
+- added Everybody's Sukkiri, exploit by Darxploit, Flyer, minomushi, some1 and HBL port by some1
+- added code to reset the HOME screen language to the system default (only for sukkiri)
+- made GAME_FREEMEM_ADDR an array for all exploits
+- fixed bug in static ELF loading that led to HBL being overwritten in sukkiri
+
+2010/11/23 (JJS)
+- added kernel memory offsets for hotshots2/everybody2 on 6.20
+- changed _hook_sceKernelExitDeleteThread to actually call sceKernelExitDeleteThread because it is available through p5 stubs now, this should fix freezing in JellyCar
+- minor correction to subinterrupthandler_cleanup()
+
+2010/11/15 (JJS)
+- fixed  issue 342  (some homebrew crashing on exit)
+- added code to track opened files by hooking sceIoOpen/sceIoClose and to close remaining files on homebrew exit
+- now releasing all subinterrupt handler, should fix that no homebrew could run after gpsp
+
+2010/11/14 (JJS)
+- added alternative version of Hot Shots Golf: Open Tee
+
+2010/11/13 (JJS)
+- applied fix for savegame exploit code by neur0n (h.bin file handle not being closed, see http://wololo.net/talk/viewtopic.php?f=4&t=286). Thank you!
+- added two missing addresses in exploit_config.h for Patapon 2
+- added releasing of two additional sub interrupt handlers to FreeMem()
+- added new nid files for 6.3x
+
+2010/11/07 (J416)
+- I fixed the crash when hbl erased the memory on minna no golf2.
+
+2010/11/05 (JJS)
+- checked in hotshots2, minna2 and minna2best config files
+- fixed import stub parsing again by also relocating variable imports, they now pass the user memory pointer check
+
+2010/10/29 (JJS)
+- changed getFirmwareVersion to the code by neur0n (see http://wololo.net/talk/viewtopic.php?f=4&t=128&start=0). Thank you!
+- removed all memory offsets for firmware detection from the exploit_config.h files
+- added GO perfect syscall memory offsets for hotshots2/everybody2 on 6.3x
+- added GO perfect syscall memory offsets for minna2/minna2best on 6.20 and 6.3x
+- fixed bug that disabled perfect syscalls on 6.3x GOs (g->syscalls_known was being reset)
+- fixed issue 333 (patapon2 broken on 5.03 and 5.51)
+
+2010/10/19 (JJS)
+- changed files in "minna2" folder to the original Minna No Golf 2 release version
+- added "minna2best" folder for the Minna No Golf 2 budget "the best" release
+- added more stubs to eLoaderconf.rb
+- fixed regression introduced in R102 that prevented the p5 stubs from being parsed (stub addresses on p5 got rejected by the user memory pointer sanity check)
+- fixed compiling and linking on MINPSPW 0.9.6+ (explicit typecast in modmgr.c and rebuilt sdk_loader.S for Patapon 2)
+
+2010/10/15 (Wololo)
+- initial checkin for Hotshots golf 2 / everybody's golf2 / minna no golf 2. Credits for the exploits/binary loaders go to mamosuke, J416, JJS, wololo.
+- Added some sanity checks for stub entries.
+- Added some generation tools in /tools (including a ruby version of the moskitool) (JJS, wololo)
+
 2010/09/19 (Wololo)
 - JJS's patch for perfect syscalls on the golf exploit
 - Changed loading address for minna no golf exploit, per J416's recommendation

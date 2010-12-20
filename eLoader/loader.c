@@ -13,6 +13,28 @@
 #include <exploit_config.h>
 
 
+
+#ifdef RESET_HOME_SCREEN_LANGUAGE
+// Reset language and button assignment for the HOME screen to system defaults
+void resetHomeScreenSettings()
+{
+	int language;
+	int buttonSwap;
+
+	// Get system language, default to English on error
+	if (sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &language) < 0)
+		language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
+
+	// Get button assignment, default to X = Enter on error
+	if (sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_UNKNOWN, &buttonSwap) < 0)
+		buttonSwap = 1; // X = Enter
+
+	sceImposeSetLanguageMode(language, buttonSwap);
+}
+#endif
+
+
+
 //This function is copied from elf.c to avoid compiling the entire elf.c dependencies for just one function
 // Returns !=0 if stub entry is valid, 0 if it's not
 int elf_check_stub_entry(tStubEntry* pentry)
@@ -547,6 +569,11 @@ void p5_get_stubs()
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
+#ifdef RESET_HOME_SCREEN_LANGUAGE
+	// Reset language and button assignment for the HOME screen to system defaults
+	resetHomeScreenSettings();
+#endif
+
 	SceUID hbl_file;
 
 	LOGSTR0("Loader running\n");

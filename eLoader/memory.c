@@ -171,13 +171,17 @@ void UnloadModules()
 #ifdef GAME_FREEMEM_ADDR
 void FreeMem()
 {
-
-	SceUID memid = *(SceUID*)(GAME_FREEMEM_ADDR);
-	int ret = sceKernelFreePartitionMemory(memid);
-	if (ret < 0)
-	{
-		LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, memid);
-	}
+   u32 i;
+   SceUID memids[] = GAME_FREEMEM_ADDR;
+   
+   for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
+   {
+      int ret = sceKernelFreePartitionMemory(*(SceUID*)memids[i]);
+      if (ret < 0)
+      {
+         LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
+      }
+   }
 }
 #endif
 

@@ -72,9 +72,6 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Initialize size return value
 	*size = 0;
 
-	// Clean memory
-    memset((void*)0x08900000, 0x00, (0x09EC8000 - 0x08900000));	
-	
 	int i;
 	for (i = 0; i < pelf_header->e_phnum; i++)
 	{

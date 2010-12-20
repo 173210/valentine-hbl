@@ -6,6 +6,9 @@
 #include <pspaudio.h>
 #include <psputility.h>
 #include <pspumd.h>
+#include <psptypes.h>
+#include <pspimpose_driver.h>
+#include <psputility.h>
 
 #include "lib.h"
 
