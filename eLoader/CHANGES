@@ -1,4 +1,8 @@
 2010/12/20 (JJS)
+- added lowest syscall memory offsets for sukkiri on 6.35
+- added code to close all files left open by the exploitet game
+
+2010/12/20 (JJS)
 - added Everybody's Sukkiri, exploit by Darxploit, Flyer, minomushi, some1 and HBL port by some1
 - added code to reset the HOME screen language to the system default (only for sukkiri)
 - made GAME_FREEMEM_ADDR an array for all exploits

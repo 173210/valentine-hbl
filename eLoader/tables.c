@@ -219,6 +219,7 @@ int get_library_kernel_memory_offset(char* library_name)
 {
 	u32 offset_620[] = SYSCALL_KERNEL_OFFSETS_620;
 	u32 offset_630[] = SYSCALL_KERNEL_OFFSETS_630;
+	u32 offset_635[] = SYSCALL_KERNEL_OFFSETS_635;
 
 	int library_index = get_library_index_from_name(library_name);
 
@@ -232,6 +233,9 @@ int get_library_kernel_memory_offset(char* library_name)
 			case 630:
 			case 631:
 				return offset_630[library_index];
+
+			case 635:
+				return offset_635[library_index];
 		}
 	}
 

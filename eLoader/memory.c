@@ -185,6 +185,25 @@ void FreeMem()
 }
 #endif
 
+
+// Iterate through possible file descriptors to close all files left
+// open by the exploitet game
+void CloseFiles()
+{
+	SceUID result;
+	int i;
+
+	for (i = 0; i < 20; i++) // How many files can be open at once?
+	{
+		result = sceIoClose(i);
+		if (result != (int)0x80020323) // bad file descriptor
+		{
+			LOGSTR2("tried closing file %d, result 0x%08lX\n", i, result);
+		}
+	}
+}
+
+
 void free_game_memory()
 {
 #ifdef DEBUG
@@ -208,6 +227,8 @@ void free_game_memory()
 	DeleteAllSemaphores();
 
     UnloadModules();
+
+	CloseFiles();
 
 #ifdef DEBUG
 	free = sceKernelTotalFreeMemSize();
