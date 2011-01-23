@@ -6,6 +6,12 @@ root = "../../"
 
 # .lib.stub addresses
 exploit_stubs_map = {
+	"signed" => {
+		"6xx" =>
+			[
+				0x088075F8 #hbl_launcher
+			],
+	},
 	# Everybody's Sukkiri exploit by Darxploit, Flyer, minomushi, some1
 	"sukkiri" => {
 		"5xx" =>

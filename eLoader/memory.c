@@ -67,6 +67,7 @@ int kill_module(SceUID modid)
     return 1;
 }
 
+#ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)
 {
 	u32 i;
@@ -78,7 +79,9 @@ void DeleteAllThreads(void)
 		kill_thread(*(SceUID*)(thaddrs[i]));
 	}
 }
+#endif
 
+#ifdef EV_ADDR_LIST
 void DeleteAllEventFlags(void)
 {
 	u32 i;
@@ -90,7 +93,9 @@ void DeleteAllEventFlags(void)
 		kill_event_flag(*(SceUID*)(evaddrs[i]));
 	}
 }
+#endif
 
+#ifdef SEMA_ADDR_LIST
 void DeleteAllSemaphores(void)
 {
 	u32 i;
@@ -106,6 +111,7 @@ void DeleteAllSemaphores(void)
 		kill_sema(*(SceUID*)(semaaddrs[i]));
 	}
 }
+#endif
 
 void UnloadModules()
 {
@@ -219,12 +225,18 @@ void free_game_memory()
 #endif
 
 	subinterrupthandler_cleanup();
-
+    
+#ifdef TH_ADDR_LIST
 	DeleteAllThreads();
-
+#endif
+    
+#ifdef EV_ADDR_LIST
 	DeleteAllEventFlags();
+#endif
 
+#ifdef SEMA_ADDR_LIST
 	DeleteAllSemaphores();
+#endif
 
     UnloadModules();
 

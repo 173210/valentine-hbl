@@ -1,0 +1,40 @@
+	.set noreorder
+
+#include "pspstub.s"
+
+	STUB_START	"sceRtc",0x40010011,0x00220005
+	STUB_FUNC	0x0498FB3C,sceRtcFormatRFC3339
+	STUB_FUNC	0x05EF322C,sceRtcGetDaysInMonth
+	STUB_FUNC	0x26D25A5D,sceRtcTickAddMicroseconds
+	STUB_FUNC	0x26D7A24A,sceRtcTickAddHours
+	STUB_FUNC	0x27C4594C,sceRtcGetTime_t
+	STUB_FUNC	0x27F98543,sceRtcFormatRFC3339LocalTime
+	STUB_FUNC	0x28E1E988,sceRtcParseRFC3339
+	STUB_FUNC	0x34885E0D,sceRtcConvertUtcToLocalTime
+	STUB_FUNC	0x36075567,sceRtcGetDosTime
+	STUB_FUNC	0x3A807CC8,sceRtcSetTime_t
+	STUB_FUNC	0x3F7AD767,sceRtcGetCurrentTick
+	STUB_FUNC	0x42307A17,sceRtcIsLeapYear
+	STUB_FUNC	0x42842C77,sceRtcTickAddYears
+	STUB_FUNC	0x44F45E05,sceRtcTickAddTicks
+	STUB_FUNC	0x4B1B5E82,sceRtcCheckValid
+	STUB_FUNC	0x4CFA57B0,sceRtcGetCurrentClock
+	STUB_FUNC	0x57726BC1,sceRtcGetDayOfWeek
+	STUB_FUNC	0x6FF40ACC,sceRtcGetTick
+	STUB_FUNC	0x779242A2,sceRtcConvertLocalTimeToUTC
+	STUB_FUNC	0x7ACE4C04,sceRtcSetWin32FileTime
+	STUB_FUNC	0x7DE6711B,sceRtcFormatRFC2822LocalTime
+	STUB_FUNC	0x7ED29E40,sceRtcSetTick
+	STUB_FUNC	0x9ED0AE87,sceRtcCompareTick
+	STUB_FUNC	0xC41C2853,sceRtcGetTickResolution
+	STUB_FUNC	0xC663B3B9,sceRtcFormatRFC2822
+	STUB_FUNC	0xCF3A2CA8,sceRtcTickAddWeeks
+	STUB_FUNC	0xCF561893,sceRtcGetWin32FileTime
+	STUB_FUNC	0xDBF74F1B,sceRtcTickAddMonths
+	STUB_FUNC	0xDFBC5F16,sceRtcParseDateTime
+	STUB_FUNC	0xE51B4B7A,sceRtcTickAddDays
+	STUB_FUNC	0xE6605BCA,sceRtcTickAddMinutes
+	STUB_FUNC	0xE7C27D1B,sceRtcGetCurrentClockLocalTime
+	STUB_FUNC	0xF006F264,sceRtcSetDosTime
+	STUB_FUNC	0xF2A4AFE5,sceRtcTickAddSeconds
+	STUB_END

@@ -1,3 +1,7 @@
+2010/01/23 (JJS, wololo)
+- added launcher to run directly from the XMB (requires minpspw 0.11 for compatibility reasons, also requires external tools for signing)
+- Added "launcher-compatible" version of HBL, works on OFW 6.37 and below
+
 2010/12/20 (JJS)
 - added lowest syscall memory offsets for sukkiri on 6.35
 - added code to close all files left open by the exploitet game
