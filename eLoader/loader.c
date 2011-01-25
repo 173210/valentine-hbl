@@ -291,6 +291,9 @@ void copy_hbl_stubs(void)
 	sceKernelDcacheWritebackInvalidateAll();
 }
 
+
+#ifndef DISABLE_KERNEL_DUMP
+
 // Erase kernel dump
 void init_kdump()
 {
@@ -316,6 +319,7 @@ void get_kmem_dump()
 	}
 }
 
+#endif
 
 
 
@@ -325,6 +329,9 @@ void clear_vram()
 	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
 }
 
+
+
+#ifndef DISABLE_P5_STUBS
 
 // Initializes the savedata dialog loop, opens p5
 void p5_open_savedata(int mode)
@@ -564,6 +571,8 @@ void p5_get_stubs()
 	p5_copy_stubs_savedata_dialog();
 }
 
+#endif
+
 
 // Entry point
 void _start() __attribute__ ((section (".text.start")));
@@ -585,11 +594,15 @@ void _start()
     init_globals();
 
 	// If PSPGo on 6.20+, do a kmem dump
+#ifndef DISABLE_KERNEL_DUMP
 	if ((getFirmwareVersion() >= 620) && (getPSPModel() == PSP_GO))
 		get_kmem_dump();
+#endif
 
 	// Get additional syscalls from utility dialogs
+#ifndef DISABLE_P5_STUBS
 	p5_get_stubs();
+#endif
 
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));

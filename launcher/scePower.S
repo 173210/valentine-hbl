@@ -1,0 +1,43 @@
+	.set noreorder
+
+#include "pspstub.s"
+
+	STUB_START	"scePower",0x40010011,0x00250005
+	STUB_FUNC	0x0074EF9B,scePowerGetResumeCount
+	STUB_FUNC	0x04B7766E,scePowerRegisterCallback
+	STUB_FUNC	0x0AFD0D8B,scePowerIsBatteryExist
+	STUB_FUNC	0x1E490401,scePowerIsBatteryCharging
+	STUB_FUNC	0x2085D15D,scePowerGetBatteryLifePercent
+	STUB_FUNC	0x27F3292C,scePowerBatteryUpdateInfo
+	STUB_FUNC	0x28E12023,scePowerGetBatteryTemp
+	STUB_FUNC	0x2B7C7CF4,scePowerRequestStandby
+	STUB_FUNC	0x3951AF53,scePowerEncodeUBattery
+	STUB_FUNC	0x478FE6F5,scePowerGetBusClockFrequency
+	STUB_FUNC	0x483CE86B,scePowerGetBatteryVolt
+	STUB_FUNC	0x737486F2,scePowerSetClockFrequency
+	STUB_FUNC	0x7F30B3B1,scePowerIdleTimerEnable
+	STUB_FUNC	0x7FA406DD,scePowerIsRequest
+	STUB_FUNC	0x843FBF43,scePowerSetCpuClockFrequency
+	STUB_FUNC	0x862AE1A6,scePowerGetBatteryElec
+	STUB_FUNC	0x87440F5E,scePowerIsPowerOnline
+	STUB_FUNC	0x8EFB3FA2,scePowerGetBatteryLifeTime
+	STUB_FUNC	0x94F5A53F,scePowerGetBatteryRemainCapacity
+	STUB_FUNC	0x972CE941,scePowerIdleTimerDisable
+	STUB_FUNC	0x9BADB3EB,scePowerGetBusClockFrequencyFloat
+	STUB_FUNC	0xAC32C9CC,scePowerRequestSuspend
+	STUB_FUNC	0xB1A52C83,scePowerGetCpuClockFrequencyFloat
+	STUB_FUNC	0xB4432BC8,scePowerGetBatteryChargingStatus
+	STUB_FUNC	0xB8D7B3FB,scePowerSetBusClockFrequency
+	STUB_FUNC	0xB999184C,scePowerGetLowBatteryCapacity
+	STUB_FUNC	0xBD681969,scePowerGetBusClockFrequencyInt
+	STUB_FUNC	0xCA3D34C1,scePowerUnlock
+	STUB_FUNC	0xD3075926,scePowerIsLowBattery
+	STUB_FUNC	0xD6D016EF,scePowerLock
+	STUB_FUNC	0xDB62C9CF,scePowerCancelRequest
+	STUB_FUNC	0xDB9D28DD,scePowerUnregitserCallback
+	STUB_FUNC	0xDFA8BAF8,scePowerUnregisterCallback
+	STUB_FUNC	0xEDC13FE5,scePowerGetIdleTimer
+	STUB_FUNC	0xEFD3C963,scePowerTick
+	STUB_FUNC	0xFDB5BFE9,scePowerGetCpuClockFrequencyInt
+	STUB_FUNC	0xFEE03A2F,scePowerGetCpuClockFrequency
+	STUB_END

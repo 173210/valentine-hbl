@@ -5,7 +5,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-  . = 0x09EC8000;
+  . = 0x09F67000;
   .text.start : {
     *(.text.start)
   }

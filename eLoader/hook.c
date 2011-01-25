@@ -10,6 +10,7 @@
 #include "resolve.h"
 #include "globals.h"
 #include "syscall.h"
+#include <exploit_config.h>
 
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!
 
@@ -153,7 +154,9 @@ u32 setup_hook(u32 nid)
     // Overrides below this point don't need to be done if we have perfect syscall estimation      
     if (g->syscalls_known)
         return 0;
- 
+
+#ifndef DISABLE_ADDITIONAL_HOOKS
+
     switch (nid) 
 	{ 
 
@@ -328,6 +331,8 @@ u32 setup_hook(u32 nid)
             break;                      
 #endif
     }
+
+#endif
 
 	return hook_call;
 }
