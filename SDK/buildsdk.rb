@@ -1,5 +1,7 @@
 #!/usr/bin/ruby
 
+memory_base = 0x08804000;
+
 f = File.new("functions.txt", "r")
 h = {}
 #0x267A6DD2 [0x08A888E8] - __sceSasRevParam
@@ -7,7 +9,7 @@ regexp = /^(0x.+) \[(0x.+)\] - (.+)$/
 while (line = f.gets)
 	if (line.match(regexp)) 
 	  line.scan(regexp) {|nid,address,name| 
-		h[name] = address
+		h[name] = "0x" + (address.hex + memory_base).to_s(16).rjust(8, "0");
 	  }
 	end
 end

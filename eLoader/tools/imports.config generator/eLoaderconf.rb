@@ -9,7 +9,7 @@ exploit_stubs_map = {
 	"signed" => {
 		"6xx" =>
 			[
-				0x088075F8 #hbl_launcher
+				0x08807cb8 #hbl_launcher
 			],
 	},
 	# Everybody's Sukkiri exploit by Darxploit, Flyer, minomushi, some1

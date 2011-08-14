@@ -2,7 +2,7 @@
 
 #include "pspstub.s"
 
-	STUB_START	"sceGe_user",0x40010011,0x00110005
+	STUB_START	"sceGe_user",0x40010011,0x00120005
 	STUB_FUNC	0x03444EB4,sceGeListSync
 	STUB_FUNC	0x05DB22CE,sceGeUnsetCallback
 	STUB_FUNC	0x0BF608FB,sceGeRestoreContext
@@ -20,4 +20,5 @@
 	STUB_FUNC	0xDC93CFEF,sceGeGetCmd
 	STUB_FUNC	0xE0D68148,sceGeListUpdateStallAddr
 	STUB_FUNC	0xE47E40E4,sceGeEdramGetAddr
+	STUB_FUNC	0xE66CB92E,sceGe_user_E66CB92E
 	STUB_END

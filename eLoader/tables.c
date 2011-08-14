@@ -320,6 +320,21 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 
 			LOGSTR1("Lowest syscall is %d\n", lowest_syscall);
 		}
+		else if (getFirmwareVersion() >= 660)
+		{
+			// Lowest syscall and gap is extracted from the launcher imports
+			if (library->lowest_index == 0)
+			{
+				// Library does not wrap around
+				library->gap = 0;
+			}
+			else
+			{
+				library->gap = (library->highest_syscall - library->lowest_syscall) - (library->num_library_exports - 1);
+			}
+
+			lowest_syscall = library->lowest_syscall;
+		}
 		else
 		{
 			// Read the lowest syscalls from the GO kernel memory dump, only for 6.20+
@@ -633,7 +648,7 @@ int build_nid_table()
 			}
 
 			// Even if the stub appears to be valid, we shouldn't overflow the static arrays
-			if ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES))
+			if ((getFirmwareVersion() < 660) && ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES)))
 			{
 				config_close();
 				LOGSTR1(" NID TABLE COUNTER: 0x%08lX\n", i);
@@ -688,17 +703,22 @@ int build_nid_table()
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
-							add_nid_to_table(nid, get_good_call(cur_call), k);
-							NID_LOGSTR1(" --> new inserted @ %d", i);
+							good_call = get_good_call(cur_call);
+
+							if (getFirmwareVersion() < 660) 
+							{
+								add_nid_to_table(nid, good_call, k);
+								NID_LOGSTR1(" --> new inserted @ %d", i);
+							}
 
 							// Check lowest syscall
-							syscall_num = GET_SYSCALL_NUMBER(g->nid_table.table[i].call);
+							syscall_num = GET_SYSCALL_NUMBER(good_call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
 					
 							if (syscall_num < g->library_table.table[k].lowest_syscall)
 							{
 								g->library_table.table[k].lowest_syscall = syscall_num;
-								g->library_table.table[k].lowest_nid = g->nid_table.table[i].nid;
+								g->library_table.table[k].lowest_nid = nid;//g->nid_table.table[i].nid;
 								NID_LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", g->library_table.table[k].lowest_syscall, g->library_table.table[k].lowest_nid);
 							}
 		                    
@@ -748,16 +768,21 @@ int build_nid_table()
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
-							add_nid_to_table(nid, get_good_call(cur_call), library_index);
-							NID_LOGSTR1(" --> new inserted @ %d", i);
+							good_call = get_good_call(cur_call);
+
+							if (getFirmwareVersion() < 660)
+							{
+							add_nid_to_table(nid, good_call, library_index);
+								NID_LOGSTR1(" --> new inserted @ %d", i);
+							}
 				
 							// Check lowest syscall
-							syscall_num = GET_SYSCALL_NUMBER(g->nid_table.table[i].call);
+							syscall_num = GET_SYSCALL_NUMBER(good_call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
 							if (syscall_num < g->library_table.table[library_index].lowest_syscall)
 							{
 								g->library_table.table[library_index].lowest_syscall = syscall_num;
-								g->library_table.table[library_index].lowest_nid = g->nid_table.table[i].nid;
+								g->library_table.table[library_index].lowest_nid = nid;
 								NID_LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", g->library_table.table[library_index].lowest_syscall, g->library_table.table[library_index].lowest_nid);
 							}
 		                    if (syscall_num > g->library_table.table[library_index].highest_syscall)
@@ -946,8 +971,6 @@ int build_nid_table()
 #endif
 
 	config_close();
-
-	g->nid_table.num = i;
 	
 	return i;
 }

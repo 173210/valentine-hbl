@@ -2,27 +2,33 @@
 
 #include "pspstub.s"
 
-	STUB_START	"ThreadManForUser",0x40010011,0x00800005
+	STUB_START	"ThreadManForUser",0x40010011,0x00970005
 	STUB_FUNC	0x034A921F,sceKernelGetVTimerTime
 	STUB_FUNC	0x0C106E53,sceKernelRegisterThreadEventHandler
 	STUB_FUNC	0x0D81716A,sceKernelPollMbx
+	STUB_FUNC	0x0DDCD2C9,ThreadManForUser_0DDCD2C9
 	STUB_FUNC	0x0E927AED,_sceKernelReturnFromTimerHandler
 	STUB_FUNC	0x110DEC9A,sceKernelUSec2SysClock
 	STUB_FUNC	0x1181E963,sceKernelDelaySysClockThreadCB
 	STUB_FUNC	0x17C1684E,sceKernelReferThreadStatus
 	STUB_FUNC	0x18260574,sceKernelReceiveMbx
+	STUB_FUNC	0x19CFF145,ThreadManForUser_19CFF145
+	STUB_FUNC	0x1AF94D03,ThreadManForUser_1AF94D03
 	STUB_FUNC	0x1D371B8A,sceKernelCancelVpl
 	STUB_FUNC	0x1FB15A32,sceKernelSetEventFlag
 	STUB_FUNC	0x20FFF560,sceKernelCreateVTimer
 	STUB_FUNC	0x278C0DF5,sceKernelWaitThreadEnd
 	STUB_FUNC	0x27E22EC2,sceKernelResumeDispatchThread
 	STUB_FUNC	0x28B6489C,sceKernelDeleteSema
+	STUB_FUNC	0x28BFD974,ThreadManForUser_28BFD974
 	STUB_FUNC	0x293B45B8,sceKernelGetThreadId
 	STUB_FUNC	0x2A3D44FF,sceKernelGetCallbackCount
 	STUB_FUNC	0x2C34E053,sceKernelReleaseWaitThread
 	STUB_FUNC	0x30FD48F0,sceKernelPollEventFlag
+	STUB_FUNC	0x31327F19,ThreadManForUser_31327F19
 	STUB_FUNC	0x328C546A,sceKernelWaitEventFlagCB
 	STUB_FUNC	0x328F9E52,sceKernelDeleteVTimer
+	STUB_FUNC	0x32BF938E,ThreadManForUser_32BF938E
 	STUB_FUNC	0x33BE4024,sceKernelReferMsgPipeStatus
 	STUB_FUNC	0x349B864D,sceKernelCancelMsgPipe
 	STUB_FUNC	0x349D6D6C,sceKernelCheckCallback
@@ -35,6 +41,8 @@
 	STUB_FUNC	0x3F53E640,sceKernelSignalSema
 	STUB_FUNC	0x402FCF22,sceKernelWaitEventFlag
 	STUB_FUNC	0x446D8DE6,sceKernelCreateThread
+	STUB_FUNC	0x4A719FB2,ThreadManForUser_4A719FB2
+	STUB_FUNC	0x4C145944,ThreadManForUser_4C145944
 	STUB_FUNC	0x4E3A1105,sceKernelWaitSema
 	STUB_FUNC	0x52089CA1,sceKernelGetThreadStackFreeSize
 	STUB_FUNC	0x532A522E,_sceKernelExitThread
@@ -46,22 +54,27 @@
 	STUB_FUNC	0x58B1F937,sceKernelPollSema
 	STUB_FUNC	0x5BF4DD27,ThreadManForUser_5BF4DD27
 	STUB_FUNC	0x5F32BEAA,sceKernelReferVTimerStatus
+	STUB_FUNC	0x60107536,ThreadManForUser_60107536
 	STUB_FUNC	0x616403BA,sceKernelTerminateThread
 	STUB_FUNC	0x623AE665,sceKernelTryAllocateFpl
 	STUB_FUNC	0x627E6F3A,sceKernelReferSystemStatus
 	STUB_FUNC	0x64D4540E,sceKernelReferThreadProfiler
+	STUB_FUNC	0x65F54FFB,ThreadManForUser_65F54FFB
 	STUB_FUNC	0x6652B8CA,sceKernelSetAlarm
 	STUB_FUNC	0x68DA9E36,sceKernelDelayThreadCB
 	STUB_FUNC	0x6B30100F,ThreadManForUser_6B30100F
 	STUB_FUNC	0x6D212BAC,sceKernelWaitSemaCB
 	STUB_FUNC	0x6E9EA350,_sceKernelReturnFromCallback
+	STUB_FUNC	0x71040D5C,ThreadManForUser_71040D5C
 	STUB_FUNC	0x71BC9871,sceKernelChangeThreadPriority
+	STUB_FUNC	0x721067F3,ThreadManForUser_721067F3
 	STUB_FUNC	0x72F3C145,sceKernelReleaseThreadEventHandler
 	STUB_FUNC	0x730ED8BC,sceKernelReferCallbackStatus
 	STUB_FUNC	0x74829B76,sceKernelReceiveMsgPipe
 	STUB_FUNC	0x75156E8F,sceKernelResumeThread
 	STUB_FUNC	0x7C0DC2A0,sceKernelCreateMsgPipe
 	STUB_FUNC	0x7C41F2C2,sceKernelSendMsgPipeCB
+	STUB_FUNC	0x7CFF8CF3,ThreadManForUser_7CFF8CF3
 	STUB_FUNC	0x7E65B999,sceKernelCancelAlarm
 	STUB_FUNC	0x809CE29B,sceKernelExitDeleteThread
 	STUB_FUNC	0x812346E4,sceKernelClearEventFlag
@@ -71,10 +84,13 @@
 	STUB_FUNC	0x82BC5777,sceKernelGetSystemTimeWide
 	STUB_FUNC	0x840E8133,sceKernelWaitThreadEndCB
 	STUB_FUNC	0x86255ADA,sceKernelDeleteMbx
+	STUB_FUNC	0x8672E3D0,ThreadManForUser_8672E3D0
 	STUB_FUNC	0x876DBFAD,sceKernelSendMsgPipe
 	STUB_FUNC	0x87D4DD36,sceKernelCancelReceiveMbx
+	STUB_FUNC	0x87D9223C,ThreadManForUser_87D9223C
 	STUB_FUNC	0x884C9F90,sceKernelTrySendMsgPipe
 	STUB_FUNC	0x89B3D48C,sceKernelDeleteVpl
+	STUB_FUNC	0x8DAFF657,ThreadManForUser_8DAFF657
 	STUB_FUNC	0x8FFDF9A2,sceKernelCancelSema
 	STUB_FUNC	0x912354A7,sceKernelRotateThreadReadyQueue
 	STUB_FUNC	0x94416130,sceKernelGetThreadmanIdList
@@ -82,20 +98,26 @@
 	STUB_FUNC	0x9944F31F,sceKernelSuspendThread
 	STUB_FUNC	0x9ACE131E,sceKernelSleepThread
 	STUB_FUNC	0x9FA03CD3,sceKernelDeleteThread
+	STUB_FUNC	0xA1F78052,ThreadManForUser_A1F78052
 	STUB_FUNC	0xA66B0120,sceKernelReferEventFlagStatus
 	STUB_FUNC	0xA8AA591F,sceKernelCancelFpl
 	STUB_FUNC	0xA8E8C846,sceKernelReferMbxStatus
+	STUB_FUNC	0xA9C2CB9A,ThreadManForUser_A9C2CB9A
 	STUB_FUNC	0xAA73C935,sceKernelExitThread
 	STUB_FUNC	0xAF36D708,sceKernelTryAllocateVpl
+	STUB_FUNC	0xB011B11F,ThreadManForUser_B011B11F
 	STUB_FUNC	0xB2C25152,sceKernelSetSysClockAlarm
 	STUB_FUNC	0xB3A59970,sceKernelGetVTimerBase
 	STUB_FUNC	0xB736E9FF,sceKernelFreeVpl
 	STUB_FUNC	0xB7C18B77,sceKernelGetVTimerBaseWide
+	STUB_FUNC	0xB7D098C6,ThreadManForUser_B7D098C6
 	STUB_FUNC	0xBA4051D6,sceKernelCancelCallback
 	STUB_FUNC	0xBA6B92E2,sceKernelSysClock2USec
 	STUB_FUNC	0xBC6FEBC5,sceKernelReferSemaStatus
+	STUB_FUNC	0xBC80EC7C,ThreadManForUser_BC80EC7C
 	STUB_FUNC	0xBD123D9E,sceKernelDelaySysClockThread
 	STUB_FUNC	0xBED27435,sceKernelAllocateVpl
+	STUB_FUNC	0xBEED3A47,ThreadManForUser_BEED3A47
 	STUB_FUNC	0xC07BB470,sceKernelCreateFpl
 	STUB_FUNC	0xC0B3FFD2,sceKernelGetVTimerTimeWide
 	STUB_FUNC	0xC11BA8C4,sceKernelNotifyCallback
@@ -127,6 +149,7 @@
 	STUB_FUNC	0xF3986382,sceKernelReceiveMbxCB
 	STUB_FUNC	0xF475845D,sceKernelStartThread
 	STUB_FUNC	0xF6414A71,sceKernelFreeFpl
+	STUB_FUNC	0xF8170FBE,ThreadManForUser_F8170FBE
 	STUB_FUNC	0xFB6425C3,sceKernelSetVTimerTimeWide
 	STUB_FUNC	0xFBFA697D,sceKernelReceiveMsgPipeCB
 	STUB_FUNC	0xFCCFAD26,sceKernelCancelWakeupThread

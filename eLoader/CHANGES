@@ -1,4 +1,10 @@
-2010/01/25 (JJS)
+2011/08/14 (JJS)
+- this version is only compatible with FW 6.60
+- added all NIDs of the relevant libraries to the launcher
+- to reduce the memory consumption of the NID table, the lowest syscall and gap are extracted from the launcher imports and FROM_LOWEST estimation is used
+- added option of relocating the function addresses in buildsdk.rb, this is mainly useful when building an SDK from the launcher
+
+2011/01/25 (JJS)
 - added files missing in R113
 - some changes for the "signed" HBL
 -- no kernel memory dump is created
@@ -6,7 +12,7 @@
 -- function hooking is performed as if g->syscall_known was set
 -- HBL load address increased to 0x09F67000
 
-2010/01/23 (JJS, wololo)
+2011/01/23 (JJS, wololo)
 - added launcher to run directly from the XMB (requires minpspw 0.11 for compatibility reasons, also requires external tools for signing)
 - Added "launcher-compatible" version of HBL, works on OFW 6.37 and below
 
