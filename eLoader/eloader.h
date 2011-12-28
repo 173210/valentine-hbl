@@ -32,7 +32,6 @@
 // Fixed path for EBOOT loading (used if no menu available)
 #define EBOOT_PATH HBL_ROOT"GAME/EBOOT.PBP"
 #define ELF_PATH HBL_ROOT"GAME/eboot.elf"
-#define MENU_PATH HBL_ROOT"menu.bin" // menu
 #define HBL_PATH HBL_ROOT HBL_BIN
 #define KDUMP_PATH "ef0:/kmem.dump" // Always dump to the internal flash (fixes issue 43)
 #define HBL_CONFIG "hbl_config.txt"

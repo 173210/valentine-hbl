@@ -3,6 +3,7 @@
 #include "elf.h"
 #include "eloader.h"
 #include "malloc.h"
+#include <exploit_config.h>
 
 // Relocates based on a MIPS relocation type
 // Returns 0 on success, -1 on fail
@@ -152,7 +153,7 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 			// Free section memory
 			free(reloc_entry);
 
-			sceKernelDcacheWritebackInvalidateAll();
+			CLEAR_CACHE;
 		}
 
 		// Next section header

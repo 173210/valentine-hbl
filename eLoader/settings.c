@@ -303,7 +303,7 @@ void loadConfig(const char * path)
     gconfigfd = sceIoOpen(path, PSP_O_RDONLY, 0777);
     if (gconfigfd < 0 )
     {
-        LOGSTR1("Error Loading 0x%08lX\n",gconfigfd);
+        LOGSTR1("Couldn't load config file, error 0x%08lX (that's usually not an issue)\n",gconfigfd);
         return;
     }
     print_to_screen("Config file:");

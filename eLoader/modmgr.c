@@ -10,6 +10,7 @@
 #include "resolve.h"
 #include "globals.h"
 #include "svnversion.h"
+#include <exploit_config.h>
 
 // Return index in mod_table for module ID
 int get_module_index(SceUID modid)
@@ -89,7 +90,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, (u32*)&program_size, &addr)) == 0)
 			return SCE_KERNEL_ERROR_ERROR;
 
-		sceKernelDcacheWritebackInvalidateAll();
+		CLEAR_CACHE;
 
 		LOGSTR1("Before reloc -> Offset: 0x%08lX\n", offset);
 		//Relocate all sections that need to
@@ -113,7 +114,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
         LOGSTR1("Uknown ELF type: 0x%08lX\n", elf_hdr.e_type);
 		return SCE_KERNEL_ERROR_ERROR;
 	}
-	
+	LOGSTR0("resolve stubs\n");
 	// Resolve ELF's stubs with game's stubs and syscall estimation
 	unsigned int stubs_resolved = resolve_imports(pstub, stubs_size);
 
@@ -136,7 +137,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	LOGSTR1("Last loaded module [%d]:\n", i);
 	LOGMODENTRY(g->mod_table.table[i]);
 
-	sceKernelDcacheWritebackInvalidateAll();
+	CLEAR_CACHE;
 	
 	return g->mod_table.table[i].id;
 }

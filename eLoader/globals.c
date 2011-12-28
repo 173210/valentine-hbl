@@ -25,9 +25,12 @@ void init_globals()
         }
     }
     tGlobals * g = get_globals();
-    memset(g, 0, sizeof(tGlobals)); 
-    strcpy(g->menupath,"ms0:/hbl/menu/EBOOT.PBP");
-
+    memset(g, 0, sizeof(tGlobals));
+#ifdef FLAT_FOLDER
+	strcpy(g->menupath, HBL_ROOT"EBOOT.PBP");	
+#else
+    strcpy(g->menupath, HBL_ROOT"menu/EBOOT.PBP");
+#endif
 	// Intialize firmware and model
 	g->firmware_version = 1;
 	g->psp_model = 1;

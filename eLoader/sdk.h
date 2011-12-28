@@ -39,6 +39,7 @@ typedef unsigned char byte;
 // Macros to deal with $gp register
 #define GET_GP(gp) asm volatile ("move %0, $gp\n" : "=r" (gp))
 #define SET_GP(gp) asm volatile ("move $gp, %0\n" :: "r" (gp))
+#define BREAK asm volatile ("break\n")
 
 // Macro to get the syscall number
 #define GET_SYSCALL_NUMBER(sys) ((u32)(sys) >> 6)
@@ -64,6 +65,7 @@ typedef unsigned char byte;
 */
 
 #define EXIT sceKernelExitGame()
+#define CLEAR_CACHE sceKernelDcacheWritebackInvalidateAll()
 
 #ifdef UNUSED
 #elif defined(__GNUC__)

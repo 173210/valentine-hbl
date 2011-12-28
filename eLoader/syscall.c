@@ -6,6 +6,7 @@
 #include "syscall.h"
 #include "lib.h"
 #include "globals.h"
+#include <exploit_config.h>
 
 // Searches for NID in a NIDS file and returns the index
 int find_nid_in_file(SceUID nid_file, u32 nid)
@@ -39,6 +40,20 @@ SceUID open_nids_file(const char* lib)
 	{
 		switch (i)
 		{
+#ifdef FLAT_FOLDER
+			case 0:
+				mysprintf4(file_path, "%s_%d%s%s", (u32)LIB_PATH, firmware_v, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+			case 1:
+				mysprintf4(file_path, "%s_%dx%s%s", (u32)LIB_PATH, firmware_v / 10, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+			case 2:
+				mysprintf4(file_path, "%s_%dxx%s%s", (u32)LIB_PATH, firmware_v / 100, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+			case 3:
+				mysprintf3(file_path, "%s%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
+				break;
+#else		
 			case 0:
 				mysprintf4(file_path, "%s_%d/%s%s", (u32)LIB_PATH, firmware_v, (u32)lib, (u32)LIB_EXTENSION);
 				break;
@@ -51,6 +66,7 @@ SceUID open_nids_file(const char* lib)
 			case 3:
 				mysprintf3(file_path, "%s/%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
 				break;
+#endif				
 		}
 		i++;
 	}
@@ -473,7 +489,7 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
 
 	add_nid_to_table(nid, MAKE_SYSCALL(syscall), lib_index);
 	
-	sceKernelDcacheWritebackInvalidateAll();
+	CLEAR_CACHE;
 	return syscall;
 #else
     return 0;

@@ -45,6 +45,25 @@ int elf_check_stub_entry(tStubEntry* pentry)
 	(pentry->jump_pointer));
 }
 
+
+#ifdef GAME_PRELOAD_FREEMEM
+void PreloadFreeMem()
+{
+   u32 i;
+   SceUID memids[] = GAME_PRELOAD_FREEMEM;
+   
+   for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
+   {
+      int ret = sceKernelFreePartitionMemory(*(SceUID*)memids[i]);
+      if (ret < 0)
+      {
+         LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
+      }
+   }
+}
+#endif
+
+
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
 // Loads HBL to memory
@@ -63,6 +82,11 @@ void load_hbl(SceUID hbl_file)
 	//write_debug(" HBL SIZE ", &file_size, sizeof(file_size));
 	
 	// Allocate memory for HBL
+#ifdef GAME_PRELOAD_FREEMEM
+	PreloadFreeMem();
+#endif	
+	
+	
 	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDRESS);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
@@ -81,7 +105,7 @@ void load_hbl(SceUID hbl_file)
 	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", (u32)run_eloader);
 
 	// Commit changes to RAM
-	sceKernelDcacheWritebackInvalidateAll();
+	CLEAR_CACHE;
 }
 
 // Fills Stub array
@@ -288,7 +312,7 @@ void copy_hbl_stubs(void)
 	}
 
 
-	sceKernelDcacheWritebackInvalidateAll();
+	CLEAR_CACHE;
 }
 
 
@@ -326,7 +350,11 @@ void get_kmem_dump()
 // Clear the video memory
 void clear_vram()
 {
+#ifdef FORCE_HARDCODED_VRAM_SIZE
+	memset(sceGeEdramGetAddr(), 0, 0x00200000);
+#else
 	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
+#endif
 }
 
 
@@ -537,15 +565,15 @@ void p5_copy_stubs_savedata_dialog()
 
 	//p5_dump_memory("ms0:/p5_savedata_save.dump");
 
-	p5_copy_stubs((void*)RELOC_MODULE_ADDR_1, scePaf_Module);
-	p5_copy_stubs((void*)RELOC_MODULE_ADDR_2, sceVshCommonUtil_Module);
-	p5_copy_stubs((void*)RELOC_MODULE_ADDR_3, sceDialogmain_Module);
+    p5_copy_stubs((void*)RELOC_MODULE_ADDR_1, scePaf_Module);
+    p5_copy_stubs((void*)RELOC_MODULE_ADDR_2, sceVshCommonUtil_Module);
+    p5_copy_stubs((void*)RELOC_MODULE_ADDR_3, sceDialogmain_Module);
 
-	p5_close_savedata();
-
-	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_1, scePaf_Module);
-	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_2, sceVshCommonUtil_Module);
-	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_3, sceDialogmain_Module);
+    p5_close_savedata();
+    
+    p5_relocate_stubs((void*)RELOC_MODULE_ADDR_1, scePaf_Module);
+    p5_relocate_stubs((void*)RELOC_MODULE_ADDR_2, sceVshCommonUtil_Module);	
+    p5_relocate_stubs((void*)RELOC_MODULE_ADDR_3, sceDialogmain_Module);
 }
 
 // Copy stubs for the savedata dialog with autoload mode 
@@ -555,20 +583,19 @@ void p5_copy_stubs_savedata()
 
 	void* sceVshSDAuto_Module = p5_find_stub_in_memory("sceVshSDAuto_Module", (void*)0x08410000, 0x00010000);
 
-	//p5_dump_memory("ms0:/p5_savedata_autoload.dump");
+    p5_copy_stubs((void*)RELOC_MODULE_ADDR_4, sceVshSDAuto_Module);
+    p5_close_savedata();
+    p5_relocate_stubs((void*)RELOC_MODULE_ADDR_4, sceVshSDAuto_Module);
 
-	p5_copy_stubs((void*)RELOC_MODULE_ADDR_4, sceVshSDAuto_Module);
-
-	p5_close_savedata();
-
-	p5_relocate_stubs((void*)RELOC_MODULE_ADDR_4, sceVshSDAuto_Module);
 }
 
 // Copy the dialog stubs from p5 into p2 memory
 void p5_get_stubs()
 {
+	LOGSTR0("p5_get_stubs\n");
 	p5_copy_stubs_savedata();
 	p5_copy_stubs_savedata_dialog();
+	LOGSTR0("p5_get_stubs DONE\n");
 }
 
 #endif

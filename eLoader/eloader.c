@@ -12,7 +12,7 @@
 #include "memory.h"
 #include "modmgr.h"
 #include "globals.h"
-
+#include <exploit_config.h>
 
 
 // HBL entry point
@@ -47,8 +47,12 @@ void run_eboot(const char *path, int is_eboot)
     //clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
     //if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
     // I don't think they change based on each psp model
-    memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());    
-    
+#ifdef FORCE_HARDCODED_VRAM_SIZE
+	memset(sceGeEdramGetAddr(), 0, 0x00200000);
+#else
+	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
+#endif  
+    	
 	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
 
 	// No need for ELF file anymore

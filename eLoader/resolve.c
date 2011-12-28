@@ -10,6 +10,7 @@
 #include "config.h"
 #include "resolve.h"
 #include "globals.h"
+#include <exploit_config.h>
 
 // Autoresolves HBL missing stubs
 // Some stubs are compulsory, like sceIo*
@@ -100,7 +101,7 @@ void resolve_missing_stubs()
 #endif
 	*/
 
-	sceKernelDcacheWritebackInvalidateAll();
+	CLEAR_CACHE;
 
 	config_close();
 }
@@ -230,7 +231,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 
 			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", (u32)cur_call, *cur_call, *(cur_call+1));
 
-			sceKernelDcacheWritebackInvalidateAll();
+			CLEAR_CACHE;
 
 			cur_nid++;
 			cur_call += 2;

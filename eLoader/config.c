@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "config.h"
 #include "utils.h"
+#include <exploit_config.h>
 
 /* LOCAL GLOBALS :( */
 

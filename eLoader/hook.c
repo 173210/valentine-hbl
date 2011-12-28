@@ -790,7 +790,7 @@ int run_nid (u32 nid){
     
     u32 cur_stub[2];
     resolve_call(cur_stub, syscall);
-    sceKernelDcacheWritebackInvalidateAll();
+    CLEAR_CACHE;
 	
 	// This debug line must also be present in the release build!
 	// Otherwise the PSP will freeze and turn off when jumping to function().
@@ -1226,9 +1226,11 @@ int _hook_sceAudioSRCChRelease()
 
 int test_sceIoChdir()
 {
+#ifndef CHDIR_CRASH
     sceIoChdir(HBL_ROOT);
     if (file_exists(HBL_BIN))
         return 1;
+#endif
     return 0;
 }
 

@@ -6,6 +6,25 @@ root = "../../"
 
 # .lib.stub addresses
 exploit_stubs_map = {
+	# Project Life - JP Version (wololo)
+	"lifejp" => {
+		"6xx" =>
+			[			
+				0x08A5A280, #game main module
+				0x08ACCC30, #sceLibrary
+				0x088009A0, #sceLibrary
+				0x08AD3950, #sceLibrary
+				0x08ADCA30, #scelibrary
+				0x08AE3A30, #scelibrary
+				# Relocated message dialog stubs
+				0x09d10000, # scePaf_Module
+				0x09d30000, # sceVshCommonUtil_Module
+				0x09d50000, # sceDialogmain_Module
+				# Relocated savegame dialog stub
+				0x09d70000  # sceVshSDAuto_Module				
+			],	
+	},
+
 	"signed" => {
 		"6xx" =>
 			[
@@ -529,7 +548,10 @@ config = [
     { 
         :lib => "UtilsForUser",
         :functions => [ 
+			# only one of sceKernelDcacheWritebackInvalidateAll and sceKernelDcacheWritebackAll is used, it depends on the exploit,
+			# it might be wise to turn that into an exploit-specific config ?
             [0xB435DEC5, "sceKernelDcacheWritebackInvalidateAll"],
+			[0x79D1C3FA, "sceKernelDcacheWritebackAll"],
         ],
     }  ,  
     { 

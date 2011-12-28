@@ -5,7 +5,7 @@
 #include "hook.h"
 #include "malloc.h"
 #include "utils.h"
-
+#include <exploit_config.h>
 
 
 //utility
@@ -158,8 +158,10 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Fills excess memory with zeroes
     *size = program_header.p_memsz;
 	excess = program_header.p_memsz - program_header.p_filesz;
-	if(excess > 0)
+	if(excess > 0) {
+		LOGSTR1("Zero filling: %d bytes\n", excess);
         memset(buffer, 0, excess);
+	}
 
 	*pstub_entry = (tStubEntry*)((u32)module_info.library_stubs + (u32)*addr);
 
@@ -312,7 +314,7 @@ SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset)
 	SceUID eboot;
 	*offset = 0;
 
-	sceKernelDcacheWritebackInvalidateAll();
+	CLEAR_CACHE;
 
 	eboot = sceIoOpen(eboot_path, PSP_O_RDONLY, 777);
 

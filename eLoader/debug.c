@@ -75,6 +75,7 @@ void log_modinfo(tModInfoEntry modinfo)
 	LOGSTR1("Lib entry: 0x%08lX\n", (u32) modinfo.library_entry);
 	LOGSTR1("Lib stubs: 0x%08lX\n", (u32) modinfo.library_stubs);
     LOGSTR1("Lib stubs end: 0x%08lX\n", (u32) modinfo.library_stubs_end);
+	LOGSTR1("gp: 0x%08lX\n", (u32) modinfo.gp);
 }
 
 void log_elf_header(Elf32_Ehdr eheader)
