@@ -186,11 +186,14 @@ u32 setup_hook(u32 nid)
         case 0xC41C2853: //	sceRtcGetTickResolution (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_sceRtcGetTickResolution);
             break;
-            
+
+//Define if function sceRtcGetCurrentTick is not available
+#ifdef HOOK_sceRtcGetCurrentTick           
 		case 0x3F7AD767: //	sceRtcGetCurrentTick (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentTick);
             break;   
-            
+#endif
+ 
         case 0x7ED29E40: //	sceRtcSetTick (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_sceRtcSetTick);
             break;       
@@ -282,7 +285,14 @@ u32 setup_hook(u32 nid)
         case 0xD6D016EF: // scePowerLock - Assuming it's not super necessary
         case 0xCA3D34C1: // scePowerUnlock - Assuming it's not super necessary
 			hook_call = MAKE_JUMP(_hook_generic_ok);
-            break; 	   
+            break; 
+
+// Define if the game has no access to sceUtilityCheckNetParam :(
+#ifdef HOOK_ERROR_sceUtilityCheckNetParam
+        case 0x5EEE6548: // sceUtilityCheckNetParam
+			hook_call = MAKE_JUMP(_hook_generic_error);
+            break;             
+#endif
 
 #endif            
   
@@ -305,6 +315,13 @@ u32 setup_hook(u32 nid)
               
 
 #endif   
+
+// Define if the game has access to sceKernelDcacheWritebackAll but not sceKernelDcacheWritebackInvalidateAll
+#ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackAll
+        case 0xB435DEC5: // sceKernelDcacheWritebackInvalidateAll
+            hook_call = MAKE_JUMP(sceKernelDcacheWritebackAll);
+            break;
+#endif
 
 #ifdef HOOK_CHDIR_AND_FRIENDS    
         case 0x55F4717D: //	sceIoChdir (only if it failed)
@@ -1527,5 +1544,11 @@ int _hook_sceUtilityUnloadModule(int id)
 int _hook_generic_ok()
 {
     return 0;
+}
+
+// A function that return a generic error
+int _hook_generic_error()
+{
+    return SCE_KERNEL_ERROR_ERROR;
 }
 

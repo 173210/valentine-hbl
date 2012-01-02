@@ -1,3 +1,18 @@
+2012/01/02 (wololo)
+- Some tweaks to get Doom to work. Syscall estimation seems to half-work on the PSP, and not at all on the Vita...maybe I'm seeing random effects...
+
+2011/12/27 (wololo)
+- Some modifications to make HBL compatible with "project life" (HBL on the PS Vita). Hopefully this
+doesn't break backwards compatibility
+-- I made some of the changes from r117 happen only at compile time. These
+changes were assuming that 6.60 == signed launcher, which is not the case here
+-- the exploit we're using does not have access by default to the same cache
+invalidate function, so I made that a macro that can easily be undef/defined in
+exploit_config.h
+
+This does not contain the new exploit folder itself, which will be submitted
+later.
+
 2011/08/14 (JJS)
 - this version is only compatible with FW 6.60
 - added all NIDs of the relevant libraries to the launcher

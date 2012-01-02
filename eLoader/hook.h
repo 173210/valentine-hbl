@@ -124,6 +124,6 @@ int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest);
 
 //Generic success
 int _hook_generic_ok();
-
+int _hook_generic_error();
 
 #endif
