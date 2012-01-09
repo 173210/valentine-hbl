@@ -4,6 +4,9 @@
 #include "tables.h"
 #include "elf.h"
 #include "modmgr.h"
+#include <exploit_config.h>
+   
+#define DEBUG_PATH HBL_ROOT"dbglog" 
    
 void init_debug()
 {

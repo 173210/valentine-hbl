@@ -29,6 +29,14 @@ int force_return_to_xmb()
     return 1;
 }
 
+#ifdef FORCE_HARDCODED_VRAM_SIZE
+// Hardcode edram size if the function is not available
+u32 _hook_sceGeEdramGetSize() {
+    return 0x00200000;
+}
+#endif
+
+
 // Returns a hooked call for the given NID or zero
 u32 setup_hook(u32 nid)
 {
@@ -217,13 +225,16 @@ u32 setup_hook(u32 nid)
             
         //others
         case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
+            //based on http://forums.ps2dev.org/viewtopic.php?t=12490
 			hook_call = MAKE_JUMP(_hook_sceIoLseek32);
             break;
 		
         case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
 			if ((!g->syscalls_from_p5) && (g->override_sceCtrlPeekBufferPositive == OVERRIDE))
             {
-                hook_call = MAKE_JUMP(_hook_sceCtrlPeekBufferPositive);
+                //based on http://forums.ps2dev.org/viewtopic.php?p=27173
+                //This will be slow and should not be active for high performance programs...
+                hook_call = MAKE_JUMP(sceCtrlReadBufferPositive);
             }
             break;
             
@@ -276,25 +287,40 @@ u32 setup_hook(u32 nid)
 
         case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
-            break;      
+            break;
+
+        case 0x28E12023: // scePowerBatteryTemp (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
+            break;              
             
-// Hooks to a function that does nothing but says "ok"     
-        case 0xD3075926: //scePowerIsLowBattery (avoid syscall estimation)  
+// Hooks to a function that does nothing but says "ok"   
+        case 0x0AFD0D8B: //scePowerIsBatteryExists (avoid syscall estimation)
+        case 0x1E490401: //scePowerIsbatteryCharging (avoid syscall estimation)
+        case 0xD3075926: //scePowerIsLowBattery (avoid syscall estimation)
         case 0x87440F5E: // scePowerIsPowerOnline  - Assuming it's not super necessary
         case 0x04B7766E: //	scePowerRegisterCallback - Assuming it's already done by the game
         case 0xD6D016EF: // scePowerLock - Assuming it's not super necessary
+        case 0xEFD3C963: //scePowerTick (avoid syscall estimation)
         case 0xCA3D34C1: // scePowerUnlock - Assuming it's not super necessary
 			hook_call = MAKE_JUMP(_hook_generic_ok);
             break; 
+#endif            
+  
+//if the game has no access to sceGeEdramGetSize :(
+#ifdef FORCE_HARDCODED_VRAM_SIZE
+        case 0x1F6752AD: // sceGeEdramGetSize
+			hook_call = MAKE_JUMP(_hook_sceGeEdramGetSize);
+            break;             
+#endif 
 
 // Define if the game has no access to sceUtilityCheckNetParam :(
 #ifdef HOOK_ERROR_sceUtilityCheckNetParam
         case 0x5EEE6548: // sceUtilityCheckNetParam
 			hook_call = MAKE_JUMP(_hook_generic_error);
             break;             
-#endif
-
-#endif            
+#endif 
+  
+// sceAudio Hooks  
   
 #ifdef HOOK_AUDIOFUNCTIONS                    
         case 0x38553111: //sceAudioSRCChReserve(avoid syscall estimation)
@@ -308,14 +334,27 @@ u32 setup_hook(u32 nid)
         case 0xE0727056: // sceAudioSRCOutputBlocking (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
             break;
-  
+#endif
+            
+#ifdef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
         case 0x136CAF51: // sceAudioOutputBlocking (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_sceAudioOutputBlocking);
-            break;  
-              
-
+            break; 
 #endif   
 
+#ifdef HOOK_sceAudioGetChannelRestLen_WITH_sceAudioGetChannelRestLength
+        case 0xE9D97901: // sceAudioGetChannelRestLen (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceAudioGetChannelRestLength); //pure alias to sceAudioGetChannelRestLength
+            break;  
+#endif
+
+#ifdef HOOK_sceAudioOutput_WITH_sceAudioOutputBlocking
+        case 0x8C1009B2: // sceAudioOutput (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceAudioOutputBlocking);
+            break; 
+#endif             
+            
+            
 // Define if the game has access to sceKernelDcacheWritebackAll but not sceKernelDcacheWritebackInvalidateAll
 #ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackAll
         case 0xB435DEC5: // sceKernelDcacheWritebackInvalidateAll
@@ -695,13 +734,64 @@ void threads_cleanup()
     LOGSTR0("Threads cleanup Done\n");
 }
 
+// returns 1 if a string is an absolute file path, 0 otherwise
+int path_is_absolute(const char * file)
+{
+    int i;
+    for (i = 0; i < strlen(file) && i < 9; ++i)
+        if(file[i] == ':')
+            return 1;
+
+    return 0;
+}
+
+// converts a relative path to an absolute one based on cwd
+// it is the responsibility of the caller to
+// 1 - ensure that the passed path is actually relative
+// 2 - delete the returned char *
+char * relative_to_absolute(const char * file)
+{
+    tGlobals * g = get_globals();
+    if (!g->module_chdir)
+    {
+        char * buf = malloc_hbl(strlen(file) + 1);
+        strcpy(buf, file);
+        return buf;
+    }
+    int len = strlen(g->module_chdir);
+    
+    char * buf = malloc_hbl( len +  1 +  strlen(file) + 1);
+
+    strcpy(buf, g->module_chdir);
+    if(buf[len-1] !='/')
+        strcat(buf, "/");
+        
+    strcat(buf,file);
+    return buf;
+}
+
+
+//useful ONLY if test_sceIoChdir() fails!
+SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
+{
+    tGlobals * g = get_globals();
+    if (g->chdir_ok || path_is_absolute(file))
+        return sceIoOpen(file, flags, mode);
+        
+    char * buf = relative_to_absolute(file);
+    LOGSTR2("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
+    SceUID ret = sceIoOpen(buf, flags, mode);
+    free(buf);
+    return ret;
+}
+
 
 SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 {
     tGlobals * g = get_globals();
 
     sceKernelWaitSema(g->ioSema, 1, 0);
-	SceUID result = sceIoOpen(file, flags, mode);
+	SceUID result = _hook_sceIoOpenForChDirFailure(file, flags, mode);
 
 	// Add to tracked files array if files was opened successfully
 	if (result > -1)
@@ -1140,13 +1230,6 @@ int _hook_sceIoLseek32 (SceUID  fd, int offset, int whence)
     return sceIoLseek(fd, offset, whence); 
 }
 
-//based on http://forums.ps2dev.org/viewtopic.php?p=27173
-//This will be slow and should not be active for high performance programs...
-int _hook_sceCtrlPeekBufferPositive(SceCtrlData* pad_data,int count)
-{
-    return sceCtrlReadBufferPositive(pad_data,count);
-}
-
 
 //audio hooks
 
@@ -1251,57 +1334,6 @@ int test_sceIoChdir()
     return 0;
 }
 
-// returns 1 if a string is an absolute file path, 0 otherwise
-int path_is_absolute(const char * file)
-{
-    int i;
-    for (i = 0; i < strlen(file) && i < 9; ++i)
-        if(file[i] == ':')
-            return 1;
-
-    return 0;
-}
-
-// converts a relative path to an absolute one based on cwd
-// it is the responsibility of the caller to
-// 1 - ensure that the passed path is actually relative
-// 2 - delete the returned char *
-char * relative_to_absolute(const char * file)
-{
-    tGlobals * g = get_globals();
-    if (!g->module_chdir)
-    {
-        char * buf = malloc_hbl(strlen(file) + 1);
-        strcpy(buf, file);
-        return buf;
-    }
-    int len = strlen(g->module_chdir);
-    
-    char * buf = malloc_hbl( len +  1 +  strlen(file) + 1);
-
-    strcpy(buf, g->module_chdir);
-    if(buf[len-1] !='/')
-        strcat(buf, "/");
-        
-    strcat(buf,file);
-    return buf;
-}
-/* Commented this out in favour of the other sceIoOpen hook
-   This should be obsolete anyway as the p5 stubs contain all
-   relevant sceIo* syscalls.
-
-//hook this ONLY if test_sceIoChdir() fails!
-SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
-{
-    if (path_is_absolute(file))
-        return sceIoOpen(file, flags, mode);
-        
-    char * buf = relative_to_absolute(file);
-    SceUID ret = sceIoOpen(buf, flags, mode);
-    free(buf);
-    return ret;
-}
-*/
 //hook this ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoDopen(const char *dirname)   
 {

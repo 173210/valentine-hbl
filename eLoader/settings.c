@@ -9,6 +9,7 @@
 #include "graphics.h"
 #include "globals.h"
 #include "utils.h"
+#include <exploit_config.h>
 
 /*****************************************************************************/
 /* configYnParse : return TRUE if parameter is Y, FALSE if N                 */

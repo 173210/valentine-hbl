@@ -81,8 +81,6 @@ SceUID _hook_sceIoDopen(const char *dirname);
 int _hook_sceIoChdir(const char *dirname) ;
 int _hook_sceIoClose(SceUID fd);
 
-// Control manager
-int _hook_sceCtrlPeekBufferPositive(SceCtrlData* pad_data,int count);
 
 // Audio manager
 int _hook_sceAudioSRCChReserve (int samplecount, int freq, int channels);

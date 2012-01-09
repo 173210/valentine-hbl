@@ -6,6 +6,18 @@ root = "../../"
 
 # .lib.stub addresses
 exploit_stubs_map = {
+	# Project Life - EU Version (wololo)
+	"lifeeu" => {
+		"6xx" =>
+			[	
+            0x08A5B940, #game main module
+            0x08ACDC30, #sceLibrary
+            0x088009A0, #sceLibrary
+            0x08AD4950, #sceLibrary
+            0x08ADDA30, #sceLibrary
+            0x08AE4A30, #sceLibrary
+ 			],	
+	},           
 	# Project Life - JP Version (wololo)
 	"lifejp" => {
 		"6xx" =>
@@ -15,13 +27,7 @@ exploit_stubs_map = {
 				0x088009A0, #sceLibrary
 				0x08AD3950, #sceLibrary
 				0x08ADCA30, #scelibrary
-				0x08AE3A30, #scelibrary
-				# Relocated message dialog stubs
-				0x09d10000, # scePaf_Module
-				0x09d30000, # sceVshCommonUtil_Module
-				0x09d50000, # sceDialogmain_Module
-				# Relocated savegame dialog stub
-				0x09d70000  # sceVshSDAuto_Module				
+				0x08AE3A30, #scelibrary				
 			],	
 	},
 
@@ -620,8 +626,11 @@ config = [
     	:lib => "sceAudio",
     	:functions => [
     		[0x6FC46853, "sceAudioChRelease"],
+            [0xB011922F, "sceAudioGetChannelRestLength"],
+            [0x136CAF51, "sceAudioOutputBlocking"],
             [0x13F592BC, "sceAudioOutputPannedBlocking"],
             [0x5EC81C55, "sceAudioChReserve"],
+            
     	],
     },  
     {

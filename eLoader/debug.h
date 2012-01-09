@@ -7,7 +7,6 @@
 #include "modmgr.h"
 #include "tables.h"
 
-#define DEBUG_PATH HBL_ROOT"dbglog"
 #define STDOUT 1
 #define PSPLINK_OUT 2
 
