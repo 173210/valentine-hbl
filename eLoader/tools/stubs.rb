@@ -7,24 +7,29 @@ dump_file = File.new("memdump.bin", "r");
 dump_file.binmode;
 dump = dump_file.read();
 
-
+#Please order alphabetically for easeo of maintenance
 libraries = [
 "main",
-"sceNet_Library",
-"sceAudiocodec_Driver",
+"MSPSP",
 "sceATRAC3plus_Library",
-"sceSAScore",
-"sceMemab",
-"sceNetAdhocAuth_Service",
+"sceAudiocodec_Driver",
+"sceAvcodec_wrapper",
+"sceFont_Library", 
 "sceKernelLibrary",
-"sceNetAdhoc_Library",
+"sceMemab",
+"sceMp3_Library",
+"sceMpegbase_Driver",
+"sceMpeg_library",
+"sceNetAdhocAuth_Service",
 "sceNetAdhocctl_Library",
 "sceNetAdhocDownload_Library",
 "sceNetAdhocMatching_Library",
+"sceNetAdhoc_Library",
+"sceNet_Library",
+"scePsmf_library",
+"sceSAScore",
 "sceVideocodec_Driver",
-"sceMpegbase_Driver",
-"sceMpeg_library",
-"sceFont_Library", ];
+];
 
 
 class Integer

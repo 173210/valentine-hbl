@@ -6,7 +6,34 @@ root = "../../"
 
 # .lib.stub addresses
 exploit_stubs_map = {
-	# Project Life - EU Version (wololo)
+	# Project Life - KR Version (wololo, exploit by Teck4)
+	"lifekr" => {
+		"6xx" =>
+			[	
+                0x08A5A0DC, #game main module
+                0x08ACCC30, #sceLibrary
+                0x088009A0, #sceLibrary
+                0x08AD3950, #sceLibrary
+                0x08ADCA30, #sceLibrary
+                0x08AE3A30, #sceLibrary
+ 			],	
+	},   
+
+
+	# Project Life - US Version (wololo, exploit by Teck4)
+	"lifeus" => {
+		"6xx" =>
+			[	
+                0x08A5B328, #game main module
+                0x08ACDC30, #sceLibrary
+                0x088009A0, #sceLibrary
+                0x08AD4950, #sceLibrary
+                0x08ADDA30, #sceLibrary
+                0x08AE4A30, #sceLibrary
+ 			],	
+	},   
+
+	# Project Life - EU Version (wololo, exploit by Teck4)
 	"lifeeu" => {
 		"6xx" =>
 			[	
@@ -18,7 +45,7 @@ exploit_stubs_map = {
             0x08AE4A30, #sceLibrary
  			],	
 	},           
-	# Project Life - JP Version (wololo)
+	# Project Life - JP Version (wololo, exploit by Teck4)
 	"lifejp" => {
 		"6xx" =>
 			[			
