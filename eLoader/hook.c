@@ -969,6 +969,7 @@ void ram_cleanup()
 // Release all subinterrupt handler
 void subinterrupthandler_cleanup()
 {
+#ifdef SUB_INTR_HANDLER_CLEANUP
     LOGSTR0("Subinterrupthandler Cleanup\n");
 	int i, j;
 	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
@@ -982,6 +983,7 @@ void subinterrupthandler_cleanup()
 		}
 	}
     LOGSTR0("Subinterrupthandler Cleanup Done\n");
+#endif
 }
 
 
