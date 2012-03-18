@@ -18,9 +18,6 @@
 // Maximum attempts to reestimate a syscall
 #define MAX_REESTIMATE_ATTEMPTS 5
 
-// HBL stubs address
-#define HBL_STUBS_START 0x10000
-
 // Fixed loading address for relocatables
 #define PRX_LOAD_ADDRESS 0x08900000
 

@@ -18,7 +18,7 @@ FOLDER=patapon2
 
 CC       = psp-gcc
 
-CFLAGS   := -D PSP -I $(INCLUDE) -I $(FOLDER) -Os -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
+CFLAGS   := -D PSP -I $(INCLUDE) -I $(FOLDER) -I . -Os -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
 
 #svn revision in code
 SVNVERSION=$(shell svnversion -n 2> Makefile.cache)
