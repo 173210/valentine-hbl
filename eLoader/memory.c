@@ -10,7 +10,11 @@
 
 int kill_thread(SceUID thid) 
 {
+#ifdef HOOK_sceKernelTerminateThread_with_sceKernelTerminateDeleteThread
+    int ret = sceKernelTerminateDeleteThread(thid);
+#else
     int ret = sceKernelTerminateThread(thid);
+#endif
     if (ret < 0)
     {
         if (ret != (int)0x800201A2) //if thread already dormant, let's assume it's not really an error, we still want to delete it!
@@ -20,11 +24,13 @@ int kill_thread(SceUID thid)
         }
     }
 
+#ifndef HOOK_sceKernelTerminateThread_with_sceKernelTerminateDeleteThread
     ret = sceKernelDeleteThread(thid);
     if (ret < 0)
     {
         LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
     }
+#endif
         
     return ret;
 }

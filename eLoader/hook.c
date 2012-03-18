@@ -384,9 +384,82 @@ u32 setup_hook(u32 nid)
                 break;
             LOGSTR0(" Chdir trick sceIoDopen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
-            break;                      
+            break;      
 #endif
-    }
+
+
+#ifdef HOOK_sceKernelSendMsgPipe_WITH_sceKernelTrySendMsgPipe
+        case 0x876DBFAD: //	sceKernelSendMsgPipe (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceKernelTrySendMsgPipe);
+            break;      
+#endif
+
+#ifdef HOOK_sceKernelGetThreadId
+        case 0x293B45B8: //	sceKernelGetThreadId (avoid syscall estimation) - Assuming it's not super necessary
+			hook_call = MAKE_JUMP(_hook_sceKernelGetThreadId);
+            break;      
+#endif
+
+#ifdef HOOK_sceAudioOutput2GetRestSample_WITH_sceAudioGetChannelRestLength
+        case 0x647CEF33: // sceAudioOutput2GetRestSample (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceAudioOutput2GetRestSample);
+            break; 
+#endif
+
+	// TODO : implement real mersenne random generation
+#ifdef HOOK_mersenne_twister_rdm
+        case 0xE860E75E: // sceKernelUtilsMt19937Init (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceKernelUtilsMt19937Init);
+            break;
+        case 0x06FB8A63: // sceKernelUtilsMt19937UInt (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceKernelUtilsMt19937UInt);
+            break;
+#endif
+
+	// This will be slow and should not be active for high performance programs...
+#ifdef HOOK_sceDisplayWaitVblankStartCB_with_sceDisplayWaitVblankStart
+        case 0x46F186C3: // sceDisplayWaitVblankStartCB (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceDisplayWaitVblankStart);
+            break;
+#endif
+
+	// This will be slow and should not be active for high performance programs...
+#ifdef HOOK_sceKernelDcacheRange_with_All
+        case 0x3EE30821: // sceKernelDcacheWritebackRange (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceKernelDcacheWritebackAll);
+            break;
+        case 0x34B9FA9E: // sceKernelDcacheWritebackInvalidateRange (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceKernelDcacheWritebackInvalidateAll);
+            break;
+#endif
+
+
+#ifdef HOOK_sceAudioOutputPanned_with_sceAudioOutputPannedBlocking
+        case 0xE2D56B2D: // sceAudioOutputPanned (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceAudioOutputPannedBlocking);
+            break;
+#endif
+
+
+#ifdef HOOK_sceKernelTerminateThread_with_sceKernelTerminateDeleteThread
+        case 0x616403BA: // sceKernelTerminateThread (avoid syscall estimation)
+			hook_call = MAKE_JUMP(sceKernelTerminateDeleteThread);
+            break;
+#endif
+
+#ifdef HOOK_sceKernelChangeCurrentThreadAttr_with_dummy
+        case 0xEA748E31: // sceKernelChangeCurrentThreadAttr (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+
+#ifdef HOOK_sceCtrlSetIdleCancelThreshold_with_dummy
+        case 0xA7144800: // sceCtrlSetIdleCancelThreshold (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+	}
+
 
 #endif
 
@@ -972,6 +1045,12 @@ void subinterrupthandler_cleanup()
 #ifdef SUB_INTR_HANDLER_CLEANUP
     LOGSTR0("Subinterrupthandler Cleanup\n");
 	int i, j;
+#ifdef SUB_INTR_HANDLER_CLEANUP_filer_FIX
+    //It seems PSP Filer corrupts the 4 first bytes of the scratchpad,
+    //This is a hack to "rewrite" the first function call, long term we should do something cleaner
+	*(long*)0x00010000 = 0x03E00008;
+#endif
+	
 	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
 	{
 		for (j = 0; j <= 30; j++) // 30 is the highest value of enum PspSubInterrupts 
@@ -1351,6 +1430,7 @@ SceUID _hook_sceIoDopen(const char *dirname)
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)   
 {
+	LOGSTR0("_hook_sceIoChdir start\n");
     tGlobals * g = get_globals();
     // save chDir into global variable
     if (path_is_absolute(dirname))
@@ -1376,6 +1456,7 @@ int _hook_sceIoChdir(const char *dirname)
     {
         return -1;
     }
+	LOGSTR2("_hook_sceIoChdir: %s becomes %s\n", (u32) dirname, (u32) g->module_chdir);
     
     return 0;
 }
@@ -1442,7 +1523,7 @@ int _hook_sceKernelDevkitVersion()
     result += 0x0100 * (version % 10);
     result += 0x10;
 	
-    return result;    
+    return result;
 }
 
 // see http://powermgrprx.googlecode.com/svn-history/r2/trunk/include/pspmodulemgr.h
@@ -1487,19 +1568,19 @@ int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
 {
     if (md5(data,size, digest))
     {
-        return 1;
+		return 1;
     }
-    return -1;
+	return -1;
 }
 
 
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
-{	
+{
 	LOGSTR0("_hook_sceKernelLoadModule\n");
 	LOGSTR1("Attempting to load %s\n", (u32)path);
 	
-	SceUID elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
+	SceUID elf_file = _hook_sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	if (elf_file < 0)
 	{
@@ -1586,3 +1667,43 @@ int _hook_generic_error()
     return SCE_KERNEL_ERROR_ERROR;
 }
 
+// random sceKernelGetThreadId hook (hopefully it's not super necessary);
+int _hook_sceKernelGetThreadId()
+{
+    return 777;
+}
+
+//	sceAudioOutput2GetRestSample lame hook (hopefully it's not super necessary)
+int _hook_sceAudioOutput2GetRestSample()
+{
+	int sum = 0, i, res;
+	
+	for (i=0;i<PSP_AUDIO_CHANNEL_MAX;++i)
+	{
+		res = sceAudioGetChannelRestLength(i);
+		if (res >=0)	sum+= res;
+	}
+	
+	
+    return sum;
+}
+
+
+u32 rdm_seed;
+
+int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, u32 seed)
+{
+	if(ctx){}; //Avoid compilation errors :P
+
+	rdm_seed = seed;
+	
+	return 0;
+}
+
+u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx) {
+	if(ctx){}; //Avoid compilation errors :P
+	
+	rdm_seed = rdm_seed*rdm_seed;
+	
+	return rdm_seed>>(rdm_seed%2);
+}

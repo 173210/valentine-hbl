@@ -2,6 +2,7 @@
 #define ELOADER_HOOK
 
 #include <psprtc.h>
+#include <pspmath.h>
 
 //Comment the following line if you don't want to hook thread creation
 #define HOOK_THREADS
@@ -37,6 +38,7 @@
 
 extern int chdir_ok;
 
+
 //Own functions
 int test_sceIoChdir();
 void threads_cleanup();
@@ -69,6 +71,7 @@ int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size,
 int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int timeout);
 int _hook_sceKernelGetThreadCurrentPriority();
 int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction func, void *arg);
+int _hook_sceKernelGetThreadId();
 
 // Memory manager
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr);
@@ -81,12 +84,12 @@ SceUID _hook_sceIoDopen(const char *dirname);
 int _hook_sceIoChdir(const char *dirname) ;
 int _hook_sceIoClose(SceUID fd);
 
-
 // Audio manager
 int _hook_sceAudioSRCChReserve (int samplecount, int freq, int channels);
 int _hook_sceAudioSRCOutputBlocking (int vol,void * buf);
 int _hook_sceAudioSRCChRelease();
 int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf);
+int _hook_sceAudioOutput2GetRestSample();
 int _hook_sceAudioChReserve(int channel, int samplecount, int format);
 int _hook_sceAudioChRelease(int channel);
 
@@ -123,5 +126,9 @@ int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest);
 //Generic success
 int _hook_generic_ok();
 int _hook_generic_error();
+
+// Mersene randomisation
+int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, u32 seed);
+u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx);
 
 #endif
