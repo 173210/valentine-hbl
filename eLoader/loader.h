@@ -5,6 +5,6 @@
 // HBL stubs size
 #define NUM_HBL_IMPORTS 0x3d
 // HBL stubs address
-#define HBL_STUBS_START 0x10000
+#define HBL_STUBS_START  0x10000
 
 #endif

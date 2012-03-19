@@ -93,7 +93,11 @@ void wait_for_eboot_end()
         //Check for force exit to the menu
         if (g->force_exit_buttons)
         {
+#ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
+            sceCtrlReadBufferPositive(&pad, 1); 
+#else            
 			sceCtrlPeekBufferPositive(&pad, 1);
+#endif            
             if (pad.Buttons == g->force_exit_buttons)
             {
                 exit_everything_but_me();

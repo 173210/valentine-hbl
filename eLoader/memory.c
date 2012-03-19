@@ -10,7 +10,7 @@
 
 int kill_thread(SceUID thid) 
 {
-#ifdef HOOK_sceKernelTerminateThread_with_sceKernelTerminateDeleteThread
+#ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
     int ret = sceKernelTerminateDeleteThread(thid);
 #else
     int ret = sceKernelTerminateThread(thid);
@@ -24,7 +24,7 @@ int kill_thread(SceUID thid)
         }
     }
 
-#ifndef HOOK_sceKernelTerminateThread_with_sceKernelTerminateDeleteThread
+#ifndef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
     ret = sceKernelDeleteThread(thid);
     if (ret < 0)
     {
