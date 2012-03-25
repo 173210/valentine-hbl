@@ -1099,11 +1099,13 @@ int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 		{
 			strcpy(dir->d_name,"..");
 			dir->d_stat.st_attr |= FIO_SO_IFDIR;
+			dir->d_stat.st_mode |= FIO_S_IFDIR;
 		}
 		else if (g->directoryFix[i][1] == 2)
 		{
 			strcpy(dir->d_name,".");
 			dir->d_stat.st_attr |= FIO_SO_IFDIR;
+			dir->d_stat.st_mode |= FIO_S_IFDIR;
 		}
 		g->directoryFix[i][1]--;
 		
