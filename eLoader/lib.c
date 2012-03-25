@@ -478,3 +478,16 @@ int strncmp(const char *s1, const char *s2, size_t count)
 
 	return val;
 }
+
+char * strrchr(const char *cp, int ch)
+{
+    char *save;
+    char c;
+
+    for (save = (char *) NULL; (c = *cp); cp++) {
+	if (c == ch)
+	    save = (char *) cp;
+    }
+
+    return save;
+}

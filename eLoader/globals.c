@@ -74,4 +74,20 @@ void init_globals()
     g->audioSema = sceKernelCreateSema("hblaudiosema",0,1,1,0);
 	g->ioSema = sceKernelCreateSema("hbliosema",0,1,1,0);
     g->curr_channel_id = -1;
+
+#ifdef VITA_DIR_FIX
+    reset_vita_dirs();
+#endif
 }
+
+#ifdef VITA_DIR_FIX
+void reset_vita_dirs()
+{
+    tGlobals * g = get_globals();
+    int i,j;
+	
+    for (i=0;i<MAX_OPEN_DIR_VITA;++i)
+        for (j=0;j<2;++j)
+            g->directoryFix[i][j] = -1;
+}
+#endif

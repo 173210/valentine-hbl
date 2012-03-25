@@ -70,4 +70,6 @@ char *strcat(char *s, const char *append);
 // Compares only "count" chars from strings
 int strncmp(const char *s1, const char *s2, size_t count);
 
+char * strrchr(const char *cp, int ch);
+
 #endif

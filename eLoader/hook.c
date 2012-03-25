@@ -43,6 +43,8 @@ u32 _hook_sceGeEdramGetSize() {
 // Forward declarations (functions used before they are defined lower down the file)
 int _hook_sceAudioChRelease(int channel);
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);
+SceUID sceIoDopen_Vita(const char *dirname);
+u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx);
 
 
 // Thread hooks original code thanks to Noobz & Fanjita, adapted by wololo
@@ -413,6 +415,28 @@ char * relative_to_absolute(const char * file)
         strcpy(buf, file);
         return buf;
     }
+#ifdef VITA_DIR_FIX
+    else if (!strcmp(".", file))
+    {
+        char * buf = malloc_hbl(strlen(g->module_chdir) + 1);
+        strcpy(buf, g->module_chdir);
+        return buf;
+    }
+    else if (!strcmp("..", file))
+    {
+		char *ret;
+		
+		if ((ret = strrchr(g->module_chdir, '/')) != NULL && ret[-1] != ':')
+		{
+		    ret[0] = 0;
+		}
+		
+        char * buf = malloc_hbl(strlen(g->module_chdir) + 1);
+        strcpy(buf, g->module_chdir);
+        return buf;
+    }
+#endif
+
     int len = strlen(g->module_chdir);
     
     char * buf = malloc_hbl( len +  1 +  strlen(file) + 1);
@@ -422,6 +446,7 @@ char * relative_to_absolute(const char * file)
         strcat(buf, "/");
         
     strcat(buf,file);
+    
     return buf;
 }
 
@@ -627,11 +652,6 @@ void subinterrupthandler_cleanup()
 #ifdef SUB_INTR_HANDLER_CLEANUP
     LOGSTR0("Subinterrupthandler Cleanup\n");
 	int i, j;
-#ifdef SUB_INTR_HANDLER_CLEANUP_filer_FIX
-    //It seems PSP Filer corrupts the 4 first bytes of the scratchpad,
-    //This is a hack to "rewrite" the first function call, long term we should do something cleaner
-	*(long*)0x00010000 = 0x03E00008;
-#endif
 	
 	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
 	{
@@ -1007,13 +1027,121 @@ int test_sceIoChdir()
 SceUID _hook_sceIoDopen(const char *dirname)   
 {
     if (path_is_absolute(dirname))
-        return sceIoDopen(dirname);
-        
+        return
+#ifdef VITA_DIR_FIX
+            sceIoDopen_Vita(dirname);
+#else
+            sceIoDopen(dirname);
+#endif
+
     char * buf = relative_to_absolute(dirname);
+#ifdef VITA_DIR_FIX
+    SceUID ret = sceIoDopen_Vita(buf);
+#else
     SceUID ret = sceIoDopen(buf);
+#endif
     free(buf);
     return ret;
 }
+
+
+#ifdef VITA_DIR_FIX
+// Adds Vita's missing "." / ".." entries
+
+SceUID sceIoDopen_Vita(const char *dirname)   
+{
+    tGlobals * g = get_globals();
+	LOGSTR0("sceIoDopen_Vita start\n");
+    SceUID id = sceIoDopen(dirname);
+	
+	if (id >= 0)
+	{
+		int dirLen = strlen(dirname);
+		
+		// If directory isn't "ms0:" or "ms0:/", add "." & ".." entries
+		if (dirname[dirLen-1] != ':' && dirname[dirLen-2] != ':')
+		{
+			int i = 0;
+			
+			while ( i<g->directoryLen && (g->directoryFix[i][0] >= 0) )
+				++i;
+				
+			if (i < MAX_OPEN_DIR_VITA)
+			{
+				g->directoryFix[i][0] = id;
+				g->directoryFix[i][1] = 2;
+				
+				if (i == g->directoryLen)	++(g->directoryLen);
+			}
+		}
+		
+	}
+	
+	
+	LOGSTR0("sceIoDopen_Vita Done\n");
+    return id;
+}
+
+
+int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
+{
+    tGlobals * g = get_globals();
+	LOGSTR0("sceIoDread_Vita start\n");
+	int i = 0, errCode = 1;
+	while ( i<g->directoryLen && id != g->directoryFix[i][0] )
+		++i;
+	
+	
+	if (id == g->directoryFix[i][0])
+	{
+        memset(dir, 0, sizeof(SceIoDirent)); 
+		if (g->directoryFix[i][1] == 1)
+		{
+			strcpy(dir->d_name,"..");
+			dir->d_stat.st_attr |= FIO_SO_IFDIR;
+		}
+		else if (g->directoryFix[i][1] == 2)
+		{
+			strcpy(dir->d_name,".");
+			dir->d_stat.st_attr |= FIO_SO_IFDIR;
+		}
+		g->directoryFix[i][1]--;
+		
+		if (g->directoryFix[i][1] == 0)
+		{
+			g->directoryFix[i][0] = -1;
+			g->directoryFix[i][1] = -1;
+		}
+	}
+	else
+	{
+		errCode = sceIoDread(id, dir);
+	}
+	
+	LOGSTR0("sceIoDread_Vita Done\n");
+	return errCode;
+}
+
+int sceIoDclose_Vita(SceUID id)
+{
+    tGlobals * g = get_globals();
+	LOGSTR0("sceIoDclose_Vita start\n");
+	int i = 0;
+	while ( i<g->directoryLen && id != g->directoryFix[i][0] )
+		++i;
+	
+	
+	if (i<g->directoryLen && id == g->directoryFix[i][0])
+	{
+			g->directoryFix[i][0] = -1;
+			g->directoryFix[i][1] = -1;
+	}
+	
+	LOGSTR0("sceIoDclose_Vita Done\n");
+	return sceIoDclose(id);
+}
+#endif
+
 
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)   
@@ -1279,7 +1407,9 @@ int _hook_generic_error()
 // random sceKernelGetThreadId hook (hopefully it's not super necessary);
 int _hook_sceKernelGetThreadId()
 {
-    return 777;
+	// Somehow sceKernelGetThreadId isn't imported by the game,
+	// and can be called from HBL but not from a homebrew
+    return sceKernelGetThreadId();
 }
 #endif
 
@@ -1306,9 +1436,11 @@ u32 rdm_seed;
 
 int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, u32 seed)
 {
-	if(ctx){}; //Avoid compilation errors :P
-
+	int i;
 	rdm_seed = seed;
+	
+    for (i = 0; i < 624; i++)
+        _hook_sceKernelUtilsMt19937UInt(ctx);
 	
 	return 0;
 }
@@ -1316,9 +1448,20 @@ int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, u32 seed)
 u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx) {
 	if(ctx){}; //Avoid compilation errors :P
 	
-	rdm_seed = rdm_seed*rdm_seed;
+	// (Bill's generator)
+	rdm_seed = (((rdm_seed * 214013L + 2531011L) >> 16) & 0xFFFF);
+	rdm_seed |= ((rdm_seed * 214013L + 2531011L) & 0xFFFF0000);
 	
-	return rdm_seed>>(rdm_seed%2);
+	return rdm_seed;
+}
+#endif
+
+
+#ifdef HOOK_sceKernelTotalFreeMemSize
+// return 10 MB
+SceSize _hook_sceKernelTotalFreeMemSize()
+{
+	return 10*1024*1024;
 }
 #endif
 
@@ -1389,7 +1532,11 @@ u32 setup_hook(u32 nid)
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
 		case 0x977DE386: // sceKernelLoadModule
 			LOGSTR0(" loadmodule trick ");
+#ifdef HOOK_sceKernelLoadModule
 			hook_call = MAKE_JUMP(_hook_sceKernelLoadModule);
+#else
+			hook_call = MAKE_JUMP(sceKernelLoadModule);
+#endif
 			break;
 		
 		case 0x50F0C1EC: // sceKernelStartModule
@@ -1569,6 +1716,7 @@ u32 setup_hook(u32 nid)
 			hook_call = MAKE_JUMP(_hook_scePowerGetCpuClockFrequencyInt);
             break;  
 
+        case 0xBD681969: //scePowerGetBusClockFrequencyInt (alias to scePowerGetBusClockFrequency)
         case 0x478FE6F5:// scePowerGetBusClockFrequency     (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_scePowerGetBusClockFrequency);
             break;         
@@ -1587,6 +1735,7 @@ u32 setup_hook(u32 nid)
             break;              
             
 // Hooks to a function that does nothing but says "ok"   
+        case 0xB4432BC8: //scePowerGetBatteryChargingStatus (avoid syscall estimation)
         case 0x0AFD0D8B: //scePowerIsBatteryExists (avoid syscall estimation)
         case 0x1E490401: //scePowerIsbatteryCharging (avoid syscall estimation)
         case 0xD3075926: //scePowerIsLowBattery (avoid syscall estimation)
@@ -1643,9 +1792,13 @@ u32 setup_hook(u32 nid)
 
 #ifdef HOOK_sceAudioOutput_WITH_sceAudioOutputBlocking
         case 0x8C1009B2: // sceAudioOutput (avoid syscall estimation)
+#ifndef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
 			hook_call = MAKE_JUMP(sceAudioOutputBlocking);
+#else
+			hook_call = MAKE_JUMP(_hook_sceAudioOutputBlocking);
+#endif
             break; 
-#endif             
+#endif
             
             
 // Define if the game has access to sceKernelDcacheWritebackAll but not sceKernelDcacheWritebackInvalidateAll
@@ -1678,13 +1831,29 @@ u32 setup_hook(u32 nid)
             LOGSTR0(" Chdir trick sceIoDopen\n");                        
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
             break;      
+#elif defined VITA_DIR_FIX
+        case 0xB29DDF9C: //	sceIoDopen
+            LOGSTR0("VITA_DIR_FIX sceIoDopen\n");                        
+            hook_call = MAKE_JUMP(sceIoDopen_Vita);
+            break;      
+#endif
+
+#ifdef VITA_DIR_FIX
+        case 0xE3EB004C: //	sceIoDread
+            LOGSTR0("VITA_DIR_FIX sceIoDread\n");                        
+            hook_call = MAKE_JUMP(sceIoDread_Vita);
+            break;
+        case 0xEB092469: //	sceIoDclose
+            LOGSTR0("VITA_DIR_FIX sceIoDclose\n");                        
+            hook_call = MAKE_JUMP(sceIoDclose_Vita);
+            break;   
 #endif
 
 
 #ifdef HOOK_sceKernelSendMsgPipe_WITH_sceKernelTrySendMsgPipe
         case 0x876DBFAD: //	sceKernelSendMsgPipe (avoid syscall estimation)
 			hook_call = MAKE_JUMP(sceKernelTrySendMsgPipe);
-            break;      
+            break;
 #endif
 
 #ifdef HOOK_sceKernelGetThreadId
@@ -1760,6 +1929,36 @@ u32 setup_hook(u32 nid)
 
 #ifdef HOOK_sceCtrlSetIdleCancelThreshold_WITH_dummy
         case 0xA7144800: // sceCtrlSetIdleCancelThreshold (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+
+#ifdef HOOK_sceImposeSetHomePopup_WITH_dummy
+        case 0x5595A71A: // sceImposeSetHomePopup (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+
+#ifdef HOOK_sceKernelReferThreadStatus_WITH_dummy
+        case 0x17C1684E: // sceKernelReferThreadStatus (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+
+#ifdef HOOK_sceKernelTotalFreeMemSize
+        case 0xF919F628: // sceKernelTotalFreeMemSize (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceKernelTotalFreeMemSize);
+            break;
+#endif
+
+#ifdef HOOK_sceKernelWakeupThread_WITH_dummy
+        case 0xD59EAD2F: // sceKernelWakeupThread (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+
+#ifdef HOOK_sceDisplayGetVcount_WITH_dummy
+        case 0x9C6EAAD7: // sceDisplayGetVcount (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_generic_ok);
             break;
 #endif

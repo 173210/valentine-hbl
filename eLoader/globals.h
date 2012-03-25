@@ -29,6 +29,7 @@ in a safe memory zone. If you need globals, it is better to have them here
 #define SIZE_THREAD_TRACKING_ARRAY  20
 #define SIZE_IO_TRACKING_ARRAY 10
 #define MAX_CALLBACKS 20
+#define MAX_OPEN_DIR_VITA 10
 
 
 /*****************************************************************************/
@@ -105,6 +106,8 @@ typedef struct
     HBLLibTable library_table;
     int syscalls_known;
 	int syscalls_from_p5;
+	u8 directoryLen;
+	int directoryFix[MAX_OPEN_DIR_VITA][2];
 } tGlobals;
 
 
@@ -118,6 +121,9 @@ tGlobals * get_globals();
 
 //inits global variables. This needs to be called once and only once, preferably at the start of the HBL
 void init_globals();
+
+// resets Vita's dir-fix globals
+void reset_vita_dirs();
 
 #endif
 
