@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "modmgr.h"
 #include "hook.h"
+#include "globals.h"
 #include <exploit_config.h>
 
 #define MODULES_START_ADDRESS 0x08804000
@@ -72,6 +73,70 @@ int kill_module(SceUID modid)
     LOGSTR0("done!\n");
     return 1;
 }
+
+#ifdef SUSPEND_THEN_DELETE_THREADS
+void SuspendAllThreads()
+{
+	u32 i;
+	u32 thaddrs[] = TH_ADDR_LIST;
+	SceUID thuids[] = TH_ADDR_LIST;
+	
+	// Suspend all threads and remember their UIDs
+	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
+	{
+		thuids[i] = *(SceUID*)(thaddrs[i]);
+		int result = sceKernelSuspendThread(thuids[i]);
+		LOGSTR2("Suspending thread 0x%08lX, result is 0x%08lX\n", thuids[i], result);
+	}
+
+	LOGSTR0("All threads suspended\n");
+}
+
+
+void SuicideAllThreads(void)
+{
+	u32 i;
+	u32 thaddrs[] = TH_ADDR_LIST;
+	SceUID thuids[] = TH_ADDR_LIST;
+	
+	// Suspend all threads and remember their UIDs
+	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
+	{
+		thuids[i] = *(SceUID*)(thaddrs[i]);
+		int result = sceKernelSuspendThread(thuids[i]);
+		LOGSTR2("Suspending thread 0x%08lX, result is 0x%08lX\n", thuids[i], result);
+	}
+
+	LOGSTR0("All threads suspended\n");
+
+	unsigned int* address = (unsigned int*)0x09A00000;
+	
+	// Get call for sceKernelExitDeleteThread
+	int nid_index = get_nid_index(0x809CE29B); // sceKernelExitDeleteThread
+	LOGSTR1("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
+	
+	tGlobals * g = get_globals();
+	unsigned int syscall = g->nid_table.table[nid_index].call;
+	LOGSTR2("Call for NID sceKernelExitDeleteThread is: 0x%08lX 0x%08lX\n", GET_SYSCALL_NUMBER(syscall), syscall);
+	
+	// Write syscall instruction to memory and empty the memory
+	*address =  syscall; 
+	*((unsigned int*)0x09A00004) = 0x34840000; // xori $a0, $a0, 0 ($a0 = 0)
+	
+	// Zero memory from top to bottom	
+	for (i = (unsigned int)address - 1; i >= 0x08804000; i--)
+	  *((char*)i) = 0;
+	 
+	// Resume threads
+	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
+	{
+		int result = sceKernelResumeThread(thuids[i]);
+		LOGSTR2("Resuming thread 0x%08lX, result is 0x%08lX\n", thuids[i], result);
+	}
+	
+	LOGSTR0("All threads resumed\n");
+}
+#endif
 
 #ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)
@@ -219,23 +284,29 @@ void CloseFiles()
 void free_game_memory()
 {
 #ifdef DEBUG
-    int free;
+    int is_free;
     int max_free;
-	free = sceKernelTotalFreeMemSize();
+	is_free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
-	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", free, max_free);
+	LOGSTR2(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", is_free, max_free);
 #endif
 
 #ifdef GAME_FREEMEM_ADDR
 	FreeMem();
 #endif
 
+#ifdef SUB_INTR_HANDLER_CLEANUP
 	subinterrupthandler_cleanup();
+#endif
     
+#ifdef SUSPEND_THEN_DELETE_THREADS
+	SuspendAllThreads();
+#else
 #ifdef TH_ADDR_LIST
 	DeleteAllThreads();
 #endif
-    
+#endif
+
 #ifdef EV_ADDR_LIST
 	DeleteAllEventFlags();
 #endif
@@ -244,14 +315,22 @@ void free_game_memory()
 	DeleteAllSemaphores();
 #endif
 
-    UnloadModules();
-
+#ifdef SUSPEND_THEN_DELETE_THREADS
+	// Delete module here before cleaning the threads,
+	// otherwise the main module cannot be unloaded
+	UnloadModules();
+	SuicideAllThreads();
+	UnloadModules();
+#else
+	UnloadModules();
+#endif
+	
 	CloseFiles();
 
 #ifdef DEBUG
-	free = sceKernelTotalFreeMemSize();
+	is_free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
-	LOGSTR2(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", free, max_free);
+	LOGSTR2(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", is_free, max_free);
 #endif  
 
 	return;
