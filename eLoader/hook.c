@@ -1888,10 +1888,13 @@ u32 setup_hook(u32 nid)
 #endif
 
 	// This will be slow and should not be active for high performance programs...
-#ifdef HOOK_sceKernelDcacheRange_WITH_All
+#ifdef HOOK_sceKernelDcacheWritebackRange_WITH_sceKernelDcacheWritebackAll
         case 0x3EE30821: // sceKernelDcacheWritebackRange (avoid syscall estimation)
 			hook_call = MAKE_JUMP(sceKernelDcacheWritebackAll);
             break;
+#endif
+
+#ifdef HOOK_sceKernelDcacheWritebackInvalidateRange_WITH_sceKernelDcacheWritebackInvalidateAll
         case 0x34B9FA9E: // sceKernelDcacheWritebackInvalidateRange (avoid syscall estimation)
 			hook_call = MAKE_JUMP(sceKernelDcacheWritebackInvalidateAll);
             break;
