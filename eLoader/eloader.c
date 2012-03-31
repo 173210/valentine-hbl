@@ -281,8 +281,6 @@ int start_thread() //SceSize args, void *argp)
     int exit = 0;
 	int thid;
     tGlobals * g = get_globals();
-	LOGSTR0("Initializing memory allocation\n");
-	init_malloc();
 	
 	// Build NID table
     print_to_screen("Building NIDs table");

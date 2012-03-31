@@ -4,12 +4,6 @@
 #include "debug.h"
 #include "globals.h"
 
-
-void init_malloc(void)
-{
-    //now done in init globals
-}
-
 int find_free_block()
 {
     tGlobals * g = get_globals();

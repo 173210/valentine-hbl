@@ -1244,6 +1244,7 @@ int _hook_sceKernelDevkitVersion()
     return result;
 }
 
+#ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740
 // see http://powermgrprx.googlecode.com/svn-history/r2/trunk/include/pspmodulemgr.h
 int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp)
 {
@@ -1251,6 +1252,7 @@ int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *
     return ModuleMgrForUser_8F2DF740(exitcode, argsize, argp, &status, NULL);
 
 }
+#endif
 
 int _hook_sceKernelGetThreadCurrentPriority()
 {
@@ -1463,7 +1465,7 @@ u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx) {
 // return 10 MB
 SceSize _hook_sceKernelTotalFreeMemSize()
 {
-	return 10*1024*1024;
+	return sceKernelTotalFreeMemSize(); //this is the function we hardcoded in memory.c, not the official one
 }
 #endif
 
@@ -1683,10 +1685,12 @@ u32 setup_hook(u32 nid)
         case 0x383F7BCC: // sceKernelTerminateDeleteThread  (avoid syscall estimation)
             hook_call = MAKE_JUMP(kill_thread); //TODO Take into account with thread monitors ?
             break;    
-        
+
+#ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740       
         case 0xD675EBB8: // sceKernelSelfStopUnloadModule (avoid syscall estimation) - not sure about this one
             hook_call = MAKE_JUMP(_hook_sceKernelSelfStopUnloadModule);
             break;               
+#endif
 
         case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)          
 			hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
