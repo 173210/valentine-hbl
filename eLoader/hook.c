@@ -1470,6 +1470,18 @@ SceSize _hook_sceKernelTotalFreeMemSize()
 #endif
 
 
+#ifdef HOOK_sceKernelReferThreadStatus
+int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo *info)
+{
+	if(thid){}; //Avoid compilation errors :P
+
+	memset(info+sizeof(SceSize), 0, info->size-sizeof(SceSize));
+	
+	return 0;
+}
+#endif
+
+
 
 // Returns a hooked call for the given NID or zero
 u32 setup_hook(u32 nid)
@@ -1948,7 +1960,7 @@ u32 setup_hook(u32 nid)
             break;
 #endif
 
-#ifdef HOOK_sceKernelReferThreadStatus_WITH_dummy
+#ifdef HOOK_sceKernelReferThreadStatus
         case 0x17C1684E: // sceKernelReferThreadStatus (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_generic_ok);
             break;
