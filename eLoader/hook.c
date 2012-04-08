@@ -969,7 +969,11 @@ int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 int _hook_sceAudioSRCOutputBlocking (int vol,void * buf)
 {
     tGlobals * g = get_globals();
+#ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
+    return sceAudioOutputBlocking(g->curr_channel_id,vol, buf);
+#else    
     return sceAudioOutputPannedBlocking(g->curr_channel_id,vol, vol, buf);
+#endif    
 }
 
 #ifdef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
@@ -979,6 +983,15 @@ int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf)
     return sceAudioOutputPannedBlocking(channel,vol, vol, buf);
 }
 #endif
+
+#ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
+//quite straightforward
+int _hook_sceAudioOutputPannedBlocking(int channel, int vol, int UNUSED(vol2), void * buf)
+{
+    return sceAudioOutputBlocking(channel,vol, buf);
+}
+#endif
+
 
 // Ditlew
 int _hook_sceAudioChRelease(int channel)
@@ -1206,7 +1219,11 @@ int _hook_scePowerGetBusClockFrequency() {
 //Alias, see http://forums.ps2dev.org/viewtopic.php?t=11294
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
 {
+#ifdef HOOK_scePowerSetClockFrequency_WITH_scePower_EBD177D6
     int ret = scePower_EBD177D6(pllfreq, cpufreq, busfreq);
+#else    
+    int ret = 0;
+#endif    
     if (ret >= 0)
     {
         tGlobals * g = get_globals();
@@ -1809,6 +1826,12 @@ u32 setup_hook(u32 nid)
 #ifdef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
         case 0x136CAF51: // sceAudioOutputBlocking (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_sceAudioOutputBlocking);
+            break; 
+#endif   
+
+#ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
+        case 0x13F592BC: // sceAudioOutputPannedBlocking (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceAudioOutputPannedBlocking);
             break; 
 #endif   
 
