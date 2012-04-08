@@ -8,7 +8,14 @@
 #include "globals.h"
 #include "syscall.h"
 #include "graphics.h"
+#include "runtime_stubs.h"
 #include <exploit_config.h>
+
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+#ifndef AUTO_SEARCH_STUBS
+#define AUTO_SEARCH_STUBS
+#endif
+#endif
 
 // Adds NID entry to nid_table
 int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
@@ -613,11 +620,26 @@ int build_nid_table()
     u32 i = 0, j, k = 0;
 	unsigned int nlib_stubs;
 	u32 *cur_nid, *cur_call, syscall_num, good_call, nid;
-    int aux1, aux2;
-    u32 aux3;
 	tSceLibrary *ret;
 	tStubEntry *pentry;	
 
+#ifdef AUTO_SEARCH_STUBS
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+    load_modules_for_stubs();
+#endif
+  
+    u32 stubs[MAX_RUNTIME_STUB_HEADERS];
+    unsigned int current_stubid = 0;
+    nlib_stubs = (unsigned int) (search_stubs(stubs));
+    LOGSTR1("Found %d stubs\n", nlib_stubs);
+	if (nlib_stubs == 0)
+		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);    
+    CLEAR_CACHE;
+    pentry = (tStubEntry*) stubs[current_stubid];
+#else        
+    int aux1, aux2;
+    u32 aux3;   
+    
 	// Getting game's .lib.stub address
 	if ((aux1 = config_initialize()) < 0)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &aux1, sizeof(aux1));
@@ -633,6 +655,9 @@ int build_nid_table()
 
 	pentry = (tStubEntry*) aux3;
 
+#endif   
+    
+    
 	//DEBUG_PRINT(" build_nid_table() ENTERING MAIN LOOP ", NULL, 0);
 
 	do
@@ -836,7 +861,17 @@ int build_nid_table()
 
 			CLEAR_CACHE;
 		}
-		
+	
+#ifdef AUTO_SEARCH_STUBS
+        current_stubid++;
+ 		// Next .lib.stub
+		if (current_stubid < nlib_stubs)
+		{
+			pentry = (tStubEntry*) stubs[current_stubid];
+		}
+		else
+			break;               
+#else	
 		nlib_stubs--;
 
 		// Next .lib.stub
@@ -849,7 +884,7 @@ int build_nid_table()
 		}
 		else
 			break;
-
+#endif
 		sceKernelDelayThread(100000);
 		
 	} while(1);
@@ -999,8 +1034,14 @@ int build_nid_table()
 	}
 #endif
 
-	config_close();
-
+#ifdef AUTO_SEARCH_STUBS
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+    unload_modules_for_stubs();
+#endif
+#else
+	config_close();  
+#endif    
+    
 #ifndef XMB_LAUNCHER
 	g->nid_table.num = i;
 #endif

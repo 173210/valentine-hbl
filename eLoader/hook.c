@@ -66,7 +66,7 @@ int _hook_sceKernelExitThread(int status)
 
 	LOGSTR1("Enter hookExitThread : %08lX\n", lthreadid);
 
-	sceKernelWaitSema(g->thrSema, 1, 0);
+	WAIT_SEMA(g->thrSema, 1, 0);
 
 	for (ii = 0; ii < g->numRunThreads; ii++)
 	{
@@ -106,7 +106,7 @@ int _hook_sceKernelExitThread(int status)
 	// Ditlew
 	for (i=0;i<8;i++)
 	{
-		sceKernelWaitSema(g->audioSema, 1, 0);
+		WAIT_SEMA(g->audioSema, 1, 0);
 		if (g->audio_threads[i] == lthreadid)
 		{
 			_hook_sceAudioChRelease(i);
@@ -140,7 +140,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 
 	LOGSTR1("Enter hookExitDeleteThread : %08lX\n", lthreadid);
 
-	sceKernelWaitSema(g->thrSema, 1, 0);
+	WAIT_SEMA(g->thrSema, 1, 0);
 
 	for (ii = 0; ii < g->numRunThreads; ii++)
 	{
@@ -167,7 +167,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 	// Ditlew
 	for (i=0;i<8;i++)
 	{
-		sceKernelWaitSema(g->audioSema, 1, 0);
+		WAIT_SEMA(g->audioSema, 1, 0);
 		if (g->audio_threads[i] == lthreadid)
 		{
 			_hook_sceAudioChRelease(i);
@@ -228,7 +228,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     /*************************************************************************/
     /* Add to pending list                                                   */
     /*************************************************************************/
-    sceKernelWaitSema(g->thrSema, 1, 0);
+    WAIT_SEMA(g->thrSema, 1, 0);
     if (g->numPendThreads < SIZE_THREAD_TRACKING_ARRAY)
     {
       LOGSTR0("Set array\n");
@@ -257,7 +257,7 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
   
   LOGSTR1("Enter hookRunThread: %08lX\n", thid);
 
-  sceKernelWaitSema(g->thrSema, 1, 0);
+  WAIT_SEMA(g->thrSema, 1, 0);
 
   LOGSTR1("Number of pending threads: %08lX\n", g->numPendThreads);
 
@@ -314,13 +314,13 @@ void threads_cleanup()
     int lthisthread = sceKernelGetThreadId();
     u32 i;
     LOGSTR0("Threads cleanup\n");
-    sceKernelWaitSema(g->thrSema, 1, 0);
+    WAIT_SEMA(g->thrSema, 1, 0);
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
     LOGSTR0("cleaning audio threads\n");
 	for (i=0;i<8;i++)
 	{
-		//sceKernelWaitSema(g->audioSema, 1, 0);
+		//WAIT_SEMA(g->audioSema, 1, 0);
 		_hook_sceAudioChRelease(i);
 		//sceKernelSignalSema(g->audioSema, 1);
 	}
@@ -470,7 +470,7 @@ SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 {
     tGlobals * g = get_globals();
 
-    sceKernelWaitSema(g->ioSema, 1, 0);
+    WAIT_SEMA(g->ioSema, 1, 0);
 	SceUID result = _hook_sceIoOpenForChDirFailure(file, flags, mode);
 
 	// Add to tracked files array if files was opened successfully
@@ -505,7 +505,7 @@ int _hook_sceIoClose(SceUID fd)
 {
     tGlobals * g = get_globals();
 
-	sceKernelWaitSema(g->ioSema, 1, 0);
+	WAIT_SEMA(g->ioSema, 1, 0);
 	SceUID result = sceIoClose(fd);
 
 	// Remove from tracked files array if closing was successfull
@@ -535,7 +535,7 @@ void files_cleanup()
 	LOGSTR0("Files Cleanup\n");
     tGlobals * g = get_globals();
 
-	sceKernelWaitSema(g->ioSema, 1, 0);
+	WAIT_SEMA(g->ioSema, 1, 0);
 	int i;
 	for (i = 0; i < SIZE_IO_TRACKING_ARRAY; i++)
 	{
@@ -635,7 +635,7 @@ void ram_cleanup()
     LOGSTR0("Ram Cleanup\n");
     tGlobals * g = get_globals();
     u32 ii;
-    sceKernelWaitSema(g->memSema, 1, 0);
+    WAIT_SEMA(g->memSema, 1, 0);
     for (ii=0; ii < g->osAllocNum; ii++)
     {
         sceKernelFreePartitionMemory(g->osAllocs[ii]);
@@ -703,7 +703,7 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 {
     tGlobals * g = get_globals();
     LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (u32)name, type, size, (u32)addr);
-    sceKernelWaitSema(g->memSema, 1, 0);
+    WAIT_SEMA(g->memSema, 1, 0);
 
 	// Try to allocate the requested memory. If the allocation fails due to an insufficient
 	// amount of free memory try again with 10kB less until the allocation succeeds.
@@ -715,7 +715,7 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 		uid = sceKernelAllocPartitionMemory(partitionid,name, type, size, addr);
 		if (uid <= 0)
 		{
-			// Allocation failes, check if we can go lower for another try
+			// Allocation failed, check if we can go lower for another try
 			if ((size > 10000) && ((size - 10000) > original_size - (original_size / 5)))
 			{
 				// Try again with 10kB less
@@ -759,7 +759,7 @@ int _hook_sceKernelFreePartitionMemory(SceUID uid)
     tGlobals * g = get_globals();
     u32 ii;
     int lfound = 0;
-    sceKernelWaitSema(g->memSema, 1, 0);
+    WAIT_SEMA(g->memSema, 1, 0);
     int lret = sceKernelFreePartitionMemory(uid);
 
     /*************************************************************************/
@@ -799,7 +799,7 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 
     LOGSTR1("Enter createcallback: %s\n", (u32)name);
 
-    sceKernelWaitSema(g->cbSema, 1, 0);
+    WAIT_SEMA(g->cbSema, 1, 0);
     if (g->callbackcount < MAX_CALLBACKS)
     {
         g->callbackids[g->callbackcount] = lrc;
@@ -823,7 +823,7 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
 
     LOGSTR1("Enter registerexitCB: %08lX\n", cbid);
 
-    sceKernelWaitSema(g->cbSema, 1, 0);
+    WAIT_SEMA(g->cbSema, 1, 0);
     for (i = 0; i < g->callbackcount; i++)
     {
         if (g->callbackids[i] == cbid)
@@ -935,7 +935,7 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 		}
 		else
 		{
-			sceKernelWaitSema(g->audioSema, 1, 0);
+			WAIT_SEMA(g->audioSema, 1, 0);
 			g->audio_threads[lreturn] = sceKernelGetThreadId();
 			sceKernelSignalSema(g->audioSema, 1);
 		}
@@ -991,7 +991,7 @@ int _hook_sceAudioChRelease(int channel)
 	if (lreturn >= 0)
 	{
         tGlobals * g = get_globals();
-		sceKernelWaitSema(g->audioSema, 1, 0);  
+		WAIT_SEMA(g->audioSema, 1, 0);  
 		g->audio_threads[channel] = 0;
 		sceKernelSignalSema(g->audioSema, 1);
 	}
@@ -1261,12 +1261,14 @@ int _hook_sceKernelGetThreadCurrentPriority()
 }
 
 // Sleep is not delay... can we fix this?
+#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
 int _hook_sceKernelSleepThreadCB() 
 {
     while (1)
         sceKernelDelayThreadCB(1000000);
     return 1;
 }
+#endif
 
 #ifdef HOOK_sceKernelTrySendMsgPipe_WITH_sceKernelSendMsgPipe
 int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
@@ -1548,10 +1550,14 @@ u32 setup_hook(u32 nid)
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
 		case 0x977DE386: // sceKernelLoadModule
 			LOGSTR0(" loadmodule trick ");
+#ifdef HOOK_sceKernelLoadModule_WITH_error
+            hook_call = MAKE_JUMP(_hook_generic_error);            
+#else
 #ifdef HOOK_sceKernelLoadModule
 			hook_call = MAKE_JUMP(_hook_sceKernelLoadModule);
 #else
 			hook_call = MAKE_JUMP(sceKernelLoadModule);
+#endif
 #endif
 			break;
 		
@@ -1680,7 +1686,8 @@ u32 setup_hook(u32 nid)
             //based on http://forums.ps2dev.org/viewtopic.php?t=12490
 			hook_call = MAKE_JUMP(_hook_sceIoLseek32);
             break;
-        
+
+#ifndef HOOK_sceCtrlReadBufferPositive_WITH_sceCtrlPeekBufferPositive    
         case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
 			if ((!g->syscalls_from_p5) && (g->override_sceCtrlPeekBufferPositive == OVERRIDE))
             {
@@ -1689,6 +1696,7 @@ u32 setup_hook(u32 nid)
                 hook_call = MAKE_JUMP(sceCtrlReadBufferPositive);
             }
             break;
+#endif
             
         case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
 			hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
@@ -1704,10 +1712,12 @@ u32 setup_hook(u32 nid)
             break;               
 #endif
 
+#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
         case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)          
 			hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
             break; 
- 
+#endif
+            
 #ifdef HOOK_sceKernelTrySendMsgPipe_WITH_sceKernelSendMsgPipe
         case 0x884C9F90: //	sceKernelTrySendMsgPipe (avoid syscall estimation)  
             hook_call = MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);

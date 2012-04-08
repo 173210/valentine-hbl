@@ -50,14 +50,18 @@ int kill_event_flag(SceUID flid)
 
 int kill_sema(SceUID sema)
 {
+#ifndef HOOK_sceKernelDeleteSema_WITH_dummy
     int ret = sceKernelDeleteSema(sema);
     if (ret < 0)
     {
         LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, sema);
         return 0;
-    }
-    
+    }     
     return 1;
+#else
+    //semi-dummy result using the variable "sema" to avoid an "unused variable" compilation error
+    return sema ? 1 : 0;    
+#endif      
 } 
 
 int kill_module(SceUID modid) 
@@ -77,6 +81,7 @@ int kill_module(SceUID modid)
 #ifdef SUSPEND_THEN_DELETE_THREADS
 void SuspendAllThreads()
 {
+    LOGSTR0("memory.c:SuspendAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 	SceUID thuids[] = TH_ADDR_LIST;
@@ -141,6 +146,7 @@ void SuicideAllThreads(void)
 #ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)
 {
+    LOGSTR0("memory.c:DeleteAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 	
@@ -155,6 +161,7 @@ void DeleteAllThreads(void)
 #ifdef EV_ADDR_LIST
 void DeleteAllEventFlags(void)
 {
+    LOGSTR0("memory.c:DeleteAllEventFlags\n");
 	u32 i;
 	u32 evaddrs[] = EV_ADDR_LIST;
 	
@@ -169,6 +176,7 @@ void DeleteAllEventFlags(void)
 #ifdef SEMA_ADDR_LIST
 void DeleteAllSemaphores(void)
 {
+    LOGSTR0("memory.c:DeleteAllSemaphores\n");
 	u32 i;
 	u32 semaaddrs[] = SEMA_ADDR_LIST;
 	
@@ -187,9 +195,11 @@ void DeleteAllSemaphores(void)
 void UnloadModules()
 {
 #ifdef UNLOAD_ADDITIONAL_MODULES
+    LOGSTR0("memory.c:UnloadModules\n");
 	// Unload user modules first
 	// The more basic modules got a lower ID, so this should be the correct 
 	// order to unload
+    
 	SceUID result;
 	int m = PSP_MODULE_AV_G729;
 	while (m >= PSP_MODULE_AV_AVCODEC)
@@ -248,25 +258,63 @@ void UnloadModules()
 #ifdef GAME_FREEMEM_ADDR
 void FreeMem()
 {
-   u32 i;
-   SceUID memids[] = GAME_FREEMEM_ADDR;
+    LOGSTR0("memory.c:FreeMem\n");
+    u32 i;
+    SceUID memids[] = GAME_FREEMEM_ADDR;
    
-   for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
-   {
-      int ret = sceKernelFreePartitionMemory(*(SceUID*)memids[i]);
-      if (ret < 0)
-      {
-         LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
-      }
-   }
+    for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
+    {
+        int ret = sceKernelFreePartitionMemory(*(SceUID*)memids[i]);
+        if (ret < 0)
+        {
+            LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
+        }
+    }
 }
 #endif
 
+
+#ifdef VPL_ADDR_LIST
+void FreeVpl()
+{
+    LOGSTR0("memory.c:FreeVpl\n");
+    u32 i;
+    SceUID memids[] = VPL_ADDR_LIST;
+
+    for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
+    {
+        int ret = sceKernelDeleteVpl(*(SceUID*)memids[i]);
+        if (ret < 0)
+        {
+            LOGSTR2("--> ERROR 0x%08lX Deleting VPL ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
+        }
+    }
+}
+#endif
+
+#ifdef FPL_ADDR_LIST
+void FreeFpl()
+{
+    LOGSTR0("memory.c:FreeFpl\n");
+    u32 i;
+    SceUID memids[] = FPL_ADDR_LIST;
+
+    for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
+    {
+        int ret = sceKernelDeleteFpl(*(SceUID*)memids[i]);
+        if (ret < 0)
+        {
+            LOGSTR2("--> ERROR 0x%08lX Deleting FPL ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
+        }
+    }
+}
+#endif
 
 // Iterate through possible file descriptors to close all files left
 // open by the exploitet game
 void CloseFiles()
 {
+    LOGSTR0("memory.c:CloseFiles\n");
 	SceUID result;
 	int i;
 
@@ -279,7 +327,6 @@ void CloseFiles()
 		}
 	}
 }
-
 
 void free_game_memory()
 {
@@ -314,6 +361,17 @@ void free_game_memory()
 #ifdef SEMA_ADDR_LIST
 	DeleteAllSemaphores();
 #endif
+
+
+#ifdef VPL_ADDR_LIST
+    FreeVpl();
+#endif
+
+#ifdef FPL_ADDR_LIST
+    FreeFpl();
+#endif
+
+    
 
 #ifdef SUSPEND_THEN_DELETE_THREADS
 	// Delete module here before cleaning the threads,

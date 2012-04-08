@@ -66,6 +66,7 @@ typedef unsigned char byte;
 
 #define EXIT sceKernelExitGame()
 #define CLEAR_CACHE sceKernelDcacheWritebackInvalidateAll()
+#define WAIT_SEMA sceKernelWaitSema
 
 #ifdef UNUSED
 #elif defined(__GNUC__)

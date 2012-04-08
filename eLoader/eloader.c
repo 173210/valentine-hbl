@@ -268,9 +268,13 @@ int callback_thread(SceSize args, void *argp)
 	ret = sceKernelRegisterExitCallback(cbid);
 	
 	LOGSTR2("Setup HBL Callback:\n  cbid=%08lX\n  ret=%08lX\n", cbid, ret);
-	
+
+#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB	
 	_hook_sceKernelSleepThreadCB();
-	
+#else
+    sceKernelSleepThreadCB();
+#endif
+    
 	return 0;
 }
 

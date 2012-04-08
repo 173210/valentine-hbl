@@ -10,8 +10,30 @@
 #include "eloader.h"
 #include "malloc.h"
 #include "globals.h"
+#include "runtime_stubs.h"
 #include <exploit_config.h>
 
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+#ifndef AUTO_SEARCH_STUBS
+#define AUTO_SEARCH_STUBS
+#endif
+#endif
+
+// These are the addresses were we copy p5 stuff
+// This might overwrite some important things in ram, 
+// so overwrite these values in exploit_config.h if needed
+#ifndef RELOC_MODULE_ADDR_1
+#define RELOC_MODULE_ADDR_1 0x09d10000
+#endif
+#ifndef RELOC_MODULE_ADDR_2
+#define RELOC_MODULE_ADDR_2 0x09d30000
+#endif
+#ifndef RELOC_MODULE_ADDR_3
+#define RELOC_MODULE_ADDR_3 0x09d50000
+#endif
+#ifndef RELOC_MODULE_ADDR_4
+#define RELOC_MODULE_ADDR_4 0x09d70000
+#endif
 
 
 #ifdef RESET_HOME_SCREEN_LANGUAGE
@@ -34,17 +56,15 @@ void resetHomeScreenSettings()
 #endif
 
 
-
 //This function is copied from elf.c to avoid compiling the entire elf.c dependencies for just one function
 // Returns !=0 if stub entry is valid, 0 if it's not
 int elf_check_stub_entry(tStubEntry* pentry)
 {
 	return ( 
     valid_umem_pointer((u32)(pentry->library_name)) &&
-	(pentry->nid_pointer) &&
-	(pentry->jump_pointer));
+	valid_umem_pointer((u32)(pentry->nid_pointer)) &&
+	valid_umem_pointer((u32)(pentry->jump_pointer)));
 }
-
 
 #ifdef GAME_PRELOAD_FREEMEM
 void PreloadFreeMem()
@@ -236,9 +256,6 @@ void copy_hbl_stubs(void)
 	// ALL FUNCTIONS USED BEFORE SYSCALL ESTIMATION IS READY MUST BE IMPORTED BY THE GAME
 	u32* stub_list[NUM_HBL_IMPORTS];
 	
-	// Game .lib.stub entry
-	u32 pgame_lib_stub;
-
 	// Initialize config	
 	ret = config_initialize();
 	// DEBUG_PRINT(" CONFIG INITIALIZED ", &ret, sizeof(ret));
@@ -246,12 +263,6 @@ void copy_hbl_stubs(void)
 	if (ret < 0)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
 
-	// Get game's .lib.stub pointer
-	ret = config_first_lib_stub(&pgame_lib_stub);
-
-	if (ret < 0)
-		exit_with_log(" ERROR READING LIBSTUB ADDRESS ", &ret, sizeof(ret));
-	
 	//DEBUG_PRINT(" GOT GAME LIB STUB ", &pgame_lib_stub, sizeof(u32));
 
 	//DEBUG_PRINT(" ZEROING STUBS ", NULL, 0);
@@ -267,6 +278,40 @@ void copy_hbl_stubs(void)
 	// Reset stub list
 	memset(stub_list, 0, NUM_HBL_IMPORTS * sizeof(u32));
 
+#ifdef AUTO_SEARCH_STUBS
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+    load_modules_for_stubs();
+#endif
+  
+    u32 stubs[MAX_RUNTIME_STUB_HEADERS];
+    int num_stubs = search_stubs(stubs);
+    LOGSTR1("Found %d stubs\n", num_stubs); 
+    
+#ifndef DISABLE_P5_STUBS    
+    stubs[num_stubs++] = RELOC_MODULE_ADDR_1;
+    stubs[num_stubs++] = RELOC_MODULE_ADDR_2;
+    stubs[num_stubs++] = RELOC_MODULE_ADDR_3;
+    stubs[num_stubs++] = RELOC_MODULE_ADDR_4;    
+#endif
+   
+    CLEAR_CACHE;
+    for (i = 0; i < num_stubs; ++i)
+    {
+        tStubEntry* pentry = (tStubEntry*) stubs[i];
+		search_game_stubs(pentry, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);	
+	}         
+#else    
+
+	// Game .lib.stub entry
+	u32 pgame_lib_stub;
+    
+	// Get game's .lib.stub pointer
+	ret = config_first_lib_stub(&pgame_lib_stub);
+
+	if (ret < 0)
+		exit_with_log(" ERROR READING LIBSTUB ADDRESS ", &ret, sizeof(ret));
+    
+    
 	// Get number of import libraries
 	unsigned int num_lib_stubs = 0;
 	config_num_lib_stub(&num_lib_stubs);
@@ -290,13 +335,13 @@ void copy_hbl_stubs(void)
 		i++;
 	}
 	while (i < (int)num_lib_stubs);
+#endif	
 	
 	
 	// Config finished
 	config_close();
 
 	LOGSTR0(" ****STUBS SEARCHED\n");
-
 
 	stub_addr = (u32*)HBL_STUBS_START;
 
@@ -305,12 +350,19 @@ void copy_hbl_stubs(void)
 	{
 		if (stub_list[i] != NULL)
 			memcpy(stub_addr, stub_list[i], sizeof(u32)*2);
-		else
+		else{
+            LOGSTR1("HBL Function missing at 0x%08lX, this could lead to trouble if syscall estimates do not work\n", (u32)stub_addr);
 			memset(stub_addr, 0, sizeof(u32)*2);
+        }
 		stub_addr += 2;
 		sceKernelDelayThread(100);
 	}
 
+#ifdef AUTO_SEARCH_STUBS
+#ifdef LOAD_MODULES_FOR_SYSCALLS  
+    unload_modules_for_stubs();  
+#endif
+#endif
 
 	CLEAR_CACHE;
 }
@@ -369,9 +421,8 @@ void p5_open_savedata(int mode)
 	memset(&dialog, 0, sizeof(SceUtilitySavedataParam));
 	dialog.base.size = sizeof(SceUtilitySavedataParam);
 
-    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &dialog.base.language); // Prompt language
-    sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_UNKNOWN, &dialog.base.buttonSwap); // X/O button swap
-
+    dialog.base.language = 1;
+    dialog.base.buttonSwap = 1;
 	dialog.base.graphicsThread = 0x11;
 	dialog.base.accessThread = 0x13;
 	dialog.base.fontThread = 0x12;
@@ -538,22 +589,6 @@ void* p5_find_stub_in_memory(char* library, void* start_address, u32 size)
 }
 
 
-// These are the addresses were we copy p5 stuff
-// This might overwrite some important things in ram, 
-// so overwrite these values in exploit_config.h if needed
-#ifndef RELOC_MODULE_ADDR_1
-#define RELOC_MODULE_ADDR_1 0x09d10000
-#endif
-#ifndef RELOC_MODULE_ADDR_2
-#define RELOC_MODULE_ADDR_2 0x09d30000
-#endif
-#ifndef RELOC_MODULE_ADDR_3
-#define RELOC_MODULE_ADDR_3 0x09d50000
-#endif
-#ifndef RELOC_MODULE_ADDR_4
-#define RELOC_MODULE_ADDR_4 0x09d70000
-#endif
-
 // Copy stubs for the savedata dialog with save mode 
 void p5_copy_stubs_savedata_dialog()
 {
@@ -638,7 +673,7 @@ void _start()
 	{
 		LOGSTR0("Loading HBL\n");
 		load_hbl(hbl_file);
-	
+        
 		LOGSTR0("Copying & resolving HBL stubs\n");
 		copy_hbl_stubs();
         LOGSTR0("HBL stubs copied, running eLoader\n");

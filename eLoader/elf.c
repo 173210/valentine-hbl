@@ -55,10 +55,10 @@ int elf_check_magic(Elf32_Ehdr* pelf_header)
 // Just checks if pointers are not NULL
 int elf_check_stub_entry(tStubEntry* pentry)
 {
-	return (
+	return ( 
     valid_umem_pointer((u32)(pentry->library_name)) &&
-	(pentry->nid_pointer) &&
-	(pentry->jump_pointer));
+	valid_umem_pointer((u32)(pentry->nid_pointer)) &&
+	valid_umem_pointer((u32)(pentry->jump_pointer)));
 }
 
 // Loads static executable in memory using virtual address
