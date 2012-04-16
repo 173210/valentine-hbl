@@ -1432,6 +1432,7 @@ int _hook_sceKernelGetThreadId()
 {
 	// Somehow sceKernelGetThreadId isn't imported by the game,
 	// and can be called from HBL but not from a homebrew
+    // This is because HBL accepts both jumps and syscalls, while the nid table for games only accepts syscalls
     return sceKernelGetThreadId();
 }
 #endif
