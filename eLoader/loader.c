@@ -83,6 +83,25 @@ void PreloadFreeMem()
 }
 #endif
 
+#ifdef DELETE_UNKNOWN_FPL
+void FreeFpl()
+{
+    LOGSTR0("loader.c:FreeFpl\n");
+    SceUID i =  0x03000000;
+
+    while(i < (SceUID)0xE0000000)
+    {
+        int ret = sceKernelDeleteFpl(i);
+        if (ret >= 0)
+        {
+            LOGSTR1("Succesfully Deleted FPL ID 0x%08lX\n", i);
+            return;
+        }
+        i++;
+    }
+}
+#endif
+
 
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
