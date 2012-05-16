@@ -1427,7 +1427,6 @@ int _hook_generic_error()
 }
 
 #ifdef HOOK_sceKernelGetThreadId
-// random sceKernelGetThreadId hook (hopefully it's not super necessary);
 int _hook_sceKernelGetThreadId()
 {
 	// Somehow sceKernelGetThreadId isn't imported by the game,
@@ -1835,6 +1834,18 @@ u32 setup_hook(u32 nid)
 			hook_call = MAKE_JUMP(_hook_sceAudioOutputPannedBlocking);
             break; 
 #endif   
+
+#ifdef HOOK_sceAudioGetChannelRestLength_WITH_dummy
+        case 0xb011922f: // sceAudioGetChannelRestLength (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+
+#ifdef HOOK_sceAudioGetChannelRestLen_WITH_dummy
+        case 0xE9D97901: // sceAudioGetChannelRestLen (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
 
 #ifdef HOOK_sceAudioGetChannelRestLen_WITH_sceAudioGetChannelRestLength
         case 0xE9D97901: // sceAudioGetChannelRestLen (avoid syscall estimation)
