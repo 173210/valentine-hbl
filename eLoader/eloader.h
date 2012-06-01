@@ -31,11 +31,11 @@
 #define ELF_PATH HBL_ROOT"GAME/eboot.elf"
 #define HBL_PATH HBL_ROOT HBL_BIN
 #define KDUMP_PATH "ef0:/kmem.dump" // Always dump to the internal flash (fixes issue 43)
-#define HBL_CONFIG "hbl_config.txt"
+#define HBL_CONFIG "hblconf.txt"
 
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT"libs"
-#define LIB_EXTENSION ".nids"
+#define LIB_EXTENSION ".nid"
 
 //
 // Switches

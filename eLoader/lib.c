@@ -90,7 +90,9 @@ int file_exists(const char * filename)
 {
     SceUID id = sceIoOpen(filename, PSP_O_RDONLY, 0777);
     if (id < 0) 
+    {
 		return 0;
+    }
     sceIoClose(id);
     return 1;
 }

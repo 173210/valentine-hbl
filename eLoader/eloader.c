@@ -406,6 +406,22 @@ void _start()
         print_to_screen("PSP Go Detected");
     }
 
+#ifdef FPL_EARLY_LOAD_ADDR_LIST
+     //early memory cleanup to be able to load HBL at a convenient place
+    LOGSTR0("loader.c:PreloadFreeFPL\n");
+    u32 i;
+    SceUID memids[] = FPL_EARLY_LOAD_ADDR_LIST;
+
+    for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
+    {
+        int ret = sceKernelDeleteFpl(*(SceUID*)memids[i]);
+        if (ret < 0)
+        {
+            LOGSTR2("--> ERROR 0x%08lX Deleting FPL ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
+        }
+    }
+#endif      
+    
     
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
@@ -414,6 +430,10 @@ void _start()
 	{
 		thid = sceKernelStartThread(thid, 0, NULL);
 	}
+    else
+    {
+        PRTSTR1("Error starting HBL thread 0x%08lX", thid);
+    }
 
 	sceKernelExitDeleteThread(0);
 

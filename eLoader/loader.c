@@ -103,6 +103,24 @@ void FreeFpl()
 #endif
 
 
+#ifdef FORCE_CLOSE_FILES_IN_LOADER
+void CloseFiles()
+{
+    LOGSTR0("memory.c:CloseFiles\n");
+	SceUID result;
+	int i;
+
+	for (i = 0; i < 8; i++) // How many files can be open at once?
+	{
+		result = sceIoClose(i);
+		if (result != (int)0x80020323) // bad file descriptor
+		{
+			LOGSTR2("tried closing file %d, result 0x%08lX\n", i, result);
+		}
+	}
+}
+#endif 
+
 void (*run_eloader)(unsigned long arglen, unsigned long* argp) = 0;
 
 // Loads HBL to memory
@@ -218,23 +236,38 @@ int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list
 int load_imports(u32* hbl_imports)
 {
 	unsigned int num_imports;
-	u32 nid, i = 0;
-	int ret;
+	u32 i = 0;
+
 
 	// DEBUG_PRINT(" LOADING HBL IMPORTS FROM CONFIG ", NULL, 0);
 
+#ifdef HARDCODED_IMPORTS_CONFIG
+    num_imports = NUM_HBL_IMPORTS;
+#else 
+	int ret;   
+	u32 nid = 0;    
 	ret = config_num_nids_total(&num_imports);
 
 	if(ret < 0)
 		exit_with_log(" ERROR READING NUMBER OF IMPORTS ", &ret, sizeof(ret));
-
+#endif
 	// DEBUG_PRINT(" NUMBER OF IMPORTS ", &num_imports, sizeof(num_imports));
 
 	if(num_imports > NUM_HBL_IMPORTS)
 		exit_with_log(" ERROR FILE CONTAINS MORE IMPORTS THAN BUFFER SIZE ", &num_imports, sizeof(num_imports));
 
-	LOGSTR0("--> HBL imports from imports.config:\n");
+	LOGSTR1("--> HBL imports from imports.config: %d\n", num_imports);
 
+ #ifdef HARDCODED_IMPORTS_CONFIG
+    u32 hbl_hardcoded_nids[] = HBL_FUNCTION_NIDS;
+     for (i = 0; i < num_imports; ++i)
+     {
+        hbl_imports[i] = hbl_hardcoded_nids[i];
+        LOGSTR2("%d. 0x%08lX\n", i, hbl_imports[i]);      
+     }
+#else 
+    
+    
 	// Get NIDs from config
 	ret = config_first_nid(&nid);
 
@@ -254,7 +287,7 @@ int load_imports(u32* hbl_imports)
 		
 		ret = config_next_nid(&nid);		
 	} while (1);
-
+#endif
 	return i;
 }
 
@@ -279,9 +312,10 @@ void copy_hbl_stubs(void)
 	ret = config_initialize();
 	// DEBUG_PRINT(" CONFIG INITIALIZED ", &ret, sizeof(ret));
 
-	if (ret < 0)
+	if (ret < 0) {
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
-
+    }
+    
 	//DEBUG_PRINT(" GOT GAME LIB STUB ", &pgame_lib_stub, sizeof(u32));
 
 	//DEBUG_PRINT(" ZEROING STUBS ", NULL, 0);
@@ -478,7 +512,13 @@ void p5_open_savedata(int mode)
 
 	// Wait for the dialog to initialize
 	while (sceUtilitySavedataGetStatus() < 2)
+    {
+#ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
+        sceKernelDelayThread(100);
+#else        
 		sceDisplayWaitVblankStart();
+#endif        
+    }
 }
 
 
@@ -518,8 +558,12 @@ void p5_close_savedata()
 			case PSP_UTILITY_DIALOG_FINISHED:
 				break;
 		}
-
+        
+#ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
+        sceKernelDelayThread(100);
+#else        
 		sceDisplayWaitVblankStart();
+#endif   
 	}
 
 	LOGSTR0("dialog has shut down\n");
@@ -666,8 +710,17 @@ void _start()
 
 	SceUID hbl_file;
 
+#ifdef FORCE_FIRST_LOG    
+    // Some exploits need to "trigger" file I/O in order for HBL to work, not sure why
+    logstr0("Loader running\n");
+#else    
 	LOGSTR0("Loader running\n");
-
+#endif    
+    
+#ifdef FORCE_CLOSE_FILES_IN_LOADER
+    CloseFiles();
+#endif    
+    
     //reset the contents of the debug file;
     init_debug();
     

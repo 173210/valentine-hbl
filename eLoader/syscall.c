@@ -24,15 +24,77 @@ int find_nid_in_file(SceUID nid_file, u32 nid)
 	return -1;
 }
 
+/* the PS3 does not allow long filenames,
+So we are using a hash + base36 encoding for nids
+*/
+#ifdef SMALL_FILENAMES
+unsigned long hash_djb2(const char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+    {
+        //We convert to lowercase here because it matches our requirements.
+       // This, of course, completely ruins the hash algorithm for case sensitive strings, don't do this at home!!!
+        if ( c >= 'A' && c <= 'Z' )
+        {
+            c+= 'a' - 'A';
+        }
+        
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+    return hash;
+}
+
+int toBase36 (char * dest,const unsigned long src) 
+{
+       char base_digits[36] =
+	 {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+
+   int converted_number[64];
+   int base, index=0;
+
+   base = 36;
+   unsigned long number_to_convert = src;
+
+   /* convert to the indicated base */
+   while (number_to_convert != 0)
+   {
+	 converted_number[index] = number_to_convert % base;
+	 number_to_convert = number_to_convert / base;
+	 ++index;
+   }
+
+   /* now print the result in reverse order */
+   --index;  /* back up to last entry in the array */
+   for(  ; index>=0; index--) /* go backward through array */
+   {
+	 *dest = base_digits[converted_number[index]];
+     dest++;
+   }
+   *dest = 0; //terminate string
+   return 1;
+}
+#endif
+
 // Opens .nids file for a given library
-SceUID open_nids_file(const char* lib)
+SceUID open_nids_file(const char* libname)
 {
 	char file_path[MAX_LIBRARY_NAME_LENGTH + 100];
 	
     int firmware_v = getFirmwareVersion();
 	
 	int i = 0;
-
+    
+#ifdef SMALL_FILENAMES    
+    char lib[9];
+    unsigned long hash = hash_djb2(libname);
+    toBase36 (lib,hash);
+    LOGSTR2("converted lib name %s into %s", (u32) libname, (u32) lib);    
+#else
+    const char * lib = libname;
+#endif
     //We try to open a lib file base on the version of the firmware as precisely as possible,
     //then fallback to less precise versions. for example,try in this order:
     // libs_503, libs_50x, libs_5xx, libs 

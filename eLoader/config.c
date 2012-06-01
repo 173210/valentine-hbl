@@ -4,6 +4,8 @@
 #include "utils.h"
 #include <exploit_config.h>
 
+// This file is in charge of loading the imports.config files from VHBL, not the vhbl "settings" which is another (manually edited) file
+
 /* LOCAL GLOBALS :( */
 
 // File descriptor
@@ -22,13 +24,18 @@ SceOff g_nids_offset = -1;
 // Initialize config_file
 int config_initialize()
 {	
+#ifdef HARDCODED_IMPORTS_CONFIG
+  const char * file_path = IMPORTS_PATH"imports.dat";
+#else
     char file_path[512];
+
     int i = 0;
     u32 firmware_v = getFirmwareVersion();
 	
     //We try to open a lib file base on the version of the firmware as precisely as possible,
     //then fallback to less precise versions. for example,try in this order:
     // libs_503, libs_50x, libs_5xx, libs 
+   
 	do 
 	{
 		switch (i)
@@ -49,7 +56,8 @@ int config_initialize()
 		i++;
 	}
 	while ((i < 4) && !file_exists(file_path));    
-   
+#endif
+  
     LOGSTR1("Config file:%s\n", (u32) file_path);
     
 	g_config_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777);
@@ -59,7 +67,7 @@ int config_initialize()
 // Gets a int from offset from config
 int config_u32(u32* buffer, SceOff offset)
 {
-	int ret = 0;
+	int ret = -1;
 
 	if (buffer != NULL)
 	{	
@@ -113,8 +121,18 @@ int config_num_nids_total(unsigned int* pnum_nids_total)
 	if (g_num_nids < 0)
 		ret = config_u32((u32*)&g_num_nids, NUM_NIDS_OFFSET);
 
-	if ((ret >= 0) && (pnum_nids_total != NULL))
-		*pnum_nids_total = g_num_nids;
+    if (ret < 0)
+    {
+        LOGSTR1("ERROR Getting total number of nids: 0x%08lX\n", ret); 
+        return ret;
+    }    
+        
+	if (!pnum_nids_total)
+    {
+        return -1;
+    }
+	
+    *pnum_nids_total = g_num_nids;
 
 	return ret;
 }
