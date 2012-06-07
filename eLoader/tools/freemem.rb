@@ -61,7 +61,7 @@ while (line = uidlist.gets)
 		line.scan(regexpEntry) { |uid, entry, size, attr, name|
 			if attr == "0xFF"
 				# skip thread stacks and the "main" thread which is unloaded with the module
-				if (name.index("stack:") == nil) and not ((currentHeader == "Thread") and (name == "main"))
+				if (name.index("stack:") == nil) and not ((currentHeader == "Thread") and (name == "saty"))
 					addresses.push(fileEntry.new(currentHeader, uid, name))
 				end
 			end
@@ -84,7 +84,7 @@ addresses.each { |addressEntry|
 			if currentHeader != nil
 				print " }\n\n"
 			end
-		
+			
 			currentHeader = addressEntry.type
 			
 			if addressEntry.type == "Thread"
@@ -94,7 +94,9 @@ addresses.each { |addressEntry|
 			elsif addressEntry.type == "Semaphore"
 				print "#define SEMA_ADDR_LIST { "
 			elsif addressEntry.type == "SceSysMemMemoryBlock"
-				print "#define GAME_FREEMEM_ADDR "
+				print "#define GAME_FREEMEM_ADDR { "
+			else
+				print "#define "+addressEntry.type.upcase+"_ADDR { "
 			end
 		else
 			print ", "
@@ -103,3 +105,5 @@ addresses.each { |addressEntry|
 		print "0x0#{(index + baseAddress).to_s(16).upcase}"
 	end
 }
+	
+print " }"
