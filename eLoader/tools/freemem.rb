@@ -61,7 +61,7 @@ while (line = uidlist.gets)
 		line.scan(regexpEntry) { |uid, entry, size, attr, name|
 			if attr == "0xFF"
 				# skip thread stacks and the "main" thread which is unloaded with the module
-				if (name.index("stack:") == nil) and not ((currentHeader == "Thread") and (name == "saty"))
+				if (name.index("stack:") == nil) and not ((currentHeader == "Thread") and (name == "main"))
 					addresses.push(fileEntry.new(currentHeader, uid, name))
 				end
 			end
