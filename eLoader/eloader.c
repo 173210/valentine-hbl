@@ -14,6 +14,18 @@
 #include "globals.h"
 #include <exploit_config.h>
 
+// Additional globals initialization.
+// some games do not import those, so loader.c (and therefore globals.c)
+// cannot have them
+void init_globals_2() {
+    tGlobals * g = get_globals();
+	
+    g->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
+    g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);
+    g->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);
+    g->audioSema = sceKernelCreateSema("hblaudiosema",0,1,1,0);
+	g->ioSema = sceKernelCreateSema("hbliosema",0,1,1,0);
+};
 
 // HBL entry point
 // Needs path to ELF or EBOOT
@@ -421,8 +433,11 @@ void _start()
         }
     }
 #endif      
-    
-    
+ 
+    // Second step of globals initalization
+	init_globals_2();
+ 
+  
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
 	
@@ -434,7 +449,7 @@ void _start()
     {
         PRTSTR1("Error starting HBL thread 0x%08lX", thid);
     }
-
+	
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)

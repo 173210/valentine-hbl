@@ -68,11 +68,6 @@ void init_globals()
 
 	g->exit_callback_called = 0;
 
-    g->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
-    g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);
-    g->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);
-    g->audioSema = sceKernelCreateSema("hblaudiosema",0,1,1,0);
-	g->ioSema = sceKernelCreateSema("hbliosema",0,1,1,0);
     g->curr_channel_id = -1;
 
 #ifdef VITA_DIR_FIX

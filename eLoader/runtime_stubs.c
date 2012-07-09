@@ -33,7 +33,7 @@ int search_stubs(u32 * stub_addresses) {
             //boundaries check
             if (current >= MAX_RUNTIME_STUB_HEADERS)
             {
-                LOGSTR0("More stubs than Maximum allowed number, won't enumarate all stubs\n");
+                LOGSTR0("More stubs than Maximum allowed number, won't enumerate all stubs\n");
                 return current;
             }
             stub_addresses[current] = i;
@@ -52,6 +52,7 @@ int search_stubs(u32 * stub_addresses) {
 }
 
 void load_modules_for_stubs() {
+#ifdef MODULES
  	unsigned int moduleIDs[] = MODULES;
     int i;
     
@@ -66,22 +67,27 @@ void load_modules_for_stubs() {
             LOGSTR2("...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
         }
     }
+#endif	
 }
 
 void unload_modules_for_stubs() {
+#ifdef MODULES
     unsigned int moduleIDs[] = MODULES;
     int i;
     //Unload modules in reverse order
     for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
     {    
         unsigned int modid = moduleIDs[i];
-        LOGSTR1("Loading 0x%08lX\n", (u32)(modid) );
+        LOGSTR1("UnLoading 0x%08lX\n", (u32)(modid) );
+#ifndef HOOK_sceUtilityUnloadModule	
         int result = sceUtilityUnloadModule(modid);
         if (result < 0)
         {
             LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
         }
-    }  
+#endif	
+    }
+#endif	
 }
 
 #else

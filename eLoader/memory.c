@@ -192,6 +192,10 @@ void DeleteAllSemaphores(void)
 }
 #endif
 
+#ifdef KILL_MODULE_MEMSET
+static int unload_memset_flag = 0;
+#endif
+
 void UnloadModules()
 {
 #ifdef UNLOAD_ADDITIONAL_MODULES
@@ -219,6 +223,15 @@ void UnloadModules()
 	}
 #endif
 
+#ifdef KILL_MODULE_MEMSET
+	if( unload_memset_flag != 0){
+		LOGSTR0("memory.c:memset start\n");
+		KILL_MODULE_MEMSET;
+		LOGSTR0("memory.c:memset done\n");
+	}
+#endif
+	
+	
 	// Set inital UID to -1 and the current UID to 0
 	int i;
 	SceUID uids[MAX_MODULES_TO_FREE];
@@ -253,6 +266,10 @@ void UnloadModules()
 	{
 		kill_module(uids[i]);
 	}
+
+#ifdef KILL_MODULE_MEMSET
+unload_memset_flag = 0;
+#endif
 }
 
 #ifdef GAME_FREEMEM_ADDR
@@ -371,7 +388,10 @@ void free_game_memory()
     FreeFpl();
 #endif
 
-    
+
+#ifdef KILL_MODULE_MEMSET
+unload_memset_flag = 1;
+#endif
 
 #ifdef SUSPEND_THEN_DELETE_THREADS
 	// Delete module here before cleaning the threads,

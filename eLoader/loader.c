@@ -339,14 +339,15 @@ void copy_hbl_stubs(void)
     u32 stubs[MAX_RUNTIME_STUB_HEADERS];
     int num_stubs = search_stubs(stubs);
     LOGSTR1("Found %d stubs\n", num_stubs); 
-    
+/*
+	//This caught a overflow if (num_stubs + 4) is larger than MAX_RUNTIME_STUB_HEADERS.
 #ifndef DISABLE_P5_STUBS    
     stubs[num_stubs++] = RELOC_MODULE_ADDR_1;
     stubs[num_stubs++] = RELOC_MODULE_ADDR_2;
     stubs[num_stubs++] = RELOC_MODULE_ADDR_3;
     stubs[num_stubs++] = RELOC_MODULE_ADDR_4;    
 #endif
-   
+ */  
     CLEAR_CACHE;
     for (i = 0; i < num_stubs; ++i)
     {
