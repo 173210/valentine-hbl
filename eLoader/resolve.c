@@ -175,7 +175,6 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 #endif
 
 	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
-
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
@@ -203,7 +202,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 
 			NID_LOGSTR1("Index for NID on table: %d\n", nid_index);
             
-			u32 hook_call = setup_hook(*cur_nid);
+			u32 hook_call = setup_hook(*cur_nid, real_call);
 
 			if (hook_call != 0)
 				real_call = hook_call;
@@ -211,12 +210,17 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			NID_LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
             
 			/* If NID not found in game imports */
-			/* Syscall estimation if library available */
+			/* generic error/ok if syscall estimation is not available */
+			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
 			if (real_call == 0)
 			{
+#ifdef DEACTIVATE_SYSCALL_ESTIMATION
+                real_call = setup_default_nid(*cur_nid);
+#else				
 				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
+#endif				
 			}
-
+            
 			NID_LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
 
 			/* If it's an instruction, resolve it */

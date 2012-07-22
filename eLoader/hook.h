@@ -52,7 +52,8 @@ int scePower_EBD177D6(int pllfreq, int cpufreq, int busfreq);
 int	ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
 
 
-u32 setup_hook(u32 nid);
+u32 setup_hook(u32 nid, u32 existing_real_call);
+u32 setup_default_nid(u32 nid);
 void exit_everything_but_me();
 
 /* HOOKS */

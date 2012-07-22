@@ -1503,14 +1503,15 @@ int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo *info)
 
 
 // Returns a hooked call for the given NID or zero
-u32 setup_hook(u32 nid)
+u32 setup_hook(u32 nid, u32 existing_real_call)
 {
 	u32 hook_call = 0;
     tGlobals * g = get_globals();
 	
-    //We have 2 switch blocks
+    //We have 3 switch blocks
     // The first one is for nids that need to be hooked in all cases
-    //The second one is for firmwares that don't have perfect syscall estimation
+    //The second one is for firmwares that don't have perfect syscall estimation, in all cases
+	// The third one is for firmwares that don't have perfect syscall estimation, only if the function is not already imported by the game
     switch (nid) 
 	{
 
@@ -1635,6 +1636,66 @@ u32 setup_hook(u32 nid)
     // Overrides below this point don't need to be done if we have perfect syscall estimation      
     if (g->syscalls_known)
         return 0;
+
+    switch (nid) {
+#ifdef HOOK_CHDIR_AND_FRIENDS    
+        case 0x55F4717D: //	sceIoChdir (only if it failed)
+            if (g->chdir_ok)
+                break;
+            LOGSTR0(" Chdir trick sceIoChdir\n");
+            hook_call = MAKE_JUMP(_hook_sceIoChdir);
+            break;
+
+/*
+        case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
+            if (g->chdir_ok)
+                break;
+            LOGSTR0(" Chdir trick sceIoOpen\n");                        
+            hook_call = MAKE_JUMP(_hook_sceIoOpen);
+            break;
+*/
+
+        case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
+            if (g->chdir_ok)
+                break;
+            LOGSTR0(" Chdir trick sceIoDopen\n");                        
+            hook_call = MAKE_JUMP(_hook_sceIoDopen);
+            break;      
+#elif defined VITA_DIR_FIX
+        case 0xB29DDF9C: //	sceIoDopen
+            LOGSTR0("VITA_DIR_FIX sceIoDopen\n");                        
+            hook_call = MAKE_JUMP(sceIoDopen_Vita);
+            break;      
+#endif
+
+#ifdef VITA_DIR_FIX
+        case 0xE3EB004C: //	sceIoDread
+            LOGSTR0("VITA_DIR_FIX sceIoDread\n");                        
+            hook_call = MAKE_JUMP(sceIoDread_Vita);
+            break;
+        case 0xEB092469: //	sceIoDclose
+            LOGSTR0("VITA_DIR_FIX sceIoDclose\n");                        
+            hook_call = MAKE_JUMP(sceIoDclose_Vita);
+            break;   
+#endif
+    }
+	
+    if (hook_call) 
+        return hook_call;
+		
+		
+#ifdef DONT_HOOK_IF_FUNCTION_IS_IMPORTED		
+	// Don't need to do a hook if we already have the call
+    if (existing_real_call)
+        return 0;	
+#else
+    // To avoid a compilation warning with unused value
+    if (existing_real_call)
+    {
+	    LOGSTR0("Note: real call already exists, you probably shouldn't try to hook it, see hook.c for details\n");
+		hook_call = existing_real_call; //  To avoid a compilation warning with unused value
+    }	
+#endif		
 
 #ifndef DISABLE_ADDITIONAL_HOOKS
 
@@ -1871,46 +1932,7 @@ u32 setup_hook(u32 nid)
             break;
 #endif
 
-#ifdef HOOK_CHDIR_AND_FRIENDS    
-        case 0x55F4717D: //	sceIoChdir (only if it failed)
-            if (g->chdir_ok)
-                break;
-            LOGSTR0(" Chdir trick sceIoChdir\n");
-            hook_call = MAKE_JUMP(_hook_sceIoChdir);
-            break;
 
-/*
-        case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
-            if (g->chdir_ok)
-                break;
-            LOGSTR0(" Chdir trick sceIoOpen\n");                        
-            hook_call = MAKE_JUMP(_hook_sceIoOpen);
-            break;
-*/
-
-        case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-            if (g->chdir_ok)
-                break;
-            LOGSTR0(" Chdir trick sceIoDopen\n");                        
-            hook_call = MAKE_JUMP(_hook_sceIoDopen);
-            break;      
-#elif defined VITA_DIR_FIX
-        case 0xB29DDF9C: //	sceIoDopen
-            LOGSTR0("VITA_DIR_FIX sceIoDopen\n");                        
-            hook_call = MAKE_JUMP(sceIoDopen_Vita);
-            break;      
-#endif
-
-#ifdef VITA_DIR_FIX
-        case 0xE3EB004C: //	sceIoDread
-            LOGSTR0("VITA_DIR_FIX sceIoDread\n");                        
-            hook_call = MAKE_JUMP(sceIoDread_Vita);
-            break;
-        case 0xEB092469: //	sceIoDclose
-            LOGSTR0("VITA_DIR_FIX sceIoDclose\n");                        
-            hook_call = MAKE_JUMP(sceIoDclose_Vita);
-            break;   
-#endif
 
 
 #ifdef HOOK_sceKernelSendMsgPipe_WITH_sceKernelTrySendMsgPipe
@@ -2028,11 +2050,58 @@ u32 setup_hook(u32 nid)
 			hook_call = MAKE_JUMP(_hook_generic_ok);
             break;
 #endif
+
+#ifdef HOOK_sceMp3InitResource_WITH_dummy
+		case 0x35750070: //sceMp3InitResource
+		    hook_call = MAKE_JUMP(_hook_generic_ok);
+			break;
+#endif
+
+#ifdef HOOK_sceMp3Init_WITH_dummy
+		case 0x44E07129: //sceMp3Init
+		   hook_call = MAKE_JUMP(_hook_generic_ok);
+		   break;
+#endif
+
+#ifdef HOOK_sceMp3Decode_WITH_dummy
+		case 0xD021C0FB: //sceMp3Decode
+			hook_call = MAKE_JUMP(_hook_generic_ok);
+			break;
+#endif
 	}
 
 
 #endif
 
+    LOGSTR2("Missing function: 0x%08lX Hooked with: 0x%08lX\n\n",nid,hook_call);
 	return hook_call;
 }
 
+/**
+*  Setup a Default Nid for Firmware 6.60 where the Kernel Syscall Estimation doesn't work
+*  Only ment to give a ok for function that we don't make custom version from
+*  By Thecobra
+**/
+u32 setup_default_nid(u32 nid){
+#ifdef DEACTIVATE_SYSCALL_ESTIMATION	
+	u32 hook_call = 0;
+	switch(nid){
+	  case 0x3E0271D3: //sceKernelVolatileMemLock
+	  case 0xA14F40B2: //sceKernelVolatileMemTryLock
+	  case 0xA569E425: //sceKernelVolatileMemUnlock
+	    hook_call = MAKE_JUMP(_hook_generic_error);
+		break;
+	  default: //Default Ok function
+		hook_call = MAKE_JUMP(_hook_generic_ok);
+		break;
+	}
+	
+	LOGSTR2("Missing function: 0x%08lX Defaulted to generic: 0x%08lX\n\n",nid,hook_call);
+	
+	return hook_call;
+#else
+    LOGSTR0("You should not be calling setup_default_nid!!!\n");
+	nid = 0;  //To avoid a compilation warning with unused value
+    return 0;
+#endif	
+}
