@@ -1501,6 +1501,50 @@ int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo *info)
 #endif
 
 
+#ifdef HOOK_Osk
+int _hook_sceUtilityOskInitStart (SceUtilityOskParams *params)
+{
+	if ( *((char*)params->data->outtext) == 0 )
+	{
+		if (params->data->outtextlimit > 3)
+		{
+			params->data->outtext[0] = 'L';
+			params->data->outtext[1] = '_';
+			params->data->outtext[2] = 'L';
+			params->data->outtext[3] = 0;
+		}
+		else
+		{
+			params->data->outtext[0] = 'L';
+			params->data->outtext[1] = 0;
+		}
+		
+		/*	memset(oskData->outtext, 'L', oskData->outtextlimit);
+			*((char*) (oskData->outtext+oskData->outtextlimit-1) ) = 0;*/
+	}
+	
+	return 0;
+}
+
+int _hook_sceUtilityOskShutdownStart ()
+{
+	return 0;
+}
+
+int _hook_sceUtilityOskUpdate (int n)
+{
+	if(n){}; //Avoid compilation errors :P
+	return 0;
+}
+
+int _hook_sceUtilityOskGetStatus ()
+{
+	return 0;
+}
+
+#endif
+
+
 
 // Returns a hooked call for the given NID or zero
 u32 setup_hook(u32 nid, u32 existing_real_call)
@@ -2067,6 +2111,24 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0xD021C0FB: //sceMp3Decode
 			hook_call = MAKE_JUMP(_hook_generic_ok);
 			break;
+#endif
+
+#ifdef HOOK_Osk
+        case 0xF6269B82: // sceUtilityOskInitStart (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceUtilityOskInitStart);
+            break;
+			
+        case 0x3DFAEBA9: // sceUtilityOskShutdownStart (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceUtilityOskShutdownStart);
+            break;
+			
+        case 0x4B85C861: // sceUtilityOskUpdate (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceUtilityOskUpdate);
+            break;
+			
+        case 0xF3F76017: // sceUtilityOskGetStatus (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceUtilityOskGetStatus);
+            break;
 #endif
 	}
 
