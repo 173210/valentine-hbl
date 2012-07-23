@@ -1,4 +1,4 @@
-#define MAX_RUNTIME_STUB_HEADERS 30
+#define MAX_RUNTIME_STUB_HEADERS 35
 
 void load_modules_for_stubs();
 int search_stubs(u32 * stub_addresses);

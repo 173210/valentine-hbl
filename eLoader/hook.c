@@ -1219,8 +1219,10 @@ int _hook_scePowerGetBusClockFrequency() {
 //Alias, see http://forums.ps2dev.org/viewtopic.php?t=11294
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
 {
-#ifdef HOOK_scePowerSetClockFrequency_WITH_scePower_EBD177D6
+#if defined(HOOK_scePowerSetClockFrequency_WITH_scePower_EBD177D6)
     int ret = scePower_EBD177D6(pllfreq, cpufreq, busfreq);
+#elif defined(HOOK_scePowerSetClockFrequency_WITH_scePower_469989AD)
+    int ret = scePower_469989AD(pllfreq, cpufreq, busfreq);
 #else    
     int ret = 0;
 #endif    
@@ -1500,6 +1502,26 @@ int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo *info)
 }
 #endif
 
+#ifdef HOOK_sceDisplayGetFrameBuf
+static void *frame_topaddr[2];
+static int frame_bufferwidth[2], frame_pixelformat[2];
+int _hook_sceDisplaySetFrameBuf(void *topaddr,int bufferwidth, int pixelformat,int sync)
+{
+	frame_topaddr[ sync ] = topaddr;
+	frame_bufferwidth[ sync ] = bufferwidth;
+	frame_pixelformat[ sync ] = pixelformat;
+
+	return sceDisplaySetFrameBuf( topaddr, bufferwidth, pixelformat, sync);
+}
+
+int _hook_sceDisplayGetFrameBuf(void **topaddr, int *bufferwidth, int *pixelformat, int sync)
+{
+	*topaddr = frame_topaddr[ sync ];
+	*bufferwidth = frame_bufferwidth[ sync ];
+	*pixelformat = frame_pixelformat[ sync ];
+	return 0;
+}
+#endif
 
 #ifdef HOOK_Osk
 int _hook_sceUtilityOskInitStart (SceUtilityOskParams *params)
@@ -1722,6 +1744,16 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
             hook_call = MAKE_JUMP(sceIoDclose_Vita);
             break;   
 #endif
+
+#ifdef HOOK_sceDisplayGetFrameBuf
+		case 0xEEDA2E54://sceDisplayGetFrameBuf
+			hook_call = MAKE_JUMP(_hook_sceDisplayGetFrameBuf);
+			break;
+		case 0x289D82FE://sceDisplaySetFrameBuf
+			hook_call = MAKE_JUMP(_hook_sceDisplaySetFrameBuf);
+			break;
+#endif
+
     }
 	
     if (hook_call) 
@@ -1851,7 +1883,17 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			hook_call = MAKE_JUMP(_hook_sceKernelReceiveMsgPipe);
             break;                 
 #endif
-           
+
+#ifdef HOOK_sceKernelReferMsgPipeStatusWITH_dummy
+		case 0x33BE4024://sceKernelReferMsgPipeStatus
+            hook_call = MAKE_JUMP(_hook_generic_ok);
+            break;
+#endif
+/*
+		case 0xD97F94D8 ://sceDmacTryMemcpy
+            hook_call = MAKE_JUMP(sceDmacMemcpy);
+			break;
+*/
         case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
 			hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
             break; 
@@ -2013,7 +2055,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			hook_call = MAKE_JUMP(sceDisplayWaitVblankStart);
             break;
 #endif
-
+	
 	// This will be slow and should not be active for high performance programs...
 #ifdef HOOK_sceKernelDcacheWritebackRange_WITH_sceKernelDcacheWritebackAll
         case 0x3EE30821: // sceKernelDcacheWritebackRange (avoid syscall estimation)

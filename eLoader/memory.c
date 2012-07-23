@@ -228,6 +228,7 @@ void UnloadModules()
 		LOGSTR0("memory.c:memset start\n");
 		KILL_MODULE_MEMSET;
 		LOGSTR0("memory.c:memset done\n");
+		unload_memset_flag = 0;
 	}
 #endif
 	
@@ -266,10 +267,6 @@ void UnloadModules()
 	{
 		kill_module(uids[i]);
 	}
-
-#ifdef KILL_MODULE_MEMSET
-unload_memset_flag = 0;
-#endif
 }
 
 #ifdef GAME_FREEMEM_ADDR

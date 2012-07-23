@@ -12,6 +12,8 @@
 #include "svnversion.h"
 #include <exploit_config.h>
 
+int rescan_syscall(const char *mod_name, const char *lib_name );
+
 // Return index in mod_table for module ID
 int get_module_index(SceUID modid)
 {
@@ -250,6 +252,20 @@ SceUID start_module(SceUID modid)
 // Fills module name and return utility ID for a given utility library name
 int get_utility_module_name(const char* lib, char* name)
 {
+	// sceMpeg_library
+	if (strcmp(lib, "sceMpeg") == 0)
+	{
+		strcpy(name, "sceMpeg_library");
+	    return PSP_MODULE_AV_MPEGBASE;
+	}
+
+	// sceATRAC3plus_Library
+	if (strcmp(lib, "sceAtrac3plus") == 0)
+	{
+		strcpy(name, "sceATRAC3plus_Library");
+	    return PSP_MODULE_AV_ATRAC3PLUS;
+	}
+
 	// sceMp3_Library
 	if (strcmp(lib, "sceMp3") == 0)
 	{
@@ -481,5 +497,74 @@ int load_utility_module(int mod_id, const char* lib_name)
 		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
 	}
 
+	if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729)
+	{
+		rescan_syscall( mod_name, "sceAudiocodec" );
+		rescan_syscall( mod_name, "sceVideocodec" );
+	}
+
 	return 0;
 }
+
+
+tStubEntry* find_module_stub_by_name(const char* mod_name, const char* lib_name)
+{
+	// Search for module name 
+	char* name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
+
+	if (name_found == NULL)
+	{
+		LOGSTR1("->ERROR: could not find module %s\n", (u32)mod_name);
+		return NULL;
+	}
+
+	// Search for library name next to module name (1 KiB size enough I guess)
+	name_found = memfindsz(lib_name, (char*)name_found, (unsigned int)0x400);
+
+	if (name_found == NULL)
+	{
+		LOGSTR1("->ERROR: could not find library name %s\n", (u32)lib_name);
+		return NULL;
+	}
+
+	// Search for pointer to library name close to library name
+	u32* export = memfindu32((u32)name_found, (u32*)((u32)name_found - 0x400), (unsigned int)0x400);
+
+	return (tStubEntry*)export;
+}
+
+int rescan_syscall(const char *mod_name, const char *lib_name )
+{
+	tStubEntry* pstubs = find_module_stub_by_name(mod_name, lib_name);
+	if (pstubs == NULL)
+	{
+		LOGSTR1("->ERROR: could not find module stubs for %s\n", (u32)mod_name);
+		return -1;
+	}
+
+	LOGSTR1("Number of export functions: %d\n", (u16)pstubs->stub_size);
+	LOGSTR1("Pointer to stubs nid: 0x%08lX\n", (u32)pstubs->nid_pointer);
+
+	u32* pnids = (u32*)pstubs->nid_pointer;
+	u32* pfunctions = (u32*)pstubs->jump_pointer;
+
+	LOGSTR1("Pointer to functions: 0x%08lX\n", (u32)pfunctions);
+
+	int lib_index = get_library_index(lib_name);
+	if (lib_index < 0)
+	{
+		LOGSTR0("->WARNING: could not add library to table\n");
+		return lib_index;
+	}
+
+	// Update syscall on table
+	int i;
+	for (i=0; i<(u16)pstubs->stub_size; i++)
+	{
+		LOGSTR3("NID %d: 0x%08lX syscall: 0x%08lX\n", i, pnids[i], pfunctions[ 2 * i + 1]);
+		add_nid_to_table(pnids[i], pfunctions[ 2 * i + 1], lib_index);
+	}
+
+	return 0;
+}
+

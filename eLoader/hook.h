@@ -49,6 +49,7 @@ void subinterrupthandler_cleanup();
 /* Declarations */
 //files imported by Patapon but can't find proper .h file
 int scePower_EBD177D6(int pllfreq, int cpufreq, int busfreq); 
+int scePower_469989AD(int pllfreq, int cpufreq, int busfreq); 
 int	ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
 
 

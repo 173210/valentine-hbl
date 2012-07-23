@@ -127,6 +127,12 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 // Returns utility ID that loads the given library
 int is_utility(const char* lib_name)
 {
+	if (strcmp(lib_name, "sceMpeg") == 0 )
+		return PSP_MODULE_AV_MPEGBASE;
+	
+	if (strcmp(lib_name, "sceAtrac3plus") == 0)
+	    return PSP_MODULE_AV_ATRAC3PLUS;
+	
 	if (strcmp(lib_name, "sceMp3") == 0)
 	    return PSP_MODULE_AV_MP3;
 	
