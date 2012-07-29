@@ -1,3 +1,6 @@
+2012/07/29 (wololo)
+- renamed *.nids into *.nid, an additional step into corectly supporting FAT32 limitations
+
 2012/05/15 (wololo)
 - Additional hooks to fix some SC3 VHBL crashes (snes9xTYL, Lamecraft,...) 
 
