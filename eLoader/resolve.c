@@ -160,9 +160,34 @@ int is_utility(const char* lib_name)
 	    	 strcmp(lib_name, "sceNetAdhoc") == 0 ||
 	    	 strcmp(lib_name, "sceNetAdhoc") == 0)
 		return PSP_MODULE_NET_ADHOC;
-	
+
+	else if (strcmp(lib_name, "sceHttp") == 0 )
+		return PSP_MODULE_NET_HTTP;
+/*
+	else if (strcmp(lib_name, "sceSsl") == 0 )
+		return PSP_MODULE_NET_SSL;
+*/	
 	else
 		return -1;
+}
+
+static u32 get_jump_from_export(u32 nid, tExportEntry *pexports)
+{
+	if( pexports != NULL){
+		u32* pnids = (u32*)pexports->exports_pointer;
+		u32* pfunctions = (u32*)((u32)pexports->exports_pointer + (u16)pexports->num_functions * 4);
+
+		// Insert NIDs on NID table
+		int i;
+		for (i=0; i<(u16)pexports->num_functions; i++)
+		{
+			if( pnids[i] == nid){
+				LOGSTR3("NID FOUND in %s: 0x%08lX Function: 0x%08lX\n", (u32)pexports->name , pnids[i], pfunctions[i]);
+				return MAKE_JUMP(pfunctions[i]);
+			}
+		}
+	}
+	return 0;
 }
 
 // Resolves imports in ELF's program section already loaded in memory
@@ -173,6 +198,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32* cur_nid;
 	u32* cur_call;
 	u32 real_call;
+	tExportEntry* utility_exp = NULL;
 	unsigned int resolving_count = 0;
 
 #ifdef HOOK_CHDIR_AND_FRIENDS 
@@ -194,8 +220,10 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		// Load utility if necessary
 		int mod_id = is_utility((char*)pstub_entry->library_name);
 		if (mod_id > 0)
-			load_utility_module(mod_id, (char*)pstub_entry->library_name);
-
+		{
+			load_utility_module(mod_id, (char*)pstub_entry->library_name, (void **)&utility_exp);
+		}
+		
 		/* For each stub header, browse all stubs */
 		for(j=0; j<pstub_entry->stub_size; j++)
 		{
@@ -204,9 +232,18 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			NID_LOGSTR1("Current call: 0x%08lX\n", (u32)cur_call);
 
 			// Get syscall/jump instruction for current NID
-			nid_index = get_call_nidtable(*cur_nid, &real_call);
+			real_call = 0;
+			
+			if( utility_exp != NULL){
+				real_call = get_jump_from_export( *cur_nid, utility_exp );
+				
+			}
+			
+			if( real_call == 0){
+				nid_index = get_call_nidtable(*cur_nid, &real_call);
+				NID_LOGSTR1("Index for NID on table: %d\n", nid_index);
+			}
 
-			NID_LOGSTR1("Index for NID on table: %d\n", nid_index);
             
 			u32 hook_call = setup_hook(*cur_nid, real_call);
 

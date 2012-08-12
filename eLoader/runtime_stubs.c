@@ -1,5 +1,6 @@
 #include "sdk.h"
 #include "debug.h"
+#include "utils.h"
 #include "runtime_stubs.h"
 #include <exploit_config.h>
 
@@ -64,7 +65,7 @@ void load_modules_for_stubs() {
         int result = sceUtilityLoadModule(modid);
         if (result < 0)
         {
-            LOGSTR2("...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
+            LOGSTR2(((u32)result == 0x80111102)?"...Already loaded\n":"...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
         }
     }
 #endif	
@@ -79,12 +80,15 @@ void unload_modules_for_stubs() {
     {    
         unsigned int modid = moduleIDs[i];
         LOGSTR1("UnLoading 0x%08lX\n", (u32)(modid) );
-#ifndef HOOK_sceUtilityUnloadModule	
-        int result = sceUtilityUnloadModule(modid);
-        if (result < 0)
-        {
-            LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
-        }
+#ifndef HOOK_sceUtilityUnloadModule
+    	if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
+    	{
+	        int result = sceUtilityUnloadModule(modid);
+	        if (result < 0)
+	        {
+	            LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
+	        }
+    	}
 #endif	
     }
 #endif	

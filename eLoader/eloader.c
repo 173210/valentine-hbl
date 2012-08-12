@@ -150,24 +150,30 @@ void cleanup(u32 num_lib)
     u32 num_utility = g->mod_table.num_utility;
 	for (i=num_utility-1; i>=0; i--)
 	{
-		if ((modid = g->mod_table.utility[i]) && modid != PSP_MODULE_AV_MP3) //some utilities cannot be re-loaded after being unloaded ?
-        {
-            LOGSTR1("UNLoad utility module id  %d \n", modid);
-			int ret = sceUtilityUnloadModule(modid);
-            if (ret < 0) 
-            {
-                LOGSTR2("WARNING! error unloading module %d: 0x%08lX\n",g->mod_table.utility[i], ret);
-                print_to_screen("WARNING! ERROR UNLOADING UTILITY");
-                sceKernelDelayThread(1000000); 
-            }
-            else
-            {
-                g->mod_table.utility[i] = 0;
-                g->mod_table.utility[i] = g->mod_table.utility[g->mod_table.num_utility-1];
-                g->mod_table.utility[g->mod_table.num_utility-1] = 0;
-                g->mod_table.num_utility--;
-            }
-        }
+		
+		if ((modid = g->mod_table.utility[i]) != 0)
+		{
+			//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
+			//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
+			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620)) ) 
+			{
+	            LOGSTR1("UNLoad utility module id  0x%08lX \n", modid);
+				int ret = sceUtilityUnloadModule(modid);
+	            if (ret < 0) 
+	            {
+	                LOGSTR2("WARNING! error unloading module %d: 0x%08lX\n",g->mod_table.utility[i], ret);
+	                print_to_screen("WARNING! ERROR UNLOADING UTILITY");
+	                sceKernelDelayThread(1000000); 
+	            }
+	            else
+	            {
+	                g->mod_table.utility[i] = 0;
+	                g->mod_table.utility[i] = g->mod_table.utility[g->mod_table.num_utility-1];
+	                g->mod_table.utility[g->mod_table.num_utility-1] = 0;
+	                g->mod_table.num_utility--;
+	            }
+	        }
+		}
 	}
     //cleanup globals
     g->mod_table.num_loaded_mod = 0;
@@ -297,6 +303,10 @@ int start_thread() //SceSize args, void *argp)
     int exit = 0;
 	int thid;
     tGlobals * g = get_globals();
+
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+	load_utility_in_cache(PSP_MODULE_AV_AVCODEC);
+#endif
 	
 	// Build NID table
     print_to_screen("Building NIDs table");

@@ -42,6 +42,7 @@ u32 _hook_sceGeEdramGetSize() {
 
 // Forward declarations (functions used before they are defined lower down the file)
 int _hook_sceAudioChRelease(int channel);
+int _hook_sceAudioSRCChRelease();
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);
 SceUID sceIoDopen_Vita(const char *dirname);
 u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx);
@@ -592,25 +593,30 @@ int run_nid (u32 nid){
 void net_term()
 {
     //Call the closing functions only if the matching library is loaded
-    
-    if (get_library_index("sceNetApctl") >= 0)
-    {
-        run_nid(0xB3EDD0EC); //sceNetApctlTerm();
-    }
-    
-    if (get_library_index("sceNetResolver") >= 0)
-    {        
-        run_nid(0x6138194A); //sceNetResolverTerm();
-    }    
-    if (get_library_index("sceNetInet") >= 0)
-    {   
-        run_nid(0xA9ED66B9); //sceNetInetTerm();
-    }
-    
-    if (get_library_index("sceNet") >= 0)
-    {   
-        run_nid(0x281928A9); //sceNetTerm();
-    }
+	if( is_utility_loaded(PSP_MODULE_NET_INET) != 0 )
+	{
+	    if (get_library_index("sceNetApctl") >= 0)
+	    {
+	        run_nid(0xB3EDD0EC); //sceNetApctlTerm();
+	    }
+	    
+	    if (get_library_index("sceNetResolver") >= 0)
+	    {        
+	        run_nid(0x6138194A); //sceNetResolverTerm();
+	    }    
+	    if (get_library_index("sceNetInet") >= 0)
+	    {   
+	        run_nid(0xA9ED66B9); //sceNetInetTerm();
+	    }
+	}
+	
+	if( is_utility_loaded(PSP_MODULE_NET_COMMON) != 0)
+	{
+	    if (get_library_index("sceNet") >= 0)
+	    {   
+	        run_nid(0x281928A9); //sceNetTerm();
+	    }
+	}
 }
 
 // Release the kernel audio channel
@@ -621,11 +627,15 @@ void audio_term()
 	if (g->syscalls_known)
 	{
 		// sceAudioSRCChRelease
+#ifdef HOOK_AUDIOFUNCTIONS
+		_hook_sceAudioSRCChRelease();
+#else
 		if (!run_nid(0x5C37C0AE))
 		{
 			estimate_syscall("sceAudio", 0x5C37C0AE, FROM_LOWEST);
 			run_nid(0x5C37C0AE);
 		}
+#endif
 	}
 }
 	
@@ -1373,10 +1383,6 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUS
 
 int _hook_sceUtilityLoadModule(int id)
 {
-/*   if ((id == PSP_MODULE_NET_COMMON)
-     || (id == PSP_MODULE_NET_INET)
-     || (id == PSP_MODULE_NET_ADHOC)
-     || (id == PSP_MODULE_AV_MP3)) */
 	if (is_utility_loaded(id))
     {
 		return 0;
@@ -1396,7 +1402,10 @@ int _hook_sceUtilityLoadNetModule(int id)
 
 int _hook_sceUtilityLoadAvModule(int id)
 {
-	if (id == PSP_AV_MODULE_MP3)
+	if (id == PSP_AV_MODULE_MP3
+		|| id == PSP_AV_MODULE_AVCODEC
+		|| id == PSP_AV_MODULE_ATRAC3PLUS
+		|| id == PSP_AV_MODULE_MPEGBASE)
 		return 0;
     return SCE_KERNEL_ERROR_ERROR;
 }
@@ -1896,7 +1905,13 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 */
         case 0x94AA61EE: // sceKernelGetThreadCurrentPriority (avoid syscall estimation)  
 			hook_call = MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
-            break; 
+            break;
+
+		case 0xBC6FEBC5://sceKernelReferSemaStatus
+		case 0x17C1684E: //sceKernelReferThreadStatus
+			hook_call = MAKE_JUMP(_hook_generic_error);
+		break;
+
             
         case 0x24331850: // kuKernelGetModel ?
             hook_call = MAKE_JUMP(_hook_generic_ok);

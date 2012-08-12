@@ -51,7 +51,7 @@ void* init_load_module();
 SceUID find_module_by_name(const char* mod_name);
 
 // Loads and registers exports from an utility module
-int load_utility_module(int mod_id, const char* lib_name);
+int load_utility_module(int mod_id, const char* lib_name , void **pexport_out );
 
 // Returns true if utility module ID is already loaded, false otherwise
 int is_utility_loaded(unsigned int mod_id);
@@ -59,6 +59,8 @@ int is_utility_loaded(unsigned int mod_id);
 // Adds an entry for loaded utility module
 // Returns index of insertion
 int add_utility_to_table(unsigned int id);
+
+int load_utility_in_cache(int mod_id);
 
 #endif
 

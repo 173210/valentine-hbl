@@ -198,6 +198,7 @@ static int unload_memset_flag = 0;
 
 void UnloadModules()
 {
+#ifndef LOAD_MODULES_FOR_SYSCALLS
 #ifdef UNLOAD_ADDITIONAL_MODULES
     LOGSTR0("memory.c:UnloadModules\n");
 	// Unload user modules first
@@ -208,9 +209,12 @@ void UnloadModules()
 	int m = PSP_MODULE_AV_G729;
 	while (m >= PSP_MODULE_AV_AVCODEC)
 	{
-		result = sceUtilityUnloadModule(m);
-		LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);
-		m--;
+		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && getFirmwareVersion() <= 620 ) )
+		{
+			result = sceUtilityUnloadModule(m);
+			LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);
+			m--;
+		}
 	}
 
 	m = PSP_MODULE_NET_SSL;
@@ -221,6 +225,7 @@ void UnloadModules()
 		LOGSTR1("result 0x%08lX\n", result);
 		m--;
 	}
+#endif
 #endif
 
 #ifdef KILL_MODULE_MEMSET

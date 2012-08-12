@@ -343,6 +343,20 @@ int get_utility_module_name(const char* lib, char* name)
 		return PSP_MODULE_NET_ADHOC;
 	}	
 
+	//SceHttp_Library
+	else if (strcmp(lib, "sceHttp") == 0)
+	{
+		strcpy(name, "SceHttp_Library");
+		return PSP_MODULE_NET_HTTP;
+	}
+/*
+	else if (strcmp(lib, "sceSsl") == 0
+		|| strcmp(lib, "sceSsl_lib") == 0 )
+	{
+		strcpy(name, "sceSsl_Module");
+		return PSP_MODULE_NET_SSL;
+	}
+*/	
 	// Not found
 	else
 		return -1;
@@ -415,8 +429,16 @@ int load_utility_in_cache(int mod_id) {
 		int ret;
 		if ((ret = sceUtilityLoadModule(mod_id)) < 0)
 		{
-			LOGSTR2("->ERROR 0x%08lX: unable to load utility 0x%08lX\n", ret, mod_id);
-			return ret;
+			if( (u32)ret == 0x80111102)
+			{
+				//already loaded
+				LOGSTR1("->WARNING: utility(0x%08lX) is already loaded\n", mod_id);
+			}
+			else
+			{
+				LOGSTR2("->ERROR 0x%08lX: unable to load utility 0x%08lX\n", ret, mod_id);
+				return ret;
+			}
 		}
 
 		// Insert and check
@@ -432,7 +454,7 @@ int load_utility_in_cache(int mod_id) {
 
 // See also resolve.c:162
 // Loads and registers exports from an utility module
-int load_utility_module(int mod_id, const char* lib_name)
+int load_utility_module(int mod_id, const char* lib_name , void **pexport_out )
 {
 	LOGSTR1("Loading utility module for library %s\n", (u32)lib_name);
 
@@ -442,7 +464,16 @@ int load_utility_module(int mod_id, const char* lib_name)
         LOGSTR0("Force-Loading AVCODEC\n");
         load_utility_in_cache(PSP_MODULE_AV_AVCODEC);
     }
-    
+
+	if( mod_id == PSP_MODULE_NET_HTTP)
+	{
+        LOGSTR0("Force-Loading HTTP\n");
+        load_utility_in_cache(PSP_MODULE_NET_COMMON);
+        load_utility_in_cache(PSP_MODULE_NET_INET);
+        load_utility_in_cache(PSP_MODULE_NET_PARSEURI);
+        load_utility_in_cache(PSP_MODULE_NET_PARSEHTTP);
+	}
+ 
     int ret = load_utility_in_cache(mod_id);
     if (ret <0)
         return ret;
@@ -464,6 +495,17 @@ int load_utility_module(int mod_id, const char* lib_name)
 		LOGSTR1("->ERROR: could not find module exports for %s\n", (u32)mod_name);
 		return -1;
 	}
+
+	//If mod_id is PSP_MODULE_NET_INET or PSP_MODULE_NET_COMMON, add jump addr to nid table, because it is used by net_term() function. (hook.c)
+	//But other jump addr of module won't add to prevent "TABLE IS FULL" error.
+	if( mod_id != PSP_MODULE_NET_INET
+		&& mod_id != PSP_MODULE_NET_COMMON )
+	{
+		*(tExportEntry **)pexport_out = pexports;
+		return 0;
+	}
+
+	*(tExportEntry **)pexport_out = NULL;
 
 	LOGSTR1("Number of export functions: %d\n", (u16)pexports->num_functions);
 	LOGSTR1("Pointer to exports: 0x%08lX\n", (u32)pexports->exports_pointer);
@@ -497,74 +539,5 @@ int load_utility_module(int mod_id, const char* lib_name)
 		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
 	}
 
-	if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729)
-	{
-		rescan_syscall( mod_name, "sceAudiocodec" );
-		rescan_syscall( mod_name, "sceVideocodec" );
-	}
-
 	return 0;
 }
-
-
-tStubEntry* find_module_stub_by_name(const char* mod_name, const char* lib_name)
-{
-	// Search for module name 
-	char* name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
-
-	if (name_found == NULL)
-	{
-		LOGSTR1("->ERROR: could not find module %s\n", (u32)mod_name);
-		return NULL;
-	}
-
-	// Search for library name next to module name (1 KiB size enough I guess)
-	name_found = memfindsz(lib_name, (char*)name_found, (unsigned int)0x400);
-
-	if (name_found == NULL)
-	{
-		LOGSTR1("->ERROR: could not find library name %s\n", (u32)lib_name);
-		return NULL;
-	}
-
-	// Search for pointer to library name close to library name
-	u32* export = memfindu32((u32)name_found, (u32*)((u32)name_found - 0x400), (unsigned int)0x400);
-
-	return (tStubEntry*)export;
-}
-
-int rescan_syscall(const char *mod_name, const char *lib_name )
-{
-	tStubEntry* pstubs = find_module_stub_by_name(mod_name, lib_name);
-	if (pstubs == NULL)
-	{
-		LOGSTR1("->ERROR: could not find module stubs for %s\n", (u32)mod_name);
-		return -1;
-	}
-
-	LOGSTR1("Number of export functions: %d\n", (u16)pstubs->stub_size);
-	LOGSTR1("Pointer to stubs nid: 0x%08lX\n", (u32)pstubs->nid_pointer);
-
-	u32* pnids = (u32*)pstubs->nid_pointer;
-	u32* pfunctions = (u32*)pstubs->jump_pointer;
-
-	LOGSTR1("Pointer to functions: 0x%08lX\n", (u32)pfunctions);
-
-	int lib_index = get_library_index(lib_name);
-	if (lib_index < 0)
-	{
-		LOGSTR0("->WARNING: could not add library to table\n");
-		return lib_index;
-	}
-
-	// Update syscall on table
-	int i;
-	for (i=0; i<(u16)pstubs->stub_size; i++)
-	{
-		LOGSTR3("NID %d: 0x%08lX syscall: 0x%08lX\n", i, pnids[i], pfunctions[ 2 * i + 1]);
-		add_nid_to_table(pnids[i], pfunctions[ 2 * i + 1], lib_index);
-	}
-
-	return 0;
-}
-
