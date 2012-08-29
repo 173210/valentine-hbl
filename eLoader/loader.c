@@ -241,16 +241,13 @@ int load_imports(u32* hbl_imports)
 
 	// DEBUG_PRINT(" LOADING HBL IMPORTS FROM CONFIG ", NULL, 0);
 
-#ifdef HARDCODED_IMPORTS_CONFIG
-    num_imports = NUM_HBL_IMPORTS;
-#else 
 	int ret;   
 	u32 nid = 0;    
 	ret = config_num_nids_total(&num_imports);
 
 	if(ret < 0)
 		exit_with_log(" ERROR READING NUMBER OF IMPORTS ", &ret, sizeof(ret));
-#endif
+
 	// DEBUG_PRINT(" NUMBER OF IMPORTS ", &num_imports, sizeof(num_imports));
 
 	if(num_imports > NUM_HBL_IMPORTS)
@@ -258,16 +255,7 @@ int load_imports(u32* hbl_imports)
 
 	LOGSTR1("--> HBL imports from imports.config: %d\n", num_imports);
 
- #ifdef HARDCODED_IMPORTS_CONFIG
-    u32 hbl_hardcoded_nids[] = HBL_FUNCTION_NIDS;
-     for (i = 0; i < num_imports; ++i)
-     {
-        hbl_imports[i] = hbl_hardcoded_nids[i];
-        LOGSTR2("%d. 0x%08lX\n", i, hbl_imports[i]);      
-     }
-#else 
-    
-    
+
 	// Get NIDs from config
 	ret = config_first_nid(&nid);
 
@@ -287,7 +275,7 @@ int load_imports(u32* hbl_imports)
 		
 		ret = config_next_nid(&nid);		
 	} while (1);
-#endif
+
 	return i;
 }
 
