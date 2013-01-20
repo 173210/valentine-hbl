@@ -144,6 +144,8 @@ void cleanup(u32 num_lib)
     ram_cleanup();
     free_all_mallocs();
     
+	
+	#ifndef DISABLE_UNLOAD_UTILITY_MODULES
     //unload utility modules
     int i;
     int modid;
@@ -175,6 +177,7 @@ void cleanup(u32 num_lib)
 	        }
 		}
 	}
+	#endif
     //cleanup globals
     g->mod_table.num_loaded_mod = 0;
     memset(&(g->mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
