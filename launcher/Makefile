@@ -14,6 +14,8 @@ ENCRYPT = 1
 
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = Half Byte Loader
+PSP_EBOOT_ICON = assets\ICON0.PNG
+PSP_EBOOT_PIC1 = assets\PIC1.PNG
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
