@@ -1,0 +1,55 @@
+ModuleMgrForUser, 0x40010011
+	sceKernelGetModuleGPByAddress, 0xD2FBC957
+sceOpenPSID, 0x40010011
+	sceOpenPSIDGetOpenPSID, 0xC69BEBCE
+sceReg, 0x40010011
+	sceRegCloseCategory, 0x0CAE832B
+	sceRegCloseRegistry, 0xFA8A5739
+	sceRegGetKeyInfo, 0xD4475AA8
+	sceRegGetKeyValue, 0x28A8E98A
+	sceRegOpenCategory, 0x1D8A762E
+	sceRegOpenRegistry, 0x92E41280
+sceRtc, 0x40010011
+	sceRtcParseDateTime, 0xDFBC5F16
+sceWlanDrv, 0x40010011
+	sceWlanGetSwitchState, 0xD7763699
+sceWlanDrv_lib, 0x40010011
+	sceWlanDevAttach, 0x482CAE9A
+	sceWlanDevDetach, 0xC9A8CAB7
+SysMemUserForUser, 0x40000011
+	sceKernelQueryMemoryInfo, 0x2A3E5280
+ThreadManForUser, 0x40010011
+	sceKernelCancelAlarm, 0x7E65B999
+	sceKernelCreateLwMutex, 0x19CFF145
+	sceKernelCreateMbx, 0x8125221D
+	sceKernelCreateMsgPipe, 0x7C0DC2A0
+	sceKernelCreateMutex, 0xB7D098C6
+	sceKernelCreateVpl, 0x56C039B5
+	sceKernelDeleteLwMutex, 0x60107536
+	sceKernelDeleteMbx, 0x86255ADA
+	sceKernelDeleteMsgPipe, 0xF0B7DA1C
+	sceKernelDeleteMutex, 0xF8170FBE
+	sceKernelDeleteVpl, 0x89B3D48C
+	sceKernelFreeVpl, 0xB736E9FF
+	sceKernelGetSystemTime, 0xDB738F35
+	sceKernelGetSystemTimeWide, 0x82BC5777
+	sceKernelGetThreadId, 0x293B45B8
+	sceKernelLockMutex, 0xB011B11F
+	sceKernelPollMbx, 0x0D81716A
+	sceKernelPollSema, 0x58B1F937
+	sceKernelReceiveMbx, 0x18260574
+	sceKernelReceiveMsgPipe, 0x74829B76
+	sceKernelReferVplStatus, 0x39810265
+	sceKernelSendMbx, 0xE9B3061E
+	sceKernelSendMsgPipe, 0x876DBFAD
+	sceKernelSetAlarm, 0x6652B8CA
+	sceKernelTerminateThread, 0x616403BA
+	sceKernelTryAllocateVpl, 0xAF36D708
+	sceKernelUnlockMutex, 0x6B30100F
+UtilsForUser, 0x40010011
+	sceKernelUtilsMd5BlockInit, 0x9E5C5086
+	sceKernelUtilsMd5BlockResult, 0xB8D24E78
+	sceKernelUtilsMd5BlockUpdate, 0x61E1E525
+	sceKernelUtilsSha1BlockInit, 0xF8FCD5BA
+	sceKernelUtilsSha1BlockResult, 0x585F1C09
+	sceKernelUtilsSha1BlockUpdate, 0x346F6DA8
