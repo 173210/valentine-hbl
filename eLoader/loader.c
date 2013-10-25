@@ -169,6 +169,22 @@ void load_hbl(SceUID hbl_file)
 	CLEAR_CACHE;
 }
 
+#if defined(AUTO_SEARCH_STUBS) && defined(LOAD_MODULES_FOR_SYSCALLS)
+void load_modules_for_hbl_stubs() {
+#ifdef MODULES_FOR_HBL_STUBS
+	unsigned int moduleIDs[] = MODULES_FOR_HBL_STUBS;
+	load_utility_modules(moduleIDs, sizeof(moduleIDs));
+#endif
+}
+
+void unload_modules_for_hbl_stubs() {
+#ifdef MODULES_FOR_HBL_STUBS
+	unsigned int moduleIDs[] = MODULES_FOR_HBL_STUBS;
+	unload_utility_modules(moduleIDs, sizeof(moduleIDs));
+#endif
+}
+#endif
+
 // Fills Stub array
 // Returns number of stubs found
 // "pentry" points to first stub header in game
@@ -325,7 +341,7 @@ void copy_hbl_stubs(void)
 
 #ifdef AUTO_SEARCH_STUBS
 #ifdef LOAD_MODULES_FOR_SYSCALLS
-    load_modules_for_stubs();
+    load_modules_for_hbl_stubs();
 #endif
   
     u32 stubs[MAX_RUNTIME_STUB_HEADERS];
@@ -406,7 +422,7 @@ void copy_hbl_stubs(void)
 
 #ifdef AUTO_SEARCH_STUBS
 #ifdef LOAD_MODULES_FOR_SYSCALLS  
-    unload_modules_for_stubs();  
+    unload_modules_for_hbl_stubs();  
 #endif
 #endif
 

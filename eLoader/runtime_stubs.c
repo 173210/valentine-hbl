@@ -11,6 +11,42 @@
 #endif
 #endif
 
+void load_utility_modules(unsigned int moduleIDs[], int size) {
+    int i;
+
+    // Load modules in order
+    for(i = 0; (u32)i < size/sizeof(u32); i++)
+    {
+        unsigned int modid = moduleIDs[i];
+        LOGSTR1("Loading 0x%08lX\n", (u32)(modid) );
+        int result = sceUtilityLoadModule(modid);
+        if (result < 0)
+        {
+            LOGSTR2(((u32)result == 0x80111102)?"...Already loaded\n":"...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
+        }
+    }
+}
+
+void unload_utility_modules(unsigned int moduleIDs[], int size) {
+    int i;
+    //Unload modules in reverse order
+    for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
+    {
+        unsigned int modid = moduleIDs[i];
+        LOGSTR1("UnLoading 0x%08lX\n", (u32)(modid) );
+#ifndef HOOK_sceUtilityUnloadModule
+    	if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
+    	{
+	        int result = sceUtilityUnloadModule(modid);
+	        if (result < 0)
+	        {
+	            LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
+	        }
+    	}
+#endif
+    }
+}
+
 #ifdef AUTO_SEARCH_STUBS
 int strong_check_stub_entry(tStubEntry* pentry)
 {
@@ -55,43 +91,15 @@ int search_stubs(u32 * stub_addresses) {
 void load_modules_for_stubs() {
 #ifdef MODULES
  	unsigned int moduleIDs[] = MODULES;
-    int i;
-    
-    // Load modules in order
-    for(i = 0; (u32)i < sizeof(moduleIDs)/sizeof(u32); i++)
-    {    
-        unsigned int modid = moduleIDs[i];
-        LOGSTR1("Loading 0x%08lX\n", (u32)(modid) );
-        int result = sceUtilityLoadModule(modid);
-        if (result < 0)
-        {
-            LOGSTR2(((u32)result == 0x80111102)?"...Already loaded\n":"...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
-        }
-    }
-#endif	
+	load_utility_modules(moduleIDs, sizeof(moduleIDs));
+#endif
 }
 
 void unload_modules_for_stubs() {
 #ifdef MODULES
     unsigned int moduleIDs[] = MODULES;
-    int i;
-    //Unload modules in reverse order
-    for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
-    {    
-        unsigned int modid = moduleIDs[i];
-        LOGSTR1("UnLoading 0x%08lX\n", (u32)(modid) );
-#ifndef HOOK_sceUtilityUnloadModule
-    	if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
-    	{
-	        int result = sceUtilityUnloadModule(modid);
-	        if (result < 0)
-	        {
-	            LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
-	        }
-    	}
-#endif	
-    }
-#endif	
+    unload_utility_modules(moduleIDs, sizeof(moduleIDs));
+#endif
 }
 
 #else
