@@ -89,6 +89,10 @@ addresses.each { |addressEntry|
 			
 			if addressEntry.type == "Thread"
 				print "#define TH_ADDR_LIST { "
+			elsif addressEntry.type == "Alarm"
+				print "#define ALARM_ADDR_LIST { "
+			elsif addressEntry.type == "LwMutex"
+				print "#define LWMUTEX_ADDR_LIST { "
 			elsif addressEntry.type == "EventFlag"
 				print "#define EV_ADDR_LIST { "
 			elsif addressEntry.type == "Semaphore"

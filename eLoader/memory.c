@@ -36,6 +36,34 @@ int kill_thread(SceUID thid)
     return ret;
 }
 
+#ifdef ALARM_ADDR_LIST
+int kill_alarm(SceUID uid)
+{
+	int ret = sceKernelCancelAlarm(uid);
+	if (ret < 0)
+	{
+		LOGSTR2("--> ERROR 0x%08lX CANCELING ALARM 0x%08lX\n", ret, uid);
+		return 0;
+	}
+
+	return 1;
+}
+#endif
+
+#ifdef LWMUTEX_ADDR_LIST
+int kill_lwmutex(SceUID uid)
+{
+	int ret = sceKernelDeleteLwMutex(uid);
+	if (ret < 0)
+	{
+		LOGSTR2("--> ERROR 0x%08lX DELETING LWMUTEX 0x%08lX\n", ret, uid);
+		return 0;
+	}
+
+	return 1;
+}
+#endif
+
 int kill_event_flag(SceUID flid)
 {
     int ret = sceKernelDeleteEventFlag(flid);
@@ -51,6 +79,9 @@ int kill_event_flag(SceUID flid)
 int kill_sema(SceUID sema)
 {
 #ifndef HOOK_sceKernelDeleteSema_WITH_dummy
+#ifdef SIGNAL_SEMA_BEFORE_DELETE
+    sceKernelSignalSema(sema, -1);
+#endif
     int ret = sceKernelDeleteSema(sema);
     if (ret < 0)
     {
@@ -154,6 +185,35 @@ void DeleteAllThreads(void)
 	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
 		kill_thread(*(SceUID*)(thaddrs[i]));
+	}
+}
+#endif
+
+#ifdef ALARM_ADDR_LIST
+void CancelAllAlarms(void)
+{
+    LOGSTR0("memory.c:CancelAllAlarms\n");
+	u32 i;
+	u32 alarmaddrs[] = ALARM_ADDR_LIST;
+
+
+	for (i = 0; i < (sizeof(alarmaddrs)/sizeof(u32)); i++)
+	{
+		kill_alarm(*(SceUID *)(alarmaddrs[i]));
+	}
+}
+#endif
+
+#ifdef LWMUTEX_ADDR_LIST
+void DeleteAllLwMutexes(void)
+{
+    LOGSTR0("memory.c:DeleteAllLwMutexes\n");
+	u32 i;
+	u32 lwmutexaddrs[] = LWMUTEX_ADDR_LIST;
+
+	for (i = 0; i < (sizeof(lwmutexaddrs)/sizeof(u32)); i++)
+	{
+		kill_lwmutex(*(SceUID*)(lwmutexaddrs[i]));
 	}
 }
 #endif
@@ -371,6 +431,14 @@ void free_game_memory()
 #ifdef TH_ADDR_LIST
 	DeleteAllThreads();
 #endif
+#endif
+
+#ifdef ALARM_ADDR_LIST
+	CancelAllAlarms();
+#endif
+
+#ifdef LWMUTEX_ADDR_LIST
+	DeleteAllLwMutexes();
 #endif
 
 #ifdef EV_ADDR_LIST
