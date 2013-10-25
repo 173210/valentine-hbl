@@ -1306,6 +1306,13 @@ int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size,
 }
 #endif
 
+#ifdef HOOK_sceKernelTryReceiveMsgPipe_WITH_sceKernelReceiveMsgPipe
+int _hook_sceKernelTryReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
+{
+    return sceKernelReceiveMsgPipe(uid, message, size, unk1, unk2, 0);
+}
+#endif
+
 #ifdef HOOK_sceKernelReceiveMsgPipe_WITH_sceKernelTryReceiveMsgPipe
 int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int UNUSED(timeout))
 {
@@ -1886,6 +1893,12 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
             hook_call = MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);
             break;
 #endif            
+
+#ifdef HOOK_sceKernelTryReceiveMsgPipe_WITH_sceKernelReceiveMsgPipe
+        case 0xDF52098F: // sceKernelTryReceiveMsgPipe
+            hook_call = MAKE_JUMP(_hook_sceKernelTryReceiveMsgPipe);
+            break;
+#endif
 
 #ifdef HOOK_sceKernelReceiveMsgPipe_WITH_sceKernelTryReceiveMsgPipe
         case 0x74829B76: // sceKernelReceiveMsgPipe (avoid syscall estimation)  

@@ -504,6 +504,8 @@ void p5_open_savedata(int mode)
     {
 #ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
         sceKernelDelayThread(100);
+#elif defined(HOOK_sceDisplayWaitVblankStart_WITH_sceDisplayWaitVblankStartCB)
+	sceDisplayWaitVblankStartCB();
 #else        
 		sceDisplayWaitVblankStart();
 #endif        
@@ -550,6 +552,8 @@ void p5_close_savedata()
         
 #ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
         sceKernelDelayThread(100);
+#elif defined(HOOK_sceDisplayWaitVblankStart_WITH_sceDisplayWaitVblankStartCB)
+	sceDisplayWaitVblankStartCB();
 #else        
 		sceDisplayWaitVblankStart();
 #endif   
