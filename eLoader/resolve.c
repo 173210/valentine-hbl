@@ -194,7 +194,7 @@ static u32 get_jump_from_export(u32 nid, tExportEntry *pexports)
 // Returns number of resolves
 unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 {
-	unsigned int i,j,nid_index __attribute__((unused));
+	unsigned int i,j,UNUSED(nid_index);
 	u32* cur_nid;
 	u32* cur_call;
 	u32 real_call;

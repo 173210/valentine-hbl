@@ -282,7 +282,7 @@ int callback_thread(SceSize args, void *argp)
 	args = args;
 	argp = argp;
 
-	int cbid, ret __attribute__((unused));
+	int cbid, UNUSED(ret);
 
     //Setup HBL exit callback
 	cbid = sceKernelCreateCallback("HBLexitcallback", hbl_exit_callback, NULL);

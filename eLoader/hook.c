@@ -1417,18 +1417,6 @@ int _hook_sceUtilityLoadAvModule(int id)
     return SCE_KERNEL_ERROR_ERROR;
 }
 
-int _hook_sceUtilityLoadUsbModule(int id)
-{
-	if(id){}; //Avoid compilation errors :P
-	return SCE_KERNEL_ERROR_ERROR;
-}
-
-int _hook_sceUtilityUnloadModule(int id)
-{
-	if(id){}; //Avoid compilation errors :P
-	return 0;
-}
-
 #endif
 
 // A function that just returns "ok" but does nothing
@@ -1486,9 +1474,8 @@ int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, u32 seed)
 	return 0;
 }
 
-u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx) {
-	if(ctx){}; //Avoid compilation errors :P
-	
+u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context UNUSED(*ctx))
+{
 	// (Bill's generator)
 	rdm_seed = (((rdm_seed * 214013L + 2531011L) >> 16) & 0xFFFF);
 	rdm_seed |= ((rdm_seed * 214013L + 2531011L) & 0xFFFF0000);
@@ -1508,10 +1495,8 @@ SceSize _hook_sceKernelTotalFreeMemSize()
 
 
 #ifdef HOOK_sceKernelReferThreadStatus
-int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo *info)
+int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo UNUSED(*info))
 {
-	if(thid){}; //Avoid compilation errors :P
-
 	memset(info+sizeof(SceSize), 0, info->size-sizeof(SceSize));
 	
 	return 0;
@@ -1564,28 +1549,12 @@ int _hook_sceUtilityOskInitStart (SceUtilityOskParams *params)
 	return 0;
 }
 
-int _hook_sceUtilityOskShutdownStart ()
-{
-	return 0;
-}
-
-int _hook_sceUtilityOskUpdate (int n)
-{
-	if(n){}; //Avoid compilation errors :P
-	return 0;
-}
-
-int _hook_sceUtilityOskGetStatus ()
-{
-	return 0;
-}
-
 #endif
 
 
 
 // Returns a hooked call for the given NID or zero
-u32 setup_hook(u32 nid, u32 existing_real_call)
+u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 {
 	u32 hook_call = 0;
     tGlobals * g = get_globals();
@@ -1676,7 +1645,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 
 		case 0x0D5BC6D2: //sceUtilityLoadUsbModule		
 			LOGSTR0(" Hook sceUtilityLoadUsbModule\n");
-			hook_call = MAKE_JUMP(_hook_sceUtilityLoadUsbModule);
+			hook_call = MAKE_JUMP(_hook_generic_error);
 			break;
 
 		case 0x1579a159: //sceUtilityLoadNetModule
@@ -1694,7 +1663,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0x64d50c56: //sceUtilityUnloadNetModule
 		case 0xE49BFE92: // sceUtilityUnloadModule
 			LOGSTR0(" Hook sceUtilityUnloadModule\n");
-			hook_call = MAKE_JUMP(_hook_sceUtilityUnloadModule);
+			hook_call = MAKE_JUMP(_hook_generic_ok);
 			break;	
 #endif            
 
@@ -1779,14 +1748,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 #ifdef DONT_HOOK_IF_FUNCTION_IS_IMPORTED		
 	// Don't need to do a hook if we already have the call
     if (existing_real_call)
-        return 0;	
-#else
-    // To avoid a compilation warning with unused value
-    if (existing_real_call)
-    {
-	    LOGSTR0("Note: real call already exists, you probably shouldn't try to hook it, see hook.c for details\n");
-		hook_call = existing_real_call; //  To avoid a compilation warning with unused value
-    }	
+        return 0;
 #endif		
 
 #ifndef DISABLE_ADDITIONAL_HOOKS
@@ -2189,15 +2151,15 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
             break;
 			
         case 0x3DFAEBA9: // sceUtilityOskShutdownStart (avoid syscall estimation)
-			hook_call = MAKE_JUMP(_hook_sceUtilityOskShutdownStart);
+			hook_call = MAKE_JUMP(_hook_generic_ok);
             break;
 			
         case 0x4B85C861: // sceUtilityOskUpdate (avoid syscall estimation)
-			hook_call = MAKE_JUMP(_hook_sceUtilityOskUpdate);
+			hook_call = MAKE_JUMP(_hook_generic_ok);
             break;
 			
         case 0xF3F76017: // sceUtilityOskGetStatus (avoid syscall estimation)
-			hook_call = MAKE_JUMP(_hook_sceUtilityOskGetStatus);
+			hook_call = MAKE_JUMP(_hook_generic_ok);
             break;
 #endif
 	}
@@ -2215,7 +2177,6 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 *  By Thecobra
 **/
 u32 setup_default_nid(u32 nid){
-#ifdef DEACTIVATE_SYSCALL_ESTIMATION	
 	u32 hook_call = 0;
 	switch(nid){
 	  case 0x3E0271D3: //sceKernelVolatileMemLock
@@ -2231,9 +2192,4 @@ u32 setup_default_nid(u32 nid){
 	LOGSTR2("Missing function: 0x%08lX Defaulted to generic: 0x%08lX\n\n",nid,hook_call);
 	
 	return hook_call;
-#else
-    LOGSTR0("You should not be calling setup_default_nid!!!\n");
-	nid = 0;  //To avoid a compilation warning with unused value
-    return 0;
-#endif	
 }

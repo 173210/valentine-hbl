@@ -454,10 +454,7 @@ int get_lower_known_nid(unsigned int lib_index, u32 nid)
 }
 
 // Fills remaining information on a library
-tSceLibrary* complete_library(
-	tSceLibrary* plibrary,
-	int reference_library_index __attribute__((unused)),
-	int is_cfw __attribute__((unused)))
+tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_library_index), int UNUSED(is_cfw))
 {
 	SceUID nid_file;
 	u32 nid;
