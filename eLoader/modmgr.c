@@ -55,7 +55,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	
 	// Loading module
 	tStubEntry* pstub;
-	unsigned int hbsize, program_size, stubs_size = 0;
+	unsigned int program_size, stubs_size = 0;
 	unsigned int i = g->mod_table.num_loaded_mod;
     strcpy(g->mod_table.table[i].path, path); 
 	
@@ -70,7 +70,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 			return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
 		// Load ELF program section into memory
-		hbsize = elf_load_program(elf_file, offset, &elf_hdr, &program_size);		
+		elf_load_program(elf_file, offset, &elf_hdr, &program_size);		
 	
 		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_hdr, &pstub);

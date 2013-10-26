@@ -11,11 +11,11 @@
 #endif
 #endif
 
-void load_utility_modules(unsigned int moduleIDs[], int size) {
+void load_utility_modules(unsigned int moduleIDs[]) {
     int i;
 
     // Load modules in order
-    for(i = 0; (u32)i < size/sizeof(u32); i++)
+    for(i = 0; (u32)i < sizeof(moduleIDs)/sizeof(u32); i++)
     {
         unsigned int modid = moduleIDs[i];
         LOGSTR1("Loading 0x%08lX\n", (u32)(modid) );
@@ -27,7 +27,7 @@ void load_utility_modules(unsigned int moduleIDs[], int size) {
     }
 }
 
-void unload_utility_modules(unsigned int moduleIDs[], int size) {
+void unload_utility_modules(unsigned int moduleIDs[]) {
     int i;
     //Unload modules in reverse order
     for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
@@ -91,14 +91,14 @@ int search_stubs(u32 * stub_addresses) {
 void load_modules_for_stubs() {
 #ifdef MODULES
  	unsigned int moduleIDs[] = MODULES;
-	load_utility_modules(moduleIDs, sizeof(moduleIDs));
+	load_utility_modules(moduleIDs);
 #endif
 }
 
 void unload_modules_for_stubs() {
 #ifdef MODULES
     unsigned int moduleIDs[] = MODULES;
-    unload_utility_modules(moduleIDs, sizeof(moduleIDs));
+    unload_utility_modules(moduleIDs);
 #endif
 }
 

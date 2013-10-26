@@ -102,15 +102,14 @@ int get_call_index(u32 call)
 // Returns library name length
 int get_lib_nid(u32 index, char* lib_name, u32* pnid)
 {
-	int ret;
 	unsigned int num_libs, i = 0, count = 0;
 	tImportedLibrary cur_lib;
 
 	// DEBUG_PRINT("**GETTING NID INDEX:**", &index, sizeof(index));
 
 	index += 1;
-	ret = config_num_libraries(&num_libs);
-	ret = config_first_library(&cur_lib);
+	config_num_libraries(&num_libs);
+	config_first_library(&cur_lib);
 
 	while (i<num_libs)
 	{
@@ -122,10 +121,10 @@ int get_lib_nid(u32 index, char* lib_name, u32* pnid)
 
 		count += cur_lib.num_imports;
 		if (index > count)
-			ret = config_next_library(&cur_lib);
+			config_next_library(&cur_lib);
 		else
 		{
-			ret = config_seek_nid(--index, pnid);
+			config_seek_nid(--index, pnid);
 			// DEBUG_PRINT("**SEEK NID**", pnid, sizeof(u32));
 			break;
 		}
@@ -222,6 +221,10 @@ int get_library_index_from_name(char* name)
 }
 
 
+#if defined(SYSCALL_OFFSETS_500) && defined(SYSCALL_OFFSETS_500_CFW) \
+	&& defined(SYSCALL_OFFSETS_570) && defined(SYSCALL_OFFSETS_570_GO) \
+	&& defined(SYSCALL_OFFSETS_600) && defined(SYSCALL_OFFSETS_600_GO) \
+	&& defined(SYSCALL_KERNEL_OFFSETS_620)
 int get_library_kernel_memory_offset(char* library_name)
 {
 	u32 offset_620[] = SYSCALL_KERNEL_OFFSETS_620;
@@ -400,6 +403,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 
 	return lowest_syscall;
 }
+#endif
 
 // Return index in nid_table for closest higher known NID
 int get_higher_known_nid(unsigned int lib_index, u32 nid)
@@ -450,14 +454,14 @@ int get_lower_known_nid(unsigned int lib_index, u32 nid)
 }
 
 // Fills remaining information on a library
-tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index, int is_cfw)
+tSceLibrary* complete_library(
+	tSceLibrary* plibrary,
+	int reference_library_index __attribute__((unused)),
+	int is_cfw __attribute__((unused)))
 {
 	SceUID nid_file;
 	u32 nid;
 	unsigned int i;
-	u32 lowest_syscall;
-	int syscall_gap;
-	int index;
 
 	nid_file = open_nids_file(plibrary->name);
 
@@ -479,6 +483,16 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index
 			}
 			i++;
 		}
+
+
+#if defined(SYSCALL_OFFSETS_500) && defined(SYSCALL_OFFSETS_500_CFW) \
+	&& defined(SYSCALL_OFFSETS_570) && defined(SYSCALL_OFFSETS_570_GO) \
+	&& defined(SYSCALL_OFFSETS_600) && defined(SYSCALL_OFFSETS_600_GO) \
+	&& defined(SYSCALL_KERNEL_OFFSETS_620)
+
+		u32 lowest_syscall;
+		int syscall_gap;
+		int index;
 
 		NID_LOGSTR0("Getting lowest syscall\n");
 		lowest_syscall = get_klowest_syscall(plibrary, reference_library_index, is_cfw);
@@ -523,6 +537,7 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index
 				add_nid_to_table(nid, MAKE_SYSCALL(lowest_syscall), get_library_index(plibrary->name));
 			}
 		}
+#endif
 		
 		sceIoClose(nid_file);
 
@@ -620,7 +635,6 @@ int build_nid_table()
     u32 i = 0, j, k = 0;
 	unsigned int nlib_stubs;
 	u32 *cur_nid, *cur_call, syscall_num, good_call, nid;
-	tSceLibrary *ret;
 	tStubEntry *pentry;	
 
 #ifdef AUTO_SEARCH_STUBS
@@ -936,7 +950,7 @@ int build_nid_table()
 	for (m = 0; m < g->library_table.num; m++)
 	{
 		LOGSTR1("Completing library...%d\n", m);
-		ret = complete_library(&(g->library_table.table[m]), reference_library_index, is_cfw);
+		complete_library(&(g->library_table.table[m]), reference_library_index, is_cfw);
 	}
 	CLEAR_CACHE;
 

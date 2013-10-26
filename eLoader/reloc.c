@@ -99,7 +99,6 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 {
 	Elf32_Half i;
 	Elf32_Shdr sec_header;
-	Elf32_Off strtab_offset;
 	Elf32_Off cur_offset;
 	unsigned int j, entries_relocated = 0, num_entries;
 	tRelEntry* reloc_entry;
@@ -109,9 +108,8 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 	// Seek string table
 	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
 	sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
-	strtab_offset = sec_header.sh_offset;
 
-	//LOGSTR1("String table offset: 0x%08lX\n", strtab_offset);
+	//LOGSTR1("String table offset: 0x%08lX\n", sec_header.sh_offset);
 
 	// First section header
 	cur_offset = pelf_header->e_shoff;

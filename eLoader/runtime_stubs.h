@@ -1,7 +1,7 @@
 #define MAX_RUNTIME_STUB_HEADERS 35
 
-void load_utility_modules(unsigned int moduleIDs[], int size);
-void unload_utility_modules(unsigned int moduleIDs[], int size);
+void load_utility_modules(unsigned int moduleIDs[]);
+void unload_utility_modules(unsigned int moduleIDs[]);
 void load_modules_for_stubs();
 int search_stubs(u32 * stub_addresses);
 void unload_modules_for_stubs();

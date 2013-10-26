@@ -271,7 +271,6 @@ unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	Elf32_Off strtab_offset;
 	Elf32_Off cur_offset;
 	char section_name[40];
-	unsigned int section_name_size;
 
 	// Seek string table
 	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
@@ -289,7 +288,7 @@ unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
 
 		// Get section name
-		section_name_size = elf_read_string(elf_file,  start_offset + strtab_offset + sec_header.sh_name, section_name);
+		elf_read_string(elf_file,  start_offset + strtab_offset + sec_header.sh_name, section_name);
 
 		// Check if it's ".lib.stub"
 		if(!strcmp(section_name, ".lib.stub"))

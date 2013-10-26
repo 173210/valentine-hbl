@@ -173,14 +173,14 @@ void load_hbl(SceUID hbl_file)
 void load_modules_for_hbl_stubs() {
 #ifdef MODULES_FOR_HBL_STUBS
 	unsigned int moduleIDs[] = MODULES_FOR_HBL_STUBS;
-	load_utility_modules(moduleIDs, sizeof(moduleIDs));
+	load_utility_modules(moduleIDs);
 #endif
 }
 
 void unload_modules_for_hbl_stubs() {
 #ifdef MODULES_FOR_HBL_STUBS
 	unsigned int moduleIDs[] = MODULES_FOR_HBL_STUBS;
-	unload_utility_modules(moduleIDs, sizeof(moduleIDs));
+	unload_utility_modules(moduleIDs);
 #endif
 }
 #endif
