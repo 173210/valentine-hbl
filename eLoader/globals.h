@@ -19,12 +19,6 @@ in a safe memory zone. If you need globals, it is better to have them here
   #define STATIC_ASSERT(e) \
     enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
-#ifndef GLOBALS_ADDR
-#define GLOBALS_ADDR 0x10200  //This is in the scratchpad!!!
-#endif
-#ifndef GLOBALS_END_ADDR
-#define GLOBALS_END_ADDR 0x14000
-#endif
 #include "sdk.h"
 #include "malloc.h"
 #include "modmgr.h"

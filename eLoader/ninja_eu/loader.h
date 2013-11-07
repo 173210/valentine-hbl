@@ -5,5 +5,7 @@
 // HBL stubs size
 #define NUM_HBL_IMPORTS 0x38
 #define HBL_STUBS_START 0x10000
+#define GLOBALS_ADDR 0x10200
+#define GLOBALS_END_ADDR 0x14000
 
 #endif

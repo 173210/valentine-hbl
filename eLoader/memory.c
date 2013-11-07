@@ -35,80 +35,6 @@ int kill_thread(SceUID thid)
         
     return ret;
 }
-
-#ifdef ALARM_ADDR_LIST
-int kill_alarm(SceUID uid)
-{
-	int ret = sceKernelCancelAlarm(uid);
-	if (ret < 0)
-	{
-		LOGSTR2("--> ERROR 0x%08lX CANCELING ALARM 0x%08lX\n", ret, uid);
-		return 0;
-	}
-
-	return 1;
-}
-#endif
-
-#ifdef LWMUTEX_ADDR_LIST
-int kill_lwmutex(SceUID uid)
-{
-	int ret = sceKernelDeleteLwMutex(uid);
-	if (ret < 0)
-	{
-		LOGSTR2("--> ERROR 0x%08lX DELETING LWMUTEX 0x%08lX\n", ret, uid);
-		return 0;
-	}
-
-	return 1;
-}
-#endif
-
-int kill_event_flag(SceUID flid)
-{
-    int ret = sceKernelDeleteEventFlag(flid);
-    if (ret < 0)
-    {
-        LOGSTR2("--> ERROR 0x%08lX DELETING EVENT FLAG 0x%08lX\n", ret, flid);
-        return 0;
-    }
-    
-    return 1;
-} 
-
-int kill_sema(SceUID sema)
-{
-#ifndef HOOK_sceKernelDeleteSema_WITH_dummy
-#ifdef SIGNAL_SEMA_BEFORE_DELETE
-    sceKernelSignalSema(sema, -1);
-#endif
-    int ret = sceKernelDeleteSema(sema);
-    if (ret < 0)
-    {
-        LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, sema);
-        return 0;
-    }     
-    return 1;
-#else
-    //semi-dummy result using the variable "sema" to avoid an "unused variable" compilation error
-    return sema ? 1 : 0;    
-#endif      
-} 
-
-int kill_module(SceUID modid) 
-{
-    LOGSTR1("Killing module 0x%08lX...", modid);
-	sceKernelStopModule(modid, 0, NULL, NULL, NULL);	
-	int ret = sceKernelUnloadModule(modid);
-	if (ret < 0)
-	{
-		LOGSTR2("--> ERROR 0x%08lX UNLOADING MODULE ID 0x%08lX\n", ret, modid);
-        return 0;
-	}
-    LOGSTR0("done!\n");
-    return 1;
-}
-
 #ifdef SUSPEND_THEN_DELETE_THREADS
 void SuspendAllThreads()
 {
@@ -199,7 +125,11 @@ void CancelAllAlarms(void)
 
 	for (i = 0; i < (sizeof(alarmaddrs)/sizeof(u32)); i++)
 	{
-		kill_alarm(*(SceUID *)(alarmaddrs[i]));
+		int ret = sceKernelCancelAlarm(*(SceUID*)(alarmaddrs[i]));
+		if (ret < 0)
+		{
+			LOGSTR2("--> ERROR 0x%08lX CANCELING ALARM 0x%08lX\n", ret, *(SceUID*)(alarmaddrs[i]));
+		}
 	}
 }
 #endif
@@ -213,7 +143,11 @@ void DeleteAllLwMutexes(void)
 
 	for (i = 0; i < (sizeof(lwmutexaddrs)/sizeof(u32)); i++)
 	{
-		kill_lwmutex(*(SceUID*)(lwmutexaddrs[i]));
+		int ret = sceKernelDeleteLwMutex(*(SceUID*)(lwmutexaddrs[i]));
+		if (ret < 0)
+		{
+			LOGSTR2("--> ERROR 0x%08lX DELETING LWMUTEX 0x%08lX\n", ret, *(SceUID*)(lwmutexaddrs[i]));
+		}
 	}
 }
 #endif
@@ -228,7 +162,11 @@ void DeleteAllEventFlags(void)
 	/* killin' tiem */
 	for (i = 0; i < (sizeof(evaddrs)/sizeof(u32)); i++)
 	{
-		kill_event_flag(*(SceUID*)(evaddrs[i]));
+		int ret = sceKernelDeleteEventFlag(*(SceUID*)(evaddrs[i]));
+		if (ret < 0)
+		{
+			LOGSTR2("--> ERROR 0x%08lX DELETING EVENT FLAG 0x%08lX\n", ret, *(SceUID*)(evaddrs[i]));
+		}
 	}
 }
 #endif
@@ -236,6 +174,7 @@ void DeleteAllEventFlags(void)
 #ifdef SEMA_ADDR_LIST
 void DeleteAllSemaphores(void)
 {
+#ifndef HOOK_sceKernelDeleteSema_WITH_dummy
     LOGSTR0("memory.c:DeleteAllSemaphores\n");
 	u32 i;
 	u32 semaaddrs[] = SEMA_ADDR_LIST;
@@ -246,9 +185,17 @@ void DeleteAllSemaphores(void)
 	/* lets destroy these now */
 	for (i = 0; i < (sizeof(semaaddrs)/sizeof(u32)); i++)
 	{
+#ifdef SIGNAL_SEMA_BEFORE_DELETE
+		sceKernelSignalSema(*(SceUID*)(semaaddrs[i]), -1);
+#endif
 		/* boom headshot */
-		kill_sema(*(SceUID*)(semaaddrs[i]));
+		int ret = sceKernelDeleteSema(*(SceUID*)(semaaddrs[i]));
+		if (ret < 0)
+		{
+			LOGSTR2("--> ERROR 0x%08lX DELETING SEMAPHORE 0x%08lX\n", ret, *(SceUID*)(semaaddrs[i]));
+		}
 	}
+#endif
 }
 #endif
 
@@ -330,7 +277,12 @@ void UnloadModules()
 	/* shutdown the modules in usermode */
 	for (i = cur_uid - 1; (int)i >= 0; i--)
 	{
-		kill_module(uids[i]);
+		sceKernelStopModule(uids[i], 0, NULL, NULL, NULL);
+		int ret = sceKernelUnloadModule(uids[i]);
+		if (ret < 0)
+		{
+			LOGSTR2("--> ERROR 0x%08lX UNLOADING MODULE ID 0x%08lX\n", ret, uids[i]);
+		}
 	}
 }
 

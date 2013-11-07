@@ -221,15 +221,17 @@ int get_library_index_from_name(char* name)
 }
 
 
-#if defined(SYSCALL_OFFSETS_500) && defined(SYSCALL_OFFSETS_500_CFW) \
-	&& defined(SYSCALL_OFFSETS_570) && defined(SYSCALL_OFFSETS_570_GO) \
-	&& defined(SYSCALL_OFFSETS_600) && defined(SYSCALL_OFFSETS_600_GO) \
-	&& defined(SYSCALL_KERNEL_OFFSETS_620)
 int get_library_kernel_memory_offset(char* library_name)
 {
+#ifdef SYSCALL_KERNEL_OFFSETS_620
 	u32 offset_620[] = SYSCALL_KERNEL_OFFSETS_620;
+#endif
+#ifdef SYSCALL_KERNEL_OFFSETS_630
 	u32 offset_630[] = SYSCALL_KERNEL_OFFSETS_630;
+#endif
+#ifdef SYSCALL_KERNEL_OFFSETS_635
 	u32 offset_635[] = SYSCALL_KERNEL_OFFSETS_635;
+#endif
 
 	int library_index = get_library_index_from_name(library_name);
 
@@ -237,15 +239,20 @@ int get_library_kernel_memory_offset(char* library_name)
 	{
 		switch (getFirmwareVersion())
 		{
+#ifdef SYSCALL_KERNEL_OFFSETS_620
 			case 620:
 				return offset_620[library_index];
+#endif
+#ifdef SYSCALL_KERNEL_OFFSETS_630
 
 			case 630:
 			case 631:
 				return offset_630[library_index];
-
+#endif
+#ifdef SYSCALL_KERNEL_OFFSETS_635
 			case 635:
 				return offset_635[library_index];
+#endif
 		}
 	}
 
@@ -255,17 +262,30 @@ int get_library_kernel_memory_offset(char* library_name)
 
 int get_library_offset(char* library_name, int is_cfw)
 {
+#ifdef SYSCALL_OFFSETS_570
 	short offset_570[] = SYSCALL_OFFSETS_570;
+#endif
+#ifdef SYSCALL_OFFSETS_570_GO
 	short offset_570_go[] = SYSCALL_OFFSETS_570_GO;
-
+#endif
+#ifdef SYSCALL_OFFSETS_500
 	short offset_500[] = SYSCALL_OFFSETS_500;
+#endif
+#ifdef SYSCALL_OFFSETS_500_CFW
 	short offset_500_cfw[] = SYSCALL_OFFSETS_500_CFW;
-
+#endif
+#ifdef SYSCALL_OFFSETS_550
 	short offset_550[] = SYSCALL_OFFSETS_550;
+#endif
+#ifdef SYSCALL_OFFSETS_550_CFW
 	short offset_550_cfw[] = SYSCALL_OFFSETS_550_CFW;
-
+#endif
+#ifdef SYSCALL_OFFSETS_600
 	short offset_600[] = SYSCALL_OFFSETS_600;
+#endif
+#ifdef SYSCALL_OFFSETS_600_GO
 	short offset_600_go[] = SYSCALL_OFFSETS_600_GO;
+#endif
 
 	int library_index = get_library_index_from_name(library_name);
 
@@ -276,30 +296,62 @@ int get_library_offset(char* library_name, int is_cfw)
 			case 500:
 			case 503:
 				if (is_cfw)
+#ifdef SYSCALL_OFFSETS_500_CFW
 					return offset_500_cfw[library_index];
+#else
+					break;
+#endif
 				else 
+#ifdef SYSCALL_OFFSETS_500
 					return offset_500[library_index];
+#else
+					break;
+#endif
 
 			case 550:
 			case 551:
 			case 555:
 				if (is_cfw)
+#ifdef SYSCALL_OFFSETS_550_CFW
 					return offset_550_cfw[library_index];
+#else
+					break;
+#endif
 				else
+#ifdef SYSCALL_OFFSETS_550
 					return offset_550[library_index];
+#else
+					break;
+#endif
 
 			case 570:
 				if (getPSPModel() == PSP_GO)
+#ifdef SYSCALL_OFFSETS_570_GO
 					return offset_570_go[library_index];
+#else
+					break;
+#endif
 				else
+#ifdef SYSCALL_OFFSETS_570
 					return offset_570[library_index];
+#else
+					break;
+#endif
 
 			case 600:
 			case 610:
 				if (getPSPModel() == PSP_GO)
+#ifdef SYSCALL_OFFSETS_600_GO
 					return offset_600_go[library_index];
+#else
+					break;
+#endif
 				else
+#ifdef SYSCALL_OFFSETS_600
 					return offset_600[library_index];
+#else
+					break;
+#endif
 		}
 	}
 
@@ -403,7 +455,6 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 
 	return lowest_syscall;
 }
-#endif
 
 // Return index in nid_table for closest higher known NID
 int get_higher_known_nid(unsigned int lib_index, u32 nid)
@@ -459,6 +510,9 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 	SceUID nid_file;
 	u32 nid;
 	unsigned int i;
+	u32 lowest_syscall;
+	int syscall_gap;
+	int index;
 
 	nid_file = open_nids_file(plibrary->name);
 
@@ -480,16 +534,6 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 			}
 			i++;
 		}
-
-
-#if defined(SYSCALL_OFFSETS_500) && defined(SYSCALL_OFFSETS_500_CFW) \
-	&& defined(SYSCALL_OFFSETS_570) && defined(SYSCALL_OFFSETS_570_GO) \
-	&& defined(SYSCALL_OFFSETS_600) && defined(SYSCALL_OFFSETS_600_GO) \
-	&& defined(SYSCALL_KERNEL_OFFSETS_620)
-
-		u32 lowest_syscall;
-		int syscall_gap;
-		int index;
 
 		NID_LOGSTR0("Getting lowest syscall\n");
 		lowest_syscall = get_klowest_syscall(plibrary, reference_library_index, is_cfw);
@@ -534,7 +578,6 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 				add_nid_to_table(nid, MAKE_SYSCALL(lowest_syscall), get_library_index(plibrary->name));
 			}
 		}
-#endif
 		
 		sceIoClose(nid_file);
 
