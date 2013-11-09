@@ -2,19 +2,17 @@
 
 	.globl  \funcname
 	.ent    \funcname
+	.type   \funcname, @function
 \funcname = \nid
 	.end    \funcname
+	.size	\funcname, 8
 
 .endm
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
 	.text
 	.align	2
-	
-	
+
+
 	AddNID sceKernelDeleteEventFlag, 0x08a35b7c
 	AddNID sceMpegFlushAllStream, 0x08a35d74
 	AddNID sceMpegQueryStreamOffset, 0x08a35cfc

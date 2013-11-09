@@ -2,19 +2,17 @@
 
 	.globl  \funcname
 	.ent    \funcname
+	.type   \funcname, @function
 \funcname = \nid
 	.end    \funcname
+	.size	\funcname, 8
 
 .endm
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
 	.text
 	.align	2
-	
-	
+
+
 	AddNID sceHttpSetRecvTimeOut, 0x08ACC5AC
 	AddNID sceMpegFinish, 0x08ACC6D4
 	AddNID sceKernelAllocPartitionMemory, 0x08ACC2B4

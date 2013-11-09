@@ -2,19 +2,17 @@
 
 	.globl  \funcname
 	.ent    \funcname
+	.type   \funcname, @function
 \funcname = \nid
 	.end    \funcname
+	.size	\funcname, 8
 
 .endm
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
 	.text
 	.align	2
-	
-	
+
+
 	AddNID sceUtilityCheckNetParam, 0x088079dc
 	AddNID sceIoCloseAsync, 0x088069e4
 	AddNID sceKernelCancelVTimerHandler, 0x08807494

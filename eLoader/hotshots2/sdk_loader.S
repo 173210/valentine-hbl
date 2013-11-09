@@ -2,19 +2,17 @@
 
 	.globl  \funcname
 	.ent    \funcname
+	.type   \funcname, @function
 \funcname = \nid
 	.end    \funcname
+	.size	\funcname, 8
 
 .endm
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
 	.text
 	.align	2
-	
-	
+
+
 	AddNID sceHttpGetContentLength, 0x08ACF510
 	AddNID sceAudioOutput2Release, 0x08ACF428
 	AddNID sceKernelGetGPI, 0x08ACF3A8

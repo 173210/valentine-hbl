@@ -2,23 +2,23 @@
 # If you want to edit this file, edit eLoaderconf.rb instead
 .macro AddNID funcname, offset
 
-    .globl  \funcname
-    .ent    \funcname
-    .type   \funcname, @function
+	.globl	\funcname
+	.ent	\funcname
+	.type	\funcname, @function
 \funcname = \offset
 #\funcname:
-#	lui $v0, 0x1            # Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
-#	lw $v0, 0x18 ($v0)      # Get HBL stubs address, see eloader.c or loader.c for more info
-#	addi $v0, $v0, \offset # Add offset
-#	jr $v0                  # Jump to stub
-#	nop                     # Leave this delay slot empty!
-    .end	\funcname
-    .size	\funcname, 8
+#	lui $v0, 0x1		# Put 0x10000 in $v0, $v0 is return value so there's no need to back it up
+#	lw $v0, 0x18 ($v0)	# Get HBL stubs address, see eloader.c or loader.c for more info
+#	addi $v0, $v0, \offset	# Add offset
+#	jr $v0			# Jump to stub
+#	nop			# Leave this delay slot empty!
+	.end	\funcname
+	.size	\funcname, 8
 
 .endm
 
-    .text
-    .align	2
+	.text
+	.align	2
 
 
 # IoFileMgrForUser(17)
@@ -240,4 +240,5 @@
 	AddNID sceGeListUpdateStallAddr, 0x9f90588 # 0xe0d68148
 	AddNID sceGeEdramGetAddr, 0x9f90590        # 0xe47e40e4
 
-    .ident	"HBL-SDK"
+	.ident	"HBL-SDK"
+

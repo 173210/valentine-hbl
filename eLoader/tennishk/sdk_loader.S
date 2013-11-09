@@ -2,19 +2,17 @@
 
 	.globl  \funcname
 	.ent    \funcname
+	.type   \funcname, @function
 \funcname = \nid
 	.end    \funcname
+	.size	\funcname, 8
 
 .endm
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
 	.text
 	.align	2
-	
-	
+
+
 	AddNID scePsmfPlayer_95A84EE5, 0x08abc218
 	AddNID sceNetAdhocMatchingStart, 0x08abc130
 	AddNID __sceSasSetKeyOn, 0x08abbec8

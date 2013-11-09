@@ -115,4 +115,5 @@
 	AddNID sceGeEdramGetSize, 0x101f0 # 0x1f6752ad
 	AddNID sceGeEdramGetAddr, 0x101f8 # 0xe47e40e4
 
-    .ident	"HBL-SDK"
+	.ident	"HBL-SDK"
+

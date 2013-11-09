@@ -9,6 +9,8 @@
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES_TO_FREE 0x20
 
+int sceKernelDeleteLwMutex(SceUID lwmutexid);
+
 int kill_thread(SceUID thid) 
 {
 #ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread

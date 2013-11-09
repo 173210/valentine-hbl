@@ -312,6 +312,5 @@
 	AddNID module_start_thread_parameter, 0x08b3ea40
 	AddNID module_stop_thread_parameter, 0x08b3ea50
 
-
-
 	.ident	"VAL-SDK"
+
