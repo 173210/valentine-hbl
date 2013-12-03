@@ -1,0 +1,451 @@
+
+[Iob]    UID 0x00946A0F (attr 0x0 entry 0x8804a350)
+(UID): 0x045DD559, (entry): 0x8822eea8, (size): 28, (attr): 0xFF, (Name): disc0:/PSP_GAME/USRDIR/MUSIC/MU
+(UID): 0x02D55135, (entry): 0x8816aa88, (size): 28, (attr): 0x0, (Name): ms0:/ISO/ARCADE~1.CSO
+(UID): 0x02D5682F, (entry): 0x8816ab40, (size): 28, (attr): 0x0, (Name): msstor0p1:
+(UID): 0x019DAB6B, (entry): 0x880ced58, (size): 28, (attr): 0x0, (Name): lflash0:0,2
+(UID): 0x019DC261, (entry): 0x880cee10, (size): 28, (attr): 0x0, (Name): lflash0:0,1
+(UID): 0x019E9C43, (entry): 0x880cf4e0, (size): 28, (attr): 0x0, (Name): lflash0:0,0
+(UID): 0x00936F17, (entry): 0x88049b78, (size): 28, (attr): 0x3, (Name): dummy_drv_iofile:
+(UID): 0x00938A15, (entry): 0x88049c50, (size): 28, (attr): 0x3, (Name): dummy_drv_iofile:
+(UID): 0x0093A513, (entry): 0x88049d28, (size): 28, (attr): 0x5, (Name): dummy_drv_iofile:
+
+[VTimer]    UID 0x00298425 (attr 0x0 entry 0x88014c20)
+    <No UID objects>
+
+[Alarm]    UID 0x00299521 (attr 0x0 entry 0x88014ca8)
+    <No UID objects>
+
+[Delay]    UID 0x0029A61D (attr 0x0 entry 0x88014d30)
+(UID): 0x00948875, (entry): 0x8804a440, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00949973, (entry): 0x8804a4c8, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0094AA71, (entry): 0x8804a550, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0094BB6F, (entry): 0x8804a5d8, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0094CC6D, (entry): 0x8804a660, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0094DD6B, (entry): 0x8804a6e8, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0094EE69, (entry): 0x8804a770, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0094FF67, (entry): 0x8804a7f8, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00951065, (entry): 0x8804a880, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00952163, (entry): 0x8804a908, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00953261, (entry): 0x8804a990, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095435F, (entry): 0x8804aa18, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095545D, (entry): 0x8804aaa0, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095655B, (entry): 0x8804ab28, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00957659, (entry): 0x8804abb0, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00958757, (entry): 0x8804ac38, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00959855, (entry): 0x8804acc0, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095A953, (entry): 0x8804ad48, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095BA51, (entry): 0x8804add0, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095CB4F, (entry): 0x8804ae58, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095DC4D, (entry): 0x8804aee0, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095ED4B, (entry): 0x8804af68, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0095FE49, (entry): 0x8804aff0, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00960F47, (entry): 0x8804b078, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00962045, (entry): 0x8804b100, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00963143, (entry): 0x8804b188, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00964241, (entry): 0x8804b210, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0096533F, (entry): 0x8804b298, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0096643D, (entry): 0x8804b320, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x0096753B, (entry): 0x8804b3a8, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00968639, (entry): 0x8804b430, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+(UID): 0x00969737, (entry): 0x8804b4b8, (size): 48, (attr): 0x0, (Name): SceThreadmanDelay
+
+[Timer]    UID 0x0029B719 (attr 0x0 entry 0x88014db8)
+(UID): 0x0096A835, (entry): 0x8804b540, (size): 28, (attr): 0x0, (Name): SceThreadmanSysTimerOVF
+
+[Tlspl]    UID 0x0029C815 (attr 0x0 entry 0x88014e40)
+    <No UID objects>
+
+[Fpl]    UID 0x0029D811 (attr 0x0 entry 0x88014ec0)
+(UID): 0x03E0A255, (entry): 0x881f0510, (size): 48, (attr): 0x0, (Name): SceVaudioWork
+(UID): 0x03B9B835, (entry): 0x881dcdc0, (size): 48, (attr): 0x0, (Name): SceUsbSoftwareFIFO
+(UID): 0x03B9D331, (entry): 0x881dce98, (size): 48, (attr): 0x0, (Name): SceUsbGetDescData
+(UID): 0x03B9ED2D, (entry): 0x881dcf68, (size): 48, (attr): 0x0, (Name): SceUsbConfig
+(UID): 0x03BA0629, (entry): 0x881dd030, (size): 48, (attr): 0x0, (Name): SceUsbConfig
+(UID): 0x03BA1F25, (entry): 0x881dd0f8, (size): 48, (attr): 0x0, (Name): SceUsbDevDesc
+(UID): 0x03BB4B29, (entry): 0x881dda58, (size): 48, (attr): 0x0, (Name): SceImpose_Resource
+(UID): 0x03BB6625, (entry): 0x881ddb30, (size): 48, (attr): 0x0, (Name): SceImpose_IconResource
+(UID): 0x03BB8121, (entry): 0x881ddc08, (size): 48, (attr): 0x0, (Name): SceImpose_FrameBuffer
+(UID): 0x02D5E95F, (entry): 0x8816af48, (size): 48, (attr): 0x0, (Name): SceIsofsCacheData
+(UID): 0x0227AB67, (entry): 0x88113d58, (size): 48, (attr): 0x1, (Name): SceFatfsMsDataBuf
+(UID): 0x0227C663, (entry): 0x88113e30, (size): 48, (attr): 0x1, (Name): SceFatfsMsDirentCache
+(UID): 0x0227E15F, (entry): 0x88113f08, (size): 48, (attr): 0x1, (Name): SceFatfsMsFatCache
+(UID): 0x0227FB5B, (entry): 0x88113fd8, (size): 48, (attr): 0x1, (Name): SceFatfsMsFdBuf
+(UID): 0x02282E53, (entry): 0x88114170, (size): 48, (attr): 0x1, (Name): SceFatfsCPTable
+(UID): 0x019E015B, (entry): 0x880cf008, (size): 48, (attr): 0x0, (Name): SceLflashLPTFree
+(UID): 0x019E1C57, (entry): 0x880cf0e0, (size): 48, (attr): 0x0, (Name): SceLflashLPTFree
+(UID): 0x019E3653, (entry): 0x880cf1b0, (size): 48, (attr): 0x0, (Name): SceLflashBuffer
+(UID): 0x019E504F, (entry): 0x880cf280, (size): 48, (attr): 0x0, (Name): SceLflashSegment
+(UID): 0x019E6A4B, (entry): 0x880cf350, (size): 48, (attr): 0x0, (Name): SceLflashLPT
+(UID): 0x00C84A09, (entry): 0x88064250, (size): 48, (attr): 0x1, (Name): SceIdStorage
+
+[Vpl]    UID 0x0029E80D (attr 0x0 entry 0x88014f40)
+(UID): 0x02D7B963, (entry): 0x8816bdc8, (size): 48, (attr): 0x0, (Name): SceRegMemBlock
+(UID): 0x0224893B, (entry): 0x88112448, (size): 48, (attr): 0x1, (Name): SceWlanDrvHeap
+(UID): 0x019B9F3B, (entry): 0x880cdcf8, (size): 48, (attr): 0x1, (Name): SceMScm
+(UID): 0x00290C33, (entry): 0x88014860, (size): 48, (attr): 0x1, (Name): SceLFatFs
+
+[MsgPipe]    UID 0x0029F909 (attr 0x0 entry 0x88014fc8)
+    <No UID objects>
+
+[Mbx]    UID 0x002A0905 (attr 0x0 entry 0x88015048)
+(UID): 0x0225CA49, (entry): 0x88112e50, (size): 48, (attr): 0x1, (Name): SceWlanHal
+(UID): 0x0224F541, (entry): 0x881127a8, (size): 48, (attr): 0x1, (Name): SceWlanMac
+
+[LwMutex]    UID 0x002A1A01 (attr 0x0 entry 0x880150d0)
+    <No UID objects>
+
+[Mutex]    UID 0x002A2B7D (attr 0x0 entry 0x88015158)
+(UID): 0x03E04677, (entry): 0x881f0230, (size): 48, (attr): 0x1, (Name): SceMpegBaseCSC
+(UID): 0x03BD0607, (entry): 0x881de830, (size): 48, (attr): 0x1, (Name): SceMediaEngineRpc
+(UID): 0x02D64827, (entry): 0x8816b240, (size): 48, (attr): 0x0, (Name): SceMSstorIolock
+(UID): 0x02D6580F, (entry): 0x8816b2c0, (size): 48, (attr): 0x0, (Name): SceNpDrmMutex
+(UID): 0x02D7C961, (entry): 0x8816be48, (size): 48, (attr): 0x0, (Name): SceRegBlockAPI
+(UID): 0x0226D87B, (entry): 0x881136c0, (size): 48, (attr): 0x1, (Name): SceCodec
+(UID): 0x02281457, (entry): 0x881140a0, (size): 48, (attr): 0x1, (Name): SceFatfsMs
+(UID): 0x019C6623, (entry): 0x880ce330, (size): 48, (attr): 0x1, (Name): ScePowerClock
+(UID): 0x019D9475, (entry): 0x880ceca0, (size): 48, (attr): 0x1, (Name): SceClockgen
+(UID): 0x00C86631, (entry): 0x88064330, (size): 48, (attr): 0x1, (Name): SceLfatfsMutex
+(UID): 0x00C83A0B, (entry): 0x880641d0, (size): 48, (attr): 0x1, (Name): SceIdStorage
+(UID): 0x00C92A6D, (entry): 0x88064950, (size): 48, (attr): 0x1, (Name): SceNand
+(UID): 0x00C99C5F, (entry): 0x88064ce0, (size): 48, (attr): 0x1, (Name): SceI2c
+(UID): 0x00CA2451, (entry): 0x88065120, (size): 48, (attr): 0x1, (Name): SceLoadExecMutex
+(UID): 0x00CB6E2D, (entry): 0x88065b70, (size): 48, (attr): 0x0, (Name): SceKernelModmgr
+
+[EventFlag]    UID 0x002A3D79 (attr 0x0 entry 0x880151e8)
+(UID): 0x045D3121, (entry): 0x8822e988, (size): 48, (attr): 0x0, (Name): SceIofileAsync
+(UID): 0x03E1125F, (entry): 0x881f0890, (size): 48, (attr): 0xFF, (Name): SceWaveMainEvf
+(UID): 0x03E03679, (entry): 0x881f01b0, (size): 48, (attr): 0x1, (Name): SceMpegBaseCSC
+(UID): 0x03BCC71B, (entry): 0x881de638, (size): 48, (attr): 0x0, (Name): USBEventAsync
+(UID): 0x03BC0919, (entry): 0x881de048, (size): 48, (attr): 0x0, (Name): USBEventTrans
+(UID): 0x03BC1917, (entry): 0x881de0c8, (size): 48, (attr): 0x0, (Name): USBEvent
+(UID): 0x03BAC215, (entry): 0x881dd610, (size): 48, (attr): 0x1, (Name): SceUsb
+(UID): 0x03BC2D33, (entry): 0x881de168, (size): 48, (attr): 0x1, (Name): SceImpose
+(UID): 0x03BC3E1D, (entry): 0x881de1f0, (size): 48, (attr): 0x1, (Name): SceWlanChipCardEvent
+(UID): 0x03BC4F1B, (entry): 0x881de278, (size): 48, (attr): 0x1, (Name): SceWlanChipHostEvent
+(UID): 0x03BCE40B, (entry): 0x881de720, (size): 48, (attr): 0x1, (Name): SceMediaEngineRpcWait
+(UID): 0x02D5D06D, (entry): 0x8816ae80, (size): 48, (attr): 0x0, (Name): SceUtilityAppletWorktime
+(UID): 0x02D5026B, (entry): 0x8816a810, (size): 48, (attr): 0x0, (Name): SceUtilitySuspend
+(UID): 0x02D66969, (entry): 0x8816b348, (size): 48, (attr): 0x0, (Name): SceUtilityWorktime
+(UID): 0x02D63829, (entry): 0x8816b1c0, (size): 48, (attr): 0x1, (Name): SceMSstorFlush
+(UID): 0x02253A47, (entry): 0x881129d0, (size): 48, (attr): 0x1, (Name): SceWlanHalMsHostLock
+(UID): 0x0224E543, (entry): 0x88112728, (size): 48, (attr): 0x1, (Name): SceWlanHal
+(UID): 0x0225B717, (entry): 0x88112db8, (size): 48, (attr): 0x1, (Name): SceHprm
+(UID): 0x02268305, (entry): 0x88113418, (size): 48, (attr): 0x1, (Name): SceAudio
+(UID): 0x02275E6D, (entry): 0x88113af0, (size): 48, (attr): 0x1, (Name): SceFatfsDetectMedium
+(UID): 0x019BAF39, (entry): 0x880cdd78, (size): 48, (attr): 0x1, (Name): SceMScmMedia
+(UID): 0x019BCF35, (entry): 0x880cde78, (size): 48, (attr): 0x1, (Name): SceMScmDMA
+(UID): 0x019BDF33, (entry): 0x880cdef8, (size): 48, (attr): 0x1, (Name): SceMScmAl
+(UID): 0x019C5625, (entry): 0x880ce2b0, (size): 48, (attr): 0x1, (Name): ScePowerBattery
+(UID): 0x019CC21B, (entry): 0x880ce610, (size): 48, (attr): 0x1, (Name): ScePowerSw
+(UID): 0x019D1D09, (entry): 0x880ce8e8, (size): 48, (attr): 0x1, (Name): SceCtrl
+(UID): 0x019D597F, (entry): 0x880ceac8, (size): 48, (attr): 0x1, (Name): SceDisplayVblank
+(UID): 0x00C8A77D, (entry): 0x88064538, (size): 48, (attr): 0x1, (Name): SceGeQueueId
+(UID): 0x00C8B77B, (entry): 0x880645b8, (size): 48, (attr): 0x1, (Name): SceGeQueueId
+(UID): 0x00C8C779, (entry): 0x88064638, (size): 48, (attr): 0x1, (Name): SceGeQueue
+(UID): 0x00C91B6F, (entry): 0x880648d8, (size): 48, (attr): 0x1, (Name): SceNand
+(UID): 0x00C93B6B, (entry): 0x880649d8, (size): 48, (attr): 0x1, (Name): SceDmacplusSc128
+(UID): 0x00C95D67, (entry): 0x88064ae8, (size): 48, (attr): 0x1, (Name): SceDmacplusMe2Sc
+(UID): 0x00C96E65, (entry): 0x88064b70, (size): 48, (attr): 0x1, (Name): SceDmacplusSc2Me
+(UID): 0x00C97E63, (entry): 0x88064bf0, (size): 48, (attr): 0x1, (Name): SceDmacplusAvc
+(UID): 0x00C98D61, (entry): 0x88064c68, (size): 48, (attr): 0x1, (Name): SceI2c
+(UID): 0x00CB5E2F, (entry): 0x88065af0, (size): 48, (attr): 0x0, (Name): SceKernelModmgr
+(UID): 0x00292521, (entry): 0x88014928, (size): 48, (attr): 0x0, (Name): SceUtils1024
+(UID): 0x00942E7F, (entry): 0x8804a170, (size): 48, (attr): 0x0, (Name): SceDmacmanEvflag
+(UID): 0x00947777, (entry): 0x8804a3b8, (size): 48, (attr): 0x0, (Name): SceThreadmanSysStat
+
+[Semaphore]    UID 0x002A4F75 (attr 0x0 entry 0x88015278)
+(UID): 0x045D411F, (entry): 0x8822ea08, (size): 48, (attr): 0x0, (Name): SceIofileAsync
+(UID): 0x045EDC13, (entry): 0x8822f6e0, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x045F0751, (entry): 0x8822f838, (size): 48, (attr): 0x0, (Name): SceMemab2
+(UID): 0x045F174F, (entry): 0x8822f8b8, (size): 48, (attr): 0x0, (Name): SceMemab1
+(UID): 0x03E0267B, (entry): 0x881f0130, (size): 48, (attr): 0x1, (Name): SceJpeg
+(UID): 0x03E05675, (entry): 0x881f02b0, (size): 48, (attr): 0x1, (Name): SceMpegBaseLLI
+(UID): 0x03E0BB51, (entry): 0x881f05d8, (size): 48, (attr): 0x1, (Name): SceVaudio
+(UID): 0x03E12131, (entry): 0x881f0908, (size): 48, (attr): 0x0, (Name): SceSas
+(UID): 0x03E1F205, (entry): 0x881f0f90, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E20303, (entry): 0x881f1018, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E21401, (entry): 0x881f10a0, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E2257F, (entry): 0x881f1128, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E2367D, (entry): 0x881f11b0, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E2477B, (entry): 0x881f1238, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E25879, (entry): 0x881f12c0, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03E26977, (entry): 0x881f1348, (size): 48, (attr): 0xFF, (Name): TheEngine Semaphore
+(UID): 0x03BD141D, (entry): 0x881de8a0, (size): 48, (attr): 0x0, (Name): USBSemaphore
+(UID): 0x03BAD221, (entry): 0x881dd690, (size): 48, (attr): 0x0, (Name): TtyOutMutex
+(UID): 0x03BAE21F, (entry): 0x881dd710, (size): 48, (attr): 0x0, (Name): TtyInMutex
+(UID): 0x03BC6019, (entry): 0x881de300, (size): 48, (attr): 0x1, (Name): SceWlanChipCommLock
+(UID): 0x03BC7117, (entry): 0x881de388, (size): 48, (attr): 0x1, (Name): SceWlanChipCmdLock
+(UID): 0x03BCF509, (entry): 0x881de7a8, (size): 48, (attr): 0x1, (Name): SceMediaEngineAvcPower
+(UID): 0x02D4CC5B, (entry): 0x8816a660, (size): 48, (attr): 0x1, (Name): SceIsofs
+(UID): 0x02D4DC59, (entry): 0x8816a6e0, (size): 48, (attr): 0x1, (Name): SceIsofsMgr
+(UID): 0x02D6B74D, (entry): 0x8816b5b8, (size): 48, (attr): 0x0, (Name): MediaManSema
+(UID): 0x02D5BF23, (entry): 0x8816adf8, (size): 48, (attr): 0x0, (Name): EcsUmd9660DeviceFile
+(UID): 0x02D60C19, (entry): 0x8816b060, (size): 48, (attr): 0x0, (Name): SceIoFilemgrDNAS1
+(UID): 0x02D6A405, (entry): 0x8816b520, (size): 48, (attr): 0x0, (Name): SceAmctrl
+(UID): 0x02D7117B, (entry): 0x8816b888, (size): 48, (attr): 0x0, (Name): SceUtils5120
+(UID): 0x02D72179, (entry): 0x8816b908, (size): 48, (attr): 0x0, (Name): SceUtils4096
+(UID): 0x02254B45, (entry): 0x88112a58, (size): 48, (attr): 0x1, (Name): SceWlanHalMsHostLock
+(UID): 0x0225063F, (entry): 0x88112830, (size): 48, (attr): 0x1, (Name): SceWlanMacIfLock
+(UID): 0x0224D431, (entry): 0x881126a0, (size): 48, (attr): 0x1, (Name): SceUsb
+(UID): 0x02252027, (entry): 0x88112900, (size): 48, (attr): 0x0, (Name): SceOpenPSID
+(UID): 0x019BBF37, (entry): 0x880cddf8, (size): 48, (attr): 0x1, (Name): SceMScmCLDMList
+(UID): 0x019CB21D, (entry): 0x880ce590, (size): 48, (attr): 0x1, (Name): ScePowerVmem
+(UID): 0x00C8092F, (entry): 0x88064048, (size): 48, (attr): 0x1, (Name): SceLFlash
+(UID): 0x00C7EE1D, (entry): 0x88063f70, (size): 48, (attr): 0x1, (Name): SceSysconSync0
+(UID): 0x00C94C69, (entry): 0x88064a60, (size): 48, (attr): 0x1, (Name): SceDmacplusSc128
+(UID): 0x0093261F, (entry): 0x88049930, (size): 48, (attr): 0x0, (Name): SceUtils1024
+
+[Callback]    UID 0x002A6171 (attr 0x0 entry 0x88015308)
+(UID): 0x03E17C11, (entry): 0x881f0be0, (size): 48, (attr): 0xFF, (Name): INSERT_EJECT_UMD
+(UID): 0x03E18B0F, (entry): 0x881f0c58, (size): 48, (attr): 0xFF, (Name): POWER
+(UID): 0x03E19B0D, (entry): 0x881f0cd8, (size): 48, (attr): 0xFF, (Name): ExitGame
+
+[ThreadEventHandler]    UID 0x002A756D (attr 0x0 entry 0x880153a8)
+    <No UID objects>
+
+[Thread]    UID 0x002A8669 (attr 0x0 entry 0x88015430)
+(UID): 0x045D5B1B, (entry): 0x8822ead8, (size): 48, (attr): 0x0, (Name): SceIofileAsync
+(UID): 0x045DA115, (entry): 0x8822ed08, (size): 48, (attr): 0xFF, (Name): TheEngineThread
+(UID): 0x03DF6D67, (entry): 0x881efb68, (size): 48, (attr): 0xFF, (Name): TheEngineThread
+(UID): 0x03DFB361, (entry): 0x881efd98, (size): 48, (attr): 0xFF, (Name): SceWaveMain
+(UID): 0x03E1BF07, (entry): 0x881f0df8, (size): 48, (attr): 0xFF, (Name): CheckExitGame
+(UID): 0x03E2956F, (entry): 0x881f14a8, (size): 48, (attr): 0xFF, (Name): user_main
+(UID): 0x03BA411F, (entry): 0x881dd208, (size): 48, (attr): 0x0, (Name): USBThread
+(UID): 0x03BA847B, (entry): 0x881dd420, (size): 48, (attr): 0x0, (Name): PspLink
+(UID): 0x03BBA41B, (entry): 0x881ddd20, (size): 48, (attr): 0x0, (Name): SceImpose
+(UID): 0x03BC8B13, (entry): 0x881de458, (size): 48, (attr): 0x1, (Name): SceWlanHal
+(UID): 0x02D58C2B, (entry): 0x8816ac60, (size): 48, (attr): 0x0, (Name): SceMSstorFlush
+(UID): 0x02D8914B, (entry): 0x8816c488, (size): 48, (attr): 0x1, (Name): SceWlanMac
+(UID): 0x02258619, (entry): 0x88112c30, (size): 48, (attr): 0x1, (Name): SceHpRemote
+(UID): 0x0226150B, (entry): 0x881130a8, (size): 48, (attr): 0x0, (Name): SceAudioInput
+(UID): 0x02265107, (entry): 0x88113288, (size): 48, (attr): 0x0, (Name): SceAudioMixer
+(UID): 0x02277869, (entry): 0x88113bc0, (size): 48, (attr): 0x1, (Name): SceFatmsMedia
+(UID): 0x019B653F, (entry): 0x880cdb28, (size): 48, (attr): 0x0, (Name): SceMScmMedia
+(UID): 0x019C2427, (entry): 0x880ce120, (size): 48, (attr): 0x1, (Name): ScePowerBattery
+(UID): 0x019C801F, (entry): 0x880ce400, (size): 48, (attr): 0x1, (Name): ScePowerMain
+(UID): 0x00CB8A29, (entry): 0x88065c50, (size): 48, (attr): 0x0, (Name): SceKernelModmgrWorker
+(UID): 0x0096F12F, (entry): 0x8804b788, (size): 48, (attr): 0x0, (Name): SceThreadmanCleaner
+(UID): 0x0029402B, (entry): 0x88014a00, (size): 48, (attr): 0x0, (Name): SceThreadmanIdle
+
+[WaitQ]    UID 0x002AFC65 (attr 0x0 entry 0x880157e0)
+    <No UID objects>
+
+[SceModule]    UID 0x002BB343 (attr 0x0 entry 0x88015d98)
+(UID): 0x045E0055, (entry): 0x8822f000, (size): 28, (attr): 0x0, (Name): sceNetAdhocDiscover_Library
+(UID): 0x045E353F, (entry): 0x8822f1a8, (size): 28, (attr): 0x0, (Name): sceNetAdhocDownload_Library
+(UID): 0x045E6529, (entry): 0x8822f328, (size): 28, (attr): 0x0, (Name): sceNetAdhocMatching_Library
+(UID): 0x045E9013, (entry): 0x8822f480, (size): 28, (attr): 0x0, (Name): sceNetAdhocctl_Library
+(UID): 0x045EB17D, (entry): 0x8822f588, (size): 28, (attr): 0x0, (Name): sceNetAdhoc_Library
+(UID): 0x045F3A5D, (entry): 0x8822f9d0, (size): 28, (attr): 0x0, (Name): sceNetAdhocAuth_Service
+(UID): 0x00CAF93B, (entry): 0x880657c8, (size): 28, (attr): 0x0, (Name): sceMemab
+(UID): 0x00CAAE25, (entry): 0x88065570, (size): 28, (attr): 0x0, (Name): sceNet_Library
+(UID): 0x03B99305, (entry): 0x881dcc98, (size): 28, (attr): 0x0, (Name): sceNet_Service
+(UID): 0x03DFE221, (entry): 0x881eff10, (size): 28, (attr): 0x0, (Name): sceATRAC3plus_Library
+(UID): 0x03E00309, (entry): 0x881f0018, (size): 28, (attr): 0x0, (Name): sceMpeg_library
+(UID): 0x03E2C461, (entry): 0x881f1620, (size): 28, (attr): 0x0, (Name): sceAvcodec_wrapper
+(UID): 0x03E2E93D, (entry): 0x881f1748, (size): 28, (attr): 0x0, (Name): sceVaudio_driver
+(UID): 0x03E1401D, (entry): 0x881f0a00, (size): 28, (attr): 0x0, (Name): sceSAScore
+(UID): 0x03E31F49, (entry): 0x881f18f8, (size): 28, (attr): 0x0, (Name): HockeyBowling
+(UID): 0x03BB260D, (entry): 0x881dd930, (size): 28, (attr): 0x0, (Name): sceKernelLibrary
+(UID): 0x03BD2101, (entry): 0x881de908, (size): 28, (attr): 0x0, (Name): USBHostFS
+(UID): 0x03BB0171, (entry): 0x881dd808, (size): 28, (attr): 0x0, (Name): PSPLINK
+(UID): 0x03BBDD25, (entry): 0x881ddee8, (size): 28, (attr): 0x0, (Name): sceImpose_Driver
+(UID): 0x03BD5F7F, (entry): 0x881deaf8, (size): 28, (attr): 0x0, (Name): sceMeCodecWrapper
+(UID): 0x0224B16F, (entry): 0x88112588, (size): 28, (attr): 0x0, (Name): sctrlHoroscope
+(UID): 0x02D50F61, (entry): 0x8816a878, (size): 28, (attr): 0x0, (Name): sceUtility_Driver
+(UID): 0x02D5304F, (entry): 0x8816a980, (size): 28, (attr): 0x0, (Name): sceIsofs_driver
+(UID): 0x02D6801B, (entry): 0x8816b400, (size): 28, (attr): 0x0, (Name): umd_driver
+(UID): 0x02D6CC11, (entry): 0x8816b660, (size): 28, (attr): 0x0, (Name): sceIoFilemgrDNAS
+(UID): 0x02D74107, (entry): 0x8816ba08, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x02D6ED7D, (entry): 0x8816b768, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x02D76A71, (entry): 0x8816bb50, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x02D78B67, (entry): 0x8816bc58, (size): 28, (attr): 0x0, (Name): sceMgr_Driver
+(UID): 0x02D81C59, (entry): 0x8816c0e0, (size): 28, (attr): 0x0, (Name): sceRegistry_Service
+(UID): 0x02D8634F, (entry): 0x8816c318, (size): 28, (attr): 0x0, (Name): sceWlanFirmMagpie_driver
+(UID): 0x02255833, (entry): 0x88112ac0, (size): 28, (attr): 0x0, (Name): sceWlan_Driver
+(UID): 0x0225DF29, (entry): 0x88112ef8, (size): 28, (attr): 0x0, (Name): sceUSB_Driver
+(UID): 0x0226AB1F, (entry): 0x88113558, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x02270D0F, (entry): 0x88113868, (size): 28, (attr): 0x0, (Name): sceHP_Remote_Driver
+(UID): 0x0228577D, (entry): 0x881142b8, (size): 28, (attr): 0x0, (Name): sceAudio_Driver
+(UID): 0x02273971, (entry): 0x881139c8, (size): 28, (attr): 0x0, (Name): sceWM8750_Driver
+(UID): 0x0096C149, (entry): 0x8804b608, (size): 28, (attr): 0x0, (Name): sceMSFAT_Driver
+(UID): 0x019EBA43, (entry): 0x880cf5d0, (size): 28, (attr): 0x0, (Name): sceCodepage_Service
+(UID): 0x019BF62B, (entry): 0x880cdfb0, (size): 28, (attr): 0x0, (Name): sceMSstor_Driver
+(UID): 0x019CD913, (entry): 0x880ce6c8, (size): 28, (attr): 0x0, (Name): scePower_Service
+(UID): 0x019CFA0B, (entry): 0x880ce7d0, (size): 28, (attr): 0x0, (Name): sceLED_Service
+(UID): 0x019D3401, (entry): 0x880ce9a0, (size): 28, (attr): 0x0, (Name): sceController_Service
+(UID): 0x019D7077, (entry): 0x880ceb80, (size): 28, (attr): 0x0, (Name): sceDisplay_Service
+(UID): 0x019EE33B, (entry): 0x880cf718, (size): 28, (attr): 0x0, (Name): sceClockgen_Driver
+(UID): 0x00C81627, (entry): 0x880640b0, (size): 28, (attr): 0x0, (Name): sceLFatFs_Driver
+(UID): 0x00C87B1F, (entry): 0x880643d8, (size): 28, (attr): 0x0, (Name): sceRTC_Service
+(UID): 0x00C8EF0D, (entry): 0x88064778, (size): 28, (attr): 0x0, (Name): sceSYSCON_Driver
+(UID): 0x00C9D57F, (entry): 0x88064ea8, (size): 28, (attr): 0x0, (Name): sceIdStorage_Service
+(UID): 0x00CA4471, (entry): 0x88065220, (size): 28, (attr): 0x0, (Name): sceGE_Manager
+(UID): 0x00C9FF53, (entry): 0x88064ff8, (size): 28, (attr): 0x0, (Name): sceLowIO_Driver
+(UID): 0x00CA7049, (entry): 0x88065380, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x00CB2635, (entry): 0x88065930, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x00CBBF27, (entry): 0x88065df8, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x0093361D, (entry): 0x880499b0, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x0093C60B, (entry): 0x88049e30, (size): 28, (attr): 0x0, (Name): sceIOFileManager
+(UID): 0x0093F505, (entry): 0x88049fa8, (size): 28, (attr): 0x0, (Name): sceSystimer
+(UID): 0x00943E7D, (entry): 0x8804a1f0, (size): 28, (attr): 0x0, (Name): sceDMAManager
+(UID): 0x002A9163, (entry): 0x88015488, (size): 28, (attr): 0x0, (Name): sceThreadManager
+(UID): 0x002AD15B, (entry): 0x88015688, (size): 28, (attr): 0x0, (Name): sceInterruptManager
+(UID): 0x002B0A55, (entry): 0x88015850, (size): 28, (attr): 0x0, (Name): sceExceptionManager
+(UID): 0x002B6149, (entry): 0x88015b08, (size): 28, (attr): 0x0, (Name): sceSystemModule
+(UID): 0x002B8647, (entry): 0x88015c30, (size): 28, (attr): 0x0, (Name): sceSystemMemoryManager
+
+[SceSysMemMemoryBlock]    UID 0x002C9817 (attr 0x0 entry 0x880164c0)
+(UID): 0x045D521D, (entry): 0x8822ea90, (size): 28, (attr): 0x0, (Name): stack:SceIofileAsync
+(UID): 0x045D8E19, (entry): 0x8822ec70, (size): 28, (attr): 0xFF, (Name): kstack:TheEngineThread
+(UID): 0x045D9817, (entry): 0x8822ecc0, (size): 28, (attr): 0xFF, (Name): stack:TheEngineThread
+(UID): 0x045DFA5D, (entry): 0x8822efd0, (size): 28, (attr): 0xFF, (Name): SceUtilityModule
+(UID): 0x045E2F47, (entry): 0x8822f178, (size): 28, (attr): 0xFF, (Name): sceNetAdhocDiscover_Library
+(UID): 0x045E5F31, (entry): 0x8822f2f8, (size): 28, (attr): 0xFF, (Name): sceNetAdhocDownload_Library
+(UID): 0x045E8A1B, (entry): 0x8822f450, (size): 28, (attr): 0xFF, (Name): sceNetAdhocMatching_Library
+(UID): 0x045EED05, (entry): 0x8822f768, (size): 28, (attr): 0xFF, (Name): sceNetAdhocctl_Library
+(UID): 0x045EFE71, (entry): 0x8822f7f0, (size): 28, (attr): 0xFF, (Name): sceNetAdhoc_Library
+(UID): 0x045F2865, (entry): 0x8822f940, (size): 28, (attr): 0x0, (Name): sceNetAdhocAuth_Service
+(UID): 0x03E16343, (entry): 0x881f0b18, (size): 28, (attr): 0x0, (Name): sceMemab
+(UID): 0x03E0E42D, (entry): 0x881f0720, (size): 28, (attr): 0xFF, (Name): SceUtilityModule
+(UID): 0x03E0C819, (entry): 0x881f0640, (size): 28, (attr): 0xFF, (Name): sceNet_Library
+(UID): 0x03E0CE0D, (entry): 0x881f0670, (size): 28, (attr): 0x0, (Name): sceNet_Service
+(UID): 0x03DF5A6B, (entry): 0x881efad0, (size): 28, (attr): 0xFF, (Name): kstack:TheEngineThread
+(UID): 0x03DF6469, (entry): 0x881efb20, (size): 28, (attr): 0xFF, (Name): stack:TheEngineThread
+(UID): 0x03DFA065, (entry): 0x881efd00, (size): 28, (attr): 0xFF, (Name): kstack:SceWaveMain
+(UID): 0x03DFAA63, (entry): 0x881efd50, (size): 28, (attr): 0xFF, (Name): stack:SceWaveMain
+(UID): 0x03E08B29, (entry): 0x881f0458, (size): 28, (attr): 0xFF, (Name): SceUtilityModule
+(UID): 0x03E0F115, (entry): 0x881f0788, (size): 28, (attr): 0xFF, (Name): sceATRAC3plus_Library
+(UID): 0x03E09711, (entry): 0x881f04b8, (size): 28, (attr): 0xFF, (Name): SceUtilityModule
+(UID): 0x03E0FA7D, (entry): 0x881f07d0, (size): 28, (attr): 0xFF, (Name): sceMpeg_library
+(UID): 0x03E13769, (entry): 0x881f09b8, (size): 28, (attr): 0x0, (Name): sceAvcodec_wrapper
+(UID): 0x03E0B253, (entry): 0x881f0590, (size): 28, (attr): 0x0, (Name): SceVaudioWork
+(UID): 0x03E17245, (entry): 0x881f0b90, (size): 28, (attr): 0x0, (Name): sceVaudio_driver
+(UID): 0x03E12E25, (entry): 0x881f0970, (size): 28, (attr): 0x0, (Name): sceSAScore
+(UID): 0x03E1AC0B, (entry): 0x881f0d60, (size): 28, (attr): 0xFF, (Name): kstack:CheckExitGame
+(UID): 0x03E1B609, (entry): 0x881f0db0, (size): 28, (attr): 0xFF, (Name): stack:CheckExitGame
+(UID): 0x03E27975, (entry): 0x881f13c8, (size): 28, (attr): 0xFF, (Name): UserSbrk
+(UID): 0x03E28373, (entry): 0x881f1418, (size): 28, (attr): 0xFF, (Name): kstack:user_main
+(UID): 0x03E28C71, (entry): 0x881f1460, (size): 28, (attr): 0xFF, (Name): stack:user_main
+(UID): 0x03E30D5B, (entry): 0x881f1868, (size): 28, (attr): 0x0, (Name): HockeyBowling
+(UID): 0x03B9C933, (entry): 0x881dce48, (size): 28, (attr): 0x0, (Name): SceUsbSoftwareFIFO
+(UID): 0x03B9E42F, (entry): 0x881dcf20, (size): 28, (attr): 0x0, (Name): SceUsbGetDescData
+(UID): 0x03B9FD2B, (entry): 0x881dcfe8, (size): 28, (attr): 0x0, (Name): SceUsbConfig
+(UID): 0x03BA1627, (entry): 0x881dd0b0, (size): 28, (attr): 0x0, (Name): SceUsbConfig
+(UID): 0x03BA2F23, (entry): 0x881dd178, (size): 28, (attr): 0x0, (Name): SceUsbDevDesc
+(UID): 0x03BA3821, (entry): 0x881dd1c0, (size): 28, (attr): 0x0, (Name): stack:USBThread
+(UID): 0x03BBD50F, (entry): 0x881ddea8, (size): 28, (attr): 0x0, (Name): sceKernelLibrary
+(UID): 0x03BA730B, (entry): 0x881dd398, (size): 28, (attr): 0x0, (Name): USBHostFS
+(UID): 0x03BA7C7D, (entry): 0x881dd3e0, (size): 28, (attr): 0x0, (Name): stack:PspLink
+(UID): 0x03BAEF75, (entry): 0x881dd778, (size): 28, (attr): 0x0, (Name): PSPLINK
+(UID): 0x03BB5C27, (entry): 0x881ddae0, (size): 28, (attr): 0x0, (Name): SceImpose_Resource
+(UID): 0x03BB7723, (entry): 0x881ddbb8, (size): 28, (attr): 0x0, (Name): SceImpose_IconResource
+(UID): 0x03BB921F, (entry): 0x881ddc90, (size): 28, (attr): 0x0, (Name): SceImpose_FrameBuffer
+(UID): 0x03BB9B1D, (entry): 0x881ddcd8, (size): 28, (attr): 0x0, (Name): stack:SceImpose
+(UID): 0x03BCD827, (entry): 0x881de6c0, (size): 28, (attr): 0x0, (Name): sceImpose_Driver
+(UID): 0x03BC8215, (entry): 0x881de410, (size): 28, (attr): 0x0, (Name): stack:SceWlanHal
+(UID): 0x03BD5701, (entry): 0x881deab8, (size): 28, (attr): 0x0, (Name): sceMeCodecWrapper
+(UID): 0x02D7F871, (entry): 0x8816bfc0, (size): 28, (attr): 0x0, (Name): sctrlHoroscope
+(UID): 0x02D5DD63, (entry): 0x8816aee8, (size): 28, (attr): 0x0, (Name): sceUtility_Driver
+(UID): 0x02D5FA5D, (entry): 0x8816afd0, (size): 28, (attr): 0x0, (Name): SceIsofsCacheData
+(UID): 0x02D60051, (entry): 0x8816b000, (size): 28, (attr): 0x0, (Name): sceIsofs_driver
+(UID): 0x02D5832D, (entry): 0x8816ac18, (size): 28, (attr): 0x0, (Name): stack:SceMSstorFlush
+(UID): 0x02D6C41D, (entry): 0x8816b620, (size): 28, (attr): 0x0, (Name): umd_driver
+(UID): 0x02D73913, (entry): 0x8816b9c8, (size): 28, (attr): 0x0, (Name): sceIoFilemgrDNAS
+(UID): 0x02D7E209, (entry): 0x8816bf10, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x02D7627F, (entry): 0x8816bb10, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x02D7EE73, (entry): 0x8816bf70, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x02D80A69, (entry): 0x8816c050, (size): 28, (attr): 0x0, (Name): sceMgr_Driver
+(UID): 0x02D8165B, (entry): 0x8816c0b0, (size): 28, (attr): 0x0, (Name): sceRegistry_Service
+(UID): 0x02D85B51, (entry): 0x8816c2d8, (size): 28, (attr): 0x0, (Name): sceWlanFirmMagpie_driver
+(UID): 0x02D8884D, (entry): 0x8816c440, (size): 28, (attr): 0x0, (Name): stack:SceWlanMac
+(UID): 0x0225D735, (entry): 0x88112eb8, (size): 28, (attr): 0x0, (Name): sceWlan_Driver
+(UID): 0x0226A32B, (entry): 0x88113518, (size): 28, (attr): 0x0, (Name): sceUSB_Driver
+(UID): 0x02270521, (entry): 0x88113828, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x02257D1B, (entry): 0x88112be8, (size): 28, (attr): 0x0, (Name): stack:SceHpRemote
+(UID): 0x02284F11, (entry): 0x88114278, (size): 28, (attr): 0x0, (Name): sceHP_Remote_Driver
+(UID): 0x02260C0D, (entry): 0x88113060, (size): 28, (attr): 0x0, (Name): stack:SceAudioInput
+(UID): 0x02264809, (entry): 0x88113240, (size): 28, (attr): 0x0, (Name): stack:SceAudioMixer
+(UID): 0x0226CF7F, (entry): 0x88113678, (size): 28, (attr): 0x0, (Name): sceAudio_Driver
+(UID): 0x02287873, (entry): 0x881143c0, (size): 28, (attr): 0x0, (Name): sceWM8750_Driver
+(UID): 0x02276F6B, (entry): 0x88113b78, (size): 28, (attr): 0x0, (Name): stack:SceFatmsMedia
+(UID): 0x0227BC65, (entry): 0x88113de0, (size): 28, (attr): 0x0, (Name): SceFatfsMsDataBuf
+(UID): 0x0227D761, (entry): 0x88113eb8, (size): 28, (attr): 0x0, (Name): SceFatfsMsDirentCache
+(UID): 0x0227F25D, (entry): 0x88113f90, (size): 28, (attr): 0x0, (Name): SceFatfsMsFatCache
+(UID): 0x02280B59, (entry): 0x88114058, (size): 28, (attr): 0x0, (Name): SceFatfsMsFdBuf
+(UID): 0x02283E51, (entry): 0x881141f0, (size): 28, (attr): 0x0, (Name): SceFatfsCPTable
+(UID): 0x019B504B, (entry): 0x880cda80, (size): 28, (attr): 0x0, (Name): sceMSFAT_Driver
+(UID): 0x019F3245, (entry): 0x880cf990, (size): 28, (attr): 0x0, (Name): sceCodepage_Service
+(UID): 0x019B5C41, (entry): 0x880cdae0, (size): 28, (attr): 0x0, (Name): stack:SceMScmMedia
+(UID): 0x019CD12D, (entry): 0x880ce688, (size): 28, (attr): 0x0, (Name): sceMSstor_Driver
+(UID): 0x019C1B29, (entry): 0x880ce0d8, (size): 28, (attr): 0x0, (Name): stack:ScePowerBattery
+(UID): 0x019C7721, (entry): 0x880ce3b8, (size): 28, (attr): 0x0, (Name): stack:ScePowerMain
+(UID): 0x019DE915, (entry): 0x880cef48, (size): 28, (attr): 0x0, (Name): scePower_Service
+(UID): 0x019D2C0D, (entry): 0x880ce960, (size): 28, (attr): 0x0, (Name): sceLED_Service
+(UID): 0x019D6803, (entry): 0x880ceb40, (size): 28, (attr): 0x0, (Name): sceController_Service
+(UID): 0x019DA379, (entry): 0x880ced18, (size): 28, (attr): 0x0, (Name): sceDisplay_Service
+(UID): 0x019E1259, (entry): 0x880cf090, (size): 28, (attr): 0x0, (Name): SceLflashLPTFree
+(UID): 0x019E2D55, (entry): 0x880cf168, (size): 28, (attr): 0x0, (Name): SceLflashLPTFree
+(UID): 0x019E4651, (entry): 0x880cf230, (size): 28, (attr): 0x0, (Name): SceLflashBuffer
+(UID): 0x019E614D, (entry): 0x880cf308, (size): 28, (attr): 0x0, (Name): SceLflashSegment
+(UID): 0x019E7A49, (entry): 0x880cf3d0, (size): 28, (attr): 0x0, (Name): SceLflashLPT
+(UID): 0x019EDB3D, (entry): 0x880cf6d8, (size): 28, (attr): 0x0, (Name): sceClockgen_Driver
+(UID): 0x00C87329, (entry): 0x88064398, (size): 28, (attr): 0x0, (Name): sceLFatFs_Driver
+(UID): 0x00C8E721, (entry): 0x88064738, (size): 28, (attr): 0x0, (Name): sceRTC_Service
+(UID): 0x00C9CD0F, (entry): 0x88064e68, (size): 28, (attr): 0x0, (Name): sceSYSCON_Driver
+(UID): 0x00C85A07, (entry): 0x880642d0, (size): 28, (attr): 0x0, (Name): SceIdStorage
+(UID): 0x00CA3C01, (entry): 0x880651e0, (size): 28, (attr): 0x0, (Name): sceIdStorage_Service
+(UID): 0x00C91373, (entry): 0x88064898, (size): 28, (attr): 0x0, (Name): sceGE_Manager
+(UID): 0x00CA6555, (entry): 0x88065328, (size): 28, (attr): 0x0, (Name): sceLowIO_Driver
+(UID): 0x00CB1D4B, (entry): 0x880658e8, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x00CAD243, (entry): 0x88065690, (size): 28, (attr): 0x0, (Name): SceInitParamsfo
+(UID): 0x00CADB41, (entry): 0x880656d8, (size): 28, (attr): 0x0, (Name): SceInitVSHParam
+(UID): 0x00CB4B33, (entry): 0x88065a58, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x00CB802B, (entry): 0x88065c00, (size): 28, (attr): 0x0, (Name): stack:SceKernelModmgrWorker
+(UID): 0x00291925, (entry): 0x880148c8, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x00935B1B, (entry): 0x88049ad8, (size): 28, (attr): 0x0, (Name): sceSystemBlock
+(UID): 0x0093EB09, (entry): 0x88049f58, (size): 28, (attr): 0x0, (Name): sceIOFileManager
+(UID): 0x00941A03, (entry): 0x8804a0d0, (size): 28, (attr): 0x0, (Name): sceSystimer
+(UID): 0x0094637B, (entry): 0x8804a318, (size): 28, (attr): 0x0, (Name): sceDMAManager
+(UID): 0x0096E731, (entry): 0x8804b738, (size): 28, (attr): 0x0, (Name): stack:SceThreadmanCleaner
+(UID): 0x0029362D, (entry): 0x880149b0, (size): 28, (attr): 0x0, (Name): stack:SceThreadmanIdle
+(UID): 0x002AB661, (entry): 0x880155b0, (size): 28, (attr): 0x0, (Name): sceThreadManager
+(UID): 0x002AF659, (entry): 0x880157b0, (size): 28, (attr): 0x0, (Name): sceInterruptManager
+(UID): 0x002B2F53, (entry): 0x88015978, (size): 28, (attr): 0x0, (Name): sceExceptionManager
+(UID): 0x002BBC41, (entry): 0x88015de0, (size): 28, (attr): 0x0, (Name): sceLoaderCore
+(UID): 0x002BD03D, (entry): 0x88015e80, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002BE539, (entry): 0x88015f28, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002BFA35, (entry): 0x88015fd0, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C1031, (entry): 0x88016080, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C252D, (entry): 0x88016128, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C3A29, (entry): 0x880161d0, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C4F25, (entry): 0x88016278, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C6421, (entry): 0x88016320, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C791D, (entry): 0x880163c8, (size): 28, (attr): 0x0, (Name): SceSystemBlock
+(UID): 0x002C831B, (entry): 0x88016418, (size): 28, (attr): 0x0, (Name): sceSystemMemoryManager
+
+[SceSysmemMemoryPartition]    UID 0x002CBA11 (attr 0x0 entry 0x880165d0)
+(UID): 0x002BDA3B, (entry): 0x88015ed0, (size): 28, (attr): 0x0, (Name): SceExtVshellPartition
+(UID): 0x002BEF37, (entry): 0x88015f78, (size): 28, (attr): 0x0, (Name): SceExtMeKernelPartition
+(UID): 0x002C0533, (entry): 0x88016028, (size): 28, (attr): 0x0, (Name): SceExtSc2KernelPartition
+(UID): 0x002C1A2F, (entry): 0x880160d0, (size): 28, (attr): 0x0, (Name): SceExtScKernelPartition
+(UID): 0x002C2F2B, (entry): 0x88016178, (size): 28, (attr): 0x0, (Name): SceMeUserPartition
+(UID): 0x002C4427, (entry): 0x88016220, (size): 28, (attr): 0x0, (Name): SceScUserPartition
+(UID): 0x002C5923, (entry): 0x880162c8, (size): 28, (attr): 0x0, (Name): SceVshellPartition
+(UID): 0x002C6E1F, (entry): 0x88016370, (size): 28, (attr): 0x0, (Name): SceOtherKernelPartition
+(UID): 0x002CA215, (entry): 0x88016510, (size): 28, (attr): 0x0, (Name): SceMyKernelPartition
+
+[SceSysmemHeap]    UID 0x002CD80B (attr 0x0 entry 0x880166c0)
+(UID): 0x02D4ED57, (entry): 0x8816a768, (size): 28, (attr): 0x0, (Name): SceIsofsRootHeap
+(UID): 0x02D7AF65, (entry): 0x8816bd78, (size): 28, (attr): 0x0, (Name): SceRegMemBlock
+(UID): 0x0225163D, (entry): 0x881128b0, (size): 28, (attr): 0x1, (Name): SceWlanDrvHeap
+(UID): 0x02282455, (entry): 0x88114120, (size): 28, (attr): 0x0, (Name): SceFatfsMs
+(UID): 0x019B963D, (entry): 0x880cdcb0, (size): 28, (attr): 0x1, (Name): SceMScm
+(UID): 0x00C7E435, (entry): 0x88063f20, (size): 28, (attr): 0x1, (Name): SceLFatFs
+(UID): 0x00C9AD5D, (entry): 0x88064d68, (size): 28, (attr): 0x0, (Name): SceInterruptManager
+(UID): 0x00C9B65B, (entry): 0x88064db0, (size): 28, (attr): 0x0, (Name): 
+(UID): 0x0094230D, (entry): 0x8804a118, (size): 28, (attr): 0x0, (Name): SceIofile
+(UID): 0x00297229, (entry): 0x88014b90, (size): 28, (attr): 0x0, (Name): SceThreadman
+(UID): 0x002ACA5D, (entry): 0x88015650, (size): 28, (attr): 0x0, (Name): SceKernelLoadCore
+(UID): 0x002CC40F, (entry): 0x88016620, (size): 28, (attr): 0x0, (Name): SceSystemMemoryManager
