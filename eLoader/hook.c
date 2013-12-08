@@ -1264,7 +1264,7 @@ int _hook_sceKernelDevkitVersion()
 {
     //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
     u32 version = getFirmwareVersion();
-	// 0x0w0y001z <==> firmware w.yz 
+	// 0x0w0y0z10 <==> firmware w.yz 
     int result = 0x01000000 * (version / 100);
  	result += 0x010000 * ((version % 100) / 10);
     result += 0x0100 * (version % 10);
