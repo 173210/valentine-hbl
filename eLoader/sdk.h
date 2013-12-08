@@ -78,6 +78,17 @@ typedef unsigned char byte;
 #endif
 
 //Should be defined somewhere in the sdk ???
+typedef struct {
+        int count;
+        SceUID thread;
+        int attr;
+        int numWaitThreads;
+        SceUID uid;
+        int pad[3];
+} SceLwMutexWorkarea;
+
+int sceKernelDeleteLwMutex(SceLwMutexWorkarea *workarea);
+
 SceUID sceKernelGetModuleIdByAddress(u32 address);
 
 #endif

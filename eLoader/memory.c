@@ -9,8 +9,6 @@
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES_TO_FREE 0x20
 
-int sceKernelDeleteLwMutex(SceUID lwmutexid);
-
 int kill_thread(SceUID thid) 
 {
 #ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
@@ -145,10 +143,10 @@ void DeleteAllLwMutexes(void)
 
 	for (i = 0; i < (sizeof(lwmutexaddrs)/sizeof(u32)); i++)
 	{
-		int ret = sceKernelDeleteLwMutex(*(SceUID*)(lwmutexaddrs[i]));
+		int ret = sceKernelDeleteLwMutex((SceLwMutexWorkarea *)(lwmutexaddrs[i]));
 		if (ret < 0)
 		{
-			LOGSTR2("--> ERROR 0x%08lX DELETING LWMUTEX 0x%08lX\n", ret, *(SceUID*)(lwmutexaddrs[i]));
+			LOGSTR2("--> ERROR 0x%08lX DELETING LWMUTEX 0x%08lX\n", ret, lwmutexaddrs[i]);
 		}
 	}
 }
