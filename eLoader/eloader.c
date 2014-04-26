@@ -467,7 +467,8 @@ void _start()
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)
-	return;
+	while(1)
+		sceKernelDelayThread(0xFFFFFFFF);
 }
 
 // Big thanks to people who share information !!!

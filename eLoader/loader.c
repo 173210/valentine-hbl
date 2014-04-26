@@ -417,7 +417,6 @@ void copy_hbl_stubs(void)
 			memset(stub_addr, 0, sizeof(u32)*2);
         }
 		stub_addr += 2;
-		sceKernelDelayThread(100);
 	}
 
 #ifdef AUTO_SEARCH_STUBS
@@ -764,7 +763,4 @@ void _start()
         LOGSTR0("HBL stubs copied, running eLoader\n");
 		run_eloader(0, NULL);
 	}
-
-	while(1)
-		sceKernelDelayThread(100000);
 }
