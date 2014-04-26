@@ -221,7 +221,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		int mod_id = is_utility((char*)pstub_entry->library_name);
 		if (mod_id > 0)
 		{
-			load_utility_module(mod_id, (char*)pstub_entry->library_name, (void **)&utility_exp);
+			load_export_utility_module(mod_id, (char*)pstub_entry->library_name, (void **)&utility_exp);
 		}
 		
 		/* For each stub header, browse all stubs */

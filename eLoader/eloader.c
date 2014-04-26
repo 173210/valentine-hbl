@@ -9,6 +9,7 @@
 #include "svnversion.h"
 #include "malloc.h"
 #include "resolve.h"
+#include "runtime_stubs.h"
 #include "memory.h"
 #include "modmgr.h"
 #include "globals.h"
@@ -308,7 +309,7 @@ int start_thread() //SceSize args, void *argp)
     tGlobals * g = get_globals();
 
 #ifdef LOAD_MODULES_FOR_SYSCALLS
-	load_utility_in_cache(PSP_MODULE_AV_AVCODEC);
+	load_utility_module(PSP_MODULE_AV_AVCODEC);
 #endif
 	
 	// Build NID table

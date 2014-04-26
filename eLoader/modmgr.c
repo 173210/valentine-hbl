@@ -8,6 +8,7 @@
 #include "lib.h"
 #include "reloc.h"
 #include "resolve.h"
+#include "runtime_stubs.h"
 #include "globals.h"
 #include "svnversion.h"
 #include <exploit_config.h>
@@ -421,40 +422,9 @@ int add_utility_to_table(unsigned int id)
 	return g->mod_table.num_utility - 1;
 }
 
-int load_utility_in_cache(int mod_id) {
-	// Check if utility module is already loaded
-	if (!is_utility_loaded(mod_id))
-	{
-		// Load utility
-		int ret;
-		if ((ret = sceUtilityLoadModule(mod_id)) < 0)
-		{
-			if( (u32)ret == 0x80111102)
-			{
-				//already loaded
-				LOGSTR1("->WARNING: utility(0x%08lX) is already loaded\n", mod_id);
-			}
-			else
-			{
-				LOGSTR2("->ERROR 0x%08lX: unable to load utility 0x%08lX\n", ret, mod_id);
-				return ret;
-			}
-		}
-
-		// Insert and check
-		if (add_utility_to_table(mod_id) < 0)
-		{
-			LOGSTR0("->ERROR: cannot load any more utility modules\n");
-			sceUtilityUnloadModule(mod_id);
-            return -1;
-		}
-	}
-    return 1;
-}
-
 // See also resolve.c:162
 // Loads and registers exports from an utility module
-int load_utility_module(int mod_id, const char* lib_name , void **pexport_out )
+int load_export_utility_module(int mod_id, const char* lib_name , void **pexport_out )
 {
 	LOGSTR1("Loading utility module for library %s\n", (u32)lib_name);
 
@@ -462,19 +432,19 @@ int load_utility_module(int mod_id, const char* lib_name , void **pexport_out )
     if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729)
     {
         LOGSTR0("Force-Loading AVCODEC\n");
-        load_utility_in_cache(PSP_MODULE_AV_AVCODEC);
+        load_utility_module(PSP_MODULE_AV_AVCODEC);
     }
 
 	if( mod_id == PSP_MODULE_NET_HTTP)
 	{
         LOGSTR0("Force-Loading HTTP\n");
-        load_utility_in_cache(PSP_MODULE_NET_COMMON);
-        load_utility_in_cache(PSP_MODULE_NET_INET);
-        load_utility_in_cache(PSP_MODULE_NET_PARSEURI);
-        load_utility_in_cache(PSP_MODULE_NET_PARSEHTTP);
+        load_utility_module(PSP_MODULE_NET_COMMON);
+        load_utility_module(PSP_MODULE_NET_INET);
+        load_utility_module(PSP_MODULE_NET_PARSEURI);
+        load_utility_module(PSP_MODULE_NET_PARSEHTTP);
 	}
  
-    int ret = load_utility_in_cache(mod_id);
+    int ret = load_utility_module(mod_id);
     if (ret <0)
         return ret;
 	

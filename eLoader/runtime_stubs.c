@@ -9,42 +9,92 @@
 #ifndef AUTO_SEARCH_STUBS
 #define AUTO_SEARCH_STUBS
 #endif
+
+int load_utility_module(int module) {
+	LOGSTR1("Loading 0x%08lX\n", module);
+
+#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+#ifdef USE_NET_MODULE_LOAD_FUNCTION
+	if (module <= PSP_MODULE_NET_SSL)
+		return sceUtilityLoadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
+	else
 #endif
-
-void load_utility_modules(unsigned int moduleIDs[]) {
-    int i;
-
-    // Load modules in order
-    for(i = 0; (u32)i < sizeof(moduleIDs)/sizeof(u32); i++)
-    {
-        unsigned int modid = moduleIDs[i];
-        LOGSTR1("Loading 0x%08lX\n", (u32)(modid) );
-        int result = sceUtilityLoadModule(modid);
-        if (result < 0)
-        {
-            LOGSTR2(((u32)result == 0x80111102)?"...Already loaded\n":"...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
-        }
-    }
+#ifdef USE_USB_MODULE_LOAD_FUNCTION
+	if (module == PSP_MODULE_USB_PSPCM)
+		return sceUtilityLoadUsbModule(PSP_USB_MODULE_PSPCM);
+	else if (module <= PSP_MODULE_USB_GPS)
+		return sceUtilityLoadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
+	else
+#endif
+#ifdef USE_AV_MODULE_LOAD_FUNCTION
+	if (module <= PSP_MODULE_AV_G729)
+		return sceUtilityLoadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
+	else
+#endif
+	return SCE_KERNEL_ERROR_ERROR;
+#else
+	return sceUtilityLoadModule(module);
+#endif
 }
 
-void unload_utility_modules(unsigned int moduleIDs[]) {
-    int i;
-    //Unload modules in reverse order
-    for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
-    {
-        unsigned int modid = moduleIDs[i];
-        LOGSTR1("UnLoading 0x%08lX\n", (u32)(modid) );
-#ifndef HOOK_sceUtilityUnloadModule
-    	if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
-    	{
-	        int result = sceUtilityUnloadModule(modid);
-	        if (result < 0)
-	        {
-	            LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
-	        }
-    	}
+int unload_utility_module(int module) {
+	LOGSTR1("Unloading 0x%08lX\n", module);
+
+#ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
+#ifdef USE_NET_MODULE_UNLOAD_FUNCTION
+	if (module <= PSP_MODULE_NET_SSL)
+		return sceUtilityUnloadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
+	else
 #endif
-    }
+#ifdef USE_USB_MODULE_UNLOAD_FUNCTION
+	if (module == PSP_MODULE_USB_PSPCM)
+		return sceUtilityUnloadUsbModule(PSP_USB_MODULE_PSPCM);
+	else if (module <= PSP_MODULE_USB_GPS)
+		return sceUtilityUnloadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
+	else
+#endif
+#ifdef USE_AV_MODULE_UNLOAD_FUNCTION
+	if (module <= PSP_MODULE_AV_G729)
+		return sceUtilityUnloadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
+	else
+#endif
+	return SCE_KERNEL_ERROR_ERROR;
+#else
+		return sceUtilityUnloadModule(module);
+#endif
+}
+
+void load_utility_modules(unsigned int moduleIDs[]) {
+    int i, result;
+
+	// Load modules in order
+	for(i = 0; (u32)i < sizeof(moduleIDs)/sizeof(u32); i++)
+	{
+		unsigned int modid = moduleIDs[i];
+		result = load_utility_module(modid);
+		if (result < 0)
+		{
+			LOGSTR2("...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
+		}
+	}
+}
+#endif
+
+void unload_utility_modules(unsigned int moduleIDs[]) {
+	int i, result;
+	//Unload modules in reverse order
+	for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
+	{
+		unsigned int modid = moduleIDs[i];
+		if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
+		{
+			result = unload_utility_module(modid);
+			if (result < 0)
+			{
+				LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
+			}
+		}
+	}
 }
 
 #ifdef AUTO_SEARCH_STUBS

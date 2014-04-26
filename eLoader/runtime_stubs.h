@@ -1,5 +1,7 @@
 #define MAX_RUNTIME_STUB_HEADERS 35
 
+int load_utility_module(int module);
+int unload_utility_module(int module);
 void load_utility_modules(unsigned int moduleIDs[]);
 void unload_utility_modules(unsigned int moduleIDs[]);
 void load_modules_for_stubs();
