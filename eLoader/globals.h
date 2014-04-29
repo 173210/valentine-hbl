@@ -19,6 +19,8 @@ in a safe memory zone. If you need globals, it is better to have them here
   #define STATIC_ASSERT(e) \
     enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
+#define GLOBALS_ADDR 0x10200
+
 #include "sdk.h"
 #include "malloc.h"
 #include "modmgr.h"
@@ -112,7 +114,7 @@ typedef struct
 
 //This should fail with a weird error at compile time if globals is too big
 //We also have a runtime check so you can comment out this line if you don't understand its meaning
-STATIC_ASSERT( (GLOBALS_ADDR + sizeof(tGlobals)) <= GLOBALS_END_ADDR);
+STATIC_ASSERT( (GLOBALS_ADDR + sizeof(tGlobals)) <= 0x14000);
 STATIC_ASSERT (HBL_STUBS_START + NUM_HBL_IMPORTS*2*sizeof(u32) <= GLOBALS_ADDR);
 
 //gets a pointer to the global variables
