@@ -699,7 +699,9 @@ void p5_copy_stubs_savedata()
 void p5_get_stubs()
 {
 	LOGSTR0("p5_get_stubs\n");
+#ifndef HOOK_sceKernelVolatileMemUnlock_WITH_dummy
 	sceKernelVolatileMemUnlock(0);
+#endif
 	p5_copy_stubs_savedata();
 	p5_copy_stubs_savedata_dialog();
 	LOGSTR0("p5_get_stubs DONE\n");
