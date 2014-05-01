@@ -8,7 +8,7 @@
 #include <pspumd.h>
 #include <psptypes.h>
 #include <pspimpose_driver.h>
-#include <psputility.h>
+#include <pspsuspend.h>
 
 #include "lib.h"
 

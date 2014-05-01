@@ -349,12 +349,10 @@ void copy_hbl_stubs(void)
     LOGSTR1("Found %d stubs\n", num_stubs); 
 /*
 	//This caught a overflow if (num_stubs + 4) is larger than MAX_RUNTIME_STUB_HEADERS.
-#ifndef DISABLE_P5_STUBS    
     stubs[num_stubs++] = RELOC_MODULE_ADDR_1;
     stubs[num_stubs++] = RELOC_MODULE_ADDR_2;
     stubs[num_stubs++] = RELOC_MODULE_ADDR_3;
     stubs[num_stubs++] = RELOC_MODULE_ADDR_4;    
-#endif
  */  
     CLEAR_CACHE;
     for (i = 0; i < num_stubs; ++i)
@@ -471,8 +469,6 @@ void clear_vram()
 }
 
 
-
-#ifndef DISABLE_P5_STUBS
 
 // Initializes the savedata dialog loop, opens p5
 void p5_open_savedata(int mode)
@@ -703,12 +699,11 @@ void p5_copy_stubs_savedata()
 void p5_get_stubs()
 {
 	LOGSTR0("p5_get_stubs\n");
+	sceKernelVolatileMemUnlock(0);
 	p5_copy_stubs_savedata();
 	p5_copy_stubs_savedata_dialog();
 	LOGSTR0("p5_get_stubs DONE\n");
 }
-
-#endif
 
 
 // Entry point
@@ -746,9 +741,7 @@ void _start()
 #endif
 
 	// Get additional syscalls from utility dialogs
-#ifndef DISABLE_P5_STUBS
 	p5_get_stubs();
-#endif
 
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
