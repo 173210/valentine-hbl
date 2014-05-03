@@ -144,11 +144,7 @@ void load_hbl(SceUID hbl_file)
 #endif	
 	
 	
-#ifndef HBL_BLOCK_SIZE
-#define HBL_BLOCK_SIZE file_size
-#endif
-
-	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, HBL_BLOCK_SIZE, (void *)HBL_LOAD_ADDRESS);
+	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDRESS);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);

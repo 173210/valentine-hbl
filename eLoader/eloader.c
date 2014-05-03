@@ -161,7 +161,7 @@ void cleanup(u32 num_lib)
 			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620)) ) 
 			{
 	            LOGSTR1("UNLoad utility module id  0x%08lX \n", modid);
-				int ret = sceUtilityUnloadModule(modid);
+				int ret = unload_utility_module(modid);
 	            if (ret < 0) 
 	            {
 	                LOGSTR2("WARNING! error unloading module %d: 0x%08lX\n",g->mod_table.utility[i], ret);
