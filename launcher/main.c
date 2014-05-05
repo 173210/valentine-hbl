@@ -8,7 +8,7 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(100);
 
 int main(int argc, char *argv[])
 {
-	SceUID file = sceIoOpen("ms0:/h.bin", PSP_O_RDONLY, 0777);
+	SceUID file = sceIoOpen("ms0:/H.BIN", PSP_O_RDONLY, 0777);
 	sceIoRead(file, (void*)0x09000000, 1024 * 1024);
 	sceIoClose(file);
 

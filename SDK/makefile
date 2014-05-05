@@ -23,4 +23,4 @@ main.o: main.c
 main: main.o sdk.o linker.x
 	$(PSPDEV)/bin/psp-ld -T linker.x -L$(PSPSDK)/lib main.o sdk.o -o main.elf
 	$(PSPDEV)/bin/psp-strip -s main.elf
-	$(PSPDEV)/bin/psp-objcopy -O binary main.elf h.bin
+	$(PSPDEV)/bin/psp-objcopy -O binary main.elf H.BIN

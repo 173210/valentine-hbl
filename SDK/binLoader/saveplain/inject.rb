@@ -18,7 +18,7 @@ end
 #you can change this value
 code_pos = "0x8160".hex #Where to put the code in the file
 file_pos = code_pos + "0x60".hex #Where to put the filename in the file (see loader.s if you change this value)
-filename = "ms0:/h.bin"
+filename = "ms0:/H.BIN"
 
 #Don't change the code below this line unless you know what you do
 overflow = "57 00 6F 00 6C 00 6F 00 6C 00" +  "6F 00 " * 25
