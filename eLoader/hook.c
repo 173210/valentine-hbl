@@ -1739,6 +1739,12 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 			break;
 #endif
 
+#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
+		case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)
+			hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
+			break;
+#endif
+
     }
 	
     if (hook_call) 
@@ -1844,12 +1850,6 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
             break;               
 #endif
 
-#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
-        case 0x82826F70: // sceKernelSleepThreadCB   (avoid syscall estimation)          
-			hook_call = MAKE_JUMP(_hook_sceKernelSleepThreadCB);
-            break; 
-#endif
-            
 #ifdef HOOK_sceKernelTrySendMsgPipe_WITH_sceKernelSendMsgPipe
         case 0x884C9F90: //	sceKernelTrySendMsgPipe (avoid syscall estimation)  
             hook_call = MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);
