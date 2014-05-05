@@ -2,19 +2,17 @@
 
 	.globl  \funcname
 	.ent    \funcname
+	.type	\funcname, @function
 \funcname = \nid
 	.end    \funcname
+	.size	\funcname, 8
 
 .endm
 
-	.file	1 "sdk.c"
-	.section .mdebug.eabi32
-	.section .gcc_compiled_long32
-	.previous
 	.text
 	.align	2
-	
-	
+
+
 	AddNID module_start, 0x0887d364
 	AddNID module_stop, 0x0887d73c
 	AddNID sceKernelCpuSuspendIntr, 0x089b5f48

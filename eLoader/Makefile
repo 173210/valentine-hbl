@@ -14,7 +14,6 @@ clean:
 
 # use a different FOLDER to make for different exploits
 # Exploit-specific files go in the subfolders, see targets hbl and loader below
-FOLDER=patapon2
 
 CC       = psp-gcc
 
