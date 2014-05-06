@@ -416,7 +416,7 @@ char * relative_to_absolute(const char * file)
         strcpy(buf, file);
         return buf;
     }
-#ifdef VITA_DIR_FIX
+#ifdef VITA
     else if (!strcmp(".", file))
     {
         char * buf = malloc_hbl(strlen(g->module_chdir) + 1);
@@ -1051,14 +1051,14 @@ SceUID _hook_sceIoDopen(const char *dirname)
 {
     if (path_is_absolute(dirname))
         return
-#ifdef VITA_DIR_FIX
+#ifdef VITA
             sceIoDopen_Vita(dirname);
 #else
             sceIoDopen(dirname);
 #endif
 
     char * buf = relative_to_absolute(dirname);
-#ifdef VITA_DIR_FIX
+#ifdef VITA
     SceUID ret = sceIoDopen_Vita(buf);
 #else
     SceUID ret = sceIoDopen(buf);
@@ -1068,7 +1068,7 @@ SceUID _hook_sceIoDopen(const char *dirname)
 }
 
 
-#ifdef VITA_DIR_FIX
+#ifdef VITA
 // Adds Vita's missing "." / ".." entries
 
 SceUID sceIoDopen_Vita(const char *dirname)
@@ -1712,20 +1712,20 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
             LOGSTR0(" Chdir trick sceIoDopen\n");
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
             break;
-#elif defined VITA_DIR_FIX
+#elif defined VITA
         case 0xB29DDF9C: //	sceIoDopen
-            LOGSTR0("VITA_DIR_FIX sceIoDopen\n");
+            LOGSTR0("VITA sceIoDopen\n");
             hook_call = MAKE_JUMP(sceIoDopen_Vita);
             break;
 #endif
 
-#ifdef VITA_DIR_FIX
+#ifdef VITA
         case 0xE3EB004C: //	sceIoDread
-            LOGSTR0("VITA_DIR_FIX sceIoDread\n");
+            LOGSTR0("VITA sceIoDread\n");
             hook_call = MAKE_JUMP(sceIoDread_Vita);
             break;
         case 0xEB092469: //	sceIoDclose
-            LOGSTR0("VITA_DIR_FIX sceIoDclose\n");
+            LOGSTR0("VITA sceIoDclose\n");
             hook_call = MAKE_JUMP(sceIoDclose_Vita);
             break;
 #endif

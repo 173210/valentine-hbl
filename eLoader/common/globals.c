@@ -70,12 +70,12 @@ void init_globals()
 
     g->curr_channel_id = -1;
 
-#ifdef VITA_DIR_FIX
+#ifdef VITA
     reset_vita_dirs();
 #endif
 }
 
-#ifdef VITA_DIR_FIX
+#ifdef VITA
 void reset_vita_dirs()
 {
     tGlobals * g = get_globals();

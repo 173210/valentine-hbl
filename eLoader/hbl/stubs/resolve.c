@@ -257,7 +257,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
 			if (real_call == 0)
 			{
-#ifdef DEACTIVATE_SYSCALL_ESTIMATION
+#ifdef VITA
                 real_call = setup_default_nid(*cur_nid);
 #else
 				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);

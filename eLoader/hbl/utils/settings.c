@@ -263,7 +263,7 @@ void loadGlobalConfig()
     g->return_to_xmb_on_exit = 0;
     g->force_exit_buttons = 0;
     strcpy(g->hb_filename, "ms0:/PSP/GAME/");
-#ifdef VITA_DIR_FIX
+#ifdef VITA
     reset_vita_dirs();
 #endif
 

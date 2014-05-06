@@ -22,6 +22,10 @@ INCDIR	= -I $(PSPSDK)/include -I include -I $(FOLDER_PATH) -I .
 
 CFLAGS	:= -D PSP $(INCDIR) -Os -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
 
+ifdef VITA
+	CFLAGS += -D VITA=$(VITA)
+endif
+
 #svn revision in code
 SVNVERSION = $(shell svnversion -n 2)
 base:
