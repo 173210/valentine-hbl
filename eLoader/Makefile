@@ -50,8 +50,11 @@ OBJS_COMMON = common/config.o common/debug.o common/globals.o common/lib.o commo
 
 OBJS_HBL = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_hbl.o hbl/eloader.o \
 	hbl/mod/elf.o hbl/mod/modmgr.o hbl/mod/reloc.o \
-	hbl/stubs/hook.o hbl/stubs/resolve.o hbl/stubs/syscall.o hbl/stubs/tables.o hbl/stubs/test.o \
+	hbl/stubs/hook.o hbl/stubs/resolve.o hbl/stubs/tables.o hbl/stubs/test.o \
 	hbl/utils/font.o hbl/utils/graphics.o hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
+ifndef VITA
+OBJS_HBL += hbl/stubs/syscall.o
+endif
 
 OBJS_LOADER = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_loader.o loader.o
 

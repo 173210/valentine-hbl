@@ -733,7 +733,7 @@ void _start()
     init_globals();
 
 	// If PSPGo on 6.20+, do a kmem dump
-#ifndef DISABLE_KERNEL_DUMP
+#if !defined(DISABLE_KERNEL_DUMP) && !defined(VITA)
 	if ((getFirmwareVersion() >= 620) && (getPSPModel() == PSP_GO))
 		get_kmem_dump();
 #endif

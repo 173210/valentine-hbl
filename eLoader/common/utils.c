@@ -3,6 +3,7 @@
 #include <common/globals.h>
 #include <exploit_config.h>
 
+#ifndef VITA
 // "cache" for the firmware version
 // 1 means: not set yet
 // 0 means unknown
@@ -82,6 +83,7 @@ u32 getPSPModel()
 
     return g->psp_model;
 }
+#endif
 
 int valid_umem_pointer(u32 addr)
 {

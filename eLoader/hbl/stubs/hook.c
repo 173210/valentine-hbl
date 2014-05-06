@@ -618,7 +618,7 @@ void net_term()
 	    }
 	}
 }
-
+#ifndef VITA
 // Release the kernel audio channel
 void audio_term()
 {
@@ -638,7 +638,7 @@ void audio_term()
 #endif
 	}
 }
-
+#endif
 
 void ram_cleanup()
 {
@@ -681,7 +681,9 @@ void subinterrupthandler_cleanup()
 void exit_everything_but_me()
 {
     net_term();
-    audio_term();
+#ifndef VITA
+	audio_term();
+#endif
 	subinterrupthandler_cleanup();
     threads_cleanup();
     ram_cleanup();
@@ -1262,15 +1264,17 @@ int _hook_scePowerGetBatteryLifePercent()
 // http://forums.ps2dev.org/viewtopic.php?p=43495
 int _hook_sceKernelDevkitVersion()
 {
-    //There has to be a more efficient way...maybe getFirmwareVersion should directly do this
-    u32 version = getFirmwareVersion();
+#ifdef VITA
+	return 660;
+#else
+	//There has to be a more efficient way...maybe getFirmwareVersion should directly do this
+	u32 version = getFirmwareVersion();
 	// 0x0w0y0z10 <==> firmware w.yz
-    int result = 0x01000000 * (version / 100);
- 	result += 0x010000 * ((version % 100) / 10);
-    result += 0x0100 * (version % 10);
-    result += 0x10;
-
-    return result;
+	return 0x01000000 * (version / 100)
+		+ 0x010000 * ((version % 100) / 10)
+		+ 0x0100 * (version % 10)
+		+ 0x10;
+#endif
 }
 
 #ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740
@@ -1683,11 +1687,11 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
     if (hook_call)
         return hook_call;
-
-    // Overrides below this point don't need to be done if we have perfect syscall estimation
-    if (g->syscalls_known)
-        return 0;
-
+#ifndef VITA
+	// Overrides below this point don't need to be done if we have perfect syscall estimation
+	if (g->syscalls_known)
+		return 0;
+#endif
     switch (nid) {
 #ifdef HOOK_CHDIR_AND_FRIENDS
         case 0x55F4717D: //	sceIoChdir (only if it failed)

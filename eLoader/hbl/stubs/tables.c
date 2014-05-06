@@ -505,7 +505,7 @@ int get_lower_known_nid(unsigned int lib_index, u32 nid)
 
 	return lower_index;
 }
-
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 // Fills remaining information on a library
 tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_library_index), int UNUSED(is_cfw))
 {
@@ -533,7 +533,6 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 			}
 			i++;
 		}
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 		u32 lowest_syscall;
 		int syscall_gap;
 		int index;
@@ -581,7 +580,6 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 				add_nid_to_table(nid, MAKE_SYSCALL(lowest_syscall), get_library_index(plibrary->name));
 			}
 		}
-#endif
 		sceIoClose(nid_file);
 
 		return plibrary;
@@ -589,6 +587,7 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 	else
 		return NULL;
 }
+#endif
 
 // Returns index of NID in table
 int get_nid_index(u32 nid)
@@ -998,7 +997,7 @@ int build_nid_table()
 	CLEAR_CACHE;
 
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
 	u32 c1, c2;
 	u32 syscall;
 	int estimated_correctly = 0;

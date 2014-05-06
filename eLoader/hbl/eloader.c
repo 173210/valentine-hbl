@@ -158,7 +158,9 @@ void cleanup(u32 num_lib)
 		{
 			//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
 			//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
+#ifndef VITA
 			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620)) )
+#endif
 			{
 	            LOGSTR1("UNLoad utility module id  0x%08lX \n", modid);
 				int ret = unload_utility_module(modid);
@@ -401,7 +403,6 @@ void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
 	SceUID thid;
-    int firmware_version = getFirmwareVersion();
 	cls();
     print_to_screen("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
 
@@ -415,7 +416,8 @@ void _start()
     print_to_screen_color("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
 #endif
 
-
+#ifndef VITA
+	int firmware_version = getFirmwareVersion();
 	switch (firmware_version)
 	{
 		case 0:
@@ -431,7 +433,7 @@ void _start()
 	{
         print_to_screen("PSP Go Detected");
     }
-
+#endif
 #ifdef FPL_EARLY_LOAD_ADDR_LIST
      //early memory cleanup to be able to load HBL at a convenient place
     LOGSTR0("loader.c:PreloadFreeFPL\n");

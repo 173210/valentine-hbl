@@ -236,10 +236,12 @@ void configGetProcessingOptions()
         {
             g->force_exit_buttons = configAddrParse(lval);
         }
+#ifndef VITA
         else if (strcmp(lstr,"syscalls_known")==0)
         {
             g->syscalls_known = configIntParse(lval);
         }
+#endif
         else if (strcmp(lstr,"hb_folder")==0)
         {
             //note: g->hb_folder is initialized in loadGlobalConfig

@@ -53,8 +53,10 @@ typedef struct
 typedef struct
 {
 	// firmware and model
+#ifndef VITA
 	u32 firmware_version;
 	u32 psp_model;
+#endif
     //uids
     SceUID hbl_block_uid;
     u32 hbl_block_addr;
@@ -89,6 +91,16 @@ typedef struct
 	SceUID ioSema;
     int audio_threads[8];
     int curr_channel_id;
+#ifdef VITA
+	u8 directoryLen;
+	int directoryFix[MAX_OPEN_DIR_VITA][2];
+#else
+	//tables.c
+	int syscalls_known;
+#endif
+	int syscalls_from_p5;
+    HBLNIDTable nid_table;
+    HBLLibTable library_table;
     //settings.c
     int override_sceIoMkdir;
     int override_sceCtrlPeekBufferPositive;
@@ -102,13 +114,6 @@ typedef struct
     tMenuApi menu_api;
     char hb_filename[512];
     char menupath[128];
-    //tables.c
-    HBLNIDTable nid_table;
-    HBLLibTable library_table;
-    int syscalls_known;
-	int syscalls_from_p5;
-	u8 directoryLen;
-	int directoryFix[MAX_OPEN_DIR_VITA][2];
 } tGlobals;
 
 

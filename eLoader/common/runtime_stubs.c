@@ -86,7 +86,9 @@ void unload_utility_modules(unsigned int moduleIDs[]) {
 	for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
 	{
 		unsigned int modid = moduleIDs[i];
+#ifndef VITA
 		if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
+#endif
 		{
 			result = unload_utility_module(modid);
 			if (result < 0)

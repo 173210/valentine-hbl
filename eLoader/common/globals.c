@@ -27,11 +27,12 @@ void init_globals()
     }
     tGlobals * g = get_globals();
     memset(g, 0, sizeof(tGlobals));
-#ifdef FLAT_FOLDER
+#ifdef VITA
 	strcpy(g->menupath, HBL_ROOT"EBOOT.PBP");
 #else
     strcpy(g->menupath, HBL_ROOT"menu/EBOOT.PBP");
 #endif
+#ifndef VITA
 	// Intialize firmware and model
 	getFirmwareVersion();
 	getPSPModel();
@@ -66,7 +67,7 @@ void init_globals()
 		}
 	}
 #endif
-
+#endif
 	g->syscalls_from_p5 = 1; // Always available
 
 	g->exit_callback_called = 0;
