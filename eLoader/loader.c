@@ -1,16 +1,16 @@
 /* Half Byte Loader loader :P */
 /* This loads HBL on memory */
 
-#include "sdk.h"
+#include <common/sdk.h>
 #include <loader.h>
-#include "debug.h"
-#include "config.h"
-#include "tables.h"
-#include "utils.h"
-#include "eloader.h"
-#include "malloc.h"
-#include "globals.h"
-#include "runtime_stubs.h"
+#include <common/debug.h>
+#include <common/config.h>
+#include <hbl/stubs/tables.h>
+#include <common/utils.h>
+#include <hbl/eloader.h>
+#include <common/malloc.h>
+#include <common/globals.h>
+#include <common/runtime_stubs.h>
 #include <exploit_config.h>
 
 #ifdef LOAD_MODULES_FOR_SYSCALLS

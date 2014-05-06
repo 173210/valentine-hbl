@@ -1,6 +1,5 @@
 PSPSDK=$(shell psp-config --pspsdk-path)
 PSPDEV=$(shell psp-config --pspdev-path)
-INCLUDE=$(PSPSDK)/include
 
 # make distrib to compile without debug info
 # make or make dev to compile with debug info
@@ -19,7 +18,9 @@ FOLDER_PATH = exploits/$(FOLDER)
 CC	= psp-gcc
 AS	= psp-as
 
-CFLAGS	:= -D PSP -I $(INCLUDE) -I $(FOLDER_PATH) -I . -Os -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
+INCDIR	= -I $(PSPSDK)/include -I include -I $(FOLDER_PATH) -I .
+
+CFLAGS	:= -D PSP $(INCDIR) -Os -W -Wall -Werror -Wshadow -G0 -fno-pic -mno-abicalls -fomit-frame-pointer
 
 #svn revision in code
 SVNVERSION = $(shell svnversion -n 2)
@@ -41,13 +42,14 @@ nonids: base
 distrib: base
 base: HBL.BIN H.BIN
 
-OBJS_COMMON = config.o debug.o globals.o lib.o malloc.o runtime_stubs.o utils.o
+OBJS_COMMON = common/config.o common/debug.o common/globals.o common/lib.o common/malloc.o common/runtime_stubs.o common/utils.o
 
-OBJS_HBL = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_hbl.o \
-	eloader.o elf.o memory.o modmgr.o syscall.o md5.o graphics.o font.o settings.o tables.o hook.o reloc.o resolve.o test.o
+OBJS_HBL = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_hbl.o hbl/eloader.o \
+	hbl/mod/elf.o hbl/mod/modmgr.o hbl/mod/reloc.o \
+	hbl/stubs/hook.o hbl/stubs/resolve.o hbl/stubs/syscall.o hbl/stubs/tables.o hbl/stubs/test.o \
+	hbl/utils/font.o hbl/utils/graphics.o hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
 
-OBJS_LOADER = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_loader.o \
-	loader.o
+OBJS_LOADER = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_loader.o loader.o
 
 %.BIN: %.elf
 	psp-strip -O binary -s $< -o $@
