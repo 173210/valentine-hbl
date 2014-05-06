@@ -24,7 +24,7 @@ SceOff g_nids_offset = -1;
 // Initialize config_file
 int config_initialize()
 {
-#ifdef HARDCODED_IMPORTS_CONFIG
+#if VITA >= 180
   const char * file_path = IMPORTS_PATH"imports.dat";
 #else
     char file_path[512];
