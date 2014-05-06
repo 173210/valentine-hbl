@@ -221,6 +221,7 @@ int get_library_index_from_name(char* name)
 }
 
 
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 int get_library_kernel_memory_offset(char* library_name)
 {
 #ifdef SYSCALL_KERNEL_OFFSETS_620
@@ -455,6 +456,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 
 	return lowest_syscall;
 }
+#endif
 
 // Return index in nid_table for closest higher known NID
 int get_higher_known_nid(unsigned int lib_index, u32 nid)
@@ -510,9 +512,6 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 	SceUID nid_file;
 	u32 nid;
 	unsigned int i;
-	u32 lowest_syscall;
-	int syscall_gap;
-	int index;
 
 	nid_file = open_nids_file(plibrary->name);
 
@@ -534,6 +533,10 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 			}
 			i++;
 		}
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+		u32 lowest_syscall;
+		int syscall_gap;
+		int index;
 
 		NID_LOGSTR0("Getting lowest syscall\n");
 		lowest_syscall = get_klowest_syscall(plibrary, reference_library_index, is_cfw);
@@ -578,7 +581,7 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 				add_nid_to_table(nid, MAKE_SYSCALL(lowest_syscall), get_library_index(plibrary->name));
 			}
 		}
-
+#endif
 		sceIoClose(nid_file);
 
 		return plibrary;
@@ -944,10 +947,10 @@ int build_nid_table()
 	} while(1);
 
 
+#if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
 	u32 m;
 	int reference_library_index = get_library_index(SYSCALL_REFERENCE_LIBRARY);
 
-#ifdef DEBUG
 	if (g->syscalls_known && (getFirmwareVersion() <= 610))
 	{
 		// Write out a library table
@@ -972,7 +975,6 @@ int build_nid_table()
 
 		LOGSTR0("\n");
 	}
-#endif
 
 	// On CFW there is a higher syscall difference between SysmemUserForUser
 	// and lower libraries than without it.
@@ -992,6 +994,7 @@ int build_nid_table()
 		LOGSTR1("Completing library...%d\n", m);
 		complete_library(&(g->library_table.table[m]), reference_library_index, is_cfw);
 	}
+#endif
 	CLEAR_CACHE;
 
 

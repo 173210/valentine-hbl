@@ -1,6 +1,7 @@
 #include <common/globals.h>
 #include <common/debug.h>
 #include <common/utils.h>
+#include <hbl/stubs/syscall.h>
 #include <exploit_config.h>
 
 tGlobals * get_globals()
@@ -32,9 +33,10 @@ void init_globals()
     strcpy(g->menupath, HBL_ROOT"menu/EBOOT.PBP");
 #endif
 	// Intialize firmware and model
-	g->firmware_version = 1;
-	g->psp_model = 1;
+	getFirmwareVersion();
+	getPSPModel();
 
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	// Select syscall estimation method
 	g->syscalls_known = 0;
 
@@ -63,6 +65,7 @@ void init_globals()
 			break;
 		}
 	}
+#endif
 
 	g->syscalls_from_p5 = 1; // Always available
 

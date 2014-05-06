@@ -70,10 +70,11 @@ void resolve_missing_stubs()
 				LOGSTR0("-Found in NID table, using real call\n");
 				syscall = g->nid_table.table[ret].call;
 			}
-
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 			// If not, estimate
 			else
 				syscall = estimate_syscall(lib_name, nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
+#endif
 
 			// DEBUG_PRINT("**RESOLVED SYS**", lib_name, strlen(lib_name));
 			// DEBUG_PRINT(" ", &syscall, sizeof(syscall));
@@ -257,7 +258,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
 			if (real_call == 0)
 			{
-#ifdef VITA
+#ifdef DEACTIVATE_SYSCALL_ESTIMATION
                 real_call = setup_default_nid(*cur_nid);
 #else
 				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);

@@ -1,6 +1,20 @@
 #ifndef ELOADER_SYSCALL
 #define ELOADER_SYSCALL
 
+#if defined(VITA) || !defined(SYSCALL_REFERENCE_LIBRARY) \
+	|| !(defined(SYSCALL_OFFSETS_500) || defined(SYSCALL_OFFSETS_500_CFW) \
+	|| defined(SYSCALL_OFFSETS_550) || defined(SYSCALL_OFFSETS_550_CFW) \
+	|| defined(SYSCALL_OFFSETS_570) || defined(SYSCALL_OFFSETS_570_GO) \
+	|| defined(SYSCALL_OFFSETS_600) || defined(SYSCALL_OFFSETS_600_GO) \
+	|| defined(SYSCALL_KERNEL_OFFSETS_620) \
+	|| defined(SYSCALL_KERNEL_OFFSETS_630) \
+	|| defined(SYSCALL_KERNEL_OFFSETS_635))
+#define DEACTIVATE_SYSCALL_ESTIMATION
+#else
+//Comment the following line to avoid reestimation
+#define REESTIMATE_SYSCALL
+#endif
+
 typedef enum
 {
 	FROM_LOWER = 0,

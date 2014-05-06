@@ -188,7 +188,7 @@ u32 find_first_free_syscall (int lib_index, u32 start_syscall)
     return syscall;
 }
 
-
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 // Estimate a syscall from library's closest known syscall
 u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
 {
@@ -557,3 +557,4 @@ u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod t
     return 0;
 #endif
 }
+#endif

@@ -41,9 +41,6 @@
 // Switches
 //
 
-//Comment the following line to avoid reestimation
-#define REESTIMATE_SYSCALL
-
 //Comment to disable HBL LoadModule system
 #define LOAD_MODULE
 
