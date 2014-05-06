@@ -2,7 +2,6 @@
 #define ELOADER_HOOK
 
 #include <psprtc.h>
-#include <pspmath.h>
 
 //Comment the following line if you don't want to hook thread creation
 #define HOOK_THREADS
