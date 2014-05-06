@@ -3,7 +3,7 @@
 /*
  * Implementation of the md5 algorithm as described in RFC1321
  * Copyright (C) 2005 Quentin Carbonneaux <crazyjoke@free.fr>
- * 
+ *
  * This file is part of md5sum.
  *
  * md5sum is a free software; you can redistribute it and/or modify
@@ -80,13 +80,13 @@ unsigned char *md5 (unsigned char *M, md5_size len, unsigned char *_digest)
 	context->regs.B = 0xefcdab89;
 	context->regs.C = 0x98badcfe;
 	context->regs.D = 0x10325476;
-	
+
 	do {
 		memcpy (context->buf + context->size, M + context->bits, buflen - context->size);
 		context->size += buflen - context->size;
 		md5_update (context);
 	} while (len - context->bits > 64);
-	
+
 	md5_final (_digest, context);
 
         free (context->buf);
@@ -101,14 +101,14 @@ void md5_init (struct md5_ctx *context)
 	memset (context->buf, '\0', MD5_BUFFER);
 	context->size = 0;
 	context->bits = 0;
-	
+
 	/* Init registries */
 	context->regs.A = 0x67452301;
 	context->regs.B = 0xefcdab89;
 	context->regs.C = 0x98badcfe;
 	context->regs.D = 0x10325476;
 }
-	
+
 /* md5_size is bytes while the size at the end of the message is in bits ... */
 static void md5_addsize (unsigned char *M, md5_size index, md5_size oldlen)
 {
@@ -130,7 +130,7 @@ void md5_update (struct md5_ctx *context)
 {
 	unsigned char buffer [64]; /* 512 bits */
 	int i;
-	
+
 	for (i = 0; context->size - i > 63; i += 64) {
 		memcpy (buffer, context->buf + i, 64);
 		md5_encode (buffer, context);
@@ -147,7 +147,7 @@ void md5_final (unsigned char *digest, struct md5_ctx *context)
 	int i;
 
 	//assert (context->size < 64);
-	
+
 	if (context->size + 1 > 56) { /* We have to create another block */
 		memcpy (buffer, context->buf, context->size);
 		memcpy (buffer + context->size, MD5_PADDING, 64 - context->size);
@@ -182,7 +182,7 @@ static void md5_encode (unsigned char *buffer, struct md5_ctx *context)
 {
 	unsigned int a = context->regs.A, b = context->regs.B, c = context->regs.C, d = context->regs.D;
 	unsigned int x[16];
-	
+
 	GET_UINT32 (x[ 0],buffer, 0);
 	GET_UINT32 (x[ 1],buffer, 4);
 	GET_UINT32 (x[ 2],buffer, 8);

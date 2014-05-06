@@ -20,7 +20,7 @@
 // cannot have them
 void init_globals_2() {
     tGlobals * g = get_globals();
-	
+
     g->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
     g->thrSema = sceKernelCreateSema("hblthrsema",0,1,1,0);
     g->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);
@@ -39,7 +39,7 @@ void run_eboot(const char *path, int is_eboot)
 	cls();
 
 	LOGSTR1("EBOOT path: %s\n", (u32)path);
-    
+
     //Load Game config overrides
     char config_path[256];
     strcpy(config_path, path);
@@ -47,16 +47,16 @@ void run_eboot(const char *path, int is_eboot)
     config_path[path_len] = 0;
     strcat(config_path, HBL_CONFIG);
     loadConfig(config_path);
-    
+
 	// Extracts ELF from PBP
-	if (is_eboot)		
+	if (is_eboot)
 		elf_file = elf_eboot_extract_open(path, &offset);
 	// Plain ELF
 	else
 		elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	LOGSTR0("Loading module\n");
-    
+
     //clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
     //if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
     // I don't think they change based on each psp model
@@ -64,8 +64,8 @@ void run_eboot(const char *path, int is_eboot)
 	memset(sceGeEdramGetAddr(), 0, 0x00200000);
 #else
 	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
-#endif  
-    	
+#endif
+
 	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
 
 	// No need for ELF file anymore
@@ -76,7 +76,7 @@ void run_eboot(const char *path, int is_eboot)
 		LOGSTR1("ERROR 0x%08lX loading main module\n", mod_id);
 		EXIT;
 	}
-    
+
 	mod_id = start_module(mod_id);
 
 	if (mod_id < 0)
@@ -102,15 +102,15 @@ void wait_for_eboot_end()
     while(lwait)
     {
         //sceKernelWaitSema(gThrSema, 1, 0);
-        
+
         //Check for force exit to the menu
         if (g->force_exit_buttons)
         {
 #ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
-            sceCtrlReadBufferPositive(&pad, 1); 
-#else            
+            sceCtrlReadBufferPositive(&pad, 1);
+#else
 			sceCtrlPeekBufferPositive(&pad, 1);
-#endif            
+#endif
             if (pad.Buttons == g->force_exit_buttons)
             {
                 exit_everything_but_me();
@@ -144,8 +144,8 @@ void cleanup(u32 num_lib)
     threads_cleanup();
     ram_cleanup();
     free_all_mallocs();
-    
-	
+
+
 	#ifndef DISABLE_UNLOAD_UTILITY_MODULES
     //unload utility modules
     int i;
@@ -153,20 +153,20 @@ void cleanup(u32 num_lib)
     u32 num_utility = g->mod_table.num_utility;
 	for (i=num_utility-1; i>=0; i--)
 	{
-		
+
 		if ((modid = g->mod_table.utility[i]) != 0)
 		{
 			//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
 			//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
-			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620)) ) 
+			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620)) )
 			{
 	            LOGSTR1("UNLoad utility module id  0x%08lX \n", modid);
 				int ret = unload_utility_module(modid);
-	            if (ret < 0) 
+	            if (ret < 0)
 	            {
 	                LOGSTR2("WARNING! error unloading module %d: 0x%08lX\n",g->mod_table.utility[i], ret);
 	                print_to_screen("WARNING! ERROR UNLOADING UTILITY");
-	                sceKernelDelayThread(1000000); 
+	                sceKernelDelayThread(1000000);
 	            }
 	            else
 	            {
@@ -206,7 +206,7 @@ void run_menu()
 {
     tGlobals * g = get_globals();
     print_to_screen("Loading Menu");
-      
+
     // Just trying the basic functions used by the menu
     SceUID id = -1;
 	SceIoDirent entry;
@@ -219,11 +219,11 @@ void run_menu()
 		print_to_screen_color("--failure", 0x000000FF);
 	    sceKernelDelayThread(1000000);
     }
-	
+
     else
     {
         print_to_screen_color("--success", 0x0000FF00);
-		
+
         print_to_screen("-Test sceIoDread");
         memset(&entry, 0, sizeof(SceIoDirent));
         if (_test_sceIoDread(id, &entry) < 0)
@@ -233,7 +233,7 @@ void run_menu()
 		}
 		else
         	print_to_screen_color("--success", 0x0000FF00);
-		
+
         print_to_screen("-Test sceIoDclose");
         id = _test_sceIoDclose(id);
         if (id < 0)
@@ -244,8 +244,8 @@ void run_menu()
         else
             print_to_screen_color("--success", 0x0000FF00);
     }
-	
-    run_eboot(g->menupath, 1);       
+
+    run_eboot(g->menupath, 1);
 }
 
 // HBL exit callback
@@ -288,15 +288,15 @@ int callback_thread(SceSize args, void *argp)
     //Setup HBL exit callback
 	cbid = sceKernelCreateCallback("HBLexitcallback", hbl_exit_callback, NULL);
 	ret = sceKernelRegisterExitCallback(cbid);
-	
+
 	LOGSTR2("Setup HBL Callback:\n  cbid=%08lX\n  ret=%08lX\n", cbid, ret);
 
-#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB	
+#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
 	_hook_sceKernelSleepThreadCB();
 #else
     sceKernelSleepThreadCB();
 #endif
-    
+
 	return 0;
 }
 
@@ -311,17 +311,17 @@ int start_thread() //SceSize args, void *argp)
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 	load_utility_module(PSP_MODULE_AV_AVCODEC);
 #endif
-	
+
 	// Build NID table
     print_to_screen("Building NIDs table");
 	num_nids = build_nid_table();
     LOGSTR1("NUM NIDS: %d\n", num_nids);
-	
+
 	if(num_nids <= 0)
-	{	
+	{
         exit_with_log("No Nids ???", NULL, 0);
     }
-    
+
     // FIRST THING TO DO!!!
     print_to_screen("Resolving own missing stubs");
     resolve_missing_stubs();
@@ -329,7 +329,7 @@ int start_thread() //SceSize args, void *argp)
     // Free memory
     print_to_screen("Freeing memory");
     free_game_memory();
-    
+
     print_to_screen("-- Done");
 
     // Start Callback Thread
@@ -338,14 +338,14 @@ int start_thread() //SceSize args, void *argp)
 	{
 		LOGSTR1("Callback Thread Created\n  thid=%08lX\n", thid);
 		sceKernelStartThread(thid, 0, 0);
-	} 
-	else 
+	}
+	else
 		LOGSTR1("Failed Callback Thread Creation\n  thid=%08lX\n", thid);
 
     LOGSTR0("START HBL\n");
 
     u32 num_lib = g->library_table.num;
-    
+
     //Run the hardcoded eboot if it exists...
     if (file_exists(EBOOT_PATH))
     {
@@ -372,7 +372,7 @@ int start_thread() //SceSize args, void *argp)
             exit = 1;
             continue;
         }
-        
+
         initial_free_ram = sceKernelTotalFreeMemSize();
         char filename[512];
         strcpy(filename, g->hb_filename);
@@ -388,11 +388,11 @@ int start_thread() //SceSize args, void *argp)
         cleanup(num_lib);
         ramcheck(initial_free_ram);
         if (g->exit_callback_called)
-			exit = 1;      
+			exit = 1;
     }
-	
+
 	sceKernelExitGame();
-	
+
 	return 0;
 }
 
@@ -404,29 +404,29 @@ void _start()
     int firmware_version = getFirmwareVersion();
 	cls();
     print_to_screen("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
-    
+
 #ifdef DEBUG
 #ifdef NID_DEBUG
     print_to_screen("DEBUG version (+NIDS)");
 #else
-    print_to_screen("DEBUG version");        
-#endif     
+    print_to_screen("DEBUG version");
+#endif
 #else
     print_to_screen_color("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
 #endif
 
-    
-	switch (firmware_version) 
+
+	switch (firmware_version)
 	{
 		case 0:
 		case 1:
 		    print_to_screen("Unknown Firmware :(");
-		    break; 
+		    break;
 		default:
 		    PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
 		    break;
     }
-    
+
     if (getPSPModel() == PSP_GO)
 	{
         print_to_screen("PSP Go Detected");
@@ -446,15 +446,15 @@ void _start()
             LOGSTR2("--> ERROR 0x%08lX Deleting FPL ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
         }
     }
-#endif      
- 
+#endif
+
     // Second step of globals initalization
 	init_globals_2();
- 
-  
+
+
 	// Create and start eloader thread
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
-	
+
 	if(thid >= 0)
 	{
 		thid = sceKernelStartThread(thid, 0, NULL);
@@ -463,7 +463,7 @@ void _start()
     {
         PRTSTR1("Error starting HBL thread 0x%08lX", thid);
     }
-	
+
 	sceKernelExitDeleteThread(0);
 
 	// Never executed (hopefully)

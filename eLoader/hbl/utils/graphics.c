@@ -9,10 +9,10 @@
 
 Color* g_vram_base = (Color*) (0x40000000 | 0x04000000);
 
-typedef union 
+typedef union
 {
 	int rgba;
-	struct 
+	struct
 	{
 		char r;
 		char g;
@@ -83,7 +83,7 @@ void printTextScreen(int x, int y, const char * text, u32 color)
 		if (x < 0 || x + 8 > SCREEN_WIDTH || y < 0 || y + 8 > SCREEN_HEIGHT) break;
 		char ch = text[c];
 		vram = getVramDrawBuffer() + x + y * PSP_LINE_SIZE;
-		
+
 		font = &msx[ (int)ch * 8];
 		for (i = l = 0; i < 8; i++, l += 8, font++) {
 			vram_ptr  = vram;
@@ -97,25 +97,25 @@ void printTextScreen(int x, int y, const char * text, u32 color)
 	}
 }
 
-void print_to_screen_color(const char * text, u32 color) 
+void print_to_screen_color(const char * text, u32 color)
 {
-	if (gY > 272) 
+	if (gY > 272)
 	{
     	SetColor(0);
   	}
-	
+
   	printTextScreen(0, gY, text, color);
   	gY += 12;
-	
+
     LOGSTR0(text);
 	LOGSTR0("\n");
-}  
+}
 
 
-void print_to_screen(const char * text) 
+void print_to_screen(const char * text)
 {
   	print_to_screen_color(text, 0x00FFFFFF);
-}  
+}
 
 
 
@@ -139,7 +139,7 @@ void PRTSTR2(const char* A, unsigned long B, unsigned long C)
   print_to_screen(buff);
 }
 
-void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D)	
+void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D)
 {
   char buff[512];
   mysprintf3(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);

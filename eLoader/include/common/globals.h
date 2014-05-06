@@ -50,7 +50,7 @@ typedef struct
     char        * filename;   // The menu will write the selected filename there
 }	tMenuApi;
 
-typedef struct 
+typedef struct
 {
 	// firmware and model
 	u32 firmware_version;
@@ -81,7 +81,7 @@ typedef struct
     int                       callbackids[MAX_CALLBACKS];
     SceKernelCallbackFunction exitcallback;
     int callbackcount;
-    int calledexitcb;  
+    int calledexitcb;
     SceUID memSema;
     SceUID thrSema;
     SceUID cbSema;

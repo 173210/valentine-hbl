@@ -6,7 +6,7 @@ typedef enum
 	FROM_LOWER = 0,
 	FROM_HIGHER = 1,
 	SUBSTRACT = 2,		// Only for reestimation
-	ADD_TWICE = 3,		// Only for reestimation		
+	ADD_TWICE = 3,		// Only for reestimation
 	FROM_LOWEST = 4,
 	FROM_CLOSEST = 5
 } HBLEstimateMethod;

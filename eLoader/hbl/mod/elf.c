@@ -14,15 +14,15 @@
 void * allocate_memory(u32 size, void* addr)
 {
     int type = PSP_SMEM_Low;
-    if (addr) 
+    if (addr)
     {
         type = PSP_SMEM_Addr;
     }
-    
+
     LOGSTR2("-->ALLOCATING MEMORY @ 0x%08lX size 0x%08lX... ", (u32)addr, size);
     //hook is used to monitor ram usage and free it on exit
     SceUID mem = _hook_sceKernelAllocPartitionMemory(2, "ELFMemory", type, size, addr);
-    
+
 	if (mem < 0)
 	{
 		LOGSTR1("FAILED: 0x%08lX\n", mem);
@@ -30,7 +30,7 @@ void * allocate_memory(u32 size, void* addr)
 	}
 
     LOGSTR0("OK\n");
-	
+
 	return sceKernelGetBlockHeadAddr(mem);
 }
 
@@ -55,7 +55,7 @@ int elf_check_magic(Elf32_Ehdr* pelf_header)
 // Just checks if pointers are not NULL
 int elf_check_stub_entry(tStubEntry* pentry)
 {
-	return ( 
+	return (
     valid_umem_pointer((u32)(pentry->library_name)) &&
 	valid_umem_pointer((u32)(pentry->nid_pointer)) &&
 	valid_umem_pointer((u32)(pentry->jump_pointer)));
@@ -80,7 +80,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		// Read the program header
 		sceIoLseek(elf_file, start_offset + pelf_header->e_phoff + (sizeof(Elf32_Phdr) * i), PSP_SEEK_SET);
 		sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
-		
+
 		// Loads program segment at virtual address
 		sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
 		buffer = (void *) program_header.p_vaddr;
@@ -97,7 +97,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 
 		*size += program_header.p_memsz;
 	}
-		
+
 	return *size;
 }
 
@@ -124,14 +124,14 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Check if kernel mode
 	if ((unsigned int)program_header.p_paddr & 0x80000000)
 		return 0;
-		
+
 	LOGSTR1("Module info @ 0x%08lX offset\n", (u32)start_offset + (u32)program_header.p_paddr);
 
 	// Read module info from PRX
 	sceIoLseek(elf_file, (u32)start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
-	
+
     LOGMODINFO(module_info);
     
 	// Loads program segment at fixed address
@@ -220,7 +220,7 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 
 // Get module GP
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
-{	
+{
 	Elf32_Shdr section_header;
 	tModInfoEntry module_info;
 	int section_index = -1;
@@ -232,7 +232,7 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 		LOGSTR0("ERROR: section rodata.sceModuleInfo not found\n");
 		return 0;
 	}
-	
+
 	// Read in section header
     sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (section_index * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
 	sceIoRead(elf_file, &section_header, sizeof(Elf32_Shdr));
@@ -242,7 +242,7 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
     sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
 
     LOGMODINFO(module_info);
-	
+
     return (u32) module_info.gp;
 }
 

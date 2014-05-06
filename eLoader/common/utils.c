@@ -14,14 +14,14 @@
 // 3 is other
 
 
-// New method by neur0n to get the firmware version from the 
+// New method by neur0n to get the firmware version from the
 // module_sdk_version export of sceKernelLibrary
 // http://wololo.net/talk/viewtopic.php?f=4&t=128
 u32 getFirmwareVersion()
 {
    tGlobals * g = get_globals();
 
-   if (g->firmware_version != 1) 
+   if (g->firmware_version != 1)
       return g->firmware_version;
 
    g->firmware_version = 0;
@@ -53,14 +53,14 @@ u32 getFirmwareVersion()
    if(version)
    {
       g->firmware_version = ((version >> 24) * 100)
-         + (((version & 0x00FF0000) >> 16) * 10)    
+         + (((version & 0x00FF0000) >> 16) * 10)
          + ((version & 0x0000FF00) >> 8);
    }
    else
    {
       LOGSTR0("Warning: Cannot find module_sdk_version function \n");
    }
-    
+
     return g->firmware_version;
 }
 
@@ -78,12 +78,12 @@ u32 getPSPModel()
 	SceUID result = sceIoOpen("ef0:/", 1, 0777);
 
 	// Check for "No such device" error
-	g->psp_model = (result == (int)0x80020321) ? PSP_OTHER : PSP_GO;	
+	g->psp_model = (result == (int)0x80020321) ? PSP_OTHER : PSP_GO;
 
-    return g->psp_model; 
+    return g->psp_model;
 }
 
-int valid_umem_pointer(u32 addr) 
+int valid_umem_pointer(u32 addr)
 {
     return (addr >= 0x08800000) &&
     (addr < 0x0A000000);

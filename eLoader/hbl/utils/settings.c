@@ -20,7 +20,7 @@ int configYnParse(const char *xival)
         (xival[0] == 'Y'))
     {
         return(1);
-    } 
+    }
     else
     {
         return(0);
@@ -35,13 +35,13 @@ int configIntParse(const char *xival)
     int   lrunningvalue = 0;
     char *lptr = (char *)xival;
     int minus = 1;
-    
+
     if(*lptr == '-')
     {
         lptr++;
         minus = -1;
     }
-  
+
     while ((*lptr != 0) &&
          (*lptr >= '0') &&
          (*lptr <= '9'))
@@ -227,19 +227,19 @@ void configGetProcessingOptions()
         else if (strcmp(lstr,"override_sceCtrlPeekBufferPositive")==0)
         {
             g->override_sceCtrlPeekBufferPositive = configIntParse(lval);
-        }        
+        }
         else if (strcmp(lstr,"return_to_xmb_on_exit")==0)
         {
             g->return_to_xmb_on_exit = configIntParse(lval);
-        }   
+        }
         else if (strcmp(lstr,"force_exit_buttons")==0)
         {
             g->force_exit_buttons = configAddrParse(lval);
-        }   
+        }
         else if (strcmp(lstr,"syscalls_known")==0)
         {
             g->syscalls_known = configIntParse(lval);
-        }           
+        }
         else if (strcmp(lstr,"hb_folder")==0)
         {
             //note: g->hb_folder is initialized in loadGlobalConfig
@@ -259,14 +259,14 @@ void loadGlobalConfig()
     tGlobals * g = get_globals();
     //default values
     g->override_sceIoMkdir = DONT_OVERRIDE;
-    g->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;    
+    g->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;
     g->return_to_xmb_on_exit = 0;
     g->force_exit_buttons = 0;
     strcpy(g->hb_filename, "ms0:/PSP/GAME/");
 #ifdef VITA_DIR_FIX
     reset_vita_dirs();
 #endif
-    
+
     //load Config file
     loadConfig(HBL_ROOT HBL_CONFIG);
 }
@@ -276,7 +276,7 @@ void closeConfig() {
         sceIoClose(gconfigfd);
     gconfigfd = -1;
     gconfigoffset = 0;
-    
+
 }
 
 /*****************************************************************************/
@@ -300,7 +300,7 @@ void loadConfig(const char * path)
 {
     LOGSTR1("Attempt to Load Config file: %s\n", (u32)path);
     closeConfig();
-        
+
     /***************************************************************************/
     /* Open file, read globals and configured defaults                         */
     /***************************************************************************/

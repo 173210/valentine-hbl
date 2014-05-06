@@ -25,7 +25,7 @@ typedef struct
 // u32				libstubs[num_libstubs]			Array of .lib.stub addresses
 // tImportedLibrary	imported_library[num_libraries]	Array of tImportedLibrary structs
 //													Game .lib.stub address should be first
-// u32				nids[num_nids]					Array of actual NIDs imported IN THE SAME ORDER 
+// u32				nids[num_nids]					Array of actual NIDs imported IN THE SAME ORDER
 // 													as eloader stubs from lower to higher memory.
 // 													Check sdk_hbl.S to be sure about it!
 // IMPORTANT: NIDs from first library must be the first ones in the NID array

@@ -14,13 +14,13 @@ typedef struct
 
 typedef struct
 {
-	unsigned int num;					// Number of nids on table	
+	unsigned int num;					// Number of nids on table
 	tNIDResolver table[NID_TABLE_SIZE];	// NID resolver
 } HBLNIDTable;
 
 typedef enum
 {
-	SYSCALL_MODE = 0, 
+	SYSCALL_MODE = 0,
 	JUMP_MODE = 1
 } tCallingMode;
 

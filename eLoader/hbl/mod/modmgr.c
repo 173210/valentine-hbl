@@ -39,7 +39,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	tGlobals * g = get_globals();
 
 	//LOGSTR1("mod_table address: 0x%08lX\n", mod_table);
-	
+
 	if (g->mod_table.num_loaded_mod >= MAX_MODULES)
 		return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 
@@ -53,29 +53,29 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		return SCE_KERNEL_ERROR_ERROR;
 
 	LOGELFHEADER(elf_hdr);
-	
+
 	// Loading module
 	tStubEntry* pstub;
 	unsigned int program_size, stubs_size = 0;
 	unsigned int i = g->mod_table.num_loaded_mod;
-    strcpy(g->mod_table.table[i].path, path); 
-	
+    strcpy(g->mod_table.table[i].path, path);
+
 	// Static ELF
 	if(elf_hdr.e_type == (Elf32_Half) ELF_STATIC)
 	{
 		//LOGSTR0("STATIC\n");
 
 		g->mod_table.table[i].type = ELF_STATIC;
-		
+
 		if(g->mod_table.num_loaded_mod > 0)
 			return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
 		// Load ELF program section into memory
-		elf_load_program(elf_file, offset, &elf_hdr, &program_size);		
-	
+		elf_load_program(elf_file, offset, &elf_hdr, &program_size);
+
 		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_hdr, &pstub);
-		
+
 		g->mod_table.table[i].text_entry = (u32 *)elf_hdr.e_entry;
 		g->mod_table.table[i].gp = (void*)getGP(elf_file, offset, &elf_hdr);
 	}
@@ -88,7 +88,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		g->mod_table.table[i].type = ELF_RELOC;
 
 		LOGSTR1("load_module -> Offset: 0x%08lX\n", offset);
-		
+
 		// Load PRX program section
 		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, (u32*)&program_size, &addr)) == 0)
 			return SCE_KERNEL_ERROR_ERROR;
@@ -100,15 +100,15 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		unsigned int ret = relocate_sections(elf_file, offset, &elf_hdr, addr);
 
 		LOGSTR1("Relocated entries: %d\n", ret);
-		
+
 		if (ret == 0)
 		{
 			LOGSTR0("WARNING: no entries to relocate on a relocatable ELF\n");
 		}
-		
+
 		// Relocate ELF entry point and GP register
 		g->mod_table.table[i].text_entry = (u32 *)((u32)elf_hdr.e_entry + (u32)addr);
-        g->mod_table.table[i].gp = (u32 *) (getGP(elf_file, offset, &elf_hdr) + (u32)addr);		
+        g->mod_table.table[i].gp = (u32 *) (getGP(elf_file, offset, &elf_hdr) + (u32)addr);
 	}
 
 	// Unknown ELF type
@@ -131,7 +131,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	g->mod_table.table[i].state = LOADED;
 	g->mod_table.table[i].size = program_size;
 	g->mod_table.table[i].text_addr = addr;
-	g->mod_table.table[i].libstub_addr = pstub;		
+	g->mod_table.table[i].libstub_addr = pstub;
 	g->mod_table.num_loaded_mod++;
 
 	//LOGSTR0("Module table updated\n");
@@ -141,7 +141,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	LOGMODENTRY(g->mod_table.table[i]);
 
 	CLEAR_CACHE;
-	
+
 	return g->mod_table.table[i].id;
 }
 
@@ -161,7 +161,7 @@ SceUID start_module(SceUID modid)
 	LOGSTR1("\n\n-->Starting module ID: 0x%08lX\n", modid);
 
 	tGlobals * g = get_globals();
-	
+
 	if (g->mod_table.num_loaded_mod == 0)
 		return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
@@ -176,7 +176,7 @@ SceUID start_module(SceUID modid)
 	LOGMODENTRY(g->mod_table.table[index]);
 
 	u32 gp_bak;
-	
+
 	GET_GP(gp_bak);
 	SET_GP(g->mod_table.table[index].gp);
 
@@ -189,7 +189,7 @@ SceUID start_module(SceUID modid)
 
     //The hook is called here to handle thread moniotoring
 	SceUID thid = _hook_sceKernelCreateThread("hblmodule", g->mod_table.table[index].text_entry, 0x30, 0x1000, 0, NULL);
-    
+
     char largbuff[512];
     memset(largbuff, 512, 0);
     strcpy(largbuff, g->mod_table.table[index].path);
@@ -222,10 +222,10 @@ SceUID start_module(SceUID modid)
 		g->menu_api.BackgroundFilename = NULL;
         g->menu_api.filename = g->hb_filename;
 	}
-    
+
     LOGSTR1("argv[0]: '%s'\n", (u32)largbuff);
     LOGSTR1("argc:  %08lX\n", (u32)larglen);
-    
+
 	if(thid >= 0)
 	{
 		LOGSTR1("->MODULE MAIN THID: 0x%08lX ", thid);
@@ -237,14 +237,14 @@ SceUID start_module(SceUID modid)
 			return thid;
 		}
     }
-	else 
+	else
 	{
         LOGSTR1(" HB Thread couldn't be created. Error 0x%08lX\n", thid);
 		return thid;
 	}
 
 	g->mod_table.table[index].state = RUNNING;
-	
+
 	SET_GP(gp_bak);
 
 	return modid;
@@ -342,7 +342,7 @@ int get_utility_module_name(const char* lib, char* name)
 	{
 		strcpy(name, "sceNetAdhocDiscover_Library");
 		return PSP_MODULE_NET_ADHOC;
-	}	
+	}
 
 	//SceHttp_Library
 	else if (strcmp(lib, "sceHttp") == 0)
@@ -357,7 +357,7 @@ int get_utility_module_name(const char* lib, char* name)
 		strcpy(name, "sceSsl_Module");
 		return PSP_MODULE_NET_SSL;
 	}
-*/	
+*/
 	// Not found
 	else
 		return -1;
@@ -366,7 +366,7 @@ int get_utility_module_name(const char* lib, char* name)
 // Returns pointer to first export entry for a given module name and library
 tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_name)
 {
-	// Search for module name 
+	// Search for module name
 	char* name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
 
 	if (name_found == NULL)
@@ -443,11 +443,11 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
         load_utility_module(PSP_MODULE_NET_PARSEURI);
         load_utility_module(PSP_MODULE_NET_PARSEHTTP);
 	}
- 
+
     int ret = load_utility_module(mod_id);
     if (ret <0)
         return ret;
-	
+
 	//SceUID utility_id;
 	char mod_name[MAX_MODULE_NAME_LENGTH];
 
@@ -488,7 +488,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	// Insert new library on library table
 	tSceLibrary newlib;
 	memset(&newlib, 0, sizeof(newlib));
-	
+
 	strcpy(newlib.name, lib_name);
 	newlib.calling_mode = JUMP_MODE;
 	newlib.num_library_exports = pexports->num_functions;

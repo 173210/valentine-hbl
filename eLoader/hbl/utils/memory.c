@@ -9,7 +9,7 @@
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES_TO_FREE 0x20
 
-int kill_thread(SceUID thid) 
+int kill_thread(SceUID thid)
 {
 #ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
     int ret = sceKernelTerminateDeleteThread(thid);
@@ -32,7 +32,7 @@ int kill_thread(SceUID thid)
         LOGSTR2("--> ERROR 0x%08lX DELETING THREAD ID 0x%08lX\n", ret, thid);
     }
 #endif
-        
+
     return ret;
 }
 #ifdef SUSPEND_THEN_DELETE_THREADS
@@ -42,7 +42,7 @@ void SuspendAllThreads()
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 	SceUID thuids[] = TH_ADDR_LIST;
-	
+
 	// Suspend all threads and remember their UIDs
 	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
@@ -60,7 +60,7 @@ void SuicideAllThreads(void)
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 	SceUID thuids[] = TH_ADDR_LIST;
-	
+
 	// Suspend all threads and remember their UIDs
 	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
@@ -72,30 +72,30 @@ void SuicideAllThreads(void)
 	LOGSTR0("All threads suspended\n");
 
 	unsigned int* address = (unsigned int*)0x09A00000;
-	
+
 	// Get call for sceKernelExitDeleteThread
 	int nid_index = get_nid_index(0x809CE29B); // sceKernelExitDeleteThread
 	LOGSTR1("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
-	
+
 	tGlobals * g = get_globals();
 	unsigned int syscall = g->nid_table.table[nid_index].call;
 	LOGSTR2("Call for NID sceKernelExitDeleteThread is: 0x%08lX 0x%08lX\n", GET_SYSCALL_NUMBER(syscall), syscall);
-	
+
 	// Write syscall instruction to memory and empty the memory
-	*address =  syscall; 
+	*address =  syscall;
 	*((unsigned int*)0x09A00004) = 0x34840000; // xori $a0, $a0, 0 ($a0 = 0)
-	
-	// Zero memory from top to bottom	
+
+	// Zero memory from top to bottom
 	for (i = (unsigned int)address - 1; i >= 0x08804000; i--)
 	  *((char*)i) = 0;
-	 
+
 	// Resume threads
 	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
 		int result = sceKernelResumeThread(thuids[i]);
 		LOGSTR2("Resuming thread 0x%08lX, result is 0x%08lX\n", thuids[i], result);
 	}
-	
+
 	LOGSTR0("All threads resumed\n");
 }
 #endif
@@ -106,7 +106,7 @@ void DeleteAllThreads(void)
     LOGSTR0("memory.c:DeleteAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
-	
+
 	/* lets kill these threads now */
 	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
@@ -158,7 +158,7 @@ void DeleteAllEventFlags(void)
     LOGSTR0("memory.c:DeleteAllEventFlags\n");
 	u32 i;
 	u32 evaddrs[] = EV_ADDR_LIST;
-	
+
 	/* killin' tiem */
 	for (i = 0; i < (sizeof(evaddrs)/sizeof(u32)); i++)
 	{
@@ -178,10 +178,10 @@ void DeleteAllSemaphores(void)
     LOGSTR0("memory.c:DeleteAllSemaphores\n");
 	u32 i;
 	u32 semaaddrs[] = SEMA_ADDR_LIST;
-	
+
 	/* sgx semaphores */
 
-	
+
 	/* lets destroy these now */
 	for (i = 0; i < (sizeof(semaaddrs)/sizeof(u32)); i++)
 	{
@@ -209,9 +209,9 @@ void UnloadModules()
 #ifdef UNLOAD_ADDITIONAL_MODULES
     LOGSTR0("memory.c:UnloadModules\n");
 	// Unload user modules first
-	// The more basic modules got a lower ID, so this should be the correct 
+	// The more basic modules got a lower ID, so this should be the correct
 	// order to unload
-    
+
 	SceUID result;
 	int m = PSP_MODULE_AV_G729;
 	while (m >= PSP_MODULE_AV_AVCODEC)
@@ -243,19 +243,19 @@ void UnloadModules()
 		unload_memset_flag = 0;
 	}
 #endif
-	
-	
+
+
 	// Set inital UID to -1 and the current UID to 0
 	int i;
 	SceUID uids[MAX_MODULES_TO_FREE];
 	uids[0] = -1;
 	SceUID cur_uid = 0;
-	
+
 	/* scan through user memory looking for modules ;) */
 	for (i = 0; i < (24 << 20); i += 0x400)
 	{
 		SceUID modid;
-		
+
 		/* check if we've got a UID */
 		if ((modid = sceKernelGetModuleIdByAddress(MODULES_START_ADDRESS + i)) >= 0)
 		{
@@ -273,7 +273,7 @@ void UnloadModules()
 			}
 		}
 	}
-	
+
 	/* shutdown the modules in usermode */
 	for (i = cur_uid - 1; (int)i >= 0; i--)
 	{
@@ -295,7 +295,7 @@ void FreeMem()
 
 #ifdef GAME_FREEMEM_ADDR
     SceUID memids[] = GAME_FREEMEM_ADDR;
-   
+
     for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
     {
         int ret = sceKernelFreePartitionMemory(*(SceUID*)memids[i]);
@@ -423,7 +423,7 @@ void free_game_memory()
 #ifdef SUB_INTR_HANDLER_CLEANUP
 	subinterrupthandler_cleanup();
 #endif
-    
+
 #ifdef SUSPEND_THEN_DELETE_THREADS
 	SuspendAllThreads();
 #else
@@ -471,14 +471,14 @@ unload_memset_flag = 1;
 #else
 	UnloadModules();
 #endif
-	
+
 	CloseFiles();
 
 #ifdef DEBUG
 	is_free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
 	LOGSTR2(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", is_free, max_free);
-#endif  
+#endif
 
 	return;
 }
@@ -514,7 +514,7 @@ SceSize sceKernelMaxFreeMemSize()
         else
             sceKernelFreePartitionMemory(uid);
     }
-    
+
     return size;
 }
 
@@ -549,7 +549,7 @@ SceSize sceKernelTotalFreeMemSize()
             LOGSTR0("Discrepency between sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
             return size;
         }
-        
+
         // Update variables
         size += x;
         count++;

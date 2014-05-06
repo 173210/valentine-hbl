@@ -13,13 +13,13 @@ unsigned long hash_djb2(const char *str)
         {
             c+= 'a' - 'A';
         }
-        
+
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
     return hash;
 }
 
-int toBase36 (char * dest,const unsigned long src) 
+int toBase36 (char * dest,const unsigned long src)
 {
        char base_digits[36] =
 	 {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
@@ -57,17 +57,17 @@ int main()
     for (i = 0; i < 30; ++i) {
         unsigned long hash = hash_djb2(files[i]);
         char lib[9];
-        toBase36 (lib,hash);   
-        printf("%s becomes %s\n", files[i], lib); 
+        toBase36 (lib,hash);
+        printf("%s becomes %s\n", files[i], lib);
 
         char src[512];
         char dest [512];
-        
+
         sprintf(src, "nid/%s%s", files[i], ".nids");
         sprintf(dest, "nid/%s%s", lib, ".NID");
-        printf("%s becomes %s\n", src, dest); 
-        rename(src, dest);        
+        printf("%s becomes %s\n", src, dest);
+        rename(src, dest);
     }
-    
+
     return 1;
 }

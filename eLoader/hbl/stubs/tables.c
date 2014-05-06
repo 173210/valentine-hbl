@@ -22,7 +22,7 @@ int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 {
     tGlobals * g = get_globals();
 	NID_LOGSTR1("Adding NID 0x%08lX to table... ", nid);
-	
+
 	// Check if NID already exists in table (by another estimation for example)
 	int index = get_nid_index(nid);
 
@@ -37,7 +37,7 @@ int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 
 		g->nid_table.table[g->nid_table.num].nid = nid;
 		g->nid_table.table[g->nid_table.num].call = call;
-		g->nid_table.table[g->nid_table.num].lib_index = lib_index;		
+		g->nid_table.table[g->nid_table.num].lib_index = lib_index;
 		NID_LOGSTR1("Newly added @ %d\n", g->nid_table.num);
 		g->nid_table.num++;
 	}
@@ -56,7 +56,7 @@ int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index)
 int add_library_to_table(const tSceLibrary lib)
 {
 	tGlobals* g = get_globals();
-	
+
 	// Check if library exists
 	int index = get_library_index(lib.name);
 
@@ -141,9 +141,9 @@ u32 get_call_nidtable(u32 nid, u32* call_buffer)
 {
     tGlobals * g = get_globals();
 	int i;
-	
+
 	*call_buffer = 0;
-	for(i=0; i<NID_TABLE_SIZE; i++) 
+	for(i=0; i<NID_TABLE_SIZE; i++)
 	{
         if(nid == g->nid_table.table[i].nid)
         {
@@ -152,7 +152,7 @@ u32 get_call_nidtable(u32 nid, u32* call_buffer)
             break;
         }
     }
-	
+
 	return i;
 }
 
@@ -301,7 +301,7 @@ int get_library_offset(char* library_name, int is_cfw)
 #else
 					break;
 #endif
-				else 
+				else
 #ifdef SYSCALL_OFFSETS_500
 					return offset_500[library_index];
 #else
@@ -382,7 +382,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 
 			LOGSTR1("Lowest syscall is %d\n", lowest_syscall);
 		}
-#ifdef XMB_LAUNCHER		
+#ifdef XMB_LAUNCHER
 		else if (getFirmwareVersion() >= 660)
 		{
 			// Lowest syscall and gap is extracted from the launcher imports
@@ -397,8 +397,8 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 			}
 
 			lowest_syscall = library->lowest_syscall;
-		}		
-#endif		
+		}
+#endif
 		else
 		{
 			// Read the lowest syscalls from the GO kernel memory dump, only for 6.20+
@@ -443,7 +443,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int reference_library_index, int i
 				{
 					LOGSTR0("Kmemdump empty\n");
 				}
-				
+
 				sceIoClose(kdump_fd);
 			}
 			else
@@ -549,15 +549,15 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 			{
 				// This is actually a serious error indicating that the syscall offset or
 				// memory address is wrong
-				LOGSTR2("ERROR: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall, 
+				LOGSTR2("ERROR: lowest syscall in kernel (0x%08lX) is bigger than found lowest syscall in tables (0x%08lX)\n", lowest_syscall,
 				        plibrary->lowest_syscall);
 			}
-			
+
 			else if (syscall_gap == 0)
 			{
 				NID_LOGSTR0("Nothing to do, lowest syscall from kernel is the same from tables\n");
 			}
-			
+
 			// Find NID for lowest syscall
 			else
 			{
@@ -565,8 +565,8 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 
 				// Rotation ;)
 				if (index < 0)
-					index = plibrary->num_library_exports + index;				
-				
+					index = plibrary->num_library_exports + index;
+
 				sceIoLseek(nid_file, index * 4, PSP_SEEK_SET);
 				sceIoRead(nid_file, &nid, sizeof(u32));
 
@@ -578,7 +578,7 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(reference_librar
 				add_nid_to_table(nid, MAKE_SYSCALL(lowest_syscall), get_library_index(plibrary->name));
 			}
 		}
-		
+
 		sceIoClose(nid_file);
 
 		return plibrary;
@@ -622,7 +622,7 @@ int get_library_index(const char* library_name)
         else if (strcmp(library_name, g->library_table.table[i].name) == 0)
             return i;
     }
-    
+
 	return -1;
 }
 
@@ -637,30 +637,30 @@ int get_syscall_boundaries(int lib_index, u32* low, u32* high)
     tGlobals * g = get_globals();
     tSceLibrary my_lib;
     int i;
-    
+
     my_lib = g->library_table.table[lib_index];
     *low = 0;
     *high = 0;
-    
+
     for (i=0; i<(int)g->library_table.num; i++)
     {
         if (i == lib_index)
             continue;
-        
+
         if (g->library_table.table[i].name == NULL)
             break;
-            
-        tSceLibrary lib = g->library_table.table[i];    
+
+        tSceLibrary lib = g->library_table.table[i];
         u32 l = lib.lowest_syscall;
         u32 h = lib.highest_syscall;
-        
+
         if (l > my_lib.highest_syscall && (l < *high || *high == 0))
             *high = l;
-            
+
         if (h < my_lib.lowest_syscall && h > *low)
             *low = h;
     }
-  
+
     if (*low && *high) return 1;
     return 0;
 }
@@ -675,25 +675,25 @@ int build_nid_table()
     u32 i = 0, j, k = 0;
 	unsigned int nlib_stubs;
 	u32 *cur_nid, *cur_call, syscall_num, good_call, nid;
-	tStubEntry *pentry;	
+	tStubEntry *pentry;
 
 #ifdef AUTO_SEARCH_STUBS
 #ifdef LOAD_MODULES_FOR_SYSCALLS
     load_modules_for_stubs();
 #endif
-  
+
     u32 stubs[MAX_RUNTIME_STUB_HEADERS];
     unsigned int current_stubid = 0;
     nlib_stubs = (unsigned int) (search_stubs(stubs));
     LOGSTR1("Found %d stubs\n", nlib_stubs);
 	if (nlib_stubs == 0)
-		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);    
+		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);
     CLEAR_CACHE;
     pentry = (tStubEntry*) stubs[current_stubid];
-#else        
+#else
     int aux1, aux2;
-    u32 aux3;   
-    
+    u32 aux3;
+
 	// Getting game's .lib.stub address
 	if ((aux1 = config_initialize()) < 0)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &aux1, sizeof(aux1));
@@ -709,15 +709,15 @@ int build_nid_table()
 
 	pentry = (tStubEntry*) aux3;
 
-#endif   
-    
-    
+#endif
+
+
 	//DEBUG_PRINT(" build_nid_table() ENTERING MAIN LOOP ", NULL, 0);
 
 	do
 	{
 		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", (u32)pentry);
-		
+
 		// While it's a valid stub header
 		while (elf_check_stub_entry(pentry))
 		{
@@ -728,7 +728,7 @@ int build_nid_table()
 				continue;
 			}
 
-#ifndef XMB_LAUNCHER	
+#ifndef XMB_LAUNCHER
 			// Even if the stub appears to be valid, we shouldn't overflow the static arrays
 			if ((i >= NID_TABLE_SIZE) || (k >= MAX_LIBRARIES))
 			{
@@ -737,7 +737,7 @@ int build_nid_table()
 				LOGSTR1(" LIBRARY TABLE COUNTER: 0x%08lX\n", k);
 				LOGSTR0(" NID/LIBRARY TABLES TOO SMALL ");
 				sceKernelExitGame();
-			}			
+			}
 #endif
 
 			NID_LOGSTR1("-->Processing library: %s ", (u32)(pentry->library_name));
@@ -748,7 +748,7 @@ int build_nid_table()
 
 			// Only process if syscall and if the import is already resolved
 			if (!(good_call & SYSCALL_MASK_RESOLVE) && (GET_SYSCALL_NUMBER(good_call) != SYSCALL_IMPORT_NOT_RESOLVED_YET))
-			{		
+			{
 				// Get current NID
 				cur_nid = pentry->nid_pointer;
 
@@ -759,57 +759,57 @@ int build_nid_table()
 				if (library_index < 0)
 				{
 					NID_LOGSTR1(" --> New: %d\n", k);
-			
+
 					strcpy(g->library_table.table[k].name, (char *)pentry->library_name);
 					g->library_table.table[k].calling_mode = SYSCALL_MODE;
-			
+
 					// Get number of syscalls imported
 					g->library_table.table[k].num_known_exports = pentry->stub_size;
 
 					NID_LOGSTR1("Total known exports: %d\n", g->library_table.table[k].num_known_exports);
-			
-					// Initialize lowest syscall on library table				
+
+					// Initialize lowest syscall on library table
 					g->library_table.table[k].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
 					g->library_table.table[k].lowest_nid = *cur_nid;
 					NID_LOGSTR2("Initial lowest nid/syscall: 0x%08lX/0x%08lX \n", g->library_table.table[k].lowest_syscall, g->library_table.table[k].lowest_nid);
-	
-		            // Initialize highest syscall on library table	
+
+		            // Initialize highest syscall on library table
 		            g->library_table.table[k].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
-		            
+
 					// Browse all stubs defined by this header
 					for(j=0; j<pentry->stub_size; j++)
 					{
 						nid = *cur_nid;
 						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
-				
-						// If NID is already in, don't put it again 
+
+						// If NID is already in, don't put it again
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
 
 // There is probably a way to shorten this #ifdef block, but I'm too lazy to check if I broke backwards compatibility here,
-// so I'm being concervative(wololo)						
+// so I'm being concervative(wololo)
 #ifdef XMB_LAUNCHER
 							good_call = get_good_call(cur_call);
 
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(good_call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
-					
+
 							if (syscall_num < g->library_table.table[k].lowest_syscall)
 							{
 								g->library_table.table[k].lowest_syscall = syscall_num;
 								g->library_table.table[k].lowest_nid = nid;//g->nid_table.table[i].nid;
 								NID_LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", g->library_table.table[k].lowest_syscall, g->library_table.table[k].lowest_nid);
-							}							
-#else							
+							}
+#else
 							add_nid_to_table(nid, get_good_call(cur_call), k);
 							NID_LOGSTR1(" --> new inserted @ %d", i);
 
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(g->nid_table.table[i].call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
-					
+
 							if (syscall_num < g->library_table.table[k].lowest_syscall)
 							{
 								g->library_table.table[k].lowest_syscall = syscall_num;
@@ -817,7 +817,7 @@ int build_nid_table()
 								NID_LOGSTR2("\nNew lowest syscall/nid: 0x%08lX/0x%08lX", g->library_table.table[k].lowest_syscall, g->library_table.table[k].lowest_nid);
 							}
 #endif
-		                    
+
 		                    if (syscall_num > g->library_table.table[k].highest_syscall)
 							{
 								g->library_table.table[k].highest_syscall = syscall_num;
@@ -843,33 +843,33 @@ int build_nid_table()
 					NID_LOGSTR1(" --> Old: %d\n", library_index);
 
 					LOGLIB(g->library_table.table[library_index]);
-					
+
 					NID_LOGSTR1("Number of imports of this stub: %d\n", pentry->stub_size);
 
 					NID_LOGSTR2("Current lowest nid/syscall: 0x%08lX/0x%08lX \n", g->library_table.table[library_index].lowest_syscall, g->library_table.table[library_index].lowest_nid);
-			
+
 					if (g->library_table.table[library_index].calling_mode != SYSCALL_MODE)
 					{
 						config_close();
 						exit_with_log(" ERROR OLD CALL MODE IS SYSCALL, NEW IS JUMP ", &library_index, sizeof(library_index));
 					}
-			
+
 					// Browse all stubs defined by this header
 					for(j=0; j<pentry->stub_size; j++)
 					{
 						nid = *cur_nid;
 						NID_LOGSTR1("--Current NID: 0x%08lX", nid);
-				
-						// If NID is already in, don't put it again 
+
+						// If NID is already in, don't put it again
 						if (get_nid_index(nid) < 0)
 						{
 							// Fill NID table
-							
+
 // There is probably a way to shorten this #ifdef block, but I'm too lazy to check if I broke backwards compatibility here,
-// so I'm being concervative(wololo)						
-#ifdef XMB_LAUNCHER							
+// so I'm being concervative(wololo)
+#ifdef XMB_LAUNCHER
 							good_call = get_good_call(cur_call);
-				
+
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(good_call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
@@ -878,11 +878,11 @@ int build_nid_table()
 								g->library_table.table[library_index].lowest_syscall = syscall_num;
 								g->library_table.table[library_index].lowest_nid = nid;
 								NID_LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", g->library_table.table[library_index].lowest_syscall, g->library_table.table[library_index].lowest_nid);
-							}							
-#else							
+							}
+#else
 							add_nid_to_table(nid, get_good_call(cur_call), library_index);
 							NID_LOGSTR1(" --> new inserted @ %d", i);
-				
+
 							// Check lowest syscall
 							syscall_num = GET_SYSCALL_NUMBER(g->nid_table.table[i].call);
 							NID_LOGSTR1(" with syscall 0x%08lX", syscall_num);
@@ -892,7 +892,7 @@ int build_nid_table()
 								g->library_table.table[library_index].lowest_nid = g->nid_table.table[i].nid;
 								NID_LOGSTR2("\nNew lowest nid/syscall: 0x%08lX/0x%08lX", g->library_table.table[library_index].lowest_syscall, g->library_table.table[library_index].lowest_nid);
 							}
-#endif							
+#endif
 		                    if (syscall_num > g->library_table.table[library_index].highest_syscall)
 							{
 								g->library_table.table[library_index].highest_syscall = syscall_num;
@@ -915,7 +915,7 @@ int build_nid_table()
 
 			CLEAR_CACHE;
 		}
-	
+
 #ifdef AUTO_SEARCH_STUBS
         current_stubid++;
  		// Next .lib.stub
@@ -924,8 +924,8 @@ int build_nid_table()
 			pentry = (tStubEntry*) stubs[current_stubid];
 		}
 		else
-			break;               
-#else	
+			break;
+#else
 		nlib_stubs--;
 
 		// Next .lib.stub
@@ -940,7 +940,7 @@ int build_nid_table()
 			break;
 #endif
 		sceKernelDelayThread(100000);
-		
+
 	} while(1);
 
 
@@ -974,12 +974,12 @@ int build_nid_table()
 	}
 #endif
 
-	// On CFW there is a higher syscall difference between SysmemUserForUser 
+	// On CFW there is a higher syscall difference between SysmemUserForUser
 	// and lower libraries than without it.
 	int sysmem_lowest_syscall = g->library_table.table[get_library_index("SysMemUserForUser")].lowest_syscall;
 	int interrupt_lowest_syscall = g->library_table.table[get_library_index("InterruptManager")].lowest_syscall;
 
-	int is_cfw = ((getFirmwareVersion() <= 550) 
+	int is_cfw = ((getFirmwareVersion() <= 550)
 		&& (sysmem_lowest_syscall - interrupt_lowest_syscall > 244));
 
 	if (is_cfw)
@@ -1005,7 +1005,7 @@ int build_nid_table()
 	while (c1 < g->library_table.num)
 	{
 		LOGSTR2("->Index: %d, name %s\n", c1, (u32)g->library_table.table[c1].name);
-		LOGSTR2("predicted syscall range from 0x%08lX to 0x%08lX\n", g->library_table.table[c1].lowest_syscall, g->library_table.table[c1].lowest_syscall + g->library_table.table[c1].num_library_exports + g->library_table.table[c1].gap - 1); 
+		LOGSTR2("predicted syscall range from 0x%08lX to 0x%08lX\n", g->library_table.table[c1].lowest_syscall, g->library_table.table[c1].lowest_syscall + g->library_table.table[c1].num_library_exports + g->library_table.table[c1].gap - 1);
 
 		int nid_file = open_nids_file(g->library_table.table[c1].name);
 
@@ -1081,7 +1081,7 @@ int build_nid_table()
 			c2++;
 		}
 
-		sceIoClose(nid_file);            
+		sceIoClose(nid_file);
 
 		c1++;
 		LOGSTR0("\n\n");
@@ -1093,12 +1093,12 @@ int build_nid_table()
     unload_modules_for_stubs();
 #endif
 #else
-	config_close();  
-#endif    
-    
+	config_close();
+#endif
+
 #ifndef XMB_LAUNCHER
 	g->nid_table.num = i;
 #endif
-	
+
 	return i;
 }

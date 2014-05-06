@@ -100,8 +100,8 @@ void unload_utility_modules(unsigned int moduleIDs[]) {
 #ifdef AUTO_SEARCH_STUBS
 int strong_check_stub_entry(tStubEntry* pentry)
 {
-	return ( 
-    elf_check_stub_entry(pentry) && 
+	return (
+    elf_check_stub_entry(pentry) &&
     (pentry->import_stubs && (pentry->import_stubs < 100)) &&
     (pentry->stub_size && (pentry->stub_size < 100)) &&
     ((pentry->import_flags == 0x11) || (pentry->import_flags == 0))
@@ -112,11 +112,11 @@ int search_stubs(u32 * stub_addresses) {
     u32 start = 0x08800000;
     u32 end = start + 0x01800000;
     int current = 0;
-    
+
     u32 i = start;
     while (i < end) {
         tStubEntry* pentry = (tStubEntry*)i;
-        if (strong_check_stub_entry(pentry)) {  
+        if (strong_check_stub_entry(pentry)) {
             //boundaries check
             if (current >= MAX_RUNTIME_STUB_HEADERS)
             {
@@ -124,13 +124,13 @@ int search_stubs(u32 * stub_addresses) {
                 return current;
             }
             stub_addresses[current] = i;
-            current++; 
+            current++;
             LOGSTR1("Found Stubs at 0x%08lX\n", (u32)pentry);
 
             // We found a valid pentry, skip consecutive valid pentry objects
             while ((i < end) && elf_check_stub_entry(pentry))  {
                 pentry++;
-                i = (u32)pentry;          
+                i = (u32)pentry;
             }
         }
         i+=4;

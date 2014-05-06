@@ -14,11 +14,11 @@ SceUID _test_sceIoDopen(const char* path)
 		i++;
 		LOGSTR1("Reestimating sceIoDopen -> Method: %d\n", i);
 		//reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0028, i);
-		reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, (u32*)0x10028, i);	
+		reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, (u32*)0x10028, i);
 		ret = sceIoDopen(path);
-	}	
+	}
 #endif
-	
+
 	return ret;
 }
 

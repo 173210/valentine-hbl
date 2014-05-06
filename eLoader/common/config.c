@@ -23,7 +23,7 @@ SceOff g_nids_offset = -1;
 
 // Initialize config_file
 int config_initialize()
-{	
+{
 #ifdef HARDCODED_IMPORTS_CONFIG
   const char * file_path = IMPORTS_PATH"imports.dat";
 #else
@@ -31,12 +31,12 @@ int config_initialize()
 
     int i = 0;
     u32 firmware_v = getFirmwareVersion();
-	
+
     //We try to open a lib file base on the version of the firmware as precisely as possible,
     //then fallback to less precise versions. for example,try in this order:
-    // libs_503, libs_50x, libs_5xx, libs 
-   
-	do 
+    // libs_503, libs_50x, libs_5xx, libs
+
+	do
 	{
 		switch (i)
 		{
@@ -55,11 +55,11 @@ int config_initialize()
 		}
 		i++;
 	}
-	while ((i < 4) && !file_exists(file_path));    
+	while ((i < 4) && !file_exists(file_path));
 #endif
-  
+
     LOGSTR1("Config file:%s\n", (u32) file_path);
-    
+
 	g_config_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777);
 	return g_config_file;
 }
@@ -70,20 +70,20 @@ int config_u32(u32* buffer, SceOff offset)
 	int ret = -1;
 
 	if (buffer != NULL)
-	{	
+	{
 		if (offset >= 0)
 			if ((ret = sceIoLseek(g_config_file, offset, PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(g_config_file, buffer, sizeof(u32));		
+				ret = sceIoRead(g_config_file, buffer, sizeof(u32));
 	}
-	
-	return ret;	
+
+	return ret;
 }
 
 // Returns how many .lib.stub addresses are referenced
 int config_num_lib_stub(unsigned int* pnum_lib_stub)
 {
 	int ret = 0;
-	
+
 	if (g_num_libstubs < 0)
 		ret = config_u32((u32*)&g_num_libstubs, NUM_LIBSTUB_OFFSET);
 
@@ -106,9 +106,9 @@ int config_first_lib_stub(u32* plib_stub)
 
 // Returns next .lib.stub address
 int config_next_lib_stub(u32* plib_stub)
-{	
+{
 	if (plib_stub != NULL)
-		return sceIoRead(g_config_file, plib_stub, sizeof(u32));	
+		return sceIoRead(g_config_file, plib_stub, sizeof(u32));
 	else
 		return 0;
 }
@@ -117,21 +117,21 @@ int config_next_lib_stub(u32* plib_stub)
 int config_num_nids_total(unsigned int* pnum_nids_total)
 {
 	int ret = 0;
-	
+
 	if (g_num_nids < 0)
 		ret = config_u32((u32*)&g_num_nids, NUM_NIDS_OFFSET);
 
     if (ret < 0)
     {
-        LOGSTR1("ERROR Getting total number of nids: 0x%08lX\n", ret); 
+        LOGSTR1("ERROR Getting total number of nids: 0x%08lX\n", ret);
         return ret;
-    }    
-        
+    }
+
 	if (!pnum_nids_total)
     {
         return -1;
     }
-	
+
     *pnum_nids_total = g_num_nids;
 
 	return ret;
@@ -139,7 +139,7 @@ int config_num_nids_total(unsigned int* pnum_nids_total)
 
 // Returns number of libraries
 int config_num_libraries(unsigned int* pnum_libraries)
-{	
+{
 	int ret = 0;
 
 	//DEBUG_PRINT(" config_num_libraries ", NULL, 0);
@@ -149,7 +149,7 @@ int config_num_libraries(unsigned int* pnum_libraries)
 
 	if ((ret >= 0) && (pnum_libraries != NULL))
 		*pnum_libraries = g_num_libraries;
-	
+
 	return ret;
 }
 
@@ -164,7 +164,7 @@ int config_next_library(tImportedLibrary* plibrary_descriptor)
 
 		if (ret == 0)
 			return -1;
-	
+
 		ret = sceIoRead(g_config_file, &(plibrary_descriptor->num_imports), sizeof(unsigned int));
 
 		if (ret >= 0)
@@ -192,7 +192,7 @@ int config_first_library(tImportedLibrary* plibrary_descriptor)
 				ret = config_next_library(plibrary_descriptor);
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -207,13 +207,13 @@ int config_nids_offset(SceOff* poffset)
 		ret = config_first_library(&first_lib);
 
 		if (ret >= 0)
-			g_nids_offset = first_lib.nids_offset;			
+			g_nids_offset = first_lib.nids_offset;
 	}
 
 	if (poffset != NULL)
 		*poffset = g_nids_offset;
 
-	return ret;			
+	return ret;
 }
 
 // Get first nid
@@ -228,18 +228,18 @@ int config_first_nid(u32* pnid)
 			ret = config_nids_offset(NULL);
 
 		if (ret >= 0)
-		{	
+		{
 			if ((ret = sceIoLseek(g_config_file, g_nids_offset, PSP_SEEK_SET)) >= 0)
 				ret = sceIoRead(g_config_file, pnid, sizeof(u32));
 		}
 	}
 
-	return ret;	
+	return ret;
 }
 
 // Returns next NID
 int config_next_nid(u32* pnid)
-{	
+{
 	if (pnid != NULL)
 		return sceIoRead(g_config_file, pnid, sizeof(u32));
 
@@ -252,7 +252,7 @@ int config_seek_nid(int index, u32* pnid)
 	int ret = 0;
 
 	if (pnid != NULL)
-	{	
+	{
 		ret = 1;
 		if (g_nids_offset < 0)
 			ret = config_nids_offset(NULL);

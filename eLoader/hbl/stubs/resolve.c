@@ -34,7 +34,7 @@ void resolve_missing_stubs()
 
 	/*
 #ifdef DEBUG
-	LOGSTR0("--> HBL STUBS BEFORE ESTIMATING:\n");	
+	LOGSTR0("--> HBL STUBS BEFORE ESTIMATING:\n");
 	for(i=0; i<num_nids; i++)
 	{
 		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
@@ -48,7 +48,7 @@ void resolve_missing_stubs()
 	cur_stub = (u32*)HBL_STUBS_START;
 #endif
 	*/
-	
+
 	for (i=0; i<num_nids; i++)
 	{
 		if (*cur_stub == 0)
@@ -70,7 +70,7 @@ void resolve_missing_stubs()
 				LOGSTR0("-Found in NID table, using real call\n");
 				syscall = g->nid_table.table[ret].call;
 			}
-			
+
 			// If not, estimate
 			else
 				syscall = estimate_syscall(lib_name, nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
@@ -87,8 +87,8 @@ void resolve_missing_stubs()
 #ifdef DEBUG
 	//cur_stub = *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR;
 	cur_stub = (u32*)HBL_STUBS_START;
-	
-	LOGSTR0("--> HBL STUBS AFTER ESTIMATING:\n");	
+
+	LOGSTR0("--> HBL STUBS AFTER ESTIMATING:\n");
 	for(i=0; i<num_nids; i++)
 	{
 		//LOGSTR2("--Stub address: 0x%08lX (offset: 0x%08lX)\n", cur_stub, (u32)cur_stub - *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR);
@@ -97,7 +97,7 @@ void resolve_missing_stubs()
 		cur_stub++;
 		LOGSTR1("0x%08lX\n", *cur_stub);
 		cur_stub++;
-	}	
+	}
 #endif
 	*/
 
@@ -115,7 +115,7 @@ void resolve_call(u32 *call_to_resolve, u32 call_resolved)
 		*call_to_resolve = JR_RA_OPCODE;
 		*(++call_to_resolve) = call_resolved;
 	}
-	
+
 	// JUMP
 	else
 	{
@@ -129,13 +129,13 @@ int is_utility(const char* lib_name)
 {
 	if (strcmp(lib_name, "sceMpeg") == 0 )
 		return PSP_MODULE_AV_MPEGBASE;
-	
+
 	if (strcmp(lib_name, "sceAtrac3plus") == 0)
 	    return PSP_MODULE_AV_ATRAC3PLUS;
-	
+
 	if (strcmp(lib_name, "sceMp3") == 0)
 	    return PSP_MODULE_AV_MP3;
-	
+
 	else if (strcmp(lib_name, "sceNetInet") == 0 ||
 			 strcmp(lib_name, "sceNetInet_lib") == 0 ||
 	    	 strcmp(lib_name, "sceNetApctl") == 0 ||
@@ -166,7 +166,7 @@ int is_utility(const char* lib_name)
 /*
 	else if (strcmp(lib_name, "sceSsl") == 0 )
 		return PSP_MODULE_NET_SSL;
-*/	
+*/
 	else
 		return -1;
 }
@@ -201,7 +201,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	tExportEntry* utility_exp = NULL;
 	unsigned int resolving_count = 0;
 
-#ifdef HOOK_CHDIR_AND_FRIENDS 
+#ifdef HOOK_CHDIR_AND_FRIENDS
     tGlobals * g = get_globals();
     g->chdir_ok = test_sceIoChdir();
 #endif
@@ -210,20 +210,20 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
-		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (u32)pstub_entry);	
+		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (u32)pstub_entry);
 
 		cur_nid = pstub_entry->nid_pointer;
 		cur_call = pstub_entry->jump_pointer;
 
 		LOGSTR1("Current library: %s\n", (u32)pstub_entry->library_name);
-		
+
 		// Load utility if necessary
 		int mod_id = is_utility((char*)pstub_entry->library_name);
 		if (mod_id > 0)
 		{
 			load_export_utility_module(mod_id, (char*)pstub_entry->library_name, (void **)&utility_exp);
 		}
-		
+
 		/* For each stub header, browse all stubs */
 		for(j=0; j<pstub_entry->stub_size; j++)
 		{
@@ -233,25 +233,25 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 
 			// Get syscall/jump instruction for current NID
 			real_call = 0;
-			
+
 			if( utility_exp != NULL){
 				real_call = get_jump_from_export( *cur_nid, utility_exp );
-				
+
 			}
-			
+
 			if( real_call == 0){
 				nid_index = get_call_nidtable(*cur_nid, &real_call);
 				NID_LOGSTR1("Index for NID on table: %d\n", nid_index);
 			}
 
-            
+
 			u32 hook_call = setup_hook(*cur_nid, real_call);
 
 			if (hook_call != 0)
 				real_call = hook_call;
 
 			NID_LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
-            
+
 			/* If NID not found in game imports */
 			/* generic error/ok if syscall estimation is not available */
 			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
@@ -259,18 +259,18 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			{
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
                 real_call = setup_default_nid(*cur_nid);
-#else				
+#else
 				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
-#endif				
+#endif
 			}
-            
+
 			NID_LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
 
 			/* If it's an instruction, resolve it */
 			/* 0xC -> syscall 0 */
-			/* Jumps are always > 0xC */		
+			/* Jumps are always > 0xC */
 			if(real_call > 0xC)
-			{	
+			{
 				/* Write it in ELF stubs memory */
 				resolve_call(cur_call, real_call);
 				resolving_count++;
@@ -283,10 +283,10 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			cur_nid++;
 			cur_call += 2;
 		}
-		
+
 		pstub_entry++;
 	}
-	
+
     LOGSTR0("RESOLVING IMPORTS: Done.");
-	return resolving_count;	
+	return resolving_count;
 }

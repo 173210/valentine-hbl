@@ -1,7 +1,7 @@
 /* Half Byte Loader is GPL
 * Crappy Menu(tm) wololo (One day we'll get something better)
 * thanks to N00b81 for the graphics library!
-* 
+*
 */
 
 #include <pspsdk.h>
@@ -18,7 +18,7 @@
 #define NB_FOLDERS 40
 #define MAXMENUSIZE 17
 
-#define MAX_INDEX_TABLE_SIZE 11 // max number of entries in psf table 
+#define MAX_INDEX_TABLE_SIZE 11 // max number of entries in psf table
 #define MAX_NAME_SIZE 59
 #define FILE_BUFFER_SIZE 80
 
@@ -69,12 +69,12 @@ void readEbootName(const char * filename, const char * backup, char* name) {
 		int version;
 		int offset_key_table;
 		int offset_values_table;
-		int num_entries; 
+		int num_entries;
 	}PSFHeader;
 
 	int fid; // file id
 	unsigned char index_table[MAX_INDEX_TABLE_SIZE][16];
-	PBPHeader pbpHeader;	
+	PBPHeader pbpHeader;
 	PSFHeader psfHeader;
 
 	fprintf(stderr, "File is [%s]\n",filename);
@@ -82,18 +82,18 @@ void readEbootName(const char * filename, const char * backup, char* name) {
 	{
 		//LOGSTR0("File is NULL");
         return;
-	} 
+	}
 
     /* PBP SECTION */
     sceIoRead(fid, &pbpHeader, sizeof(pbpHeader)); // read in pbp header
-    if(!(pbpHeader.signature[1] == 'P' && pbpHeader.signature[2] == 'B' && pbpHeader.signature[3] == 'P')) 
-    { 
+    if(!(pbpHeader.signature[1] == 'P' && pbpHeader.signature[2] == 'B' && pbpHeader.signature[3] == 'P'))
+    {
         strcpy(name, backup);
         strcat(name," (Corrupt or invalid PBP)");
         //LOGSTR0("File not a PBP\n");
         sceIoClose(fid);
         return;
-    } 
+    }
 
     /* PSF SECTION */
     sceIoLseek(fid, pbpHeader.offset[0] , PSP_SEEK_SET ); // seeks to psf section - first entry in pbp offset table
@@ -101,15 +101,15 @@ void readEbootName(const char * filename, const char * backup, char* name) {
 
     //LOGSTR1("PSF number of Entries [%d]\n", psfHeader.num_entries);
     if (psfHeader.num_entries > MAX_INDEX_TABLE_SIZE)
-    { 
+    {
         strcpy(name, backup);
         strcat(name," (Corrupt or invalid PBP)");
         //LOGSTR0("File not a PBP\n");
         sceIoClose(fid);
         return;
-    }    
+    }
     sceIoRead(fid,&index_table,((sizeof(unsigned char) * 16 ) * psfHeader.num_entries));
-    
+
     // builds offset [offset_key + Offset_data_value + (data_align * 2)]
     int seek_offset = index_table[(psfHeader.num_entries - 1)][OFFSET_KEY_NAME] + index_table[(psfHeader.num_entries - 1)][OFFSET_DATA_VALUE] + 	(index_table[(psfHeader.num_entries - 1)][DATA_ALIGN] * 2);
 
@@ -123,11 +123,11 @@ void readEbootName(const char * filename, const char * backup, char* name) {
 
     sceIoLseek(fid, seek_offset, PSP_SEEK_CUR);
     sceIoRead(fid,name, (sizeof(char) * index_table[(psfHeader.num_entries - 1)][SIZE_OF_VALUE]));
-    
+
     if (!name[0]) {
         strcpy(name, backup);
     }
-    
+
     //LOGSTR1("Name is [%s]\n",(u32)name);
 
 
@@ -142,16 +142,16 @@ void readEbootName(const char * filename, const char * backup, char* name) {
 char* itoa(int value, char* result, int base) {
 	// check that the base if valid
 	if (base < 2 || base > 36) { *result = '\0'; return result; }
-	
+
 	char* ptr = result, *ptr1 = result, tmp_char;
 	int tmp_value;
-	
+
 	do {
 		tmp_value = value;
 		value /= base;
 		*ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * base)];
 	} while ( value );
-	
+
 	// Apply negative sign
 	if (tmp_value < 0) *ptr++ = '-';
 	*ptr-- = '\0';
@@ -166,7 +166,7 @@ char* itoa(int value, char* result, int base) {
 void saveCache()
 {
     SceUID id = sceIoOpen(cacheFile, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777);
-    if (id < 0) 
+    if (id < 0)
         return;
     sceIoWrite(id, &folders, FOLDERNAME_SIZE * NB_FOLDERS * sizeof(char));
     sceIoClose(id);
@@ -181,22 +181,22 @@ void loadCache()
 
     printTextScreen(0, 216 , "->Using a cached version of the folder's contents", 0x000000FF);
     SceUID id = sceIoOpen(cacheFile, PSP_O_RDONLY, 0777);
-	
-    if (id < 0) 
+
+    if (id < 0)
 		return;
-	
+
     sceIoRead(id, &folders, FOLDERNAME_SIZE * NB_FOLDERS * sizeof(char));
-    sceIoClose(id);    
-    
+    sceIoClose(id);
+
     nbFiles = 0;
     for (i = 0; i < NB_FOLDERS; ++i)
 	{
-        if (folders[i][0] == 0) 
+        if (folders[i][0] == 0)
         {
             break;
         }
         nbFiles++;
-    }    
+    }
 }
 
 /*
@@ -206,7 +206,7 @@ void loadCache()
 int not_homebrew(const char * name)
 {
     int i;
-    
+
     if (strlen(name) == 0) return 1;
     //official games are in the form: XXXX12345
     if (strlen(name) != 9) return 0;
@@ -215,7 +215,7 @@ int not_homebrew(const char * name)
         if (name[i] < '0' || name[i] > '9')
             return 0;
     }
-    
+
     return 1;
 }
 
@@ -230,46 +230,46 @@ int init(char* menuData)
 		folders[i][0] = 0;
   	id = sceIoDopen(ebootPath);
 
-  	if (id < 0) 
+  	if (id < 0)
 	{
     	//LOGSTR1("FATAL: Menu can't open directory %s \n", (u32)ebootPath);
         printTextScreen(0, 205 , "Unable to open GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
     	return 1;
-  	}	
-  
+  	}
+
  	memset(&entry, 0, sizeof(SceIoDirent));
-	
+
   	while (sceIoDread(id, &entry) > 0 && nbFiles < NB_FOLDERS)
   	{
-    	if (strcmp(".", entry.d_name) == 0 || strcmp("..", entry.d_name) == 0 || not_homebrew(entry.d_name)) 
+    	if (strcmp(".", entry.d_name) == 0 || strcmp("..", entry.d_name) == 0 || not_homebrew(entry.d_name))
 		{
-        	memset(&entry, 0, sizeof(SceIoDirent)); 
+        	memset(&entry, 0, sizeof(SceIoDirent));
         	continue;
     	}
-         
+
     	strcpy(folders[nbFiles], entry.d_name);
     	nbFiles++;
-    	memset(&entry, 0, sizeof(SceIoDirent)); 
+    	memset(&entry, 0, sizeof(SceIoDirent));
   	}
-	
+
   	sceIoDclose(id);
-	
+
 	char fileBuffer[FILE_BUFFER_SIZE];
 	char EbootName[MAX_NAME_SIZE];
 
 	// clear the array, seems to be alot of trash left in memory
-	for(i = 0; i < NB_FOLDERS; i++ ) 
+	for(i = 0; i < NB_FOLDERS; i++ )
 	{
 		memset(&menuData[i * MAX_NAME_SIZE],'\0',MAX_NAME_SIZE);
 	}
 
-	for(i = 0; i < nbFiles; i++) 
+	for(i = 0; i < nbFiles; i++)
 	{
 		memset(fileBuffer,'\0',FILE_BUFFER_SIZE);
 		memset(EbootName,'\0',MAX_NAME_SIZE);
 
-		// builds path to eboot	
+		// builds path to eboot
 		strcat(fileBuffer, ebootPath);
 		strcat(fileBuffer, folders[i]);
 		strcat(fileBuffer, "/EBOOT.PBP");
@@ -279,17 +279,17 @@ int init(char* menuData)
 
 	}
 
-  	if (!nbFiles) 
+  	if (!nbFiles)
 	{
         printTextScreen(0, 205 , "No files found in GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
   	}
-	
+
 	saveCache();
 	return 0;
 }
- 
- 
+
+
 void refreshMenu(int offSet, char* menuData, int loadedCache)
 {
   	int i;
@@ -312,7 +312,7 @@ void refreshMenu(int offSet, char* menuData, int loadedCache)
   	}
 }
 
-void setEboot() 
+void setEboot()
 {
   	strcat(ebootPath, folders[currentFile]);
   	strcat(ebootPath, "/EBOOT.PBP");
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
 {
 
 	SceCtrlData pad; // variable to store the current state of the pad
-	
+
 	char menuEntry[NB_FOLDERS][MAX_NAME_SIZE];
 	int menuOffSet = 0;
 	char buffer[20];
@@ -373,12 +373,12 @@ int main(int argc, char *argv[])
     } else {
         ebootPath = dummy_filename;
     }
- 
+
     //LOGSTR0("Start menu\n");
     isSet = 0;
 
     //LOGSTR0("MENU Sets display\n");
-    
+
     //init screen
     sceDisplaySetFrameBuf(frameBuffer, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
     SetColor(0x00000000);
@@ -386,18 +386,18 @@ int main(int argc, char *argv[])
     //load folder's contents
 	// if it loads the cache we want it to display folders[*], menuEntry would be empty
     int loadSucess = init(&menuEntry[0][0]);
-    
+
     refreshMenu(0, &menuEntry[0][0], loadSucess);
 
     sceKernelDelayThread(100000);
     do
 	{
         sceCtrlReadBufferPositive (&pad, 1); // check the input.
-		
+
         if ((pad.Buttons & PSP_CTRL_CROSS) ||  (pad.Buttons & PSP_CTRL_CIRCLE))
 		{ // if the cross or circle button is pressed
             //LOGSTR0("Menu sets EBOOT path: ");
-            setEboot();			
+            setEboot();
         }
 		else if ((pad.Buttons & PSP_CTRL_DOWN) && (currentFile < nbFiles - 1))
 		{
@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
 				menuOffSet--;
 			refreshMenu(menuOffSet, &menuEntry[0][0], loadSucess);
         }
-		else if(pad.Buttons & PSP_CTRL_TRIANGLE) 
+		else if(pad.Buttons & PSP_CTRL_TRIANGLE)
 		{
             strcpy(ebootPath, "quit");
             sceKernelExitGame();
@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
 		itoa(nbFiles,buffer,10);
 		printTextScreen(30, 0 , buffer, 0x00FFFFFF);
 		printTextScreen(21, 0 ,"/", 0x00FFFFFF);
-		
+
         printTextScreen(220, 0 , "X or O to select, /\\ to quit", 0x00FFFFFF);
         printTextScreen(0, 227 , "Half Byte Loader BETA by m0skit0, ab5000, wololo, davee", 0x00FFFFFF);
         printTextScreen(0, 238 , "Thanks to n00b81, Tyranid, devs of the PSPSDK, Hitmen,", 0x00FFFFFF);

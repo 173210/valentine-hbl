@@ -8,10 +8,10 @@
 
 Color* g_vram_base = (Color*) (0x40000000 | 0x04000000);
 
-typedef union 
+typedef union
 {
 	int rgba;
-	struct 
+	struct
 	{
 		char r;
 		char g;
@@ -82,7 +82,7 @@ void printTextScreen(int x, int y, const char * text, u32 color)
 		if (x < 0 || x + 8 > SCREEN_WIDTH || y < 0 || y + 8 > SCREEN_HEIGHT) break;
 		char ch = text[c];
 		vram = getVramDrawBuffer() + x + y * PSP_LINE_SIZE;
-		
+
 		font = &msx[ (int)ch * 8];
 		for (i = l = 0; i < 8; i++, l += 8, font++) {
 			vram_ptr  = vram;

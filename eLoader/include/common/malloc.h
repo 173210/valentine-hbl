@@ -7,7 +7,7 @@
 #define MAX_ALLOCS 20
 
 /* Blocks structure */
-typedef struct 
+typedef struct
 {
 	SceUID uid;    // UID of block
 	void* address; // Head address of block (0 if the block isn't allocated)

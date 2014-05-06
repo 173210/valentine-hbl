@@ -42,7 +42,7 @@ char *(strchr)(const char *s, int c)
 int strlen(const char *text)
 {
 	int i = 0;
-	while(*text) 
+	while(*text)
 	{
 		text++;
 		i++;
@@ -52,14 +52,14 @@ int strlen(const char *text)
 
 // Copies string src into dest
 char *strcpy(char *dest, const char *src)
-{	
+{
 	while(*src)
 	{
 		*dest = *src;
 		dest++;
 		src++;
 	}
-	
+
 	*dest = '\0';
 	return dest;
 }
@@ -81,15 +81,15 @@ unsigned int fgetsz(SceUID file, char* dest)
 	}
 
 	dest[i] = '\0';
-	
-	return i;	
+
+	return i;
 }
 
 // Returns 1 if a given file exists, 0 otherwise
 int file_exists(const char * filename)
 {
     SceUID id = sceIoOpen(filename, PSP_O_RDONLY, 0777);
-    if (id < 0) 
+    if (id < 0)
     {
 		return 0;
     }

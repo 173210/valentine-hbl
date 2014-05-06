@@ -5,13 +5,13 @@
 #include <hbl/mod/elf.h>
 #include <hbl/mod/modmgr.h>
 #include <exploit_config.h>
-   
-#define DEBUG_PATH HBL_ROOT"dbglog" 
-   
+
+#define DEBUG_PATH HBL_ROOT"dbglog"
+
 void init_debug()
 {
 	SceUID fd;
-	
+
 	if ((fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777)) >= 0)
 	{
 		sceIoClose(fd);
@@ -31,19 +31,19 @@ void write_debug(const char* description, void* value, unsigned int size)
     {
         sceIoWrite(PSPLINK_OUT, description, strlen(description));
     }
-    if (value != NULL) 
+    if (value != NULL)
     {
         sceIoWrite(PSPLINK_OUT, value, size);
     }
-	
+
 	if ((fd = sceIoOpen(DEBUG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777)) >= 0)
 	{
 		if (description != NULL)
-		{	
+		{
 			sceIoWrite(fd, description, strlen(description));
 		}
-		if (value != NULL) 
-		{	
+		if (value != NULL)
+		{
 			sceIoWrite(fd, value, size);
 		}
 		sceIoClose(fd);
@@ -122,7 +122,7 @@ void log_program_header(Elf32_Phdr pheader)
 }
 
 void log_elf_section_header(Elf32_Shdr shdr)
-{	
+{
 	LOGSTR0("\n->Section header:\n");
 	LOGSTR1("Name: %d\n", shdr.sh_name);
 	LOGSTR1("Type: 0x%08lX\n", shdr.sh_type);
@@ -141,44 +141,44 @@ void logstr0(const char* A)
     write_debug(A, NULL, 0);
 }
 
-void logstr1(const char* A, unsigned long B)			
+void logstr1(const char* A, unsigned long B)
 {
-    char debug_buff[512]; 
+    char debug_buff[512];
     mysprintf1(debug_buff, A, (unsigned long)B);
     write_debug(debug_buff, NULL, 0);
 }
 
-void logstr2(const char* A, unsigned long B, unsigned long C)		
+void logstr2(const char* A, unsigned long B, unsigned long C)
 {
-    char debug_buff[512]; 
+    char debug_buff[512];
     mysprintf2(debug_buff, A, (unsigned long)B, (unsigned long)C);
     write_debug(debug_buff, NULL, 0);
 }
 
-void logstr3(const char* A, unsigned long B, unsigned long C, unsigned long D)		
+void logstr3(const char* A, unsigned long B, unsigned long C, unsigned long D)
 {
-    char debug_buff[512]; 
+    char debug_buff[512];
     mysprintf3(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
     write_debug(debug_buff, NULL, 0);
 }
 
 void logstr4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E)
 {
-    char debug_buff[512]; 
+    char debug_buff[512];
     mysprintf4(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E);
     write_debug(debug_buff, NULL, 0);
 }
 
 void logstr5(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F)
 {
-    char debug_buff[512]; 
+    char debug_buff[512];
     mysprintf8(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, 0, 0, 0);
     write_debug(debug_buff, NULL, 0);
 }
 
 void logstr8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I)
 {
-    char debug_buff[512]; 
+    char debug_buff[512];
     mysprintf8(debug_buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D, (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H, (unsigned long)I);
     write_debug(debug_buff, NULL, 0);
 }

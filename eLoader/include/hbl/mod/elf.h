@@ -26,7 +26,7 @@ typedef char BYTE;
 /**************/
 
 #define EI_NIDENT 16 //Size of e_ident[]
-typedef struct 
+typedef struct
 {
     BYTE e_ident[EI_NIDENT];  //Magic number
     Elf32_Half e_type;      // Identifies object file type
@@ -99,7 +99,7 @@ typedef struct
 /* SECTION HEADER */
 /******************/
 
-typedef struct 
+typedef struct
 {
     Elf32_Word sh_name;       //Name of section (value is index to string table)
     Elf32_Word sh_type;       //Type of section
@@ -110,7 +110,7 @@ typedef struct
     Elf32_Word sh_link;       //Section header table index link
     Elf32_Word sh_info;       //Extra info
     Elf32_Word sh_addralign;  //Alignment
-    Elf32_Word sh_entsize;    //Some sections hold a table of fixed-size entries, such as 
+    Elf32_Word sh_entsize;    //Some sections hold a table of fixed-size entries, such as
                               //a symbol table. This member gives the size of each entry.
 } Elf32_Shdr;
 
@@ -118,7 +118,7 @@ typedef struct
 /* PROGRAM HEADER */
 /******************/
 
-typedef struct 
+typedef struct
 {
     Elf32_Word p_type;      // Type of segment
     Elf32_Off p_offset;     // Offset for segment's first byte in file
@@ -164,7 +164,7 @@ typedef struct
 #define LOPROC 0x700000a0
 
 // Relocation entry
-typedef struct 
+typedef struct
 {
     Elf32_Addr r_offset; // Offset of relocation
     Elf32_Word r_info;   // Packed information about relocation
@@ -178,7 +178,7 @@ typedef struct
 #define ELF32_R_OFS_BASE(i) (((i)> >8) & 0xFF)
 
 /* Determines type of relocation needed, see defines below */
-#define ELF32_R_TYPE(i) (i&0xFF) 
+#define ELF32_R_TYPE(i) (i&0xFF)
 
 /* MIPS Relocation Entry Types */
 #define R_MIPS_NONE 0
@@ -233,7 +233,7 @@ int elf_check_magic(Elf32_Ehdr* pelf_header);
 /* Returns total size copied in memory */
 unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size);
 
-// Load relocatable executable in memory using fixed address 
+// Load relocatable executable in memory using fixed address
 // and fills pointer to stub with first stub entry
 // Returns total size copied in memory
 unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr);

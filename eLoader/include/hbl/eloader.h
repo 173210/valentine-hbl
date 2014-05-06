@@ -46,11 +46,11 @@
 
 //Comment to disable HBL LoadModule system
 #define LOAD_MODULE
- 
+
 //Comment to disable the function Subinterrupthandler Cleanup
-#define SUB_INTR_HANDLER_CLEANUP 
- 
- 
+#define SUB_INTR_HANDLER_CLEANUP
+
+
 extern u32 gp;
 extern u32* entry_point;
 

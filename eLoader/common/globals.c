@@ -3,7 +3,7 @@
 #include <common/utils.h>
 #include <exploit_config.h>
 
-tGlobals * get_globals() 
+tGlobals * get_globals()
 {
     return (tGlobals *) GLOBALS_ADDR;
 }
@@ -16,8 +16,8 @@ void init_globals()
         {
             exit_with_log("FATAL: Increase GLOBALS_ADDR", NULL, 0);
         }
-        
-        u32 size = sizeof(tGlobals); 
+
+        u32 size = sizeof(tGlobals);
         if (size + (u32)GLOBALS_ADDR >= 0x14000)
         {
             logstr1("Globals structure doesn't fit in Scratchpad RAM: 0x%08lX\n", size);
@@ -27,7 +27,7 @@ void init_globals()
     tGlobals * g = get_globals();
     memset(g, 0, sizeof(tGlobals));
 #ifdef FLAT_FOLDER
-	strcpy(g->menupath, HBL_ROOT"EBOOT.PBP");	
+	strcpy(g->menupath, HBL_ROOT"EBOOT.PBP");
 #else
     strcpy(g->menupath, HBL_ROOT"menu/EBOOT.PBP");
 #endif
@@ -53,8 +53,8 @@ void init_globals()
 	{
 		firmware_array = syscalls_known_for_firmwares;
 		firmware_array_size = sizeof(syscalls_known_for_firmwares) / sizeof(unsigned short);
-	}		
-	
+	}
+
 	for (i = 0; i < firmware_array_size; i++)
 	{
 		if (firmware_array[i] == getFirmwareVersion())
@@ -80,7 +80,7 @@ void reset_vita_dirs()
 {
     tGlobals * g = get_globals();
     int i,j;
-	
+
     for (i=0;i<MAX_OPEN_DIR_VITA;++i)
         for (j=0;j<2;++j)
             g->directoryFix[i][j] = -1;
