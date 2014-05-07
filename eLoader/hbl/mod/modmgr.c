@@ -188,7 +188,7 @@ SceUID start_module(SceUID modid)
 	*/
 
     //The hook is called here to handle thread moniotoring
-	SceUID thid = _hook_sceKernelCreateThread("hblmodule", g->mod_table.table[index].text_entry, 0x30, 0x1000, 0, NULL);
+	SceUID thid = _hook_sceKernelCreateThread("hblmodule", g->mod_table.table[index].text_entry, 0x30, 0x1000, 0xF0000000, NULL);
 
     char largbuff[512];
     memset(largbuff, 512, 0);

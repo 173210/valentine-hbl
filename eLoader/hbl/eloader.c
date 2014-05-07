@@ -455,7 +455,7 @@ void _start()
 
 
 	// Create and start eloader thread
-	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0, NULL);
+	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0xF0000000, NULL);
 
 	if(thid >= 0)
 	{
