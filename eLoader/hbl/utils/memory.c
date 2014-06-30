@@ -406,6 +406,14 @@ void CloseFiles()
 	}
 }
 
+void ReleaseAudioCh()
+{
+	int i;
+
+	for (i = 0; i <= PSP_AUDIO_CHANNEL_MAX; i++)
+		sceAudioChRelease(i);
+}
+
 void free_game_memory()
 {
 #ifdef DEBUG
@@ -473,6 +481,8 @@ unload_memset_flag = 1;
 #endif
 
 	CloseFiles();
+
+	ReleaseAudioCh();
 
 #ifdef DEBUG
 	is_free = sceKernelTotalFreeMemSize();
