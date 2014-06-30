@@ -708,6 +708,10 @@ void p5_get_stubs()
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
+#ifdef PRE_LOADER_EXEC
+	preLoader_Exec();
+#endif
+
 #ifdef RESET_HOME_SCREEN_LANGUAGE
 	// Reset language and button assignment for the HOME screen to system defaults
 	resetHomeScreenSettings();
