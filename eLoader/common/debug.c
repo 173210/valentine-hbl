@@ -6,7 +6,7 @@
 #include <hbl/mod/modmgr.h>
 #include <exploit_config.h>
 
-#define DEBUG_PATH HBL_ROOT"dbglog"
+#define DEBUG_PATH HBL_ROOT"DBGLOG"
 
 void init_debug()
 {
