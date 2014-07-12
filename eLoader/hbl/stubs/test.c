@@ -1,7 +1,6 @@
+#include <common/stubs/syscall.h>
 #include <common/sdk.h>
 #include <common/debug.h>
-#include <hbl/stubs/syscall.h>
-//#include "scratchpad.h"
 
 SceUID _test_sceIoDopen(const char* path)
 {

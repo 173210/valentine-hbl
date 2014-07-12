@@ -1,7 +1,7 @@
+#include <common/stubs/tables.h>
 #include <common/debug.h>
 #include <common/sdk.h>
 #include <common/utils.h>
-#include <hbl/stubs/tables.h>
 #include <hbl/mod/elf.h>
 #include <hbl/mod/modmgr.h>
 #include <exploit_config.h>

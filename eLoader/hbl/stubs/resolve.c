@@ -1,12 +1,12 @@
+#include <common/stubs/syscall.h>
+#include <common/stubs/tables.h>
 #include <common/sdk.h>
 #include <common/debug.h>
 #include <hbl/eloader.h>
 //#include "scratchpad.h"
 #include <hbl/mod/elf.h>
-#include <hbl/stubs/tables.h>
 #include <hbl/stubs/hook.h>
 #include <hbl/mod/modmgr.h>
-#include <hbl/stubs/syscall.h>
 #include <common/config.h>
 #include <hbl/stubs/resolve.h>
 #include <common/globals.h>

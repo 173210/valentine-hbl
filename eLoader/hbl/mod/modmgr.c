@@ -1,7 +1,7 @@
+#include <common/stubs/syscall.h>
 #include <hbl/eloader.h>
 #include <hbl/mod/elf.h>
 #include <hbl/stubs/hook.h>
-#include <hbl/stubs/syscall.h>
 #include <common/debug.h>
 #include <hbl/mod/modmgr.h>
 #include <common/malloc.h>

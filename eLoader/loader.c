@@ -1,17 +1,19 @@
 /* Half Byte Loader loader :P */
 /* This loads HBL on memory */
 
+#include <common/stubs/tables.h>
+#include <common/utils/graphics.h>
 #include <common/sdk.h>
 #include <loader.h>
 #include <common/debug.h>
 #include <common/config.h>
-#include <hbl/stubs/tables.h>
 #include <common/utils.h>
 #include <hbl/eloader.h>
 #include <common/malloc.h>
 #include <common/globals.h>
 #include <common/runtime_stubs.h>
 #include <exploit_config.h>
+#include <svnversion.h>
 
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 #ifndef AUTO_SEARCH_STUBS
@@ -141,6 +143,16 @@ void load_hbl(SceUID hbl_file)
 	// Allocate memory for HBL
 #ifdef GAME_PRELOAD_FREEMEM
 	PreloadFreeMem();
+#endif
+#ifdef FPL_EARLY_LOAD_ADDR_LIST
+	//early memory cleanup to be able to load HBL at a convenient place
+	LOGSTR0("loader.c:PreloadFreeFPL\n");
+	int i;
+	SceUID memids[] = FPL_EARLY_LOAD_ADDR_LIST;
+
+	for(i = 0; i < sizeof(memids) / sizeof(u32); i++)
+		if (sceKernelDeleteFpl(*(SceUID*)memids[i]) < 0)
+			LOGSTR2("--> ERROR 0x%08lX Deleting FPL ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
 #endif
 
 
@@ -708,6 +720,21 @@ void p5_get_stubs()
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
+	SceUID hbl_file;
+	int num_nids;
+
+	cls();
+	print_to_screen("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
+#ifdef DEBUG
+#ifdef NID_DEBUG
+	print_to_screen("DEBUG version (+NIDS)");
+#else
+	print_to_screen("DEBUG version");
+#endif
+#else
+	print_to_screen_color("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
+#endif
+
 #ifdef PRE_LOADER_EXEC
 	preLoader_Exec();
 #endif
@@ -717,45 +744,68 @@ void _start()
 	resetHomeScreenSettings();
 #endif
 
-	SceUID hbl_file;
-
-#ifdef FORCE_FIRST_LOG
-    // Some exploits need to "trigger" file I/O in order for HBL to work, not sure why
-    logstr0("Loader running\n");
-#else
-	LOGSTR0("Loader running\n");
+#if defined(FORCE_FIRST_LOG) || defined(DEBUG)
+	// Some exploits need to "trigger" file I/O in order for HBL to work, not sure why
+	logstr0("Loader running\n");
 #endif
 
 #ifdef FORCE_CLOSE_FILES_IN_LOADER
-    CloseFiles();
+	CloseFiles();
 #endif
 
-    //reset the contents of the debug file;
-    init_debug();
+	//reset the contents of the debug file;
+	init_debug();
 
-    //init global variables
-    init_globals();
+	//init global variables
+	init_globals();
 
-	// If PSPGo on 6.20+, do a kmem dump
-#if !defined(DISABLE_KERNEL_DUMP) && !defined(VITA)
-	if ((getFirmwareVersion() >= 620) && (getPSPModel() == PSP_GO))
-		get_kmem_dump();
+#ifndef VITA
+	int firmware_version = getFirmwareVersion();
+	switch (firmware_version)
+	{
+		case 0:
+		case 1:
+			print_to_screen("Unknown Firmware :(");
+			break;
+		default:
+			PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
+			break;
+	}
+
+	if (getPSPModel() == PSP_GO) {
+		print_to_screen("PSP Go Detected");
+#ifndef DISABLE_KERNEL_DUMP
+		// If PSPGo on 6.20+, do a kmem dump
+		if (getFirmwareVersion() >= 620)
+			get_kmem_dump();
+#endif
+	}
 #endif
 
 	// Get additional syscalls from utility dialogs
 	p5_get_stubs();
 
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+	load_utility_module(PSP_MODULE_AV_AVCODEC);
+#endif
+
+	// Build NID table
+	print_to_screen("Building NIDs table");
+	num_nids = build_nid_table();
+	LOGSTR1("NUM NIDS: %d\n", num_nids);
+
+	if(num_nids <= 0)
+		exit_with_log("No Nids ???", NULL, 0);
+
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
-
-	else
-	{
+	else {
 		LOGSTR0("Loading HBL\n");
 		load_hbl(hbl_file);
 
 		LOGSTR0("Copying & resolving HBL stubs\n");
 		copy_hbl_stubs();
-        LOGSTR0("HBL stubs copied, running eLoader\n");
+		LOGSTR0("HBL stubs copied, running eLoader\n");
 		run_eloader(0, NULL);
 	}
 }

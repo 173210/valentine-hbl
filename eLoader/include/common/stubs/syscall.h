@@ -1,6 +1,8 @@
 #ifndef ELOADER_SYSCALL
 #define ELOADER_SYSCALL
 
+#include <common/sdk.h>
+
 #if defined(VITA) || !defined(SYSCALL_REFERENCE_LIBRARY) \
 	|| !(defined(SYSCALL_OFFSETS_500) || defined(SYSCALL_OFFSETS_500_CFW) \
 	|| defined(SYSCALL_OFFSETS_550) || defined(SYSCALL_OFFSETS_550_CFW) \

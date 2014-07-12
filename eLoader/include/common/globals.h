@@ -7,6 +7,10 @@ for this reason, we create a "fake" structure holding all of them
 in a safe memory zone. If you need globals, it is better to have them here
 */
 
+#include <common/stubs/tables.h>
+#include <common/sdk.h>
+#include <common/malloc.h>
+#include <hbl/mod/modmgr.h>
 #include <loader.h>
 
 #define ASSERT_CONCAT_(a, b) a##b
@@ -20,11 +24,6 @@ in a safe memory zone. If you need globals, it is better to have them here
     enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
 #define GLOBALS_ADDR 0x10200
-
-#include <common/sdk.h>
-#include <common/malloc.h>
-#include <hbl/mod/modmgr.h>
-#include <hbl/stubs/tables.h>
 
 #define MAX_OS_ALLOCS   400
 #define SIZE_THREAD_TRACKING_ARRAY  20

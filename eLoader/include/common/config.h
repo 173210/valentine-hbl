@@ -3,9 +3,9 @@
 
 // This defines data about .config file used by loader and HBL own stubs resolver
 
+#include <common/stubs/tables.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
-#include <hbl/stubs/tables.h>
 
 // Imports file
 # define IMPORTS_PATH HBL_ROOT"config/imports.config"

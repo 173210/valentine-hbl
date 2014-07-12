@@ -1,9 +1,9 @@
+#include <common/stubs/syscall.h>
+#include <common/stubs/tables.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
 #include <common/debug.h>
 #include <common/utils.h>
-#include <hbl/stubs/tables.h>
-#include <hbl/stubs/syscall.h>
 #include <common/lib.h>
 #include <common/globals.h>
 #include <exploit_config.h>

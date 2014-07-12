@@ -1,4 +1,6 @@
-#include <hbl/stubs/tables.h>
+#include <common/stubs/syscall.h>
+#include <common/stubs/tables.h>
+#include <common/utils/graphics.h>
 #include <common/config.h>
 #include <hbl/mod/elf.h>
 #include <common/debug.h>
@@ -6,8 +8,6 @@
 #include <common/lib.h>
 #include <common/utils.h>
 #include <common/globals.h>
-#include <hbl/stubs/syscall.h>
-#include <hbl/utils/graphics.h>
 #include <common/runtime_stubs.h>
 #include <exploit_config.h>
 

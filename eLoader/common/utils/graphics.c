@@ -1,4 +1,4 @@
-#include <hbl/utils/graphics.h>
+#include <common/utils/graphics.h>
 #include <common/utils.h>
 #include <common/debug.h>
 #include <common/lib.h>

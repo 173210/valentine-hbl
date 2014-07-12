@@ -1,3 +1,4 @@
+#include <common/stubs/syscall.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
 #include <common/debug.h>
@@ -9,7 +10,6 @@
 #include <hbl/utils/memory.h>
 #include <hbl/stubs/resolve.h>
 #include <common/globals.h>
-#include <hbl/stubs/syscall.h>
 #include <exploit_config.h>
 
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!

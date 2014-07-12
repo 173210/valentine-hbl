@@ -1,7 +1,7 @@
+#include <common/stubs/syscall.h>
 #include <common/globals.h>
 #include <common/debug.h>
 #include <common/utils.h>
-#include <hbl/stubs/syscall.h>
 #include <exploit_config.h>
 
 tGlobals * get_globals()

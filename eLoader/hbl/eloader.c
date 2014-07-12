@@ -1,3 +1,4 @@
+#include <common/utils/graphics.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
 #include <common/debug.h>
@@ -5,7 +6,6 @@
 #include <common/utils.h>
 #include <hbl/stubs/test.h>
 #include <hbl/utils/settings.h>
-#include <hbl/utils/graphics.h>
 #include <svnversion.h>
 #include <common/malloc.h>
 #include <hbl/stubs/resolve.h>
@@ -305,28 +305,9 @@ int callback_thread(SceSize args, void *argp)
 // HBL main thread
 int start_thread() //SceSize args, void *argp)
 {
-	int num_nids;
     int exit = 0;
 	int thid;
     tGlobals * g = get_globals();
-
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-	load_utility_module(PSP_MODULE_AV_AVCODEC);
-#endif
-
-	// Build NID table
-    print_to_screen("Building NIDs table");
-	num_nids = build_nid_table();
-    LOGSTR1("NUM NIDS: %d\n", num_nids);
-
-	if(num_nids <= 0)
-	{
-        exit_with_log("No Nids ???", NULL, 0);
-    }
-
-    // FIRST THING TO DO!!!
-    print_to_screen("Resolving own missing stubs");
-    resolve_missing_stubs();
 
     // Free memory
     print_to_screen("Freeing memory");
@@ -403,52 +384,6 @@ void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
 	SceUID thid;
-	cls();
-    print_to_screen("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
-
-#ifdef DEBUG
-#ifdef NID_DEBUG
-    print_to_screen("DEBUG version (+NIDS)");
-#else
-    print_to_screen("DEBUG version");
-#endif
-#else
-    print_to_screen_color("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
-#endif
-
-#ifndef VITA
-	int firmware_version = getFirmwareVersion();
-	switch (firmware_version)
-	{
-		case 0:
-		case 1:
-		    print_to_screen("Unknown Firmware :(");
-		    break;
-		default:
-		    PRTSTR2("Firmware %d.%dx detected", firmware_version / 100,  (firmware_version % 100) / 10);
-		    break;
-    }
-
-    if (getPSPModel() == PSP_GO)
-	{
-        print_to_screen("PSP Go Detected");
-    }
-#endif
-#ifdef FPL_EARLY_LOAD_ADDR_LIST
-     //early memory cleanup to be able to load HBL at a convenient place
-    LOGSTR0("loader.c:PreloadFreeFPL\n");
-    u32 i;
-    SceUID memids[] = FPL_EARLY_LOAD_ADDR_LIST;
-
-    for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
-    {
-        int ret = sceKernelDeleteFpl(*(SceUID*)memids[i]);
-        if (ret < 0)
-        {
-            LOGSTR2("--> ERROR 0x%08lX Deleting FPL ID 0x%08lX\n", ret, *(SceUID*)memids[i]);
-        }
-    }
-#endif
 
     // Second step of globals initalization
 	init_globals_2();

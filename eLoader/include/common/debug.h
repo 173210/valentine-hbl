@@ -1,11 +1,11 @@
 #ifndef ELOADER_DEBUG
 #define ELOADER_DEBUG
 
+#include <common/stubs/tables.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
 #include <hbl/mod/elf.h>
 #include <hbl/mod/modmgr.h>
-#include <hbl/stubs/tables.h>
 
 #define STDOUT 1
 #define PSPLINK_OUT 2
