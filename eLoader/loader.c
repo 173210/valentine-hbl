@@ -1,6 +1,7 @@
 /* Half Byte Loader loader :P */
 /* This loads HBL on memory */
 
+#include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/graphics.h>
 #include <common/sdk.h>
@@ -57,16 +58,6 @@ void resetHomeScreenSettings()
 }
 #endif
 
-
-//This function is copied from elf.c to avoid compiling the entire elf.c dependencies for just one function
-// Returns !=0 if stub entry is valid, 0 if it's not
-int elf_check_stub_entry(tStubEntry* pentry)
-{
-	return (
-    valid_umem_pointer((u32)(pentry->library_name)) &&
-	valid_umem_pointer((u32)(pentry->nid_pointer)) &&
-	valid_umem_pointer((u32)(pentry->jump_pointer)));
-}
 
 #ifdef GAME_PRELOAD_FREEMEM
 void PreloadFreeMem()
@@ -177,261 +168,59 @@ void load_hbl(SceUID hbl_file)
 	CLEAR_CACHE;
 }
 
-#if defined(AUTO_SEARCH_STUBS) && defined(LOAD_MODULES_FOR_SYSCALLS)
-void load_modules_for_hbl_stubs() {
-#ifdef MODULES_FOR_HBL_STUBS
-	unsigned int moduleIDs[] = MODULES_FOR_HBL_STUBS;
-	load_utility_modules(moduleIDs);
-#endif
-}
-
-void unload_modules_for_hbl_stubs() {
-#ifdef MODULES_FOR_HBL_STUBS
-	unsigned int moduleIDs[] = MODULES_FOR_HBL_STUBS;
-	unload_utility_modules(moduleIDs);
-#endif
-}
-#endif
-
-// Fills Stub array
-// Returns number of stubs found
-// "pentry" points to first stub header in game
-// Both lists must have same size
-int search_game_stubs(tStubEntry *pentry, u32** stub_list, u32* hbl_imports_list, unsigned int list_size)
+// Autoresolves HBL stubs
+void resolve_stubs()
 {
-	u32 i = 0, j, count = 0;
-	u32 *cur_nid, *cur_call;
-
-	LOGSTR1("ENTERING search_game_stubs() 0x%08lX\n", (u32)pentry);
-
-    //Some sanity checks
-    if (!valid_umem_pointer((u32)pentry))
-    {
-        LOGSTR1("0x%08lX is not a valid user memory address, will ignore this list, please check your list of stubs \n", (u32)pentry);
-        return 0;
-    }
-
-    if(!elf_check_stub_entry(pentry))
-    {
-        LOGSTR1("First entry for 0x%08lX is incorrect, will ignore this list, please check your list of stubs \n", (u32)pentry);
-        return 0;
-    }
-
-	// While it's a valid stub header
-	while(elf_check_stub_entry(pentry))
-	{
-		if ((pentry->import_flags != 0x11) && (pentry->import_flags != 0))
-		{
-			// Variable import, skip it
-			pentry = (tStubEntry*)((int)pentry + sizeof(u32));
-		}
-		else
-		{
-			// Get current NID and stub pointer
-			cur_nid = pentry->nid_pointer;
-			cur_call = pentry->jump_pointer;
-
-			// Browse all stubs defined by this header
-			for(i=0; i<pentry->stub_size; i++)
-			{
-				// Compare each NID in game imports with HBL imports
-				for(j=0; j<list_size; j++)
-				{
-					if(hbl_imports_list[j] == *cur_nid)
-					{
-						// Don't replace already found nids
-						if (stub_list[j] != 0)
-							continue;
-
-						stub_list[j] = cur_call;
-						LOGSTR3("nid:0x%08lX, address:0x%08lX call:0x%08lX", *cur_nid, (u32)cur_call, *cur_call);
-						LOGSTR1(" 0x%08lX\n", *(cur_call+1));
-						count++;
-					}
-				}
-				cur_nid++;
-				cur_call += 2;
-			}
-
-			pentry++;
-		}
-	}
-
-	return count;
-}
-
-// Loads info from config file
-int load_imports(u32* hbl_imports)
-{
-	unsigned int num_imports;
-	u32 i = 0;
-
-
-	// DEBUG_PRINT(" LOADING HBL IMPORTS FROM CONFIG ", NULL, 0);
-
+	tGlobals * g = get_globals();
+	u32 i;
 	int ret;
-	u32 nid = 0;
-	ret = config_num_nids_total(&num_imports);
+	u32 num_nids;
+	u32 *cur_stub = (u32 *)HBL_STUBS_START;
+	u32 nid = 0, syscall = 0;
+	char lib_name[MAX_LIBRARY_NAME_LENGTH];
 
-	if(ret < 0)
-		exit_with_log(" ERROR READING NUMBER OF IMPORTS ", &ret, sizeof(ret));
-
-	// DEBUG_PRINT(" NUMBER OF IMPORTS ", &num_imports, sizeof(num_imports));
-
-	if(num_imports > NUM_HBL_IMPORTS)
-		exit_with_log(" ERROR FILE CONTAINS MORE IMPORTS THAN BUFFER SIZE ", &num_imports, sizeof(num_imports));
-
-	LOGSTR1("--> HBL imports from imports.config: %d\n", num_imports);
-
-
-	// Get NIDs from config
-	ret = config_first_nid(&nid);
-
-	// DEBUG_PRINT(" FIRST NID RETURN VALUE ", &ret, sizeof(ret));
-
-	do
-	{
-		if (ret <= 0)
-			exit_with_log(" ERROR READING NEXT NID ", &i, sizeof(i));
-
-		hbl_imports[i++] = nid;
-
-		LOGSTR2("%d. 0x%08lX\n", i, nid);
-
-		if (i >= num_imports)
-			break;
-
-		ret = config_next_nid(&nid);
-	} while (1);
-
-	return i;
-}
-
-// Copies stubs used by HBL
-void copy_hbl_stubs(void)
-{
-	// Temp storage
-	int i, ret;
-
-	// Where are HBL stubs
-	u32* stub_addr;
-
-	// HBL imports (NIDs)
-	u32 hbl_imports[NUM_HBL_IMPORTS];
-
-	// Stub addresses
-	// The one sets to 0 are not imported by the game, and will be automatically estimated by HBL when loaded
-	// ALL FUNCTIONS USED BEFORE SYSCALL ESTIMATION IS READY MUST BE IMPORTED BY THE GAME
-	u32* stub_list[NUM_HBL_IMPORTS];
-
-	// Initialize config
 	ret = config_initialize();
-	// DEBUG_PRINT(" CONFIG INITIALIZED ", &ret, sizeof(ret));
 
-	if (ret < 0) {
+	if (ret < 0)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
-    }
 
-	//DEBUG_PRINT(" GOT GAME LIB STUB ", &pgame_lib_stub, sizeof(u32));
+	config_num_nids_total(&num_nids);
 
-	//DEBUG_PRINT(" ZEROING STUBS ", NULL, 0);
-	memset(&hbl_imports, 0, sizeof(hbl_imports));
+	for (i = 0; i < num_nids; i++) {
+		LOGSTR1("-Resolving import 0x%08lX: ", (int)cur_stub - HBL_STUBS_START);
 
-	// Loading HBL imports (NIDs)
-	ret = load_imports(hbl_imports);
-	//DEBUG_PRINT(" HBL IMPORTS LOADED ", &ret, sizeof(ret));
+		// NID & library for i-th import
+		get_lib_nid(i, lib_name, &nid);
 
-	if (ret < 0)
-		exit_with_log(" ERROR LOADING IMPORTS FROM CONFIG ", &ret, sizeof(ret));
+		LOGSTR0(lib_name);
+		LOGSTR1(" 0x%08lX\n", nid);
 
-	// Reset stub list
-	memset(stub_list, 0, NUM_HBL_IMPORTS * sizeof(u32));
+		// Is it known by HBL?
+		ret = get_nid_index(nid);
 
-#ifdef AUTO_SEARCH_STUBS
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-    load_modules_for_hbl_stubs();
-#endif
-
-    u32 stubs[MAX_RUNTIME_STUB_HEADERS];
-    int num_stubs = search_stubs(stubs);
-    LOGSTR1("Found %d stubs\n", num_stubs);
-/*
-	//This caught a overflow if (num_stubs + 4) is larger than MAX_RUNTIME_STUB_HEADERS.
-    stubs[num_stubs++] = RELOC_MODULE_ADDR_1;
-    stubs[num_stubs++] = RELOC_MODULE_ADDR_2;
-    stubs[num_stubs++] = RELOC_MODULE_ADDR_3;
-    stubs[num_stubs++] = RELOC_MODULE_ADDR_4;
- */
-    CLEAR_CACHE;
-    for (i = 0; i < num_stubs; ++i)
-    {
-        tStubEntry* pentry = (tStubEntry*) stubs[i];
-		search_game_stubs(pentry, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);
-	}
+		// If it's known, get the call
+		if (ret > 0) {
+			LOGSTR0("-Found in NID table, using real call\n");
+			syscall = g->nid_table.table[ret].call;
+		} else {
+#ifdef DEACTIVATE_SYSCALL_ESTIMATION
+			LOGSTR1("HBL Function missing at 0x%08lX, this could lead to trouble\n",  (int)cur_stub);
+			syscall = NOP_OPCODE;
 #else
-
-	// Game .lib.stub entry
-	u32 pgame_lib_stub;
-
-	// Get game's .lib.stub pointer
-	ret = config_first_lib_stub(&pgame_lib_stub);
-
-	if (ret < 0)
-		exit_with_log(" ERROR READING LIBSTUB ADDRESS ", &ret, sizeof(ret));
-
-
-	// Get number of import libraries
-	unsigned int num_lib_stubs = 0;
-	config_num_lib_stub(&num_lib_stubs);
-	LOGSTR1("Loading %d stubs\n", num_lib_stubs);
-
-	// Read in first stub address
-	ret = config_first_lib_stub(&pgame_lib_stub);
-
-	// Loop through all stubs and fill in stub list
-	i = 0;
-
-	do
-	{
-		if (ret == 0)
-			exit_with_log("**ERROR SEARCHING GAME STUBS**", NULL, 0);
-
-		search_game_stubs((tStubEntry*) pgame_lib_stub, stub_list, hbl_imports, (unsigned int) NUM_HBL_IMPORTS);
-
-		ret = config_next_lib_stub(&pgame_lib_stub);
-
-		i++;
-	}
-	while (i < (int)num_lib_stubs);
+			// If not, estimate
+			syscall = estimate_syscall(lib_name, nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
 #endif
+		}
 
+		*cur_stub++ = JR_RA_OPCODE;
+		*cur_stub++ = syscall;
+	}
 
-	// Config finished
+	CLEAR_CACHE;
+
 	config_close();
 
 	LOGSTR0(" ****STUBS SEARCHED\n");
-
-	stub_addr = (u32*)HBL_STUBS_START;
-
-	// DEBUG_PRINT(" COPYING STUBS ", NULL, 0);
-	for (i=0; i<NUM_HBL_IMPORTS; i++)
-	{
-		if (stub_list[i] != NULL)
-			memcpy(stub_addr, stub_list[i], sizeof(u32)*2);
-		else{
-            LOGSTR1("HBL Function missing at 0x%08lX, this could lead to trouble if syscall estimates do not work\n", (u32)stub_addr);
-			memset(stub_addr, 0, sizeof(u32)*2);
-        }
-		stub_addr += 2;
-	}
-
-#ifdef AUTO_SEARCH_STUBS
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-    unload_modules_for_hbl_stubs();
-#endif
-#endif
-
-	CLEAR_CACHE;
 }
 
 
@@ -803,8 +592,8 @@ void _start()
 		LOGSTR0("Loading HBL\n");
 		load_hbl(hbl_file);
 
-		LOGSTR0("Copying & resolving HBL stubs\n");
-		copy_hbl_stubs();
+		LOGSTR0("Resolving HBL stubs\n");
+		resolve_stubs();
 		LOGSTR0("HBL stubs copied, running eLoader\n");
 		run_eloader(0, NULL);
 	}

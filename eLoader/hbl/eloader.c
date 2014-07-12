@@ -8,7 +8,6 @@
 #include <hbl/utils/settings.h>
 #include <svnversion.h>
 #include <common/malloc.h>
-#include <hbl/stubs/resolve.h>
 #include <common/runtime_stubs.h>
 #include <hbl/utils/memory.h>
 #include <hbl/mod/modmgr.h>

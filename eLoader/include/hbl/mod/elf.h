@@ -2,6 +2,7 @@
 #define ELOADER_ELF
 
 #include <common/sdk.h>
+#include <common/utils.h>
 
 /*******************/
 /* ELF typedefs */
@@ -255,7 +256,11 @@ SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset);
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header);
 
 // Returns !=0 if stub entry is valid, 0 if it's not
-int elf_check_stub_entry(tStubEntry* pentry);
+// Just checks if pointers are not NULL
+#define elf_check_stub_entry(pentry) ( \
+	valid_umem_pointer((u32)(pentry->library_name)) && \
+	valid_umem_pointer((u32)(pentry->nid_pointer)) && \
+	valid_umem_pointer((u32)(pentry->jump_pointer)))
 
 #endif
 

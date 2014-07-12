@@ -1,4 +1,3 @@
-#include <common/stubs/resolve.h>
 #include <common/stubs/syscall.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
@@ -9,6 +8,7 @@
 #include <common/utils.h>
 #include <hbl/utils/md5.h>
 #include <hbl/utils/memory.h>
+#include <hbl/stubs/resolve.h>
 #include <common/globals.h>
 #include <exploit_config.h>
 

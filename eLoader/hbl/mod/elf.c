@@ -51,16 +51,6 @@ int elf_check_magic(Elf32_Ehdr* pelf_header)
         return 0;
 }
 
-// Returns !=0 if stub entry is valid, 0 if it's not
-// Just checks if pointers are not NULL
-int elf_check_stub_entry(tStubEntry* pentry)
-{
-	return (
-    valid_umem_pointer((u32)(pentry->library_name)) &&
-	valid_umem_pointer((u32)(pentry->nid_pointer)) &&
-	valid_umem_pointer((u32)(pentry->jump_pointer)));
-}
-
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
 unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size)

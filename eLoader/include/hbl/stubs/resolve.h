@@ -1,9 +1,8 @@
 #ifndef ELOADER_RESOLVE
 #define ELOADER_RESOLVE
 
-// Autoresolves HBL missing stubs
-// Some stubs are compulsory, like sceIo*
-void resolve_missing_stubs();
+#include <common/sdk.h>
+#include <hbl/mod/elf.h>
 
 // Subsitutes the right instruction
 void resolve_call(u32 *call_to_resolve, u32 call_resolved);
