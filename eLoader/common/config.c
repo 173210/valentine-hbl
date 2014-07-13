@@ -30,8 +30,6 @@ int cfg_init()
 	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 #else
 	char file[512];
-
-	int i = 0;
 	int fw_ver = get_fw_ver();
 
 	//We try to open a lib file base on the version of the firmware as precisely as possible,

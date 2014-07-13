@@ -94,7 +94,6 @@ typedef struct
 	//tables.c
 	int syscalls_known;
 #endif
-	int syscalls_from_p5;
 	HBLNIDTable nid_table;
 	HBLLibTable lib_table;
 	//settings.c

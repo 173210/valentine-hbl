@@ -824,14 +824,6 @@ u32 _hook_sceRtcGetTickResolution()
     return ONE_SECOND_TICK;
 }
 
-#ifdef HOOK_sceRtcGetCurrentClock_WITH_sceRtcGetCurrentClockLocalTime
-int _hook_sceRtcGetCurrentClock  (pspTime  *time, int UNUSED(tz))
-{
-    //todo deal with the timezone...
-    return sceRtcGetCurrentClockLocalTime(time);
-}
-#endif
-
 
 int _hook_sceRtcSetTick (pspTime  *time, const u64  *t)
 {
@@ -1760,29 +1752,11 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 			hook_call = MAKE_JUMP(_hook_sceRtcConvertUtcToLocalTime);
             break;
 
-#ifdef HOOK_sceRtcGetCurrentClock_WITH_sceRtcGetCurrentClockLocalTime
-        case 0x4CFA57B0: //sceRtcGetCurrentClock	 (avoid syscall estimation)
-			if (!globals->syscalls_from_p5)
-				hook_call = MAKE_JUMP(_hook_sceRtcGetCurrentClock);
-            break;
-#endif
-
         //others
         case 0x68963324: //	sceIoLseek32 (avoid syscall estimation)
             //based on http://forums.ps2dev.org/viewtopic.php?t=12490
 			hook_call = MAKE_JUMP(_hook_sceIoLseek32);
             break;
-
-#ifndef HOOK_sceCtrlReadBufferPositive_WITH_sceCtrlPeekBufferPositive
-        case 0x3A622550: //	sceCtrlPeekBufferPositive (avoid syscall estimation)
-			if ((!globals->syscalls_from_p5) && (globals->override_sceCtrlPeekBufferPositive == OVERRIDE))
-            {
-                //based on http://forums.ps2dev.org/viewtopic.php?p=27173
-                //This will be slow and should not be active for high performance programs...
-                hook_call = MAKE_JUMP(sceCtrlReadBufferPositive);
-            }
-            break;
-#endif
 
         case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
 			hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
@@ -1849,11 +1823,6 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0xBD681969: //scePowerGetBusClockFrequencyInt (alias to scePowerGetBusClockFrequency)
         case 0x478FE6F5:// scePowerGetBusClockFrequency     (avoid syscall estimation)
 			hook_call = MAKE_JUMP(_hook_scePowerGetBusClockFrequency);
-            break;
-
-        case 0x2085D15D: //scePowerGetBatteryLifePercent  (avoid syscall estimation)
-			if (!globals->syscalls_from_p5)
-				hook_call = MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
             break;
 
         case 0x8EFB3FA2: //scePowerGetBatteryLifeTime   (avoid syscall estimation)

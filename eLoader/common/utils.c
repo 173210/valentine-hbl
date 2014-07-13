@@ -1,8 +1,9 @@
 #include <common/utils.h>
 #include <common/debug.h>
 #include <exploit_config.h>
-
 #ifndef VITA
+#include <common/globals.h>
+
 // "cache" for the firmware version
 // 1 means: not set yet
 // 0 means unknown
