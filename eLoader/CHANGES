@@ -364,7 +364,7 @@ To activate it, define the macro "UNLOAD_MODULE" in eLoader.h
 - Added code to HBL process any number of .lib.stubs defined in imports.config
 --> eLoaderconf.rb broken, wololo please fix it
 - Added more functions and a lot of order to sdk_loader.S
-- Moved get_library_entry() from syscall.c to eloader.c
+- Moved get_ent_top() from syscall.c to eloader.c
 - Added a new directory with tools for HBL development
 - Added NIDSPRX tool by arisma
 - Added whole GPLv3 to LICENSE

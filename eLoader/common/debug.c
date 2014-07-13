@@ -69,16 +69,16 @@ void log_library(tSceLibrary lib)
 	LOGSTR1("--Lowest index in file: %d\n", lib.lowest_index);
 }
 
-void log_modinfo(tModInfoEntry modinfo)
+void log_modinfo(SceModuleInfo modinfo)
 {
 	LOGSTR0("\n->Module information:\n");
-	LOGSTR1("Name: %s\n", (u32) modinfo.module_name);
-	LOGSTR1("Version: 0x%08lX\n", modinfo.module_version);
-	LOGSTR1("Attributes: 0x%08lX\n", modinfo.module_attributes);
-	LOGSTR1("Lib entry: 0x%08lX\n", (u32) modinfo.library_entry);
-	LOGSTR1("Lib stubs: 0x%08lX\n", (u32) modinfo.library_stubs);
-    LOGSTR1("Lib stubs end: 0x%08lX\n", (u32) modinfo.library_stubs_end);
-	LOGSTR1("gp: 0x%08lX\n", (u32) modinfo.gp);
+	LOGSTR1("Name: %s\n", (u32) modinfo.modname);
+	LOGSTR2("Version: %d.%d\n", modinfo.modversion[0], modinfo.modversion[1]);
+	LOGSTR1("Attributes: 0x%08lX\n", modinfo.modattribute);
+	LOGSTR1("Lib entry: 0x%08lX\n", (u32) modinfo.ent_top);
+	LOGSTR1("Lib stubs: 0x%08lX\n", (u32) modinfo.stub_top);
+    LOGSTR1("Lib stubs end: 0x%08lX\n", (u32) modinfo.stub_end);
+	LOGSTR1("gp: 0x%08lX\n", (u32) modinfo.gp_value);
 }
 
 void log_elf_header(Elf32_Ehdr eheader)

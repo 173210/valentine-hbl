@@ -99,7 +99,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	Elf32_Phdr program_header;
 	int excess;
     void * buffer;
-	tModInfoEntry module_info;
+	_sceModuleInfo module_info;
 
 	//LOGSTR1("prx_load_program -> Offset: 0x%08lX\n", start_offset);
 
@@ -119,7 +119,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 
 	// Read module info from PRX
 	sceIoLseek(elf_file, (u32)start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
-	sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
+	sceIoRead(elf_file, &module_info, sizeof(_sceModuleInfo));
 
 
     LOGMODINFO(module_info);
@@ -153,12 +153,12 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
         memset(buffer, 0, excess);
 	}
 
-	*pstub_entry = (tStubEntry*)((u32)module_info.library_stubs + (u32)*addr);
+	*pstub_entry = (tStubEntry*)((u32)module_info.stub_top + (u32)*addr);
 
 	LOGSTR1("stub_entry address: 0x%08lX\n", (u32)*pstub_entry);
 
 	// Return size of stubs
-	return ((u32)module_info.library_stubs_end - (u32)module_info.library_stubs);
+	return ((u32)module_info.stub_end - (u32)module_info.stub_top);
 }
 
 // Get index of section if you know the section name
@@ -212,7 +212,7 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 {
 	Elf32_Shdr section_header;
-	tModInfoEntry module_info;
+	_sceModuleInfo module_info;
 	int section_index = -1;
 
     section_index = elf_get_section_index_by_section_name(elf_file, start_offset, pelf_header, ".rodata.sceModuleInfo");
@@ -229,11 +229,11 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 
 	// Read in module info
     sceIoLseek(elf_file, start_offset + section_header.sh_offset, PSP_SEEK_SET);
-    sceIoRead(elf_file, &module_info, sizeof(tModInfoEntry));
+    sceIoRead(elf_file, &module_info, sizeof(SceModuleInfo));
 
     LOGMODINFO(module_info);
 
-    return (u32) module_info.gp;
+    return (u32) module_info.gp_value;
 }
 
 // Copies the string pointed by table_offset into "buffer"

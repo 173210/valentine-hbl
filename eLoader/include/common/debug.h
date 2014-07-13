@@ -37,7 +37,7 @@ void logstr0(const char* A);
 #ifdef DEBUG
 void log_library(tSceLibrary lib);
 void log_program_header(Elf32_Phdr pheader);
-void log_modinfo(tModInfoEntry modinfo);
+void log_modinfo(SceModuleInfo modinfo);
 void log_elf_header(Elf32_Ehdr eheader);
 void log_mod_entry(HBLModInfo modinfo);
 void log_elf_section_header(Elf32_Shdr shdr);

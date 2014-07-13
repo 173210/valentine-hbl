@@ -196,21 +196,6 @@ typedef struct
 #define R_MIPS_CALL16 11
 #define R_MIPS_GPREL32 12
 
-#define MAX_MODULE_NAME 0x1c
-
-/* .rodata.sceModuleInfo */
-typedef struct
-{
-	Elf32_Half module_attributes;
-	Elf32_Half module_version;
-	BYTE       module_name[MAX_MODULE_NAME];
-	Elf32_Addr gp;
-	Elf32_Addr library_entry;
-	Elf32_Addr library_entry_end;
-	Elf32_Addr library_stubs;
-	Elf32_Addr library_stubs_end;
-} tModInfoEntry;
-
 // .lib.ent
 typedef struct
 {

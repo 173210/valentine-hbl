@@ -248,7 +248,7 @@ SceUID start_module(SceUID modid)
 }
 
 // Fills module name and return utility ID for a given utility library name
-int get_utility_module_name(const char* lib, char* name)
+int get_utility_modname(const char* lib, char* name)
 {
 	// sceMpeg_library
 	if (strcmp(lib, "sceMpeg") == 0)
@@ -446,7 +446,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	//SceUID utility_id;
 	char mod_name[MAX_MODULE_NAME_LENGTH];
 
-	if (get_utility_module_name(lib_name, mod_name) < 0)
+	if (get_utility_modname(lib_name, mod_name) < 0)
 	{
 		LOGSTR1("Unknown/unsupported utility 0x%08lX\n", mod_id);
 		return -1;
