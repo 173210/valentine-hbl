@@ -29,16 +29,16 @@ u32 get_fw_ver()
    u8 cnt;
    u32 version = 0;
    u8 i;
-   u32* addr = (u32 *)memfindsz("sceKernelLibrary", (char*)0x08800300, 0x00001000);
+   u32* addr = memfindsz("sceKernelLibrary", (void *)0x08800300, 0x00001000);
 
    SceLibraryEntryTable *Entry = (SceLibraryEntryTable *) addr[8];
 
    cnt = Entry->vstubcount + Entry->stubcount;
    u32** pointer =(u32**) Entry->entrytable;
 
-//   LOGSTR1("Entry is 0x%08lX \n",(u32)Entry);
-//   LOGSTR1("cnt is 0x%08lX \n",(u32)cnt);
-//   LOGSTR1("pointer is 0x%08lX \n",(u32)pointer);
+//   LOGSTR("Entry is 0x%08X \n",(u32)Entry);
+//   LOGSTR("cnt is 0x%08X \n",(u32)cnt);
+//   LOGSTR("pointer is 0x%08X \n",(u32)pointer);
 
    for(i=0;i< cnt;i++)
    {
@@ -48,7 +48,7 @@ u32 get_fw_ver()
          break;
       }
    }
-   LOGSTR1("Detected firmware version is 0x%08lX\n", (u32)version);
+   LOGSTR("Detected firmware version is 0x%08X\n", (u32)version);
 
    if(version)
    {
@@ -58,7 +58,7 @@ u32 get_fw_ver()
    }
    else
    {
-      LOGSTR0("Warning: Cannot find module_sdk_version function \n");
+      LOGSTR("Warning: Cannot find module_sdk_version function \n");
    }
 
     return globals->fw_ver;

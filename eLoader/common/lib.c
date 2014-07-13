@@ -2,383 +2,218 @@
 #include <common/debug.h>
 
 // Sets a memory region to a specific value
-void * memset(void *ptr, int c, size_t size)
+void *memset(void *s, int c, size_t n)
 {
-	byte *p1 = ptr;
-	byte *p2 = ptr + size;
-	while(p1 != p2) {
-		*p1 = c;
-		p1++;
-	}
-    return ptr;
+	char *p;
+
+	for(p = s; (int)p < (int)(s + n); p++)
+		*p = c;
+
+	return s;
 }
 
 // Copies one memory buffer into another
-void * memcpy(void *out, const void *in, int size)
+void *memcpy(void *dst, const void *src, size_t n)
 {
-	byte *pout = out;
-	byte *pin = (byte *)in;
-	int i;
-	for(i = 0; i < size; i++) {
-		*pout = *pin;
-		pout++;
-		pin++;
-	}
-    return out;
-}
+	char *p = dst;
 
-//Scan s for the character.  When this loop is finished,
-//    s will either point to the end of the string or the
-//    character we were looking for
-char *(strchr)(const char *s, int c)
-{
-	while (*s != '\0' && *s != (char)c)
-		s++;
-	return ( (*s == c) ? (char *) s : NULL );
-}
-
-
-// Returns string length
-int strlen(const char *text)
-{
-	int i = 0;
-	while(*text)
-	{
-		text++;
-		i++;
-	}
-	return i;
-}
-
-// Copies string src into dest
-char *strcpy(char *dest, const char *src)
-{
-	while(*src)
-	{
-		*dest = *src;
-		dest++;
+	while (n != 0) {
+		*p = *(const char *)src;
+		p++;
 		src++;
+		n--;
 	}
 
-	*dest = '\0';
-	return dest;
-}
-
-// Copies a null-terminated string from a file
-// Returns string length
-unsigned int fgetsz(SceUID file, char* dest)
-{
-	int ret;
-	char c;
-	unsigned int i = 0;
-
-	ret = sceIoRead(file, &c, sizeof(c));
-
-	while ((c != 0) && (ret > 0))
-	{
-		dest[i++] = c;
-		ret = sceIoRead(file, &c, sizeof(c));
-	}
-
-	dest[i] = '\0';
-
-	return i;
-}
-
-// Returns 1 if a given file exists, 0 otherwise
-int file_exists(const char * filename)
-{
-    SceUID id = sceIoOpen(filename, PSP_O_RDONLY, 0777);
-    if (id < 0)
-    {
-		return 0;
-    }
-    sceIoClose(id);
-    return 1;
-}
-
-/*
- * Basic Sprintf functions thanks to Fanjita and Noobz
- */ 
-
-void numtohex8(char *dst, int n)
-{
-   int i;
-   static char hex[]="0123456789ABCDEF";
-   for (i=0; i<8; i++)
-   {
-      dst[i]=hex[(n>>((7-i)*4))&15];
-   }
-}
-
-void numtohex4(char *dst, int n)
-{
-   int i;
-   static char hex[]="0123456789ABCDEF";
-   for (i=4; i<8; i++)
-   {
-      dst[i-4]=hex[(n>>((7-i)*4))&15];
-   }
-}
-
-void numtohex2(char *dst, int n)
-{
-   int i;
-   static char hex[]="0123456789ABCDEF";
-   for (i=6; i<8; i++)
-   {
-      dst[i-6]=hex[(n>>((7-i)*4))&15];
-   }
-}
-
-// limited sprintf function - avoids pulling in large library
-int writeFormat(char *xibuff, const char *xifmt, u32 xidata)
-{
-  // check for empty format
-  if (xifmt[0] == '\0')
-  {
-    *xibuff = '?';
-    return(1);
-  }
-  else
-  {
-    if ((xifmt[0] == '0') &&
-        (xifmt[1] == '8') &&
-        (xifmt[2] == 'l') &&
-        (xifmt[3] == 'X'))
-    {
-      numtohex8(xibuff, xidata);
-      return(8);
-    }
-    else if ((xifmt[0] == '0') &&
-             (xifmt[1] == '4') &&
-             (xifmt[2] == 'X'))
-    {
-      numtohex4(xibuff, xidata);
-      return(4);
-    }
-    else if ((xifmt[0] == '0') &&
-             (xifmt[1] == '2') &&
-             (xifmt[2] == 'X'))
-    {
-      numtohex2(xibuff, xidata);
-      return(2);
-    }
-    else if (xifmt[0] == 'c')
-    {
-      *xibuff = (unsigned char)xidata;
-      return(1);
-    }
-    else if (xifmt[0] == 's')
-    {
-      const char *lptr   = (const char *)xidata;
-      int         lcount = 0;
-
-      /***********************************************************************/
-      /* Artificially limit %s format to 150 bytes, as a cheap way to        */
-      /* avoid log buffer overflow.                                          */
-      /***********************************************************************/
-      while ((*lptr != 0) && (lcount < 150))
-      {
-        *xibuff++ = *lptr++;
-        lcount++;
-      }
-      return(lcount);
-    }
-    else if (xifmt[0] == 'd')
-    {
-      char lbuff[15];
-      int  lnumbuff = 0;
-      int  lcount = 0;
-      int  lchar;
-      int lnum   = (int)xidata;
-      if (lnum < 0)
-      {
-        *xibuff++ = '-';
-        lcount++;
-        lnum = 0 - lnum;
-      }
-
-      lchar = lnum % 10;
-      lbuff[0] = lchar + 48;
-      lnumbuff++;
-      lnum -= lchar;
-
-      while (lnum > 0)
-      {
-        lnum  = lnum / 10;
-        lchar = lnum % 10;
-        lbuff[lnumbuff++] = lchar + 48;
-        lnum -= lchar;
-      }
-
-      while (lnumbuff > 0)
-      {
-        *xibuff++ = lbuff[--lnumbuff];
-        lcount++;
-      }
-
-      return(lcount);
-    }
-    else if ((xifmt[0] == 'p'))
-    {
-      numtohex8(xibuff, xidata);
-      return(8);
-    }
-
-    return(0);
-  }
-}
-
-void mysprintf11(char *xobuff, const char *xifmt,
-   u32 xidata,
-   u32 xidata2,
-   u32 xidata3,
-   u32 xidata4,
-   u32 xidata5,
-   u32 xidata6,
-   u32 xidata7,
-   u32 xidata8,
-   u32 xidata9,
-   u32 xidata10,
-   u32 xidata11)
-{
-  int  lparam = 0;
-  char lfmt[10];
-  char *lfmtptr;
-
-  while (*xifmt != '\0')
-  {
-    if (*xifmt != '%')
-    {
-      *xobuff++ = *xifmt++;
-    }
-    else
-    {
-      xifmt++;  // skip the %
-      lfmtptr = lfmt;
-      while ((*xifmt == '0')
-          || (*xifmt == '2')
-          || (*xifmt == '4')
-          || (*xifmt == '8')
-          || (*xifmt == 'l')
-          || (*xifmt == 'X')
-          || (*xifmt == 'd')
-          || (*xifmt == 'p')
-          || (*xifmt == 's')
-          || (*xifmt == 'c'))
-      {
-        *lfmtptr ++ = *xifmt++;
-      }
-      *lfmtptr = '\0';
-
-      switch (lparam)
-      {
-        case 0:
-          xobuff += writeFormat(xobuff, lfmt, xidata);
-          break;
-        case 1:
-          xobuff += writeFormat(xobuff, lfmt, xidata2);
-          break;
-        case 2:
-          xobuff += writeFormat(xobuff, lfmt, xidata3);
-          break;
-        case 3:
-          xobuff += writeFormat(xobuff, lfmt, xidata4);
-          break;
-        case 4:
-          xobuff += writeFormat(xobuff, lfmt, xidata5);
-          break;
-        case 5:
-          xobuff += writeFormat(xobuff, lfmt, xidata6);
-          break;
-        case 6:
-          xobuff += writeFormat(xobuff, lfmt, xidata7);
-          break;
-        case 7:
-          xobuff += writeFormat(xobuff, lfmt, xidata8);
-          break;
-        case 8:
-          xobuff += writeFormat(xobuff, lfmt, xidata9);
-          break;
-        case 9:
-          xobuff += writeFormat(xobuff, lfmt, xidata10);
-          break;
-        case 10:
-          xobuff += writeFormat(xobuff, lfmt, xidata11);
-          break;
-      }
-      lparam++;
-    }
-  }
-
-  *xobuff = '\0';
-}
-
-void mysprintf8(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2, u32 xidata3, u32 xidata4, u32 xidata5, u32 xidata6, u32 xidata7, u32 xidata8)
-{
-	mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, xidata5, xidata6, xidata7, xidata8, 0, 0, 0);
-}
-
-void mysprintf4(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2, u32 xidata3, u32 xidata4)
-{
-	mysprintf8(xobuff, xifmt, xidata, xidata2, xidata3, xidata4, 0, 0, 0, 0);
-}
-
-void mysprintf3(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2, u32 xidata3)
-{
-	mysprintf11(xobuff, xifmt, xidata, xidata2, xidata3, 0, 0, 0, 0, 0, 0, 0,0);
-}
-
-void mysprintf2(char *xobuff, const char *xifmt, u32 xidata, u32 xidata2)
-{
-	mysprintf3(xobuff, xifmt, xidata, xidata2, 0);
-}
-
-void mysprintf1(char *xobuff, const char *xifmt, u32 xidata)
-{
-	mysprintf3(xobuff, xifmt, xidata, 0, 0);
-}
-
-void mysprintf0(char *xobuff, const char *xifmt)
-{
-	while (*xifmt != '\0')
-	{
-		*xobuff++ = *xifmt++;
-	}
-	*xobuff = '\0';
+	return dst;
 }
 
 // Searches for s1 string on memory
 // Returns pointer to string
-void *memfindsz(const char *s1, void *p, int size)
+void *memfindsz(const char *s, const void *p, size_t size)
 {
-	int i;
+	while (size) {
+                if (!strcmp((const char *)p, s))
+                        return (void *)p;
+		size--;
+		p++;
+	}
 
-	for (i = 0; i < size; i++)
-		if (!strcmp((char *)(p + i), s1))
-			return p + i;
+        return NULL;
+}
+
+// Searches for word value on memory
+// Starting address must be word aligned
+// Returns pointer to value
+void *memfindint(int val, const void *p, size_t size)
+{
+	while (size) {
+                if (*(int *)p == val)
+                        return (void *)p;
+		size -= sizeof(int);
+		p += sizeof(int);
+	}
+
+        return NULL;
+}
+
+
+//Scan s for the character.  When this loop is finished,
+//    s will either point to the end of the string or the
+//    character we were looking for
+char *strchr(const char *s, int c)
+{
+	while (*s != '\0') {
+		if (*s == c)
+			return (char *)s;
+		s++;
+	}
 
 	return NULL;
 }
 
-// Searches for 32-bit value on memory
-// Starting address must be word aligned
-// Returns pointer to value
-u32* memfindu32(const u32 val, u32* start, unsigned int size)
+
+// Returns string length
+size_t strlen(const char *s)
 {
-	unsigned int i = 0;
-	while (i < size && *start != val)
-	{
-		start++;
+	int i = 0;
+
+	while (*s != '\0') {
+		s++;
 		i++;
 	}
 
-	if (i < size)
-		return start;
-	else
-		return NULL;
+	return i;
 }
+
+// Copies string src into dst
+char *strcpy(char *dst, const char *src)
+{
+	while(*src) {
+		*dst = *src;
+		dst++;
+		src++;
+	}
+
+	*dst = '\0';
+
+	return dst;
+}
+
+// Copies a line from a file
+// Returns string length
+char *fgets(char *s, size_t n, SceUID fd)
+{
+	char *p = s;
+
+	while (n) {
+		if (sceIoRead(fd, p, sizeof(char)) != sizeof(char))
+			break;
+		if (*p == '\0' || *p == '\n')
+			break;
+		p++;
+		n--;
+	}
+
+	p = '\0';
+
+	return s;
+}
+
+// Returns 1 if a given file exists, 0 otherwise
+int file_exists(const char *file)
+{
+	SceUID fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+	if (fd < 0)
+		return 0;
+
+	sceIoClose(fd);
+
+	return 1;
+}
+
+/*
+ * Basic Sprintf functions
+ */ 
+
+void _itoa(unsigned val, char **buf, int base, int w)
+{
+	char *p2;
+	char *p1 = *buf;
+	char c;
+	int rem;
+
+	do {
+		rem = val % base;
+		*(*buf)++ = (rem < 10 ? 0x30 : 0x37) + rem;
+		val /= base;
+		w--;
+	} while (val || w > 0);
+
+	p2 = *buf - 1;
+	while (p1 < p2) {
+		c = *p1;
+		*p1++ = *p2;
+		*p2-- = c;
+	}
+}
+
+void _vsprintf(char *s, const char *fmt, va_list va)
+{
+	const char *p;
+	char c, w;
+	int val;
+
+	while ((c = *fmt++) != '\0') {
+		if (c != '%') {
+			*s++ = c;
+		} else {
+			c = *fmt++;
+
+			w = 0;
+			if (c == '0') {
+				c = *fmt++;
+				if (c >= '0' && c <= '8') {
+					w = c - '0';
+					c = *fmt++;
+				}
+			}
+
+			switch (c) {
+				case 'd':
+					val = va_arg(va, int);
+					if (val < 0) {
+						*s++ = '-';
+						val = -val;
+					}
+					_itoa((unsigned)val, &s, 10, w);
+					break;
+				case 'X' : 
+					_itoa((unsigned)va_arg(va, int), &s, 16, w);
+					break;
+				case 'c' :
+					*s++ = (char)va_arg(va, int);
+					break;
+				case 's' :
+					p = va_arg(va, const char *);
+					while (*p != '\0')
+						*s++ = *p++;
+					break;
+			}
+		}
+	}
+	*s = '\0';
+}
+
+void _sprintf(char *s, const char *fmt, ...)
+{
+	va_list va;
+
+	va_start(va, fmt);
+	_vsprintf(s, fmt, va);
+	va_end(va);
+}
+
+
 
 /* * * * * * * * * * * *
  * For functions below:

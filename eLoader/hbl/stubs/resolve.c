@@ -88,7 +88,7 @@ static u32 get_jump_from_export(u32 nid, tExportEntry *pexports)
 		for (i=0; i<(u16)pexports->num_functions; i++)
 		{
 			if( pnids[i] == nid){
-				LOGSTR3("NID FOUND in %s: 0x%08lX Function: 0x%08lX\n", (u32)pexports->name , pnids[i], pfunctions[i]);
+				LOGSTR("NID FOUND in %s: 0x%08X Function: 0x%08X\n", (u32)pexports->name , pnids[i], pfunctions[i]);
 				return MAKE_JUMP(pfunctions[i]);
 			}
 		}
@@ -111,16 +111,16 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
         globals->chdir_ok = test_sceIoChdir();
 #endif
 
-	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
+	LOGSTR("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
 	{
-		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (u32)pstub_entry);
+		LOGSTR("Pointer to stub entry: 0x%08X\n", (u32)pstub_entry);
 
 		cur_nid = pstub_entry->nid_p;
 		cur_call = pstub_entry->jump_p;
 
-		LOGSTR1("Current library: %s\n", (u32)pstub_entry->lib_name);
+		LOGSTR("Current library: %s\n", (u32)pstub_entry->lib_name);
 
 		// Load utility if necessary
 		int mod_id = is_utility((char*)pstub_entry->lib_name);
@@ -133,8 +133,8 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		for(j=0; j<pstub_entry->stub_size; j++)
 		{
 
-			LOGSTR1("Current nid: 0x%08lX\n", *cur_nid);
-			NID_LOGSTR1("Current call: 0x%08lX\n", (u32)cur_call);
+			LOGSTR("Current nid: 0x%08X\n", *cur_nid);
+			NID_LOGSTR("Current call: 0x%08X\n", (u32)cur_call);
 
 			// Get syscall/jump instruction for current NID
 			real_call = 0;
@@ -146,7 +146,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 
 			if( real_call == 0){
 				nid_index = get_call_nidtable(*cur_nid, &real_call);
-				NID_LOGSTR1("Index for NID on table: %d\n", nid_index);
+				NID_LOGSTR("Index for NID on table: %d\n", nid_index);
 			}
 
 
@@ -155,7 +155,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			if (hook_call != 0)
 				real_call = hook_call;
 
-			NID_LOGSTR1("Real call before estimation: 0x%08lX\n", real_call);
+			NID_LOGSTR("Real call before estimation: 0x%08X\n", real_call);
 
 			/* If NID not found in game imports */
 			/* generic error/ok if syscall estimation is not available */
@@ -169,7 +169,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 #endif
 			}
 
-			NID_LOGSTR1("Real call after estimation: 0x%08lX\n", real_call);
+			NID_LOGSTR("Real call after estimation: 0x%08X\n", real_call);
 
 			/* If it's an instruction, resolve it */
 			/* 0xC -> syscall 0 */
@@ -181,7 +181,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 				resolving_count++;
 			}
 
-			LOGSTR3("Resolved stub 0x%08lX: 0x%08lX 0x%08lX\n", (u32)cur_call, *cur_call, *(cur_call+1));
+			LOGSTR("Resolved stub 0x%08X: 0x%08X 0x%08X\n", (u32)cur_call, *cur_call, *(cur_call+1));
 
 			CLEAR_CACHE;
 
@@ -192,6 +192,6 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		pstub_entry++;
 	}
 
-    LOGSTR0("RESOLVING IMPORTS: Done.");
+    LOGSTR("RESOLVING IMPORTS: Done.");
 	return resolving_count;
 }

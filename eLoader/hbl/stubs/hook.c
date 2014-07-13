@@ -62,7 +62,7 @@ int _hook_sceKernelExitThread(int status)
 	int found = 0;
 	int thid = sceKernelGetThreadId();
 
-	LOGSTR1("Enter hookExitThread : %08lX\n", thid);
+	LOGSTR("Enter hookExitThread : %08X\n", thid);
 
 	WAIT_SEMA(globals->thSema, 1, 0);
 
@@ -70,7 +70,7 @@ int _hook_sceKernelExitThread(int status)
 		if (globals->running_th[i] == thid) {
 			found = 1;
 			globals->num_run_th--;
-			LOGSTR1("Running threads: %d\n", globals->num_run_th);
+			LOGSTR("Running threads: %d\n", globals->num_run_th);
 		}
 
 		if (found && i <= SIZE_THREAD_TRACKING_ARRAY - 2)
@@ -81,18 +81,18 @@ int _hook_sceKernelExitThread(int status)
 
 
 #ifdef DELETE_EXIT_THREADS
-	LOGSTR1("Num exit thr: %08lX\n", globals->num_exit_th);
+	LOGSTR("Num exit thr: %08X\n", globals->num_exit_th);
 
 	/*************************************************************************/
 	/* Add to exited list                                                    */
 	/*************************************************************************/
 	if (globals->num_exit_th < SIZE_THREAD_TRACKING_ARRAY)
 	{
-		LOGSTR0("Set array\n");
+		LOGSTR("Set array\n");
 		globals->exited_th[globals->num_exit_th] = thid;
 		globals->num_exit_th++;
 
-		LOGSTR1("Exited threads: %d\n", globals->num_exit_th);
+		LOGSTR("Exited threads: %d\n", globals->num_exit_th);
 	}
 #endif
 
@@ -109,7 +109,7 @@ int _hook_sceKernelExitThread(int status)
 
 	sceKernelSignalSema(globals->thSema, 1);
 
-	LOGSTR0("Exit hookExitThread\n");
+	LOGSTR("Exit hookExitThread\n");
 
 	return sceKernelExitThread(status);
 }
@@ -129,7 +129,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 	int thid = sceKernelGetThreadId();
 
     
-	LOGSTR1("Enter hookExitDeleteThread : %08lX\n", thid);
+	LOGSTR("Enter hookExitDeleteThread : %08X\n", thid);
 
 	WAIT_SEMA(globals->thSema, 1, 0);
 
@@ -137,7 +137,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 		if (globals->running_th[i] == thid) {
 			found = 1;
 			globals->num_run_th --;
-			LOGSTR1("Running threads: %d\n", globals->num_run_th);
+			LOGSTR("Running threads: %d\n", globals->num_run_th);
 		}
 
 		if (found && i <= SIZE_THREAD_TRACKING_ARRAY - 2)
@@ -148,7 +148,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 
 
 
-	LOGSTR0("Exit hookExitDeleteThread\n");
+	LOGSTR("Exit hookExitDeleteThread\n");
 
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
@@ -165,18 +165,18 @@ int _hook_sceKernelExitDeleteThread(int status)
 	// But modules on p5 do.
 
 #ifdef DELETE_EXIT_THREADS
-	LOGSTR1("Num exit thr: %08lX\n", globals->num_exit_th);
+	LOGSTR("Num exit thr: %08X\n", globals->num_exit_th);
 
 	/*************************************************************************/
 	/* Add to exited list                                                    */
 	/*************************************************************************/
 	if (globals->num_exit_th < SIZE_THREAD_TRACKING_ARRAY)
 	{
-		LOGSTR0("Set array\n");
+		LOGSTR("Set array\n");
 		globals->exited_th[globals->num_exit_th] = thid;
 		globals->num_exit_th++;
 
-		LOGSTR1("Exited threads: %d\n", globals->num_exit_th);
+		LOGSTR("Exited threads: %d\n", globals->num_exit_th);
 	}
 #endif
 
@@ -205,7 +205,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     }
 
 
-    LOGSTR1("API returned %08lX\n", lreturn);
+    LOGSTR("API returned %08X\n", lreturn);
 
     /*************************************************************************/
     /* Add to pending list                                                   */
@@ -213,11 +213,11 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     WAIT_SEMA(globals->thSema, 1, 0);
     if (globals->num_pend_th < SIZE_THREAD_TRACKING_ARRAY)
     {
-      LOGSTR0("Set array\n");
+      LOGSTR("Set array\n");
       globals->pending_th[globals->num_pend_th] = lreturn;
       globals->num_pend_th++;
 
-      LOGSTR1("Pending threads: %d\n", globals->num_pend_th);
+      LOGSTR("Pending threads: %d\n", globals->num_pend_th);
     }
 
     sceKernelSignalSema(globals->thSema, 1);
@@ -236,11 +236,11 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 	int i;
 	int found = 0;
 
-	LOGSTR1("Enter hookRunThread: %08lX\n", thid);
+	LOGSTR("Enter hookRunThread: %08X\n", thid);
 
 	WAIT_SEMA(globals->thSema, 1, 0);
 
-	LOGSTR1("Number of pending threads: %08lX\n", globals->num_pend_th);
+	LOGSTR("Number of pending threads: %08X\n", globals->num_pend_th);
 
 	/***************************************************************************/
 	/* Remove from pending list                                                */
@@ -249,7 +249,7 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 		if (globals->pending_th[i] == thid) {
 			found = 1;
 			globals->num_pend_th--;
-			LOGSTR1("Pending threads: %d\n", globals->num_pend_th);
+			LOGSTR("Pending threads: %d\n", globals->num_pend_th);
 		}
 
 		if (found && i <= SIZE_THREAD_TRACKING_ARRAY - 2)
@@ -262,18 +262,18 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 		/***************************************************************************/
 		/* Add to running list                                                     */
 		/***************************************************************************/
-		LOGSTR1("Number of running threads: %08lX\n", globals->num_run_th);
+		LOGSTR("Number of running threads: %08X\n", globals->num_run_th);
 		if (globals->num_run_th < SIZE_THREAD_TRACKING_ARRAY) {
 			globals->running_th[globals->num_run_th] = thid;
 			globals->num_run_th++;
-			LOGSTR1("Running threads: %d\n", globals->num_run_th);
+			LOGSTR("Running threads: %d\n", globals->num_run_th);
 		}
 	}
 
 	sceKernelSignalSema(globals->thSema, 1);
 
 
-	LOGSTR1("Exit hookRunThread: %08lX\n", thid);
+	LOGSTR("Exit hookRunThread: %08X\n", thid);
 
 	return sceKernelStartThread(thid, arglen, argp);
 
@@ -287,11 +287,11 @@ void threads_cleanup()
 
         int lthisthread = sceKernelGetThreadId();
     u32 i;
-    LOGSTR0("Threads cleanup\n");
+    LOGSTR("Threads cleanup\n");
     WAIT_SEMA(globals->thSema, 1, 0);
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
-    LOGSTR0("cleaning audio threads\n");
+    LOGSTR("cleaning audio threads\n");
 	for (i=0;i<8;i++)
 	{
 		//WAIT_SEMA(globals->audioSema, 1, 0);
@@ -300,66 +300,66 @@ void threads_cleanup()
 	}
 #endif
 
-    LOGSTR0("Running Threads cleanup\n");
+    LOGSTR("Running Threads cleanup\n");
     while (globals->num_run_th > 0)
     {
-        LOGSTR1("%d running threads remain\n", globals->num_run_th);
+        LOGSTR("%d running threads remain\n", globals->num_run_th);
         if (globals->running_th[globals->num_run_th - 1] != lthisthread)
         {
-            LOGSTR1("Kill thread ID %08lX\n", globals->running_th[globals->num_run_th - 1]);
+            LOGSTR("Kill thread ID %08X\n", globals->running_th[globals->num_run_th - 1]);
             kill_thread(globals->running_th[globals->num_run_th - 1]);
         }
         else
         {
-        LOGSTR0("Not killing myself - yet\n");
+        LOGSTR("Not killing myself - yet\n");
         }
         globals->num_run_th --;
     }
 
 
-    LOGSTR0("Pending Threads cleanup\n");
+    LOGSTR("Pending Threads cleanup\n");
     while (globals->num_pend_th > 0)
     {
-        LOGSTR1("%d pending threads remain\n", globals->num_pend_th);
+        LOGSTR("%d pending threads remain\n", globals->num_pend_th);
         /*************************************************************************/
         /* This test shouldn't really apply to pending threads, but do it        */
         /* anyway                                                                */
         /*************************************************************************/
         if (globals->pending_th[globals->num_pend_th - 1] != lthisthread)
         {
-            LOGSTR1("Kill thread ID %08lX\n", globals->pending_th[globals->num_pend_th - 1]);
+            LOGSTR("Kill thread ID %08X\n", globals->pending_th[globals->num_pend_th - 1]);
             sceKernelDeleteThread(globals->pending_th[globals->num_pend_th - 1]);
         }
         else
         {
-            LOGSTR0("Not killing myself - yet\n");
+            LOGSTR("Not killing myself - yet\n");
         }
         globals->num_pend_th --;
     }
 
 #ifdef DELETE_EXIT_THREADS
-    LOGSTR0("Sleeping Threads cleanup\n");
+    LOGSTR("Sleeping Threads cleanup\n");
     /***************************************************************************/
     /* Delete the threads that exitted but haven't been deleted yet            */
     /***************************************************************************/
     while (globals->num_exit_th > 0)
     {
-        LOGSTR1("%d exited threads remain\n", globals->num_exit_th);
+        LOGSTR("%d exited threads remain\n", globals->num_exit_th);
         if (globals->exited_th[globals->num_exit_th - 1] != lthisthread)
         {
-            LOGSTR1("Delete thread ID %08lX\n", globals->exited_th[globals->num_exit_th - 1]);
+            LOGSTR("Delete thread ID %08X\n", globals->exited_th[globals->num_exit_th - 1]);
             sceKernelDeleteThread(globals->exited_th[globals->num_exit_th - 1]);
         }
         else
         {
-            LOGSTR0("Not killing myself - yet\n");
+            LOGSTR("Not killing myself - yet\n");
         }
         globals->num_exit_th --;
     }
 #endif
 
     sceKernelSignalSema(globals->thSema, 1);
-    LOGSTR0("Threads cleanup Done\n");
+    LOGSTR("Threads cleanup Done\n");
 }
 
 //
@@ -368,7 +368,7 @@ void threads_cleanup()
 // returns 1 if a string is an absolute file path, 0 otherwise
 int path_is_absolute(const char * file)
 {
-    int i;
+    unsigned i;
     for (i = 0; i < strlen(file) && i < 9; ++i)
         if(file[i] == ':')
             return 1;
@@ -431,7 +431,7 @@ SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
         return sceIoOpen(file, flags, mode);
 
     char * buf = relative_to_absolute(file);
-    LOGSTR2("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
+    LOGSTR("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
     SceUID ret = sceIoOpen(buf, flags, mode);
     free(buf);
     return ret;
@@ -462,12 +462,12 @@ SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 		}
 		else
 		{
-			LOGSTR0("WARNING: file list full, cannot add newly opened file\n");
+			LOGSTR("WARNING: file list full, cannot add newly opened file\n");
 		}
 	}
 
 	sceKernelSignalSema(globals->ioSema, 1);
-	//LOGSTR4("_hook_sceIoOpen(%s, %d, %d) = 0x%08lX\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
+	//LOGSTR("_hook_sceIoOpen(%s, %d, %d) = 0x%08X\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
 	return result;
 }
 
@@ -494,7 +494,7 @@ int _hook_sceIoClose(SceUID fd)
 	}
 
 	sceKernelSignalSema(globals->ioSema, 1);
-	//LOGSTR2("_hook_sceIoClose(0x%08lX) = 0x%08lX\n", (u32)fd, (u32)result);
+	//LOGSTR("_hook_sceIoClose(0x%08X) = 0x%08X\n", (u32)fd, (u32)result);
 	return result;
 }
 
@@ -502,7 +502,7 @@ int _hook_sceIoClose(SceUID fd)
 // Close all files that remained open after the homebrew quits
 void files_cleanup()
 {
-	LOGSTR0("Files Cleanup\n");
+	LOGSTR("Files Cleanup\n");
     
 	WAIT_SEMA(globals->ioSema, 1, 0);
 	int i;
@@ -511,14 +511,14 @@ void files_cleanup()
 		if (globals->openFiles[i] != 0)
 		{
 			sceIoClose(globals->openFiles[i]);
-			LOGSTR1("closing file UID 0x%08lX\n", (u32)globals->openFiles[i]);
+			LOGSTR("closing file UID 0x%08X\n", (u32)globals->openFiles[i]);
 			globals->openFiles[i] = 0;
 		}
 	}
 
 	globals->numOpenFiles = 0;
 	sceKernelSignalSema(globals->ioSema, 1);
-	LOGSTR0("Files Cleanup Done\n");
+	LOGSTR("Files Cleanup Done\n");
 }
 
 
@@ -529,17 +529,17 @@ void files_cleanup()
 int run_nid (u32 nid){
         // Is it known by HBL?
     int ret = get_nid_index(nid);
-    LOGSTR1("NID: 0x%08lX\n", nid);
+    LOGSTR("NID: 0x%08X\n", nid);
     if (ret <= 0)
     {
-        LOGSTR1("Unknown NID: 0x%08lX\n", nid);
+        LOGSTR("Unknown NID: 0x%08X\n", nid);
         return 0;
     }
     u32 syscall = globals->nid_table.table[ret].call;
 
     if (!syscall)
     {
-        LOGSTR1("No syscall for NID: 0x%08lX\n", nid);
+        LOGSTR("No syscall for NID: 0x%08X\n", nid);
         return 0;
     }
 
@@ -549,7 +549,7 @@ int run_nid (u32 nid){
 
 	// This debug line must also be present in the release build!
 	// Otherwise the PSP will freeze and turn off when jumping to function().
-    logstr1("call is: 0x%08lX\n", cur_stub[0]);
+    logstr("call is: 0x%08X\n", cur_stub[0]);
 
     void (*function)() = (void *)(&cur_stub);
     function();
@@ -610,7 +610,7 @@ void ram_cleanup()
 {
         int i;
 
-	LOGSTR0("Ram Cleanup\n");
+	LOGSTR("Ram Cleanup\n");
 
 	WAIT_SEMA(globals->memSema, 1, 0);
 	for (i = 0; i < globals->osAllocNum; i++)
@@ -618,7 +618,7 @@ void ram_cleanup()
 	globals->osAllocNum = 0;
 	sceKernelSignalSema(globals->memSema, 1);
 
-	LOGSTR0("Ram Cleanup Done\n");
+	LOGSTR("Ram Cleanup Done\n");
 }
 
 
@@ -626,7 +626,7 @@ void ram_cleanup()
 void subinterrupthandler_cleanup()
 {
 #ifdef SUB_INTR_HANDLER_CLEANUP
-    LOGSTR0("Subinterrupthandler Cleanup\n");
+    LOGSTR("Subinterrupthandler Cleanup\n");
 	int i, j;
 
 	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
@@ -635,11 +635,11 @@ void subinterrupthandler_cleanup()
 		{
 			if (sceKernelReleaseSubIntrHandler(i, j) > -1)
 			{
-				LOGSTR2("Subinterrupt handler released for %d, %d\n", i, j);
+				LOGSTR("Subinterrupt handler released for %d, %d\n", i, j);
 			}
 		}
 	}
-    LOGSTR0("Subinterrupthandler Cleanup Done\n");
+    LOGSTR("Subinterrupthandler Cleanup Done\n");
 #endif
 }
 
@@ -666,19 +666,19 @@ void  _hook_sceKernelExitGame()
 /*
 	    if (!globals->calledexitcb && globals->exitcb)
     {
-        LOGSTR1("Call exit CB: %08lX\n", (u32) globals->exitcb);
+        LOGSTR("Call exit CB: %08X\n", (u32) globals->exitcb);
         globals->calledexitcb = 1;
         globals->exitcb(0,0,NULL);
     }
 */
-	LOGSTR0("_hook_sceKernelExitGame called\n");
+	LOGSTR("_hook_sceKernelExitGame called\n");
     exit_everything_but_me();
     sceKernelExitDeleteThread(0);
 }
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
-        LOGSTR5("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08lX\n", partitionid, (u32)name, type, size, (u32)addr);
+        LOGSTR("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
     WAIT_SEMA(globals->memSema, 1, 0);
 
 	// Try to allocate the requested memory. If the allocation fails due to an insufficient
@@ -706,7 +706,7 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 	}
     while (uid <= 0);
 
-	LOGSTR3("-> final allocation made for %d of %d requested bytes with result 0x%08lX\n", size, original_size, uid);
+	LOGSTR("-> final allocation made for %d of %d requested bytes with result 0x%08X\n", size, original_size, uid);
 
 	if (uid > 0)
 	{
@@ -719,11 +719,11 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
         {
             globals->osAllocs[globals->osAllocNum] = uid;
             globals->osAllocNum ++;
-            LOGSTR1("Num tracked OS blocks now: %08lX\n", globals->osAllocNum);
+            LOGSTR("Num tracked OS blocks now: %08X\n", globals->osAllocNum);
         }
         else
         {
-            LOGSTR0("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
+            LOGSTR("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
         }
     }
     sceKernelSignalSema(globals->memSema, 1);
@@ -767,7 +767,7 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 {
         int lrc = sceKernelCreateCallback(name, func, arg);
 
-    LOGSTR1("Enter createcallback: %s\n", (u32)name);
+    LOGSTR("Enter createcallback: %s\n", (u32)name);
 
     WAIT_SEMA(globals->cbSema, 1, 0);
     if (globals->cbcount < MAX_CALLBACKS)
@@ -778,7 +778,7 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
     }
     sceKernelSignalSema(globals->cbSema, 1);
 
-    LOGSTR2("Exit createcallback: %s ID: %08lX\n", (u32) name, lrc);
+    LOGSTR("Exit createcallback: %s ID: %08X\n", (u32) name, lrc);
 
     return(lrc);
 }
@@ -790,21 +790,21 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
 {
         int i;
 
-    LOGSTR1("Enter registerexitCB: %08lX\n", cbid);
+    LOGSTR("Enter registerexitCB: %08X\n", cbid);
 
     WAIT_SEMA(globals->cbSema, 1, 0);
     for (i = 0; i < globals->cbcount; i++)
     {
         if (globals->cbids[i] == cbid)
         {
-            LOGSTR1("Found matching CB, func: %08lX\n", (u32) globals->cbfuncs[i]);
+            LOGSTR("Found matching CB, func: %08X\n", (u32) globals->cbfuncs[i]);
             globals->exitcb = globals->cbfuncs[i];
             break;
         }
     }
     sceKernelSignalSema(globals->cbSema, 1);
 
-    LOGSTR1("Exit registerexitCB: %08lX\n",cbid);
+    LOGSTR("Exit registerexitCB: %08X\n",cbid);
 
     return(0);
 }
@@ -890,7 +890,7 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 	{
 	    if (lreturn >= 8)
 		{
-			LOGSTR1("AudioChReserve return out of range: %08lX\n", lreturn);
+			LOGSTR("AudioChReserve return out of range: %08X\n", lreturn);
 			//waitForButtons();
 		}
 		else
@@ -974,7 +974,7 @@ int _hook_sceAudioSRCChRelease()
 {
         if (globals->cur_ch_id < 0 || globals->cur_ch_id > 7)
     {
-        LOGSTR0("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
+        LOGSTR("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
         return -1;
     }
     int result = _hook_sceAudioChRelease(globals->cur_ch_id);
@@ -1019,7 +1019,7 @@ SceUID _hook_sceIoDopen(const char *dirname)
 
 SceUID sceIoDopen_Vita(const char *dirname)
 {
-    	LOGSTR0("sceIoDopen_Vita start\n");
+    	LOGSTR("sceIoDopen_Vita start\n");
     SceUID id = sceIoDopen(dirname);
 
 	if (id >= 0)
@@ -1046,14 +1046,14 @@ SceUID sceIoDopen_Vita(const char *dirname)
 	}
 
 
-	LOGSTR0("sceIoDopen_Vita Done\n");
+	LOGSTR("sceIoDopen_Vita Done\n");
     return id;
 }
 
 
 int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 {
-    	LOGSTR0("sceIoDread_Vita start\n");
+    	LOGSTR("sceIoDread_Vita start\n");
 	int i = 0, errCode = 1;
 	while ( i<globals->dirLen && id != globals->dirFix[i][0] )
 		++i;
@@ -1087,13 +1087,13 @@ int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 		errCode = sceIoDread(id, dir);
 	}
 
-	LOGSTR0("sceIoDread_Vita Done\n");
+	LOGSTR("sceIoDread_Vita Done\n");
 	return errCode;
 }
 
 int sceIoDclose_Vita(SceUID id)
 {
-    	LOGSTR0("sceIoDclose_Vita start\n");
+    	LOGSTR("sceIoDclose_Vita start\n");
 	int i = 0;
 	while ( i<globals->dirLen && id != globals->dirFix[i][0] )
 		++i;
@@ -1105,7 +1105,7 @@ int sceIoDclose_Vita(SceUID id)
 			globals->dirFix[i][1] = -1;
 	}
 
-	LOGSTR0("sceIoDclose_Vita Done\n");
+	LOGSTR("sceIoDclose_Vita Done\n");
 	return sceIoDclose(id);
 }
 #endif
@@ -1114,7 +1114,7 @@ int sceIoDclose_Vita(SceUID id)
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)
 {
-	LOGSTR0("_hook_sceIoChdir start\n");
+	LOGSTR("_hook_sceIoChdir start\n");
         // save chDir into global variable
     if (path_is_absolute(dirname))
     {
@@ -1139,7 +1139,7 @@ int _hook_sceIoChdir(const char *dirname)
     {
         return -1;
     }
-	LOGSTR2("_hook_sceIoChdir: %s becomes %s\n", (u32) dirname, (u32) globals->mod_chdir);
+	LOGSTR("_hook_sceIoChdir: %s becomes %s\n", (u32) dirname, (u32) globals->mod_chdir);
 
     return 0;
 }
@@ -1296,32 +1296,32 @@ int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
 {
-	LOGSTR0("_hook_sceKernelLoadModule\n");
-	LOGSTR1("Attempting to load %s\n", (u32)path);
+	LOGSTR("_hook_sceKernelLoadModule\n");
+	LOGSTR("Attempting to load %s\n", (u32)path);
 
 	SceUID elf_file = _hook_sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	if (elf_file < 0)
 	{
-		LOGSTR2("Error 0x%08lX opening requested module %s\n", elf_file, (u32)path);
+		LOGSTR("Error 0x%08X opening requested module %s\n", elf_file, (u32)path);
 		return elf_file;
 	}
 
 	SceOff offset = 0;
-	LOGSTR1("_hook_sceKernelLoadModule offset: 0x%08lX\n", offset);
+	LOGSTR("_hook_sceKernelLoadModule offset: 0x%08X\n", offset);
 	SceUID ret = load_module(elf_file, path, NULL, offset);
     sceIoClose(elf_file);
-	LOGSTR1("load_module returned 0x%08lX\n", ret);
+	LOGSTR("load_module returned 0x%08X\n", ret);
 
 	return ret;
 }
 
 int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUSED(argp), int *UNUSED(status), SceKernelSMOption *UNUSED(option))
 {
-	LOGSTR0("_hook_sceKernelStartModule\n");
+	LOGSTR("_hook_sceKernelStartModule\n");
 
 	SceUID ret = start_module(modid);
-	LOGSTR1("start_module returned 0x%08lX\n", ret);
+	LOGSTR("start_module returned 0x%08X\n", ret);
 
 	return ret;
 }
@@ -1508,12 +1508,12 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 //utility functions, we need those
         case 0x237DBD4F: // sceKernelAllocPartitionMemory
-            LOGSTR0(" mem trick ");
+            LOGSTR(" mem trick ");
             hook_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
             break;
 
         case 0xB6D61D02: // sceKernelFreePartitionMemory
-            LOGSTR0(" mem trick ");
+            LOGSTR(" mem trick ");
             hook_call = MAKE_JUMP(_hook_sceKernelFreePartitionMemory);
             break;
 
@@ -1558,7 +1558,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 #ifdef LOAD_MODULE
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
 		case 0x977DE386: // sceKernelLoadModule
-			LOGSTR0(" loadmodule trick ");
+			LOGSTR(" loadmodule trick ");
 #ifdef HOOK_sceKernelLoadModule_WITH_error
             hook_call = MAKE_JUMP(_hook_generic_error);
 #else
@@ -1571,7 +1571,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 			break;
 
 		case 0x50F0C1EC: // sceKernelStartModule
-			LOGSTR0(" loadmodule trick ");
+			LOGSTR(" loadmodule trick ");
 			hook_call = MAKE_JUMP(_hook_sceKernelStartModule);
 			break;
 #endif
@@ -1579,22 +1579,22 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 #ifdef HOOK_UTILITY
 		case 0xC629AF26: //sceUtilityLoadAvModule
-			LOGSTR0(" Hook sceUtilityLoadAvModule\n");
+			LOGSTR(" Hook sceUtilityLoadAvModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadAvModule);
 			break;
 
 		case 0x0D5BC6D2: //sceUtilityLoadUsbModule
-			LOGSTR0(" Hook sceUtilityLoadUsbModule\n");
+			LOGSTR(" Hook sceUtilityLoadUsbModule\n");
 			hook_call = MAKE_JUMP(_hook_generic_error);
 			break;
 
 		case 0x1579a159: //sceUtilityLoadNetModule
-			LOGSTR0(" Hook sceUtilityLoadNetModule\n");
+			LOGSTR(" Hook sceUtilityLoadNetModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadNetModule);
 			break;
 
 		case 0x2A2B3DE0: // sceUtilityLoadModule
-			LOGSTR0(" Hook sceUtilityLoadModule\n");
+			LOGSTR(" Hook sceUtilityLoadModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadModule);
 			break;
 
@@ -1602,7 +1602,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 		case 0xF64910F0: //sceUtilityUnloadUsbModule
 		case 0x64d50c56: //sceUtilityUnloadNetModule
 		case 0xE49BFE92: // sceUtilityUnloadModule
-			LOGSTR0(" Hook sceUtilityUnloadModule\n");
+			LOGSTR(" Hook sceUtilityUnloadModule\n");
 			hook_call = MAKE_JUMP(_hook_generic_ok);
 			break;
 #endif
@@ -1610,12 +1610,12 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 		// Hook these to keep track of open files when the homebrew quits
 
 		case 0x109F50BC: //	sceIoOpen
-            LOGSTR0("Hook sceIoOpen\n");
+            LOGSTR("Hook sceIoOpen\n");
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
             break;
 
 		case 0x810C4BC3: //	sceIoClose
-            LOGSTR0("Hook sceIoClose\n");
+            LOGSTR("Hook sceIoClose\n");
             hook_call = MAKE_JUMP(_hook_sceIoClose);
             break;
 
@@ -1633,7 +1633,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0x55F4717D: //	sceIoChdir (only if it failed)
             if (globals->chdir_ok)
                 break;
-            LOGSTR0(" Chdir trick sceIoChdir\n");
+            LOGSTR(" Chdir trick sceIoChdir\n");
             hook_call = MAKE_JUMP(_hook_sceIoChdir);
             break;
 
@@ -1641,7 +1641,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
             if (globals->chdir_ok)
                 break;
-            LOGSTR0(" Chdir trick sceIoOpen\n");
+            LOGSTR(" Chdir trick sceIoOpen\n");
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
             break;
 */
@@ -1649,23 +1649,23 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
             if (globals->chdir_ok)
                 break;
-            LOGSTR0(" Chdir trick sceIoDopen\n");
+            LOGSTR(" Chdir trick sceIoDopen\n");
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
             break;
 #elif defined VITA
         case 0xB29DDF9C: //	sceIoDopen
-            LOGSTR0("VITA sceIoDopen\n");
+            LOGSTR("VITA sceIoDopen\n");
             hook_call = MAKE_JUMP(sceIoDopen_Vita);
             break;
 #endif
 
 #ifdef VITA
         case 0xE3EB004C: //	sceIoDread
-            LOGSTR0("VITA sceIoDread\n");
+            LOGSTR("VITA sceIoDread\n");
             hook_call = MAKE_JUMP(sceIoDread_Vita);
             break;
         case 0xEB092469: //	sceIoDclose
-            LOGSTR0("VITA sceIoDclose\n");
+            LOGSTR("VITA sceIoDclose\n");
             hook_call = MAKE_JUMP(sceIoDclose_Vita);
             break;
 #endif
@@ -1706,7 +1706,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0x06A70004: //	sceIoMkdir
             if (globals->override_sceIoMkdir == GENERIC_SUCCESS)
             {
-                LOGSTR0(" sceIoMkdir goes to void because of settings ");
+                LOGSTR(" sceIoMkdir goes to void because of settings ");
                 hook_call = MAKE_JUMP(_hook_generic_ok);
             }
             break;
@@ -1720,7 +1720,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
             break;
 
         case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
-            LOGSTR0(" mem trick ");
+            LOGSTR(" mem trick ");
             hook_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
             break;
 
@@ -2084,7 +2084,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 #endif
 
-    LOGSTR2("Missing function: 0x%08lX Hooked with: 0x%08lX\n\n",nid,hook_call);
+    LOGSTR("Missing function: 0x%08X Hooked with: 0x%08X\n\n",nid,hook_call);
 	return hook_call;
 }
 
@@ -2106,7 +2106,7 @@ u32 setup_default_nid(u32 nid){
 		break;
 	}
 
-	LOGSTR2("Missing function: 0x%08lX Defaulted to generic: 0x%08lX\n\n",nid,hook_call);
+	LOGSTR("Missing function: 0x%08X Defaulted to generic: 0x%08X\n\n",nid,hook_call);
 
 	return hook_call;
 }

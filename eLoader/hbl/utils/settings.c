@@ -53,7 +53,7 @@ int configIntParse(const char *xival)
     }
 
     lrunningvalue *= minus;
-    LOGSTR1("Parsed int param: %d\n", lrunningvalue);
+    LOGSTR("Parsed int param: %d\n", lrunningvalue);
 
     return(lrunningvalue);
 }
@@ -82,7 +82,7 @@ u32 configAddrParse(const char *xival)
     if ((lptr[0] != '0') ||
         (lptr[1] != 'x'))
     {
-        PRTSTR1("Invalid address format in config.  Address must start with '0x'. Entry: %s", (u32)lptr);
+        prtstr("Invalid address format in config.  Address must start with '0x'. Entry: %s", (u32)lptr);
     }
 
     lptr += 2;
@@ -106,7 +106,7 @@ u32 configAddrParse(const char *xival)
         lptr++;
     }
 
-    LOGSTR1("Parsed addr param: %08lX\n", lrunningvalue);
+    LOGSTR("Parsed addr param: %08X\n", lrunningvalue);
 
     return(lrunningvalue);
 }
@@ -184,7 +184,7 @@ int configReadParameter(char *xoname, char *xoval)
         lrc = readLine(lbuff, 256, gconfigfd, &gconfigoffset);
         if (lrc)
         {
-            //    LOGSTR1("Got line: %s\n", lbuff);
+            //    LOGSTR("Got line: %s\n", lbuff);
             if (lbuff[0] != '#')
             {
                 if (lbuff[0] == '[')
@@ -215,10 +215,10 @@ void configGetProcessingOptions()
     char lstr[256];
     char lval[256];
 
-        LOGSTR0("Read params\n");
+        LOGSTR("Read params\n");
     while (configReadParameter(lstr, lval))
     {
-        LOGSTR2("Parm %s = %s\n", (u32)lstr, (u32)lval);
+        LOGSTR("Parm %s = %s\n", (u32)lstr, (u32)lval);
         if (strcmp(lstr,"override_sceIoMkdir")==0)
         {
             globals->override_sceIoMkdir = configIntParse(lval);
@@ -248,7 +248,7 @@ void configGetProcessingOptions()
         }
         else
         {
-            PRTSTR1("Unrecognised config parameter: %s", (u32)lstr);
+            prtstr("Unrecognised config parameter: %s", (u32)lstr);
         }
     }
 }
@@ -298,7 +298,7 @@ void closeConfig() {
 /*****************************************************************************/
 void loadConfig(const char * path)
 {
-    LOGSTR1("Attempt to Load Config file: %s\n", (u32)path);
+    LOGSTR("Attempt to Load Config file: %s\n", (u32)path);
     closeConfig();
 
     /***************************************************************************/
@@ -307,7 +307,7 @@ void loadConfig(const char * path)
     gconfigfd = sceIoOpen(path, PSP_O_RDONLY, 0777);
     if (gconfigfd < 0 )
     {
-        LOGSTR1("Couldn't load config file, error 0x%08lX (that's usually not an issue)\n",gconfigfd);
+        LOGSTR("Couldn't load config file, error 0x%08X (that's usually not an issue)\n",gconfigfd);
         return;
     }
     puts_scr("Config file:");

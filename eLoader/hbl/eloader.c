@@ -36,7 +36,7 @@ void run_eboot(const char *path, int is_eboot)
 
 	cls();
 
-	LOGSTR1("EBOOT path: %s\n", (u32)path);
+	LOGSTR("EBOOT path: %s\n", (u32)path);
 
     //Load Game config overrides
     char cfg_path[256];
@@ -53,7 +53,7 @@ void run_eboot(const char *path, int is_eboot)
 	else
 		elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
-	LOGSTR0("Loading module\n");
+	LOGSTR("Loading module\n");
 
     //clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
     //if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
@@ -71,7 +71,7 @@ void run_eboot(const char *path, int is_eboot)
 
 	if (mod_id < 0)
 	{
-		LOGSTR1("ERROR 0x%08lX loading main module\n", mod_id);
+		LOGSTR("ERROR 0x%08X loading main module\n", mod_id);
 		EXIT;
 	}
 
@@ -79,7 +79,7 @@ void run_eboot(const char *path, int is_eboot)
 
 	if (mod_id < 0)
 	{
-		LOGSTR1("ERROR 0x%08lX starting main module\n", mod_id);
+		LOGSTR("ERROR 0x%08X starting main module\n", mod_id);
 		EXIT;
 	}
 
@@ -131,7 +131,7 @@ void wait_for_eboot_end()
         sceKernelDelayThread(1000000);
 	}
     cls();
-    LOGSTR0("Threads are dead\n");
+    LOGSTR("Threads are dead\n");
 }
 
 void cleanup(u32 num_lib)
@@ -158,11 +158,11 @@ void cleanup(u32 num_lib)
 			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && get_fw_ver() <= 620)) )
 #endif
 			{
-	            LOGSTR1("UNLoad utility module id  0x%08lX \n", modid);
+	            LOGSTR("UNLoad utility module id  0x%08X \n", modid);
 				int ret = unload_utility_module(modid);
 	            if (ret < 0)
 	            {
-	                LOGSTR2("WARNING! error unloading module %d: 0x%08lX\n",globals->mod_table.utility[i], ret);
+	                LOGSTR("WARNING! error unloading module %d: 0x%08X\n",globals->mod_table.utility[i], ret);
 	                puts_scr("WARNING! ERROR UNLOADING UTILITY");
 	                sceKernelDelayThread(1000000);
 	            }
@@ -192,7 +192,7 @@ void ramcheck(int expected_free_ram) {
     int free_ram = sceKernelTotalFreeMemSize();
     if (expected_free_ram > free_ram && !is_utility_loaded(PSP_MODULE_AV_MP3)) //for now, we admit that mp3 utility needs to be loaded all the time...
     {
-        LOGSTR2("WARNING! Memory leak: %d -> %d\n", expected_free_ram, free_ram);
+        LOGSTR("WARNING! Memory leak: %d -> %d\n", expected_free_ram, free_ram);
         puts_scr("WARNING! MEMORY LEAK");
         sceKernelDelayThread(1000000);
     }
@@ -254,14 +254,14 @@ int hbl_exit_callback(int arg1, int arg2, void *arg)
 	arg = arg;
 
 	
-	LOGSTR0("HBL Exit Callback Called\n");
+	LOGSTR("HBL Exit Callback Called\n");
 
 	// Signal that the callback is being run now
 	globals->exit_cb_called = 1;
 
 	if (globals->exitcb)
     {
-        LOGSTR1("Call exit CB: %08lX\n", (u32) globals->exitcb);
+        LOGSTR("Call exit CB: %08X\n", (u32) globals->exitcb);
         globals->calledexitcb = 1;
         globals->exitcb(0, 0, NULL);
     }
@@ -285,7 +285,7 @@ int callback_thread(SceSize args, void *argp)
 	cbid = sceKernelCreateCallback("HBLexitcb", hbl_exit_callback, NULL);
 	ret = sceKernelRegisterExitCallback(cbid);
 
-	LOGSTR2("Setup HBL Callback:\n  cbid=%08lX\n  ret=%08lX\n", cbid, ret);
+	LOGSTR("Setup HBL Callback:\n  cbid=%08X\n  ret=%08X\n", cbid, ret);
 
 #ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
 	_hook_sceKernelSleepThreadCB();
@@ -312,13 +312,13 @@ int start_thread() //SceSize args, void *argp)
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
 	if(thid > -1)
 	{
-		LOGSTR1("Callback Thread Created\n  thid=%08lX\n", thid);
+		LOGSTR("Callback Thread Created\n  thid=%08X\n", thid);
 		sceKernelStartThread(thid, 0, 0);
 	}
 	else
-		LOGSTR1("Failed Callback Thread Creation\n  thid=%08lX\n", thid);
+		LOGSTR("Failed Callback Thread Creation\n  thid=%08X\n", thid);
 
-    LOGSTR0("START HBL\n");
+    LOGSTR("START HBL\n");
 
     u32 num_lib = globals->lib_table.num;
 
@@ -352,14 +352,14 @@ int start_thread() //SceSize args, void *argp)
         initial_free_ram = sceKernelTotalFreeMemSize();
         char filename[512];
         strcpy(filename, globals->hb_fname);
-        LOGSTR1("Eboot is: %s\n", (u32)filename);
+        LOGSTR("Eboot is: %s\n", (u32)filename);
         //re-Load default config
         loadGlobalConfig();
-        LOGSTR0("Config Loaded OK\n");
-        LOGSTR1("Eboot is: %s\n", (u32)filename);
+        LOGSTR("Config Loaded OK\n");
+        LOGSTR("Eboot is: %s\n", (u32)filename);
         //run homebrew
         run_eboot(filename, 1);
-        LOGSTR0("Eboot Started OK\n");
+        LOGSTR("Eboot Started OK\n");
         wait_for_eboot_end();
         cleanup(num_lib);
         ramcheck(initial_free_ram);
@@ -391,7 +391,7 @@ void _start()
 	}
     else
     {
-        PRTSTR1("Error starting HBL thread 0x%08lX", thid);
+        prtstr("Error starting HBL thread 0x%08X", thid);
     }
 
 	sceKernelExitDeleteThread(0);

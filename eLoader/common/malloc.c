@@ -19,16 +19,16 @@ int find_free_block()
 void* _malloc(SceSize size, int pnum)
 {
 	SceUID uid;
-    	LOGSTR2("-->ALLOCATING MEMORY from partition %d, size 0x%08lX... ", (u32)pnum, (u32)size);
+    	LOGSTR("-->ALLOCATING MEMORY from partition %d, size 0x%08X... ", (u32)pnum, (u32)size);
 
 	int i = find_free_block();
 	if(i == MAX_ALLOCS) // No free block found
 	{
-		LOGSTR0("WARNING: no free blocks remaining\n");
+		LOGSTR("WARNING: no free blocks remaining\n");
 		return NULL;
 	}
 
-	LOGSTR1("Found free block %d\n", i);
+	LOGSTR("Found free block %d\n", i);
 
 	/* Allocate block */
 	uid = sceKernelAllocPartitionMemory(pnum, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
@@ -37,12 +37,12 @@ void* _malloc(SceSize size, int pnum)
 		uid = sceKernelAllocPartitionMemory(pnum, "ValentineMalloc", PSP_SMEM_High, size, NULL); // Try to allocate from highest available address
 		if(uid < 0) // Memory allocation failed
 		{
-			LOGSTR1("WARNING: malloc failed with error 0x%08lX\n", uid);
+			LOGSTR("WARNING: malloc failed with error 0x%08X\n", uid);
 			return NULL;
 		}
 	}
 
-	LOGSTR1("Got block from kernel with UID 0x%08lX\n", uid);
+	LOGSTR("Got block from kernel with UID 0x%08X\n", uid);
 
 	/* Fill block info */
 	globals->blocks[i].uid = uid;

@@ -19,17 +19,17 @@ void * allocate_memory(u32 size, void* addr)
         type = PSP_SMEM_Addr;
     }
 
-    LOGSTR2("-->ALLOCATING MEMORY @ 0x%08lX size 0x%08lX... ", (u32)addr, size);
+    LOGSTR("-->ALLOCATING MEMORY @ 0x%08X size 0x%08X... ", (u32)addr, size);
     //hook is used to monitor ram usage and free it on exit
     SceUID mem = _hook_sceKernelAllocPartitionMemory(2, "ELFMemory", type, size, addr);
 
 	if (mem < 0)
 	{
-		LOGSTR1("FAILED: 0x%08lX\n", mem);
+		LOGSTR("FAILED: 0x%08X\n", mem);
         return NULL;
 	}
 
-    LOGSTR0("OK\n");
+    LOGSTR("OK\n");
 
 	return sceKernelGetBlockHeadAddr(mem);
 }
@@ -65,7 +65,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	int i;
 	for (i = 0; i < pelf_header->e_phnum; i++)
 	{
-		LOGSTR2("Reading program section %d of %d\n", i, pelf_header->e_phnum);
+		LOGSTR("Reading program section %d of %d\n", i, pelf_header->e_phnum);
 
 		// Read the program header
 		sceIoLseek(elf_file, start_offset + pelf_header->e_phoff + (sizeof(Elf32_Phdr) * i), PSP_SEEK_SET);
@@ -101,7 +101,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
     void * buffer;
 	_sceModuleInfo module_info;
 
-	//LOGSTR1("prx_load_program -> Offset: 0x%08lX\n", start_offset);
+	//LOGSTR("prx_load_program -> Offset: 0x%08X\n", start_offset);
 
 	// Read the program header
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
@@ -115,7 +115,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	if ((unsigned int)program_header.p_paddr & 0x80000000)
 		return 0;
 
-	LOGSTR1("Module info @ 0x%08lX offset\n", (u32)start_offset + (u32)program_header.p_paddr);
+	LOGSTR("Module info @ 0x%08X offset\n", (u32)start_offset + (u32)program_header.p_paddr);
 
 	// Read module info from PRX
 	sceIoLseek(elf_file, (u32)start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
@@ -127,35 +127,35 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_off, PSP_SEEK_SET);
 
-	LOGSTR1("Address to allocate from: 0x%08lX\n", (u32)*addr);
+	LOGSTR("Address to allocate from: 0x%08X\n", (u32)*addr);
     buffer = allocate_memory(program_header.p_memsz, *addr);
     *addr = buffer;
 
 	if (!buffer)
 	{
-		LOGSTR0("Failed to allocate memory for the module\n");
+		LOGSTR("Failed to allocate memory for the module\n");
 		return 0;
 	}
 
-	LOGSTR1("Allocated memory address from: 0x%08lX\n", (u32) *addr);
+	LOGSTR("Allocated memory address from: 0x%08X\n", (u32) *addr);
 	
 	sceIoRead(elf_file, buffer, program_header.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
 	buffer = buffer + program_header.p_filesz + 1;
 
-	LOGSTR0("Zero filling\n");
+	LOGSTR("Zero filling\n");
 	// Fills excess memory with zeroes
     *size = program_header.p_memsz;
 	excess = program_header.p_memsz - program_header.p_filesz;
 	if(excess > 0) {
-		LOGSTR1("Zero filling: %d bytes\n", excess);
+		LOGSTR("Zero filling: %d bytes\n", excess);
         memset(buffer, 0, excess);
 	}
 
 	*pstub_entry = (tStubEntry*)((u32)module_info.stub_top + (u32)*addr);
 
-	LOGSTR1("stub_entry address: 0x%08lX\n", (u32)*pstub_entry);
+	LOGSTR("stub_entry address: 0x%08X\n", (u32)*pstub_entry);
 
 	// Return size of stubs
 	return ((u32)module_info.stub_end - (u32)module_info.stub_top);
@@ -174,7 +174,7 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 	if (section_name_length > SECTION_NAME_MAX_LENGTH)
 	{
 		// Section name too long
-		LOGSTR2("Section name to find is too long (strlen = %d, max = %d)\n", section_name_length, SECTION_NAME_MAX_LENGTH);
+		LOGSTR("Section name to find is too long (strlen = %d, max = %d)\n", section_name_length, SECTION_NAME_MAX_LENGTH);
 		return -1;
 	}
 
@@ -198,13 +198,13 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 
 		if (strncmp(section_name, section_name_to_find, section_name_length) == 0)
 		{
-			LOGSTR1("Found section index %d\n", i);
+			LOGSTR("Found section index %d\n", i);
 			return i;
 		}
 	}
 
 	// Section not found
-	LOGSTR0("ERROR: Section could not be found!\n");
+	LOGSTR("ERROR: Section could not be found!\n");
 	return -1;
 }
 
@@ -219,7 +219,7 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 	if (section_index < 0)
 	{
 		// Module info not found in sections
-		LOGSTR0("ERROR: section rodata.sceModuleInfo not found\n");
+		LOGSTR("ERROR: section rodata.sceModuleInfo not found\n");
 		return 0;
 	}
 

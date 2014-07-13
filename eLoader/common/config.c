@@ -36,14 +36,14 @@ int cfg_init()
 	//then fallback to less precise versions. for example,try in this order:
 	// libs_503, libs_50x, libs_5xx, libs
 
-	mysprintf2(file, "%s_%d", (int)IMPORTS_PATH, fw_ver);
+	_sprintf(file, "%s_%d", (int)IMPORTS_PATH, fw_ver);
 	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 	if (g_cfg_fd < 0) {
-		mysprintf2(file, "%s_%dx", (int)IMPORTS_PATH, fw_ver / 10);
+		_sprintf(file, "%s_%dx", (int)IMPORTS_PATH, fw_ver / 10);
 		g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 
 		if (g_cfg_fd < 0) {
-			mysprintf2(file, "%s_%dxx", (int)IMPORTS_PATH, fw_ver / 100);
+			_sprintf(file, "%s_%dxx", (int)IMPORTS_PATH, fw_ver / 100);
 			g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 
 			if (g_cfg_fd < 0) {
@@ -54,7 +54,7 @@ int cfg_init()
 	}
 #endif
 
-	LOGSTR1("Config file:%s\n", (int)file);
+	LOGSTR("Config file:%s\n", (int)file);
 
 	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 	return g_cfg_fd;
@@ -109,7 +109,7 @@ int cfg_num_nids_total(int *num_nids_total)
 	if (g_num_nids < 0) {
 		ret = cfg_int(&g_num_nids, NUM_NIDS_OFF);
 		if (ret < 0) {
-			LOGSTR1("ERROR Getting total number of nids: 0x%08lX\n", ret);
+			LOGSTR("ERROR Getting total number of nids: 0x%08X\n", ret);
 			return ret;
 		}
 	}
@@ -144,9 +144,7 @@ int cfg_next_lib(tImportedLib *importedlib)
 	if (importedlib == NULL)
 		return -1;
 
-	ret = fgetsz(g_cfg_fd, importedlib->lib_name);
-	if (ret == 0)
-		return -1;
+	fgets(importedlib->lib_name, MAX_LIB_NAME_LEN, g_cfg_fd);
 
 	ret = sceIoRead(g_cfg_fd, &(importedlib->num_imports), sizeof(int));
 	if (ret >= 0)

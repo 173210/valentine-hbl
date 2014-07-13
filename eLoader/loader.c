@@ -68,7 +68,7 @@ void PreloadFreeMem()
 	for(i = 0; i < sizeof(blockids) / sizeof(int); i++) {
 		int ret = sceKernelFreePartitionMemory(*(SceUID *)blockids[i]);
 		if (ret < 0)
-			LOGSTR2("--> ERROR 0x%08lX FREEING PARTITON MEMORY ID 0x%08lX\n", ret, *(SceUID *)blockids[i]);
+			LOGSTR("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
 	}
 }
 #endif
@@ -78,11 +78,11 @@ void FreeFpl()
 {
 	SceUID uid;
 
-	LOGSTR0("loader.c: FreeFpl\n");
+	LOGSTR("loader.c: FreeFpl\n");
 
 	for (uid =  0x03000000; uid < 0xE0000000; uid++)
         	if (sceKernelDeleteFpl(uid) >= 0) {
-			LOGSTR1("Succesfully Deleted FPL ID 0x%08lX\n", uid);
+			LOGSTR("Succesfully Deleted FPL ID 0x%08X\n", uid);
 			return;
         	}
 }
@@ -95,12 +95,12 @@ void CloseFiles()
 	SceUID fd;
 	int ret;
 
-	LOGSTR0("memory.c:CloseFiles\n");
+	LOGSTR("memory.c:CloseFiles\n");
 
 	for (fd = 0; fd < 8; fd++) {
 		ret = sceIoClose(fd);
 		if (ret != SCE_KERNEL_ERROR_BADF)
-			LOGSTR2("tried closing file %d, result 0x%08lX\n", fd, ret);
+			LOGSTR("tried closing file %d, result 0x%08X\n", fd, ret);
 	}
 }
 #endif
@@ -127,13 +127,13 @@ void load_hbl(SceUID hbl_file)
 #endif
 #ifdef FPL_EARLY_LOAD_ADDR_LIST
 	//early memory cleanup to be able to load HBL at a convenient place
-	LOGSTR0("loader.c: PreloadFreeFPL\n");
+	LOGSTR("loader.c: PreloadFreeFPL\n");
 
 	int uids[] = FPL_EARLY_LOAD_ADDR_LIST;
 
 	for(i = 0; i < sizeof(uids) / sizeof(int); i++)
 		if (sceKernelDeleteFpl(*(SceUID *)uids[i]) < 0)
-			LOGSTR2("--> ERROR 0x%08lX Deleting FPL ID 0x%08lX\n", ret, *(SceUID *)uids[i]);
+			LOGSTR("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
 #endif
 
 
@@ -149,7 +149,7 @@ void load_hbl(SceUID hbl_file)
 
 	sceIoClose(hbl_file);
 
-	LOGSTR1("HBL loaded to allocated memory @ 0x%08lX\n", (int)run_eloader);
+	LOGSTR("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
 	// Commit changes to RAM
 	CLEAR_CACHE;
@@ -172,24 +172,24 @@ void resolve_stubs()
 	cfg_num_nids_total(&num_nids);
 
 	for (index = 0; index < num_nids; index++) {
-		LOGSTR1("-Resolving import 0x%08lX: ", index * 2 * sizeof(int));
+		LOGSTR("-Resolving import 0x%08X: ", index * 2 * sizeof(int));
 
 		// NID & library for i-th import
 		get_lib_nid(index, lib_name, &nid);
 
-		LOGSTR0(lib_name);
-		LOGSTR1(" 0x%08lX\n", nid);
+		LOGSTR(lib_name);
+		LOGSTR(" 0x%08X\n", nid);
 
 		// Is it known by HBL?
 		ret = get_nid_index(nid);
 
 		// If it's known, get the call
 		if (ret > 0) {
-			LOGSTR0("-Found in NID table, using real call\n");
+			LOGSTR("-Found in NID table, using real call\n");
 			syscall = globals->nid_table.table[ret].call;
 		} else {
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
-			LOGSTR1("HBL Function missing at 0x%08lX, this can lead to trouble\n",  (int)cur_stub);
+			LOGSTR("HBL Function missing at 0x%08X, this can lead to trouble\n",  (int)cur_stub);
 			syscall = NOP_OPCODE;
 #else
 			// If not, estimate
@@ -205,7 +205,7 @@ void resolve_stubs()
 
 	cfg_close();
 
-	LOGSTR0(" ****STUBS SEARCHED\n");
+	LOGSTR(" ****STUBS SEARCHED\n");
 }
 
 
@@ -262,13 +262,13 @@ void p5_close_savedata()
 	int status;
 	int last_status = -1;
 
-	LOGSTR0("entering savedata dialog loop\n");
+	LOGSTR("entering savedata dialog loop\n");
 
 	while(1) {
 		status = sceUtilitySavedataGetStatus();
 
 		if (status != last_status) {
-			LOGSTR2("status changed from %d to %d\n", last_status, status);
+			LOGSTR("status changed from %d to %d\n", last_status, status);
 			last_status = status;
 		}
 
@@ -283,7 +283,7 @@ void p5_close_savedata()
 				break;
 
 			case PSP_UTILITY_DIALOG_NONE:
-				LOGSTR0("dialog has shut down\n");
+				LOGSTR("dialog has shut down\n");
 				return;
 		}
 
@@ -300,7 +300,7 @@ void p5_close_savedata()
 int p5_find_add_stubs_to_table(const char *libname, void *p, size_t size, int *index)
 {
 	int num = 0;
-	tStubEntry *pentry = *(tStubEntry **)(memfindsz(libname, (char *)p, size) + 40);
+	tStubEntry *pentry = *(tStubEntry **)(memfindsz(libname, p, size) + 40);
 
 	// While it's a valid stub header
 	while ((int)pentry->lib_name > 0x08400000 &&
@@ -357,14 +357,14 @@ int build_nid_table()
 	load_modules_for_stubs();
 #endif
 	nlib_stubs = search_stubs(stubs);
-	LOGSTR1("Found %d stubs\n", nlib_stubs);
+	LOGSTR("Found %d stubs\n", nlib_stubs);
 	if (nlib_stubs == 0)
 		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);
 	CLEAR_CACHE;
 
 	//DEBUG_PRINT(" build_nid_table() ENTERING MAIN LOOP ", NULL, 0);
 	for (cur_stub = 0; cur_stub < nlib_stubs; cur_stub++) {
-		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", (int)stubs[cur_stub]);
+		NID_LOGSTR("-->CURRENT MODULE LIBSTUB: 0x%08X\n", (int)stubs[cur_stub]);
 
 		num += add_stubs_to_table((tStubEntry *)stubs[cur_stub], &lib_index);
 	}
@@ -413,7 +413,7 @@ int build_nid_table()
 		if (ret < 0)
 			exit_with_log(" ERROR GETTING NEXT LIBSTUB FROM CONFIG ", &ret, sizeof(ret));
 
-		NID_LOGSTR1("-->CURRENT MODULE LIBSTUB: 0x%08lX\n", (int)pentry);
+		NID_LOGSTR("-->CURRENT MODULE LIBSTUB: 0x%08X\n", (int)pentry);
 
 		num += add_stubs_nid_to_table(pentry, &lib_index);
 
@@ -448,20 +448,20 @@ int build_nid_table()
 			num_lib_exports = sceIoLseek(fd, 0, PSP_SEEK_END) / sizeof(int);
 			sceIoClose(fd);
 
-			LOGSTR4("%d %s %s %d ", fw_ver,
+			LOGSTR("%d %s %s %d ", fw_ver,
 				(int)globals->lib_table.table[lib_index].name,
 				globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall
 					== (int)num_lib_exports - 1 ?
 					(int)"aligned" : (int)"not aligned",
 				(int)num_lib_exports);
-			LOGSTR1("%d ", globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall + 1);
-			LOGSTR4("%d %d %d %d\n", globals->lib_table.table[lib_index].lowest_syscall - base_syscall,
+			LOGSTR("%d ", globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall + 1);
+			LOGSTR("%d %d %d %d\n", globals->lib_table.table[lib_index].lowest_syscall - base_syscall,
 				globals->lib_table.table[lib_index].highest_syscall - base_syscall,
 				globals->lib_table.table[lib_index].lowest_syscall,
 				globals->lib_table.table[lib_index].highest_syscall);
 		}
 
-		LOGSTR0("\n");
+		LOGSTR("\n");
 	}
 
 	// On CFW there is a higher syscall difference between SysmemUserForUser
@@ -472,16 +472,16 @@ int build_nid_table()
 
 	// Fill remaining data after the reference library is known
 	for (lib_index = 0; lib_index < globals->lib_table.num; lib_index++) {
-		LOGSTR1("Completing library...%d\n", lib_index);
+		LOGSTR("Completing library...%d\n", lib_index);
 		complete_library(&(globals->lib_table.table[lib_index]), ref_lib_index, is_cfw);
 	}
 
 	CLEAR_CACHE;
 
-	LOGSTR0("\n==LIBRARY TABLE DUMP==\n");
+	LOGSTR("\n==LIBRARY TABLE DUMP==\n");
 	for (lib_index = 0; lib_index < globals->lib_table.num; lib_index++) {
-		LOGSTR2("->Index: %d, name %s\n", lib_index, (u32)globals->lib_table.table[lib_index].name);
-		LOGSTR2("predicted syscall range from 0x%08lX to 0x%08lX\n",
+		LOGSTR("->Index: %d, name %s\n", lib_index, (u32)globals->lib_table.table[lib_index].name);
+		LOGSTR("predicted syscall range from 0x%08X to 0x%08X\n",
 			globals->lib_table.table[lib_index].lowest_syscall,
 			globals->lib_table.table[lib_index].lowest_syscall
 				+ globals->lib_table.table[lib_index].num_lib_exports
@@ -495,7 +495,7 @@ int build_nid_table()
 					syscall = globals->nid_table.table[nid_index].call :
 					syscall = GET_SYSCALL_NUMBER(globals->nid_table.table[nid_index].call);
 
-				LOGSTR3("[%d] 0x%08lX 0x%08lX ", nid_index, globals->nid_table.table[nid_index].nid, syscall);
+				LOGSTR("[%d] 0x%08X 0x%08X ", nid_index, globals->nid_table.table[nid_index].nid, syscall);
 
 				// Check nid in table against the estimated nids
 				if (globals->syscalls_known && fd > 0) {
@@ -528,17 +528,17 @@ int build_nid_table()
 					} while (cur_nid != globals->nid_table.table[nid_index].nid)
 
 					// format: estimated call, index in nid-file, correctly estimated?
-					LOGSTR3("0x%08lX %d %s\n", globals->lib_table.table[lib_index].lowest_syscall + pos, lib_index,
+					LOGSTR("0x%08X %d %s\n", globals->lib_table.table[lib_index].lowest_syscall + pos, lib_index,
 						globals->lib_table.table[lib_index].lowest_syscall + pos == syscall ?
 							(int)"YES" : (int)"NO";
 				} else
-					LOGSTR0("\n");
+					LOGSTR("\n");
 			}
 		}
 
 		sceIoClose(fd);
 
-		LOGSTR0("\n\n");
+		LOGSTR("\n\n");
 	}
 #endif
 
@@ -579,7 +579,7 @@ void _start()
 
 #if defined(FORCE_FIRST_LOG) || defined(DEBUG)
 	// Some exploits need to "trigger" file I/O in order for HBL to work, not sure why
-	logstr0("Loader running\n");
+	logstr("Loader running\n");
 #endif
 
 #ifdef FORCE_CLOSE_FILES_IN_LOADER
@@ -601,7 +601,7 @@ void _start()
 			puts_scr("Unknown Firmware :(");
 			break;
 		default:
-			PRTSTR2("Firmware %d.%dx detected", fw_ver / 100,  (fw_ver % 100) / 10);
+			prtstr("Firmware %d.%dx detected", fw_ver / 100,  (fw_ver % 100) / 10);
 			break;
 	}
 
@@ -618,7 +618,7 @@ void _start()
 	// Build NID table
 	puts_scr("Building NIDs table");
 	num_nids = build_nid_table();
-	LOGSTR1("NUM NIDS: %d\n", num_nids);
+	LOGSTR("NUM NIDS: %d\n", num_nids);
 
 	if(num_nids <= 0)
 		exit_with_log("No Nids ???", NULL, 0);
@@ -626,12 +626,12 @@ void _start()
 	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
 		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
 	else {
-		LOGSTR0("Loading HBL\n");
+		LOGSTR("Loading HBL\n");
 		load_hbl(hbl_file);
 
-		LOGSTR0("Resolving HBL stubs\n");
+		LOGSTR("Resolving HBL stubs\n");
 		resolve_stubs();
-		LOGSTR0("HBL stubs copied, running eLoader\n");
+		LOGSTR("HBL stubs copied, running eLoader\n");
 		run_eloader();
 	}
 }

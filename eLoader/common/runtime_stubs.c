@@ -11,7 +11,7 @@
 #endif
 
 int load_utility_module(int module) {
-	LOGSTR1("Loading 0x%08lX\n", module);
+	LOGSTR("Loading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
 #ifdef USE_NET_MODULE_LOAD_FUNCTION
@@ -38,7 +38,7 @@ int load_utility_module(int module) {
 }
 
 int unload_utility_module(int module) {
-	LOGSTR1("Unloading 0x%08lX\n", module);
+	LOGSTR("Unloading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
 #ifdef USE_NET_MODULE_UNLOAD_FUNCTION
@@ -74,7 +74,7 @@ void load_utility_modules(unsigned int moduleIDs[]) {
 		result = load_utility_module(modid);
 		if (result < 0)
 		{
-			LOGSTR2("...Error 0x%08lX Loading 0x%08lX\n", (u32)result, (u32)(modid) );
+			LOGSTR("...Error 0x%08X Loading 0x%08X\n", (u32)result, (u32)(modid) );
 		}
 	}
 }
@@ -93,7 +93,7 @@ void unload_utility_modules(unsigned int moduleIDs[]) {
 			result = unload_utility_module(modid);
 			if (result < 0)
 			{
-				LOGSTR2("...Error 0x%08lX Unloading 0x%08lX\n", (u32)result, (u32)(modid) );
+				LOGSTR("...Error 0x%08X Unloading 0x%08X\n", (u32)result, (u32)(modid) );
 			}
 		}
 	}
@@ -122,12 +122,12 @@ int search_stubs(tStubEntry **stub_pointers) {
 		if (strong_check_stub_entry(pentry)) {
 			//boundaries check
 			if (cur >= MAX_RUNTIME_STUB_HEADERS) {
-				LOGSTR0("More stubs than Maximum allowed number, won't enumerate all stubs\n");
+				LOGSTR("More stubs than Maximum allowed number, won't enumerate all stubs\n");
 				return cur;
 			}
 			stub_pointers[cur] = pentry;
 			cur++;
-			LOGSTR1("Found Stubs at 0x%08lX\n", (int)pentry);
+			LOGSTR("Found Stubs at 0x%08X\n", (int)pentry);
 
 			// We found a valid pentry, skip consecutive valid pentry objects
 			while ((int)pentry < end && elf_check_stub_entry(pentry))

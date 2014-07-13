@@ -74,7 +74,8 @@ void cls()
 
 void printTextScreen(int x, int y, const char * text, u32 color)
 {
-	int c, i, j, l;
+	unsigned c;
+	int i, j, l;
 	u8 *font;
 	Color *vram_ptr;
 	Color *vram;
@@ -107,8 +108,8 @@ void puts_scr_color(const char * text, u32 color)
   	printTextScreen(0, gY, text, color);
   	gY += 12;
 
-    LOGSTR0(text);
-	LOGSTR0("\n");
+    LOGSTR(text);
+	LOGSTR("\n");
 }
 
 
@@ -120,42 +121,14 @@ void puts_scr(const char * text)
 
 
 
-void PRTSTR0(const char* A)
+void prtstr(const char *fmt, ...)
 {
-  puts_scr(A);
+	char debug_buf[512];
+	va_list va;
+
+	va_start(va, fmt);
+	_vsprintf(debug_buf, fmt, va);
+	va_end(va);
+	puts_scr(debug_buf);
 }
 
-void PRTSTR1(const char* A, unsigned long B)
-{
-  char buff[512];
-  mysprintf1(buff, A, (unsigned long)B);
-  puts_scr(buff);
-}
-
-void PRTSTR2(const char* A, unsigned long B, unsigned long C)
-{
-  char buff[512];
-  mysprintf2(buff, A, (unsigned long)B, (unsigned long)C);
-  puts_scr(buff);
-}
-
-void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D)
-{
-  char buff[512];
-  mysprintf3(buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D);
-  puts_scr(buff);
-}
-
-void PRTSTR4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E)
-{
-  char buff[512];
-  mysprintf4 (buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D,  (unsigned long)E);
-  puts_scr(buff);
-}
-
-void PRTSTR8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I)
-{
-  char buff[512];
-  mysprintf8 (buff, A, (unsigned long)B, (unsigned long)C, (unsigned long)D,  (unsigned long)E, (unsigned long)F, (unsigned long)G, (unsigned long)H,  (unsigned long)I);
-  puts_scr(buff);
-}

@@ -80,7 +80,7 @@ void readEbootName(const char * filename, const char * backup, char* name) {
 	fprintf(stderr, "File is [%s]\n",filename);
 	if(!(fid = sceIoOpen(filename, PSP_O_RDONLY, 0777)))
 	{
-		//LOGSTR0("File is NULL");
+		//LOGSTR("File is NULL");
         return;
 	}
 
@@ -90,7 +90,7 @@ void readEbootName(const char * filename, const char * backup, char* name) {
     {
         strcpy(name, backup);
         strcat(name," (Corrupt or invalid PBP)");
-        //LOGSTR0("File not a PBP\n");
+        //LOGSTR("File not a PBP\n");
         sceIoClose(fid);
         return;
     }
@@ -99,12 +99,12 @@ void readEbootName(const char * filename, const char * backup, char* name) {
     sceIoLseek(fid, pbpHeader.offset[0] , PSP_SEEK_SET ); // seeks to psf section - first entry in pbp offset table
     sceIoRead(fid,&psfHeader, sizeof(psfHeader));											// reads in psf header
 
-    //LOGSTR1("PSF number of Entries [%d]\n", psfHeader.num_entries);
+    //LOGSTR("PSF number of Entries [%d]\n", psfHeader.num_entries);
     if (psfHeader.num_entries > MAX_INDEX_TABLE_SIZE)
     {
         strcpy(name, backup);
         strcat(name," (Corrupt or invalid PBP)");
-        //LOGSTR0("File not a PBP\n");
+        //LOGSTR("File not a PBP\n");
         sceIoClose(fid);
         return;
     }
@@ -119,7 +119,7 @@ void readEbootName(const char * filename, const char * backup, char* name) {
         seek_offset++;
     }
 
-    //LOGSTR1("PSF using offset [%d]\n", seek_offset);
+    //LOGSTR("PSF using offset [%d]\n", seek_offset);
 
     sceIoLseek(fid, seek_offset, PSP_SEEK_CUR);
     sceIoRead(fid,name, (sizeof(char) * index_table[(psfHeader.num_entries - 1)][SIZE_OF_VALUE]));
@@ -128,7 +128,7 @@ void readEbootName(const char * filename, const char * backup, char* name) {
         strcpy(name, backup);
     }
 
-    //LOGSTR1("Name is [%s]\n",(u32)name);
+    //LOGSTR("Name is [%s]\n",(u32)name);
 
 
 	sceIoClose(fid);
@@ -232,7 +232,7 @@ int init(char* menuData)
 
   	if (id < 0)
 	{
-    	//LOGSTR1("FATAL: Menu can't open directory %s \n", (u32)ebootPath);
+    	//LOGSTR("FATAL: Menu can't open directory %s \n", (u32)ebootPath);
         printTextScreen(0, 205 , "Unable to open GAME folder (syscall issue?)", 0x000000FF);
     	loadCache();
     	return 1;
@@ -316,7 +316,7 @@ void setEboot()
 {
   	strcat(ebootPath, folders[currentFile]);
   	strcat(ebootPath, "/EBOOT.PBP");
-  	//LOGSTR0(ebootPath);
+  	//LOGSTR(ebootPath);
   	isSet = 1;
 }
 /*
@@ -374,10 +374,10 @@ int main(int argc, char *argv[])
         ebootPath = dummy_filename;
     }
 
-    //LOGSTR0("Start menu\n");
+    //LOGSTR("Start menu\n");
     isSet = 0;
 
-    //LOGSTR0("MENU Sets display\n");
+    //LOGSTR("MENU Sets display\n");
 
     //init screen
     sceDisplaySetFrameBuf(frameBuffer, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
 
         if ((pad.Buttons & PSP_CTRL_CROSS) ||  (pad.Buttons & PSP_CTRL_CIRCLE))
 		{ // if the cross or circle button is pressed
-            //LOGSTR0("Menu sets EBOOT path: ");
+            //LOGSTR("Menu sets EBOOT path: ");
             setEboot();
         }
 		else if ((pad.Buttons & PSP_CTRL_DOWN) && (currentFile < nbFiles - 1))
