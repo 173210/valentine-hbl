@@ -29,7 +29,7 @@ typedef enum
 // This struct is for each library imported by the game
 typedef struct
 {
-	char name[MAX_LIB_NAME_LENGTH];	// Library name
+	char name[MAX_LIB_NAME_LEN];	// Library name
 	tCallingMode calling_mode;	// Defines how library exports are called
 	int num_library_exports;	// Number of exported functions in library
 	int num_known_exports;		// Number of known exported functions (exports we know the syscall of)

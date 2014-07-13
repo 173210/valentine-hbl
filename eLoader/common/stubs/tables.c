@@ -35,13 +35,13 @@ int get_call_index(u32 call)
 int get_lib_nid(int index, char *lib_name, int *nid)
 {
 	int num_libs, i = 0, count = 0;
-	tImportedLibrary cur_lib;
+	tImportedLib cur_lib;
 
 	// DEBUG_PRINT("**GETTING NID INDEX:**", &index, sizeof(index));
 
 	index += 1;
 	cfg_num_libs(&num_libs);
-	config_first_library(&cur_lib);
+	cfg_first_library(&cur_lib);
 
 	while (i<num_libs) {
 		/*
@@ -52,7 +52,7 @@ int get_lib_nid(int index, char *lib_name, int *nid)
 
 		count += cur_lib.num_imports;
 		if (index > count)
-			config_next_library(&cur_lib);
+			cfg_next_lib(&cur_lib);
 		else {
 			cfg_seek_nid(--index, nid);
 			// DEBUG_PRINT("**SEEK NID**", nid, sizeof(u32));

@@ -39,12 +39,12 @@ void run_eboot(const char *path, int is_eboot)
 	LOGSTR1("EBOOT path: %s\n", (u32)path);
 
     //Load Game config overrides
-    char config_path[256];
-    strcpy(config_path, path);
+    char cfg_path[256];
+    strcpy(cfg_path, path);
     int path_len = strlen(path) - strlen("EBOOT.PBP");
-    config_path[path_len] = 0;
-    strcat(config_path, HBL_CONFIG);
-    loadConfig(config_path);
+    cfg_path[path_len] = 0;
+    strcat(cfg_path, HBL_CONFIG);
+    loadConfig(cfg_path);
 
 	// Extracts ELF from PBP
 	if (is_eboot)

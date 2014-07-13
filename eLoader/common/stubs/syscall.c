@@ -80,9 +80,9 @@ int toBase36 (char * dest,const unsigned long src)
 // Opens .nids file for a given library
 SceUID open_nids_file(const char* libname)
 {
-	char file_path[MAX_LIB_NAME_LENGTH + 100];
+	char file[MAX_LIB_NAME_LEN + 100];
 
-    int firmware_v = get_fw_ver();
+    int fw_ver = get_fw_ver();
 
 	int i = 0;
 
@@ -103,39 +103,39 @@ SceUID open_nids_file(const char* libname)
 		{
 #ifdef FLAT_FOLDER
 			case 0:
-				mysprintf4(file_path, "%s_%d%s%s", (u32)LIB_PATH, firmware_v, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf4(file, "%s_%d%s%s", (u32)LIB_PATH, fw_ver, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 			case 1:
-				mysprintf4(file_path, "%s_%dx%s%s", (u32)LIB_PATH, firmware_v / 10, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf4(file, "%s_%dx%s%s", (u32)LIB_PATH, fw_ver / 10, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 			case 2:
-				mysprintf4(file_path, "%s_%dxx%s%s", (u32)LIB_PATH, firmware_v / 100, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf4(file, "%s_%dxx%s%s", (u32)LIB_PATH, fw_ver / 100, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 			case 3:
-				mysprintf3(file_path, "%s%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf3(file, "%s%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 #else
 			case 0:
-				mysprintf4(file_path, "%s_%d/%s%s", (u32)LIB_PATH, firmware_v, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf4(file, "%s_%d/%s%s", (u32)LIB_PATH, fw_ver, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 			case 1:
-				mysprintf4(file_path, "%s_%dx/%s%s", (u32)LIB_PATH, firmware_v / 10, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf4(file, "%s_%dx/%s%s", (u32)LIB_PATH, fw_ver / 10, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 			case 2:
-				mysprintf4(file_path, "%s_%dxx/%s%s", (u32)LIB_PATH, firmware_v / 100, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf4(file, "%s_%dxx/%s%s", (u32)LIB_PATH, fw_ver / 100, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 			case 3:
-				mysprintf3(file_path, "%s/%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
+				mysprintf3(file, "%s/%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
 				break;
 #endif
 		}
 		i++;
 	}
-	while ((i < 4) && !file_exists(file_path));
+	while ((i < 4) && !file_exists(file));
 
-	LOGSTR1("Opening %s\n", (u32)file_path);
+	LOGSTR1("Opening %s\n", (u32)file);
 
-	return sceIoOpen(file_path, PSP_O_RDONLY, 0777);
+	return sceIoOpen(file, PSP_O_RDONLY, 0777);
 }
 
 

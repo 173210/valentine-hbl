@@ -9,130 +9,115 @@
 /* LOCAL GLOBALS :( */
 
 // File descriptor
-SceUID g_config_file = -1;
+SceUID g_cfg_fd = -1;
 
 // Temp storage for not having to access the file again
 int g_num_libstubs = -1;
-int g_num_libraries = -1;
+int g_num_libs = -1;
 int g_num_nids = -1;
 
 // Temp storage for not having to calculate again
-SceOff g_nids_offset = -1;
+SceOff g_nids_off = -1;
 
 /* INTERFACE IMPLEMENTATION */
 
-// Initialize config_file
+// Initialize cfg_file
 int cfg_init()
 {
 #if VITA >= 180
-  const char * file_path = IMPORTS_PATH"imports.dat";
+	const char *file = IMPORTS_PATH"IMPORTS.DAT";
+
+	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 #else
-    char file_path[512];
+	char file[512];
 
-    int i = 0;
-    u32 firmware_v = get_fw_ver();
+	int i = 0;
+	int fw_ver = get_fw_ver();
 
-    //We try to open a lib file base on the version of the firmware as precisely as possible,
-    //then fallback to less precise versions. for example,try in this order:
-    // libs_503, libs_50x, libs_5xx, libs
+	//We try to open a lib file base on the version of the firmware as precisely as possible,
+	//then fallback to less precise versions. for example,try in this order:
+	// libs_503, libs_50x, libs_5xx, libs
 
-	do
-	{
-		switch (i)
-		{
-			case 0:
-				mysprintf2(file_path, "%s_%d", (u32)IMPORTS_PATH, firmware_v);
-				break;
-			case 1:
-				mysprintf2(file_path, "%s_%dx", (u32)IMPORTS_PATH, firmware_v / 10);
-				break;
-			case 2:
-				mysprintf2(file_path, "%s_%dxx", (u32)IMPORTS_PATH, firmware_v / 100);
-				break;
-			case 3:
-				mysprintf1(file_path, "%s", (u32)IMPORTS_PATH);
-				break;
+	mysprintf2(file, "%s_%d", (int)IMPORTS_PATH, fw_ver);
+	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+	if (g_cfg_fd < 0) {
+		mysprintf2(file, "%s_%dx", (int)IMPORTS_PATH, fw_ver / 10);
+		g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+
+		if (g_cfg_fd < 0) {
+			mysprintf2(file, "%s_%dxx", (int)IMPORTS_PATH, fw_ver / 100);
+			g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+
+			if (g_cfg_fd < 0) {
+				strcpy(file, IMPORTS_PATH);
+				g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+			}
 		}
-		i++;
 	}
-	while ((i < 4) && !file_exists(file_path));
 #endif
 
-    LOGSTR1("Config file:%s\n", (u32) file_path);
+	LOGSTR1("Config file:%s\n", (int)file);
 
-	g_config_file = sceIoOpen(file_path, PSP_O_RDONLY, 0777);
-	return g_config_file;
+	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+	return g_cfg_fd;
 }
 
 // Gets a int from offset from config
-int config_u32(u32* buffer, SceOff offset)
+int cfg_int(int *buf, SceOff off)
 {
-	int ret = -1;
+	int ret;
 
-	if (buffer != NULL)
-	{
-		if (offset >= 0)
-			if ((ret = sceIoLseek(g_config_file, offset, PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(g_config_file, buffer, sizeof(u32));
-	}
+	if (buf == NULL || off < 0)
+		return -1;
+
+	ret = sceIoLseek(g_cfg_fd, off, PSP_SEEK_SET);
+	if (ret >= 0)
+		ret = sceIoRead(g_cfg_fd, buf, sizeof(int));
 
 	return ret;
 }
 
 // Returns how many .lib.stub addresses are referenced
-int config_num_lib_stub(unsigned int* pnum_lib_stub)
+int cfg_num_lib_stub(int *num_lib_stub)
 {
 	int ret = 0;
 
 	if (g_num_libstubs < 0)
-		ret = config_u32((u32*)&g_num_libstubs, NUM_LIBSTUB_OFFSET);
+		ret = cfg_int(&g_num_libstubs, NUM_LIBSTUB_OFF);
 
-	if ((ret >= 0) && (pnum_lib_stub != NULL))
-		*pnum_lib_stub = g_num_libstubs;
+	if ((ret >= 0) && (num_lib_stub != NULL))
+		*num_lib_stub = g_num_libstubs;
 
 	return ret;
 }
 
 // Returns first .lib.stub address
-int config_first_lib_stub(u32* plib_stub)
+int cfg_first_lib_stub(int *lib_stub)
 {
-	int ret = 0;
-
-	if (plib_stub != NULL)
-		ret = config_u32(plib_stub, LIBSTUB_OFFSET);
-
-	return ret;
+	return cfg_int(lib_stub, LIBSTUB_OFF);
 }
 
 // Returns next .lib.stub pointer
-int config_next_lib_stub(tStubEntry **plib_stub)
+int cfg_next_lib_stub(tStubEntry **lib_stub)
 {
-	if (plib_stub != NULL)
-		return sceIoRead(g_config_file, (void *)plib_stub, sizeof(tStubEntry *));
-	else
-		return 0;
+	return sceIoRead(g_cfg_fd, (void *)lib_stub, sizeof(tStubEntry *));
 }
 
 // Returns number of nids imported
-int cfg_num_nids_total(int *pnum_nids_total)
+int cfg_num_nids_total(int *num_nids_total)
 {
 	int ret = 0;
 
-	if (g_num_nids < 0)
-		ret = config_u32((u32*)&g_num_nids, NUM_NIDS_OFFSET);
+	if (g_num_nids < 0) {
+		ret = cfg_int(&g_num_nids, NUM_NIDS_OFF);
+		if (ret < 0) {
+			LOGSTR1("ERROR Getting total number of nids: 0x%08lX\n", ret);
+			return ret;
+		}
+	}
 
-    if (ret < 0)
-    {
-        LOGSTR1("ERROR Getting total number of nids: 0x%08lX\n", ret);
-        return ret;
-    }
-
-	if (!pnum_nids_total)
-    {
-        return -1;
-    }
-
-    *pnum_nids_total = g_num_nids;
+	if (num_nids_total != NULL)
+		*num_nids_total = g_num_nids;
 
 	return ret;
 }
@@ -144,106 +129,98 @@ int cfg_num_libs(int *num_libs)
 
 	//DEBUG_PRINT(" cfg_num_libs ", NULL, 0);
 
-	if (g_num_libraries < 0)
-		ret = config_u32((u32*)&g_num_libraries, NUM_LIBRARIES_OFFSET);
+	if (g_num_libs < 0)
+		ret = cfg_int(&g_num_libs, NUM_LIBRARIES_OFF);
 
 	if ((ret >= 0) && (num_libs != NULL))
-		*num_libs = g_num_libraries;
+		*num_libs = g_num_libs;
 
 	return ret;
 }
 
 // Returns next library
-int config_next_library(tImportedLibrary* plibrary_descriptor)
+int cfg_next_lib(tImportedLib *importedlib)
 {
-	int ret = 0;
+	int ret;
 
-	if (plibrary_descriptor != NULL)
-	{
-		ret = fgetsz(g_config_file, plibrary_descriptor->lib_name);
+	if (importedlib == NULL)
+		return -1;
 
-		if (ret == 0)
-			return -1;
+	ret = fgetsz(g_cfg_fd, importedlib->lib_name);
+	if (ret == 0)
+		return -1;
 
-		ret = sceIoRead(g_config_file, &(plibrary_descriptor->num_imports), sizeof(unsigned int));
-
-		if (ret >= 0)
-			ret = sceIoRead(g_config_file, &(plibrary_descriptor->nids_offset), sizeof(SceOff));
-	}
+	ret = sceIoRead(g_cfg_fd, &(importedlib->num_imports), sizeof(int));
+	if (ret >= 0)
+		ret = sceIoRead(g_cfg_fd, &(importedlib->nids_off), sizeof(SceOff));
 
 	return ret;
 }
 
 // Returns first library descriptor
-int config_first_library(tImportedLibrary* plibrary_descriptor)
+int cfg_first_library(tImportedLib* importedlib)
 {
 	int ret = 0;
 
-	if (plibrary_descriptor != NULL)
-	{
-		ret = 1;
-		if (g_num_libstubs < 0)
-			ret = config_num_lib_stub(NULL);
+	if (importedlib == NULL)
+		return -1;
 
+	if (g_num_libstubs < 0)
+		ret = cfg_num_lib_stub(NULL);
+
+	if (ret >= 0) {
+		ret = sceIoLseek(g_cfg_fd, (int)LIBSTUB_OFF + (g_num_libstubs * sizeof(int)), PSP_SEEK_SET);
 		if (ret >= 0)
-		{
-			ret = sceIoLseek(g_config_file, (int)LIBSTUB_OFFSET + (g_num_libstubs * sizeof(u32)), PSP_SEEK_SET);
-			if (ret >= 0)
-				ret = config_next_library(plibrary_descriptor);
-		}
+			ret = cfg_next_lib(importedlib);
 	}
 
 	return ret;
 }
 
 // Returns offset of nid array
-int config_nids_offset(SceOff* poffset)
+int cfg_nids_off(SceOff* off)
 {
 	int ret = 0;
-	tImportedLibrary first_lib;
+	tImportedLib importedlib;
 
-	if (g_nids_offset < 0)
-	{
-		ret = config_first_library(&first_lib);
+	if (g_nids_off < 0) {
+		ret = cfg_first_library(&importedlib);
+		if (ret < 0)
+			return -1;
 
-		if (ret >= 0)
-			g_nids_offset = first_lib.nids_offset;
+		g_nids_off = importedlib.nids_off;
 	}
 
-	if (poffset != NULL)
-		*poffset = g_nids_offset;
+	if (off != NULL)
+		*off = g_nids_off;
 
 	return ret;
 }
 
 // Get first nid
-int config_first_nid(u32* pnid)
+int cfg_first_nid(int *nid)
 {
 	int ret = 0;
 
-	if (pnid != NULL)
-	{
-		ret = 1;
-		if (g_nids_offset < 0)
-			ret = config_nids_offset(NULL);
+	if (nid == NULL)
+		return -1;
 
+	if (g_nids_off < 0)
+		ret = cfg_nids_off(NULL);
+
+	if (ret >= 0) {
+		ret = sceIoLseek(g_cfg_fd, g_nids_off, PSP_SEEK_SET);
 		if (ret >= 0)
-		{
-			if ((ret = sceIoLseek(g_config_file, g_nids_offset, PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(g_config_file, pnid, sizeof(u32));
-		}
+			ret = sceIoRead(g_cfg_fd, nid, sizeof(int));
 	}
 
 	return ret;
 }
 
 // Returns next NID
-int config_next_nid(u32* pnid)
+int cfg_next_nid(int *nid)
 {
-	if (pnid != NULL)
-		return sceIoRead(g_config_file, pnid, sizeof(u32));
-
-	return 0;
+	return sceIoRead(g_cfg_fd, nid, sizeof(int));
 }
 
 // Returns Nth NID
@@ -251,15 +228,16 @@ int cfg_seek_nid(int index, int *nid)
 {
 	int ret = 0;
 
-	if (nid != NULL)
-	{
-		ret = 1;
-		if (g_nids_offset < 0)
-			ret = config_nids_offset(NULL);
+	if (nid == NULL)
+		return -1;
 
-		if (ret >= 0)
-			if((ret = sceIoLseek(g_config_file, g_nids_offset + (index * sizeof(int)), PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(g_config_file, nid, sizeof(int));
+	if (g_nids_off < 0)
+		ret = cfg_nids_off(NULL);
+
+	if (ret >= 0) {
+		ret = sceIoLseek(g_cfg_fd, g_nids_off + (index * sizeof(int)), PSP_SEEK_SET);
+		if(ret >= 0)
+			ret = sceIoRead(g_cfg_fd, nid, sizeof(int));
 	}
 
 	return ret;
@@ -270,10 +248,9 @@ int cfg_close()
 {
 	int ret = 0;
 
-	if (g_config_file >= 0)
-	{
-		ret = sceIoClose(g_config_file);
-		g_config_file = -1;
+	if (g_cfg_fd > 0) {
+		ret = sceIoClose(g_cfg_fd);
+		g_cfg_fd = -1;
 	}
 
 	return ret;

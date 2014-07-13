@@ -162,7 +162,7 @@ void resolve_stubs()
 	int num_nids;
 	int *cur_stub = (int *)HBL_STUBS_START;
 	int nid = 0, syscall = 0;
-	char lib_name[MAX_LIB_NAME_LENGTH];
+	char lib_name[MAX_LIB_NAME_LEN];
 
 	ret = cfg_init();
 
@@ -400,7 +400,7 @@ int build_nid_table()
 	if (ret < 0)
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
 
-	ret = config_num_lib_stub(&nlib_stubs);
+	ret = cfg_num_lib_stub(&nlib_stubs);
 	if (ret < 0)
 	    exit_with_log(" ERROR READING NUMBER OF LIBSTUBS FROM CONFIG ", &ret, sizeof(ret));
 
@@ -409,7 +409,7 @@ int build_nid_table()
 
 	//DEBUG_PRINT(" build_nid_table() ENTERING MAIN LOOP ", NULL, 0);
 	while (nlib_stubs > 0) {
-		ret = config_next_lib_stub(&pentry);
+		ret = cfg_next_lib_stub(&pentry);
 		if (ret < 0)
 			exit_with_log(" ERROR GETTING NEXT LIBSTUB FROM CONFIG ", &ret, sizeof(ret));
 
