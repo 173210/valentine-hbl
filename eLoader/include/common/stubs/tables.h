@@ -31,7 +31,7 @@ typedef struct
 {
 	char name[MAX_LIB_NAME_LEN];	// Library name
 	tCallingMode calling_mode;	// Defines how library exports are called
-	int num_library_exports;	// Number of exported functions in library
+	int num_lib_exports;	// Number of exported functions in library
 	int num_known_exports;		// Number of known exported functions (exports we know the syscall of)
 	int lowest_syscall;		// Lowest syscall number found
 	int lowest_nid;			// NID associated to lowest syscall

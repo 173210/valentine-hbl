@@ -389,7 +389,7 @@ u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
 	}
 	else
 	{
-		estimated_syscall = (int)globals->lib_table.table[lib_index].lowest_syscall + nid_index + (int)globals->lib_table.table[lib_index].num_library_exports - (int)globals->lib_table.table[lib_index].lowest_index + (int)globals->lib_table.table[lib_index].gap;
+		estimated_syscall = (int)globals->lib_table.table[lib_index].lowest_syscall + nid_index + (int)globals->lib_table.table[lib_index].num_lib_exports - (int)globals->lib_table.table[lib_index].lowest_index + (int)globals->lib_table.table[lib_index].gap;
 	}
 
 	LOGSTR1("--FIRST ESTIMATED SYSCALL: 0x%08lX\n", estimated_syscall);

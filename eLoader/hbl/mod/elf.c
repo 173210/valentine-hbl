@@ -72,7 +72,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 		sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
 
 		// Loads program segment at virtual address
-		sceIoLseek(elf_file, start_offset + program_header.p_offset, PSP_SEEK_SET);
+		sceIoLseek(elf_file, start_offset + program_header.p_off, PSP_SEEK_SET);
 		buffer = (void *) program_header.p_vaddr;
 		allocate_memory(program_header.p_memsz, buffer);
 		sceIoRead(elf_file, buffer, program_header.p_filesz);
@@ -125,7 +125,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
     LOGMODINFO(module_info);
     
 	// Loads program segment at fixed address
-	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_offset, PSP_SEEK_SET);
+	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_off, PSP_SEEK_SET);
 
 	LOGSTR1("Address to allocate from: 0x%08lX\n", (u32)*addr);
     buffer = allocate_memory(program_header.p_memsz, *addr);

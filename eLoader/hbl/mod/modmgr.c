@@ -486,7 +486,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	strcpy(newlib.name, lib_name);
 	newlib.calling_mode = JUMP_MODE;
-	newlib.num_library_exports = pexports->num_functions;
+	newlib.num_lib_exports = pexports->num_functions;
 	newlib.num_known_exports = pexports->num_functions;
 
 	int lib_index = add_library_to_table(newlib);

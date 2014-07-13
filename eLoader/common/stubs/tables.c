@@ -322,7 +322,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int ref_lib_index, int is_cfw)
 			}
 			else
 			{
-				library->gap = (library->highest_syscall - library->lowest_syscall) - (library->num_library_exports - 1);
+				library->gap = (library->highest_syscall - library->lowest_syscall) - (library->num_lib_exports - 1);
 			}
 
 			lowest_syscall = library->lowest_syscall;
@@ -445,7 +445,7 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(ref_lib_index), 
 	if (nid_file > -1)
 	{
 		// Calculate number of NIDs (size of file/4)
-		plibrary->num_library_exports = sceIoLseek(nid_file, 0, PSP_SEEK_END) / sizeof(u32);
+		plibrary->num_lib_exports = sceIoLseek(nid_file, 0, PSP_SEEK_END) / sizeof(u32);
 		sceIoLseek(nid_file, 0, PSP_SEEK_SET);
 
 		// Search for lowest nid
@@ -493,7 +493,7 @@ tSceLibrary* complete_library(tSceLibrary* plibrary, int UNUSED(ref_lib_index), 
 
 				// Rotation ;)
 				if (index < 0)
-					index = plibrary->num_library_exports + index;
+					index = plibrary->num_lib_exports + index;
 
 				sceIoLseek(nid_file, index * 4, PSP_SEEK_SET);
 				sceIoRead(nid_file, &nid, sizeof(u32));

@@ -17,13 +17,13 @@
 void init_debug();
 
 // Write a string + data to debug path
-void write_debug(const char* description, void* value, unsigned int size);
+void write_debug(const char* desc, void* val, size_t size);
 
 // Write a debug string + carriage return to debug path
-void write_debug_newline (const char* description);
+void write_debug_newline (const char *desc);
 
 // Write debug and exit
-void exit_with_log(const char* description, void* value, unsigned int size);
+void exit_with_log(const char *desc, void *val, size_t size);
 
 void logstr8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I);
 void logstr5(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F);
@@ -35,7 +35,7 @@ void logstr0(const char* A);
 
 
 #ifdef DEBUG
-void log_library(tSceLibrary lib);
+void log_lib(tSceLibrary lib);
 void log_program_header(Elf32_Phdr pheader);
 void log_modinfo(SceModuleInfo modinfo);
 void log_elf_header(Elf32_Ehdr eheader);
@@ -50,7 +50,7 @@ void log_elf_section_header(Elf32_Shdr shdr);
 #define LOGSTR2(a,b,c) logstr2(a,b,c)
 #define LOGSTR1(a,b) logstr1(a,b)
 #define LOGSTR0(a) logstr0(a)
-#define LOGLIB(a) log_library(a)
+#define LOGLIB(a) log_lib(a)
 #define LOGMODINFO(a) log_modinfo(a)
 #define LOGELFHEADER(a) log_elf_header(a)
 #define LOGMODENTRY(a) log_mod_entry(a)

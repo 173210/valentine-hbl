@@ -122,7 +122,7 @@ typedef struct
 typedef struct
 {
     Elf32_Word p_type;      // Type of segment
-    Elf32_Off p_offset;     // Offset for segment's first byte in file
+    Elf32_Off p_off;     // Offset for segment's first byte in file
     Elf32_Addr p_vaddr;     // Virtual address for segment
     Elf32_Addr p_paddr;     // Physical address for segment
     Elf32_Word p_filesz;    // Segment image size in file

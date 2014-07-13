@@ -436,24 +436,24 @@ int build_nid_table()
 	if (globals->syscalls_known && (get_fw_ver() <= 610))
 	{
 		// Write out a library table
-		int num_library_exports;
+		int num_lib_exports;
 		int ref_lib_index = get_lib_index(SYSCALL_REF_LIB);
 		int base_syscall = globals->lib_table.table[ref_lib_index].lowest_syscall;
 
-		if (num_library_exports < 0)
-			num_library_exports = -1;
+		if (num_lib_exports < 0)
+			num_lib_exports = -1;
 
 		for (lib_index = 0; lib_index < globals->lib_table.num; lib_index++) {
 			fd = open_nids_file(globals->lib_table.table[lib_index].name);
-			num_library_exports = sceIoLseek(fd, 0, PSP_SEEK_END) / sizeof(int);
+			num_lib_exports = sceIoLseek(fd, 0, PSP_SEEK_END) / sizeof(int);
 			sceIoClose(fd);
 
 			LOGSTR4("%d %s %s %d ", fw_ver,
 				(int)globals->lib_table.table[lib_index].name,
 				globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall
-					== (int)num_library_exports - 1 ?
+					== (int)num_lib_exports - 1 ?
 					(int)"aligned" : (int)"not aligned",
-				(int)num_library_exports);
+				(int)num_lib_exports);
 			LOGSTR1("%d ", globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall + 1);
 			LOGSTR4("%d %d %d %d\n", globals->lib_table.table[lib_index].lowest_syscall - base_syscall,
 				globals->lib_table.table[lib_index].highest_syscall - base_syscall,
@@ -484,7 +484,7 @@ int build_nid_table()
 		LOGSTR2("predicted syscall range from 0x%08lX to 0x%08lX\n",
 			globals->lib_table.table[lib_index].lowest_syscall,
 			globals->lib_table.table[lib_index].lowest_syscall
-				+ globals->lib_table.table[lib_index].num_library_exports
+				+ globals->lib_table.table[lib_index].num_lib_exports
 				+ globals->lib_table.table[lib_index].gap - 1);
 
 		fd = open_nids_file(globals->lib_table.table[lib_index].name);
@@ -506,7 +506,7 @@ int build_nid_table()
 					do {
 						pos++;
 
-						if (i >= globals->lib_table.table[lib_index].num_library_exports) {
+						if (i >= globals->lib_table.table[lib_index].num_lib_exports) {
 							// gap
 							pos += globals->lib_table.table[lib_index].gap;
 
