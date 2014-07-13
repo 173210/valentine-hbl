@@ -22,7 +22,7 @@ SceOff g_nids_offset = -1;
 /* INTERFACE IMPLEMENTATION */
 
 // Initialize config_file
-int config_initialize()
+int cfg_init()
 {
 #if VITA >= 180
   const char * file_path = IMPORTS_PATH"imports.dat";
@@ -30,7 +30,7 @@ int config_initialize()
     char file_path[512];
 
     int i = 0;
-    u32 firmware_v = getFirmwareVersion();
+    u32 firmware_v = get_fw_ver();
 
     //We try to open a lib file base on the version of the firmware as precisely as possible,
     //then fallback to less precise versions. for example,try in this order:
@@ -104,17 +104,17 @@ int config_first_lib_stub(u32* plib_stub)
 	return ret;
 }
 
-// Returns next .lib.stub address
-int config_next_lib_stub(u32* plib_stub)
+// Returns next .lib.stub pointer
+int config_next_lib_stub(tStubEntry **plib_stub)
 {
 	if (plib_stub != NULL)
-		return sceIoRead(g_config_file, plib_stub, sizeof(u32));
+		return sceIoRead(g_config_file, (void *)plib_stub, sizeof(tStubEntry *));
 	else
 		return 0;
 }
 
 // Returns number of nids imported
-int config_num_nids_total(unsigned int* pnum_nids_total)
+int cfg_num_nids_total(int *pnum_nids_total)
 {
 	int ret = 0;
 
@@ -138,17 +138,17 @@ int config_num_nids_total(unsigned int* pnum_nids_total)
 }
 
 // Returns number of libraries
-int config_num_libraries(unsigned int* pnum_libraries)
+int cfg_num_libs(int *num_libs)
 {
 	int ret = 0;
 
-	//DEBUG_PRINT(" config_num_libraries ", NULL, 0);
+	//DEBUG_PRINT(" cfg_num_libs ", NULL, 0);
 
 	if (g_num_libraries < 0)
 		ret = config_u32((u32*)&g_num_libraries, NUM_LIBRARIES_OFFSET);
 
-	if ((ret >= 0) && (pnum_libraries != NULL))
-		*pnum_libraries = g_num_libraries;
+	if ((ret >= 0) && (num_libs != NULL))
+		*num_libs = g_num_libraries;
 
 	return ret;
 }
@@ -160,7 +160,7 @@ int config_next_library(tImportedLibrary* plibrary_descriptor)
 
 	if (plibrary_descriptor != NULL)
 	{
-		ret = fgetsz(g_config_file, plibrary_descriptor->library_name);
+		ret = fgetsz(g_config_file, plibrary_descriptor->lib_name);
 
 		if (ret == 0)
 			return -1;
@@ -247,26 +247,26 @@ int config_next_nid(u32* pnid)
 }
 
 // Returns Nth NID
-int config_seek_nid(int index, u32* pnid)
+int cfg_seek_nid(int index, int *nid)
 {
 	int ret = 0;
 
-	if (pnid != NULL)
+	if (nid != NULL)
 	{
 		ret = 1;
 		if (g_nids_offset < 0)
 			ret = config_nids_offset(NULL);
 
 		if (ret >= 0)
-			if((ret = sceIoLseek(g_config_file, g_nids_offset + (index * sizeof(u32)), PSP_SEEK_SET)) >= 0)
-				ret = sceIoRead(g_config_file, pnid, sizeof(u32));
+			if((ret = sceIoLseek(g_config_file, g_nids_offset + (index * sizeof(int)), PSP_SEEK_SET)) >= 0)
+				ret = sceIoRead(g_config_file, nid, sizeof(int));
 	}
 
 	return ret;
 }
 
 // Closes config interface
-int config_close()
+int cfg_close()
 {
 	int ret = 0;
 

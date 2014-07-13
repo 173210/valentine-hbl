@@ -7,7 +7,7 @@
 #define PSP_OTHER 3
 
 #ifndef VITA
-u32 getFirmwareVersion();
+u32 get_fw_ver();
 u32 getPSPModel();
 #endif
 

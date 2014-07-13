@@ -215,37 +215,36 @@ void configGetProcessingOptions()
     char lstr[256];
     char lval[256];
 
-    tGlobals * g = get_globals();
-    LOGSTR0("Read params\n");
+        LOGSTR0("Read params\n");
     while (configReadParameter(lstr, lval))
     {
         LOGSTR2("Parm %s = %s\n", (u32)lstr, (u32)lval);
         if (strcmp(lstr,"override_sceIoMkdir")==0)
         {
-            g->override_sceIoMkdir = configIntParse(lval);
+            globals->override_sceIoMkdir = configIntParse(lval);
         }
         else if (strcmp(lstr,"override_sceCtrlPeekBufferPositive")==0)
         {
-            g->override_sceCtrlPeekBufferPositive = configIntParse(lval);
+            globals->override_sceCtrlPeekBufferPositive = configIntParse(lval);
         }
         else if (strcmp(lstr,"return_to_xmb_on_exit")==0)
         {
-            g->return_to_xmb_on_exit = configIntParse(lval);
+            globals->return_to_xmb_on_exit = configIntParse(lval);
         }
         else if (strcmp(lstr,"force_exit_buttons")==0)
         {
-            g->force_exit_buttons = configAddrParse(lval);
+            globals->force_exit_buttons = configAddrParse(lval);
         }
 #ifndef VITA
         else if (strcmp(lstr,"syscalls_known")==0)
         {
-            g->syscalls_known = configIntParse(lval);
+            globals->syscalls_known = configIntParse(lval);
         }
 #endif
         else if (strcmp(lstr,"hb_folder")==0)
         {
-            //note: g->hb_folder is initialized in loadGlobalConfig
-            strcpy(g->hb_filename,lval);
+            //note: globals->hb_folder is initialized in loadGlobalConfig
+            strcpy(globals->hb_fname,lval);
         }
         else
         {
@@ -258,13 +257,12 @@ void configGetProcessingOptions()
 // Load default config
 void loadGlobalConfig()
 {
-    tGlobals * g = get_globals();
-    //default values
-    g->override_sceIoMkdir = DONT_OVERRIDE;
-    g->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;
-    g->return_to_xmb_on_exit = 0;
-    g->force_exit_buttons = 0;
-    strcpy(g->hb_filename, "ms0:/PSP/GAME/");
+        //default values
+    globals->override_sceIoMkdir = DONT_OVERRIDE;
+    globals->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;
+    globals->return_to_xmb_on_exit = 0;
+    globals->force_exit_buttons = 0;
+    strcpy(globals->hb_fname, "ms0:/PSP/GAME/");
 #ifdef VITA
     reset_vita_dirs();
 #endif
@@ -312,8 +310,8 @@ void loadConfig(const char * path)
         LOGSTR1("Couldn't load config file, error 0x%08lX (that's usually not an issue)\n",gconfigfd);
         return;
     }
-    print_to_screen("Config file:");
-    print_to_screen(path);
+    puts_scr("Config file:");
+    puts_scr(path);
 
     configGetProcessingOptions();
     closeConfig();

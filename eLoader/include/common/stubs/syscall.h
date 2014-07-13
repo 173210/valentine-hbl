@@ -3,7 +3,7 @@
 
 #include <common/sdk.h>
 
-#if defined(VITA) || !defined(SYSCALL_REFERENCE_LIBRARY) \
+#if defined(VITA) || !defined(SYSCALL_REF_LIB) \
 	|| !(defined(SYSCALL_OFFSETS_500) || defined(SYSCALL_OFFSETS_500_CFW) \
 	|| defined(SYSCALL_OFFSETS_550) || defined(SYSCALL_OFFSETS_550_CFW) \
 	|| defined(SYSCALL_OFFSETS_570) || defined(SYSCALL_OFFSETS_570_GO) \

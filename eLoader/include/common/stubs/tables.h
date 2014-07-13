@@ -2,6 +2,7 @@
 #define ELOADER_TABLES
 
 #include <common/sdk.h>
+#include <hbl/mod/elf.h>
 #include <hbl/eloader.h>
 
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
@@ -28,15 +29,15 @@ typedef enum
 // This struct is for each library imported by the game
 typedef struct
 {
-	char name[MAX_LIBRARY_NAME_LENGTH];			// Library name
-	tCallingMode calling_mode;					// Defines how library exports are called
-	unsigned int num_library_exports;			// Number of exported functions in library
-	unsigned int num_known_exports;				// Number of known exported functions (exports we know the syscall of)
-	u32 lowest_syscall;							// Lowest syscall number found
-	u32 lowest_nid;								// NID associated to lowest syscall
-	unsigned int lowest_index;					// Lowest NID index nids_table
-    u32 highest_syscall;                        // Highest syscall number found
-	u32 gap;                                    // Offset between the syscall for the highest and the lowest nid index in 6.20
+	char name[MAX_LIB_NAME_LENGTH];	// Library name
+	tCallingMode calling_mode;	// Defines how library exports are called
+	int num_library_exports;	// Number of exported functions in library
+	int num_known_exports;		// Number of known exported functions (exports we know the syscall of)
+	int lowest_syscall;		// Lowest syscall number found
+	int lowest_nid;			// NID associated to lowest syscall
+	int lowest_index;		// Lowest NID index nids_table
+	int highest_syscall;		// Highest syscall number found
+	int gap;			// Offset between the syscall for the highest and the lowest nid index in 6.20
 } tSceLibrary;
 
 typedef struct
@@ -88,10 +89,10 @@ typedef struct
 
 
 // Auxiliary structures to help with syscall estimation
-extern HBLLibTable* library_table;
+extern HBLLibTable* lib_table;
 extern HBLNIDTable* nid_table;
 /*
-extern HBLLibTable library_table;
+extern HBLLibTable lib_table;
 extern HBLNIDTable nid_table;
 */
 
@@ -100,7 +101,7 @@ int get_call_index(u32 call);
 
 // Gets i-th nid and its associated library
 // Returns library name length
-int get_lib_nid(u32 index, char* lib_name, u32* pnid);
+int get_lib_nid(int index, char *lib_name, int *nid);
 
 // Return index in NID table for the call that corresponds to the NID pointed by "nid"
 // Puts call in call_buffer
@@ -110,18 +111,14 @@ u32 get_call_nidtable(u32 nid, u32* call_buffer);
 u32 get_good_call(u32* call_pointer);
 
 // Fills remaining information on a library
-tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_library_index, int is_cfw);
+tSceLibrary* complete_library(tSceLibrary* plibrary, int reference_lib_index, int is_cfw);
 
 // Returns index of NID in table
 int get_nid_index(u32 nid);
 
 // Checks if a library is in the global library description table
 // Returns index if it's there
-int get_library_index(const char* library_name);
-
-// Fills NID Table and a part of library_table
-// Returns NIDs copied
-int build_nid_table();
+int get_lib_index(const char* lib_name);
 
 /*
  * Retrieves highest known syscall of the previous library,
@@ -129,16 +126,13 @@ int build_nid_table();
  * rough boundaries of where current library's syscalls should be
  * returns 1 on success, 0 on failure
 */
-int get_syscall_boundaries(int lib_index, u32* low, u32* high);
-
-// Adds NID entry to nid_table
-int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
+int get_syscall_boundaries(int lib_index, int *low, int *high);
 
 // Initialize nid_table
 void* init_nid_table();
 
-// Initialize library_table
-void* init_library_table();
+// Initialize lib_table
+void* init_lib_table();
 
 // Return index in nid_table for closest higher known NID
 int get_higher_known_nid(unsigned int lib_index, u32 nid);
@@ -146,7 +140,12 @@ int get_higher_known_nid(unsigned int lib_index, u32 nid);
 // Return index in nid_table for closest lower known NID
 int get_lower_known_nid(unsigned int lib_index, u32 nid);
 
+// Adds NID entry to nid_table
+int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
+
 // Adds a new library
 int add_library_to_table(const tSceLibrary lib);
+
+int add_stub_to_table(tStubEntry *pentry, int *index);
 
 #endif

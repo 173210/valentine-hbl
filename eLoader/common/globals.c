@@ -4,11 +4,6 @@
 #include <common/utils.h>
 #include <exploit_config.h>
 
-tGlobals * get_globals()
-{
-    return (tGlobals *) GLOBALS_ADDR;
-}
-
 void init_globals()
 {
     if ((u32)GLOBALS_ADDR < 0x14000)
@@ -25,21 +20,20 @@ void init_globals()
             exit_with_log("FATAL: Globals too big", NULL, 0);
         }
     }
-    tGlobals * g = get_globals();
-    memset(g, 0, sizeof(tGlobals));
+        memset(globals, 0, sizeof(tGlobals));
 #ifdef VITA
-	strcpy(g->menupath, HBL_ROOT"EBOOT.PBP");
+	strcpy(globals->menupath, HBL_ROOT"EBOOT.PBP");
 #else
-    strcpy(g->menupath, HBL_ROOT"menu/EBOOT.PBP");
+    strcpy(globals->menupath, HBL_ROOT"menu/EBOOT.PBP");
 #endif
 #ifndef VITA
 	// Intialize firmware and model
-	getFirmwareVersion();
+	get_fw_ver();
 	getPSPModel();
 
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	// Select syscall estimation method
-	g->syscalls_known = 0;
+	globals->syscalls_known = 0;
 
 	int i;
 	unsigned short syscalls_known_for_firmwares[] = SYSCALLS_KNOWN_FOR_FIRMWARES;
@@ -60,19 +54,19 @@ void init_globals()
 
 	for (i = 0; i < firmware_array_size; i++)
 	{
-		if (firmware_array[i] == getFirmwareVersion())
+		if (firmware_array[i] == get_fw_ver())
 		{
-			g->syscalls_known = 1;
+			globals->syscalls_known = 1;
 			break;
 		}
 	}
 #endif
 #endif
-	g->syscalls_from_p5 = 1; // Always available
+	globals->syscalls_from_p5 = 1; // Always available
 
-	g->exit_callback_called = 0;
+	globals->exit_cb_called = 0;
 
-    g->curr_channel_id = -1;
+    globals->cur_ch_id = -1;
 
 #ifdef VITA
     reset_vita_dirs();
@@ -82,11 +76,10 @@ void init_globals()
 #ifdef VITA
 void reset_vita_dirs()
 {
-    tGlobals * g = get_globals();
-    int i,j;
+        int i,j;
 
     for (i=0;i<MAX_OPEN_DIR_VITA;++i)
         for (j=0;j<2;++j)
-            g->directoryFix[i][j] = -1;
+            globals->dirFix[i][j] = -1;
 }
 #endif

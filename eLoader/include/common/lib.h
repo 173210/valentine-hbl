@@ -55,7 +55,7 @@ void mysprintf0(char *xobuff, const char *xifmt);
 
 // Searches for s1 string in memory
 // Returns pointer to string
-char* memfindsz(const char* s1, char* start, unsigned int size);
+void *memfindsz(const char *s1, void *p, int size);
 
 // Searches for 32-bit value on memory
 // Returns pointer to value

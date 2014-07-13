@@ -87,7 +87,7 @@ void unload_utility_modules(unsigned int moduleIDs[]) {
 	{
 		unsigned int modid = moduleIDs[i];
 #ifndef VITA
-		if( !(modid == PSP_MODULE_AV_MP3 && getFirmwareVersion() <= 620) )
+		if( !(modid == PSP_MODULE_AV_MP3 && get_fw_ver() <= 620) )
 #endif
 		{
 			result = unload_utility_module(modid);
@@ -110,34 +110,32 @@ int strong_check_stub_entry(tStubEntry* pentry)
     );
 }
 
-int search_stubs(u32 * stub_addresses) {
-    u32 start = 0x08800000;
-    u32 end = start + 0x01800000;
-    int current = 0;
+int search_stubs(tStubEntry **stub_pointers) {
+	tStubEntry *pentry;
+	int end = 0x0A000000;
+	int cur = 0;
 
-    u32 i = start;
-    while (i < end) {
-        tStubEntry* pentry = (tStubEntry*)i;
-        if (strong_check_stub_entry(pentry)) {
-            //boundaries check
-            if (current >= MAX_RUNTIME_STUB_HEADERS)
-            {
-                LOGSTR0("More stubs than Maximum allowed number, won't enumerate all stubs\n");
-                return current;
-            }
-            stub_addresses[current] = i;
-            current++;
-            LOGSTR1("Found Stubs at 0x%08lX\n", (u32)pentry);
+	for (pentry = (tStubEntry *)0x08800000;
+		(int)pentry < end;
+		pentry = (tStubEntry *)((int)pentry + 4)) {
 
-            // We found a valid pentry, skip consecutive valid pentry objects
-            while ((i < end) && elf_check_stub_entry(pentry))  {
-                pentry++;
-                i = (u32)pentry;
-            }
-        }
-        i+=4;
-    }
-    return current;
+		if (strong_check_stub_entry(pentry)) {
+			//boundaries check
+			if (cur >= MAX_RUNTIME_STUB_HEADERS) {
+				LOGSTR0("More stubs than Maximum allowed number, won't enumerate all stubs\n");
+				return cur;
+			}
+			stub_pointers[cur] = pentry;
+			cur++;
+			LOGSTR1("Found Stubs at 0x%08lX\n", (int)pentry);
+
+			// We found a valid pentry, skip consecutive valid pentry objects
+			while ((int)pentry < end && elf_check_stub_entry(pentry))
+				pentry++;
+		}
+	}
+
+	return cur;
 }
 
 void load_modules_for_stubs() {

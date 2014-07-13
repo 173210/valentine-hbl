@@ -351,19 +351,15 @@ void mysprintf0(char *xobuff, const char *xifmt)
 
 // Searches for s1 string on memory
 // Returns pointer to string
-char* memfindsz(const char* s1, char* start, unsigned int size)
+void *memfindsz(const char *s1, void *p, int size)
 {
-	unsigned int i = 0;
-	while (i < size && strcmp(start, s1) != 0)
-	{
-		start++;
-		i++;
-	}
+	int i;
 
-	if (i < size)
-		return start;
-	else
-		return NULL;
+	for (i = 0; i < size; i++)
+		if (!strcmp((char *)(p + i), s1))
+			return p + i;
+
+	return NULL;
 }
 
 // Searches for 32-bit value on memory
@@ -432,7 +428,8 @@ int strcmp(const char *s1, const char *s2)
 
 	return val;
 }
-// Concatenates string s + append
+
+// Concatenates string s + append
 char *strcat(char *s, const char *append)
 {
 	char *pRet = s;

@@ -16,17 +16,17 @@ in a safe memory zone. If you need globals, it is better to have them here
 #define ASSERT_CONCAT_(a, b) a##b
 #define ASSERT_CONCAT(a, b) ASSERT_CONCAT_(a, b)
 /* These can't be used after statements in c89. */
-  /* This can't be used twice on the same line so ensure if using in headers
-   * that the headers are not included twice (by wrapping in #ifndef...#endif)
-   * Note it doesn't cause an issue when used on same line of separate modules
-   * compiled with gcc -combine -fwhole-program.  */
-  #define STATIC_ASSERT(e) \
-    enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
+/* This can't be used twice on the same line so ensure if using in headers
+ * that the headers are not included twice (by wrapping in #ifndef...#endif)
+ * Note it doesn't cause an issue when used on same line of separate modules
+ * compiled with gcc -combine -fwhole-program.  */
+#define STATIC_ASSERT(e) \
+	enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
 #define GLOBALS_ADDR 0x10200
 
-#define MAX_OS_ALLOCS   400
-#define SIZE_THREAD_TRACKING_ARRAY  20
+#define MAX_OS_ALLOCS 400
+#define SIZE_THREAD_TRACKING_ARRAY 20
 #define SIZE_IO_TRACKING_ARRAY 10
 #define MAX_CALLBACKS 20
 #define MAX_OPEN_DIR_VITA 10
@@ -42,87 +42,83 @@ in a safe memory zone. If you need globals, it is better to have them here
 /*****************************************************************************/
 typedef struct
 {
-	unsigned long        APIVersion;
-	char       Credits[32];
-	char       VersionName[32];
-	char       *BackgroundFilename;   // set to NULL to let menu choose.
-    char        * filename;   // The menu will write the selected filename there
+	long api_ver;
+	char credits[32];
+	char ver_name[32];
+	char *bg_fname; // set to NULL to let menu choose.
+	char *fname; // The menu will write the selected filename there
 }	tMenuApi;
 
 typedef struct
 {
 	// firmware and model
 #ifndef VITA
-	u32 firmware_version;
-	u32 psp_model;
+	int fw_ver;
+	int psp_model;
 #endif
-    //uids
-    SceUID hbl_block_uid;
-    u32 hbl_block_addr;
-    //eLoader.c
-    int menu_enabled;
-	int exit_callback_called;
-    //hook.c
-    char* module_chdir; //cwd of the currently running module
-    int pllfreq; // currentpll frequency
-    int cpufreq; //current cpu frequency
-    int busfreq; //current bus frequency
-    int chdir_ok; //1 if sceIoChdir is correctly estimated, 0 otherwise
-    SceUID runningThreads[SIZE_THREAD_TRACKING_ARRAY];
-    SceUID pendingThreads[SIZE_THREAD_TRACKING_ARRAY];
-    SceUID exitedThreads[SIZE_THREAD_TRACKING_ARRAY];
-    u32 numPendThreads;
-    u32 numRunThreads;
-    u32 numExitThreads;
+	//eLoader.c
+	int menu_enabled;
+	int exit_cb_called;
+	//hook.c
+	char *mod_chdir; //cwd of the currently running module
+	int pllfreq; // currentpll frequency
+	int cpufreq; //current cpu frequency
+	int busfreq; //current bus frequency
+	int chdir_ok; //1 if sceIoChdir is correctly estimated, 0 otherwise
+	SceUID running_th[SIZE_THREAD_TRACKING_ARRAY];
+	SceUID pending_th[SIZE_THREAD_TRACKING_ARRAY];
+	SceUID exited_th[SIZE_THREAD_TRACKING_ARRAY];
+	int num_pend_th;
+	int num_run_th;
+	int num_exit_th;
 	SceUID openFiles[SIZE_IO_TRACKING_ARRAY];
-	u32 numOpenFiles;
-    SceUID osAllocs[MAX_OS_ALLOCS];
-    u32    osAllocNum;
-    SceKernelCallbackFunction callbackfuncs[MAX_CALLBACKS];
-    int                       callbackids[MAX_CALLBACKS];
-    SceKernelCallbackFunction exitcallback;
-    int callbackcount;
-    int calledexitcb;
-    SceUID memSema;
-    SceUID thrSema;
-    SceUID cbSema;
-    SceUID audioSema;
+	int numOpenFiles;
+	SceUID osAllocs[MAX_OS_ALLOCS];
+	int osAllocNum;
+	SceKernelCallbackFunction cbfuncs[MAX_CALLBACKS];
+	int cbids[MAX_CALLBACKS];
+	SceKernelCallbackFunction exitcb;
+	int cbcount;
+	int calledexitcb;
+	SceUID memSema;
+	SceUID thSema;
+	SceUID cbSema;
+	SceUID audioSema;
 	SceUID ioSema;
-    int audio_threads[8];
-    int curr_channel_id;
+	int audio_th[8];
+	int cur_ch_id;
 #ifdef VITA
-	u8 directoryLen;
-	int directoryFix[MAX_OPEN_DIR_VITA][2];
+	int dirLen;
+	int dirFix[MAX_OPEN_DIR_VITA][2];
 #else
 	//tables.c
 	int syscalls_known;
 #endif
 	int syscalls_from_p5;
-    HBLNIDTable nid_table;
-    HBLLibTable library_table;
-    //settings.c
-    int override_sceIoMkdir;
-    int override_sceCtrlPeekBufferPositive;
-    int return_to_xmb_on_exit;
-    u32 force_exit_buttons;
-    //malloc.c
-    u32 nblocks; //Number of allocated blocks
-    HBLMemBlock block[MAX_ALLOCS]; /* Blocks */
-    //modmgr.c
-    HBLModTable mod_table;
-    tMenuApi menu_api;
-    char hb_filename[512];
-    char menupath[128];
+	HBLNIDTable nid_table;
+	HBLLibTable lib_table;
+	//settings.c
+	int override_sceIoMkdir;
+	int override_sceCtrlPeekBufferPositive;
+	int return_to_xmb_on_exit;
+	u32 force_exit_buttons;
+	//malloc.c
+	u32 nblocks; //Number of allocated blocks
+	HBLMemBlock blocks[MAX_ALLOCS]; /* Blocks */
+	//modmgr.c
+	HBLModTable mod_table;
+	tMenuApi menu_api;
+	char hb_fname[512];
+	char menupath[128];
 } tGlobals;
+
+static tGlobals *globals = (tGlobals *)GLOBALS_ADDR;
 
 
 //This should fail with a weird error at compile time if globals is too big
 //We also have a runtime check so you can comment out this line if you don't understand its meaning
-STATIC_ASSERT( (GLOBALS_ADDR + sizeof(tGlobals)) <= 0x14000);
-STATIC_ASSERT (HBL_STUBS_START + NUM_HBL_IMPORTS*2*sizeof(u32) <= GLOBALS_ADDR);
-
-//gets a pointer to the global variables
-tGlobals * get_globals();
+STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
+STATIC_ASSERT(HBL_STUBS_START + NUM_HBL_IMPORTS * 2 * sizeof(int) <= GLOBALS_ADDR);
 
 //inits global variables. This needs to be called once and only once, preferably at the start of the HBL
 void init_globals();

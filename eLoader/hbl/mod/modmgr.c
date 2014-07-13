@@ -18,12 +18,11 @@ int rescan_syscall(const char *mod_name, const char *lib_name );
 // Return index in mod_table for module ID
 int get_module_index(SceUID modid)
 {
-    tGlobals * g = get_globals();
-	u32 i;
+    	u32 i;
 
-	for (i=0; i<g->mod_table.num_loaded_mod; i++)
+	for (i=0; i<globals->mod_table.num_loaded_mod; i++)
 	{
-		if (g->mod_table.table[i].id == modid)
+		if (globals->mod_table.table[i].id == modid)
 			return i;
 	}
 
@@ -36,11 +35,10 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 {
 	LOGSTR0("\n\n->Entering load_module...\n");
 
-	tGlobals * g = get_globals();
-
+	
 	//LOGSTR1("mod_table address: 0x%08lX\n", mod_table);
 
-	if (g->mod_table.num_loaded_mod >= MAX_MODULES)
+	if (globals->mod_table.num_loaded_mod >= MAX_MODULES)
 		return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 
 	LOGSTR0("Reading ELF header...\n");
@@ -57,17 +55,17 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Loading module
 	tStubEntry* pstub;
 	unsigned int program_size, stubs_size = 0;
-	unsigned int i = g->mod_table.num_loaded_mod;
-    strcpy(g->mod_table.table[i].path, path);
+	unsigned int i = globals->mod_table.num_loaded_mod;
+    strcpy(globals->mod_table.table[i].path, path);
 
 	// Static ELF
 	if(elf_hdr.e_type == (Elf32_Half) ELF_STATIC)
 	{
 		//LOGSTR0("STATIC\n");
 
-		g->mod_table.table[i].type = ELF_STATIC;
+		globals->mod_table.table[i].type = ELF_STATIC;
 
-		if(g->mod_table.num_loaded_mod > 0)
+		if(globals->mod_table.num_loaded_mod > 0)
 			return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
 		// Load ELF program section into memory
@@ -76,8 +74,8 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		// Locate ELF's .lib.stubs section
 		stubs_size = elf_find_imports(elf_file, offset, &elf_hdr, &pstub);
 
-		g->mod_table.table[i].text_entry = (u32 *)elf_hdr.e_entry;
-		g->mod_table.table[i].gp = (void*)getGP(elf_file, offset, &elf_hdr);
+		globals->mod_table.table[i].text_entry = (u32 *)elf_hdr.e_entry;
+		globals->mod_table.table[i].gp = (void*)getGP(elf_file, offset, &elf_hdr);
 	}
 
 	// Relocatable ELF (PRX)
@@ -85,7 +83,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	{
 		LOGSTR0("RELOC\n");
 
-		g->mod_table.table[i].type = ELF_RELOC;
+		globals->mod_table.table[i].type = ELF_RELOC;
 
 		LOGSTR1("load_module -> Offset: 0x%08lX\n", offset);
 
@@ -107,8 +105,8 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 		}
 
 		// Relocate ELF entry point and GP register
-		g->mod_table.table[i].text_entry = (u32 *)((u32)elf_hdr.e_entry + (u32)addr);
-        g->mod_table.table[i].gp = (u32 *) (getGP(elf_file, offset, &elf_hdr) + (u32)addr);
+		globals->mod_table.table[i].text_entry = (u32 *)((u32)elf_hdr.e_entry + (u32)addr);
+        globals->mod_table.table[i].gp = (u32 *) (getGP(elf_file, offset, &elf_hdr) + (u32)addr);
 	}
 
 	// Unknown ELF type
@@ -127,30 +125,30 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
     }
 	//LOGSTR0("\nUpdating module table\n");
 
-	g->mod_table.table[i].id = MOD_ID_START + i;
-	g->mod_table.table[i].state = LOADED;
-	g->mod_table.table[i].size = program_size;
-	g->mod_table.table[i].text_addr = addr;
-	g->mod_table.table[i].libstub_addr = pstub;
-	g->mod_table.num_loaded_mod++;
+	globals->mod_table.table[i].id = MOD_ID_START + i;
+	globals->mod_table.table[i].state = LOADED;
+	globals->mod_table.table[i].size = program_size;
+	globals->mod_table.table[i].text_addr = addr;
+	globals->mod_table.table[i].libstub_addr = pstub;
+	globals->mod_table.num_loaded_mod++;
 
 	//LOGSTR0("Module table updated\n");
 
-	LOGSTR1("\n->Actual number of loaded modules: %d\n", g->mod_table.num_loaded_mod);
+	LOGSTR1("\n->Actual number of loaded modules: %d\n", globals->mod_table.num_loaded_mod);
 	LOGSTR1("Last loaded module [%d]:\n", i);
-	LOGMODENTRY(g->mod_table.table[i]);
+	LOGMODENTRY(globals->mod_table.table[i]);
 
 	CLEAR_CACHE;
 
-	return g->mod_table.table[i].id;
+	return globals->mod_table.table[i].id;
 }
 
 /*
 // Thread that launches a module
 void launch_module(int mod_index, void* dummy)
 {
-	void (*entry_point)(SceSize argc, void* argp) = g->mod_table.table[mod_index].text_entry;
-	entry_point(strlen(g->mod_table.table[index].path) + 1, g->mod_table.table[mod_index].path);
+	void (*entry_point)(SceSize argc, void* argp) = globals->mod_table.table[mod_index].text_entry;
+	entry_point(strlen(globals->mod_table.table[index].path) + 1, globals->mod_table.table[mod_index].path);
 	sceKernelExitDeleteThread(0);
 }
 */
@@ -160,9 +158,8 @@ SceUID start_module(SceUID modid)
 {
 	LOGSTR1("\n\n-->Starting module ID: 0x%08lX\n", modid);
 
-	tGlobals * g = get_globals();
-
-	if (g->mod_table.num_loaded_mod == 0)
+	
+	if (globals->mod_table.num_loaded_mod == 0)
 		return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
 	int index = get_module_index(modid);
@@ -170,29 +167,29 @@ SceUID start_module(SceUID modid)
 	if (index < 0)
 		return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
-	if (g->mod_table.table[index].state == RUNNING)
+	if (globals->mod_table.table[index].state == RUNNING)
 		return SCE_KERNEL_ERROR_ALREADY_STARTED;
 
-	LOGMODENTRY(g->mod_table.table[index]);
+	LOGMODENTRY(globals->mod_table.table[index]);
 
 	u32 gp_bak;
 
 	GET_GP(gp_bak);
-	SET_GP(g->mod_table.table[index].gp);
+	SET_GP(globals->mod_table.table[index].gp);
 
 	// Attempt at launching the module without thread creation (crashes on sceSystemMemoryManager ¿?)
 	/*
-	void (*launch_module)(int argc, char* argv) = g->mod_table.table[index].text_entry;
-	//launch_module(g->mod_table.table[index].path + 1, g->mod_table.table[index].path);
-    launch_module(strlen(g->mod_table.table[index].path) + 1, g->mod_table.table[index].path);
+	void (*launch_module)(int argc, char* argv) = globals->mod_table.table[index].text_entry;
+	//launch_module(globals->mod_table.table[index].path + 1, globals->mod_table.table[index].path);
+    launch_module(strlen(globals->mod_table.table[index].path) + 1, globals->mod_table.table[index].path);
 	*/
 
     //The hook is called here to handle thread moniotoring
-	SceUID thid = _hook_sceKernelCreateThread("hblmodule", g->mod_table.table[index].text_entry, 0x30, 0x1000, 0xF0000000, NULL);
+	SceUID thid = _hook_sceKernelCreateThread("hblmodule", globals->mod_table.table[index].text_entry, 0x30, 0x1000, 0xF0000000, NULL);
 
     char largbuff[512];
     memset(largbuff, 512, 0);
-    strcpy(largbuff, g->mod_table.table[index].path);
+    strcpy(largbuff, globals->mod_table.table[index].path);
     int larglen = strlen(largbuff);
 
     /** menu code thanks to Noobz & Fanjita */
@@ -200,14 +197,14 @@ SceUID start_module(SceUID modid)
 	/* If this is the menu, then put the pointer to the menu API block into    */
 	/* argv[1]                                                                 */
 	/***************************************************************************/
-	if (strcmp(largbuff, g->menupath) == 0)
+	if (strcmp(largbuff, globals->menupath) == 0)
 	{
 
 		char * lptr = largbuff + larglen + 1;
 
 		LOGSTR1("lptr: %08lX\n", (u32)lptr);
 
-		mysprintf1(lptr, "%08lX", (u32)(&(g->menu_api)));
+		mysprintf1(lptr, "%08lX", (u32)(&(globals->menu_api)));
 
 		larglen += 9;
 
@@ -216,11 +213,11 @@ SceUID start_module(SceUID modid)
 		/*************************************************************************/
 		/* Now fill in some structure fields.                                    */
 		/*************************************************************************/
-		g->menu_api.APIVersion = 1;
-		strcpy(g->menu_api.VersionName, "Half Byte Loader R"SVNVERSION );
-		strcpy(g->menu_api.Credits, "m0skit0,ab5000,wololo,davee,jjs");
-		g->menu_api.BackgroundFilename = NULL;
-        g->menu_api.filename = g->hb_filename;
+		globals->menu_api.api_ver = 1;
+		strcpy(globals->menu_api.ver_name, "Half Byte Loader R"SVNVERSION );
+		strcpy(globals->menu_api.credits, "m0skit0,ab5000,wololo,davee,jjs");
+		globals->menu_api.bg_fname = NULL;
+		globals->menu_api.fname = globals->hb_fname;
 	}
 
     LOGSTR1("argv[0]: '%s'\n", (u32)largbuff);
@@ -243,7 +240,7 @@ SceUID start_module(SceUID modid)
 		return thid;
 	}
 
-	g->mod_table.table[index].state = RUNNING;
+	globals->mod_table.table[index].state = RUNNING;
 
 	SET_GP(gp_bak);
 
@@ -393,14 +390,13 @@ tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_
 // Returns true if utility module ID is already loaded, false otherwise
 int is_utility_loaded(unsigned int mod_id)
 {
-	tGlobals *g = get_globals();
-
+	
 	unsigned int i;
-	for (i=0; i<g->mod_table.num_utility; i++)
+	for (i=0; i<globals->mod_table.num_utility; i++)
 	{
-		if (g->mod_table.utility[i] == mod_id)
+		if (globals->mod_table.utility[i] == mod_id)
 			return 1;
-		else if (g->mod_table.utility[i] == 0)
+		else if (globals->mod_table.utility[i] == 0)
 			break;
 	}
 
@@ -411,15 +407,14 @@ int is_utility_loaded(unsigned int mod_id)
 // Returns index of insertion
 int add_utility_to_table(unsigned int id)
 {
-	tGlobals *g = get_globals();
-
+	
 	// Check if max utilities allowed is reached
-	if (g->mod_table.num_utility >= MAX_MODULES)
+	if (globals->mod_table.num_utility >= MAX_MODULES)
 		return -1;
 
-	g->mod_table.utility[g->mod_table.num_utility] = id;
-	g->mod_table.num_utility++;
-	return g->mod_table.num_utility - 1;
+	globals->mod_table.utility[globals->mod_table.num_utility] = id;
+	globals->mod_table.num_utility++;
+	return globals->mod_table.num_utility - 1;
 }
 
 // See also resolve.c:162

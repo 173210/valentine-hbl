@@ -49,8 +49,8 @@ extern Color getPixelScreen(int x, int y);
 
 extern void printTextScreen(int x, int y, const char * text, u32 color);
 
-void print_to_screen(const char * text);
-extern void print_to_screen_color(const char * text, u32 color);
+void puts_scr(const char * text);
+extern void puts_scr_color(const char * text, u32 color);
 void PRTSTR8(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E, unsigned long F, unsigned long G, unsigned long H, unsigned long I);
 void PRTSTR4(const char* A, unsigned long B, unsigned long C, unsigned long D, unsigned long E);
 void PRTSTR3(const char* A, unsigned long B, unsigned long C, unsigned long D);

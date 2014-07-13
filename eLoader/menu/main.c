@@ -33,10 +33,10 @@
 //initially from eMenu--
 typedef struct
 {
-	unsigned long        APIVersion;
+	unsigned long        api_ver;
 	char       Credits[32];
-	char       VersionName[32];
-	char       *BackgroundFilename;   // set to NULL to let menu choose.
+	char       ver_name[32];
+	char       *bg_fname;   // set to NULL to let menu choose.
     char        * filename;   // The menu will write the selected filename there
 }	tMenuApi;
 

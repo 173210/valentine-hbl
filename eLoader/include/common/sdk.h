@@ -56,7 +56,7 @@ typedef unsigned char byte;
 #define MAX_MODULE_NAME_LENGTH 30
 
 // Max chars on library name
-#define MAX_LIBRARY_NAME_LENGTH 30
+#define MAX_LIB_NAME_LENGTH 30
 
 /*
 #ifndef ULONG

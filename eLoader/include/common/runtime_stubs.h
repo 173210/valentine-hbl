@@ -5,7 +5,7 @@ int unload_utility_module(int module);
 void load_utility_modules(unsigned int moduleIDs[]);
 void unload_utility_modules(unsigned int moduleIDs[]);
 void load_modules_for_stubs();
-int search_stubs(u32 * stub_addresses);
+int search_stubs(tStubEntry **stub_pointers);
 void unload_modules_for_stubs();
 
 #define PSP_MODULE_NET_UPNP             0x0107

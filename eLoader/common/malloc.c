@@ -6,11 +6,10 @@
 
 int find_free_block()
 {
-    tGlobals * g = get_globals();
-    int i;
+        int i;
 	for(i=0;i<MAX_ALLOCS;i++)
 	{
-		if(!g->block[i].address) // Found a free block
+		if(!globals->blocks[i].address) // Found a free block
 			break;
 	}
     return i;
@@ -20,8 +19,7 @@ int find_free_block()
 void* _malloc(SceSize size, int pnum)
 {
 	SceUID uid;
-    tGlobals * g = get_globals();
-	LOGSTR2("-->ALLOCATING MEMORY from partition %d, size 0x%08lX... ", (u32)pnum, (u32)size);
+    	LOGSTR2("-->ALLOCATING MEMORY from partition %d, size 0x%08lX... ", (u32)pnum, (u32)size);
 
 	int i = find_free_block();
 	if(i == MAX_ALLOCS) // No free block found
@@ -47,23 +45,22 @@ void* _malloc(SceSize size, int pnum)
 	LOGSTR1("Got block from kernel with UID 0x%08lX\n", uid);
 
 	/* Fill block info */
-	g->block[i].uid = uid;
-	g->block[i].address = sceKernelGetBlockHeadAddr(uid);
+	globals->blocks[i].uid = uid;
+	globals->blocks[i].address = sceKernelGetBlockHeadAddr(uid);
 
-	return g->block[i].address;
+	return globals->blocks[i].address;
 }
 
 void free_all_mallocs() {
 	int i;
-    tGlobals * g = get_globals();
-	for(i=0;i<MAX_ALLOCS;i++)
+    	for(i=0;i<MAX_ALLOCS;i++)
 	{
-        if(g->block[i].address) { // Block found
+        if(globals->blocks[i].address) { // Block found
             /* Free block */
-            sceKernelFreePartitionMemory(g->block[i].uid);
+            sceKernelFreePartitionMemory(globals->blocks[i].uid);
 
             /* Re-initialize block */
-            memset(&(g->block[i]), 0, sizeof(g->block[i]));
+            memset(&(globals->blocks[i]), 0, sizeof(globals->blocks[i]));
         }
 	}
 
@@ -74,10 +71,9 @@ void free_all_mallocs() {
 void free(void* ptr)
 {
 	int i;
-    tGlobals * g = get_globals();
-	for(i=0;i<MAX_ALLOCS;i++)
+    	for(i=0;i<MAX_ALLOCS;i++)
 	{
-		if(g->block[i].address == ptr) // Block found
+		if(globals->blocks[i].address == ptr) // Block found
 			break;
 	}
 
@@ -85,10 +81,10 @@ void free(void* ptr)
 		return;
 
 	/* Free block */
-	sceKernelFreePartitionMemory(g->block[i].uid);
+	sceKernelFreePartitionMemory(globals->blocks[i].uid);
 
 	/* Re-initialize block */
-	memset(&(g->block[i]), 0, sizeof(g->block[i]));
+	memset(&(globals->blocks[i]), 0, sizeof(globals->blocks[i]));
 
 	return;
 }

@@ -13,7 +13,7 @@
 // Defining a library and its imports
 typedef struct
 {
-	char library_name[MAX_LIBRARY_NAME_LENGTH];	// Library name
+	char lib_name[MAX_LIB_NAME_LENGTH];	// Library name
 	unsigned int num_imports;					// Number of NIDs imported from library
 	SceOff nids_offset;							// Offset in file for NIDs imported
 } tImportedLibrary;
@@ -38,10 +38,10 @@ typedef struct
 // Config interface, all functions return 0 on success, error code otherwise
 
 // Initializes config file
-int config_initialize(void);
+int cfg_init(void);
 
 // Closes config interface
-int config_close();
+int cfg_close();
 
 // Returns how many .lib.stub addresses are referenced
 int config_num_lib_stub(unsigned int* pnum_lib_stub);
@@ -50,13 +50,13 @@ int config_num_lib_stub(unsigned int* pnum_lib_stub);
 int config_first_lib_stub(u32* plib_stub);
 
 // Returns next .lib.stub address
-int config_next_lib_stub(u32* plib_stub);
+int config_next_lib_stub(tStubEntry **plib_stub);
 
 // Returns number of nids imported
-int config_num_nids_total(unsigned int* pnum_nids_total);
+int cfg_num_nids_total(int *pnum_nids_total);
 
 // Returns number of libraries
-int config_num_libraries(unsigned int* pnum_libraries);
+int cfg_num_libs(int *num_libs);
 
 // Returns first library descriptor
 int config_first_library(tImportedLibrary* library_descriptor);
@@ -74,6 +74,6 @@ int config_next_nid(u32* pnid);
 int config_nids_offset(SceOff* poffset);
 
 // Returns Nth NID
-int config_seek_nid(int index, u32* pnid);
+int cfg_seek_nid(int index, int *nid);
 
 #endif

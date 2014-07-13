@@ -108,8 +108,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	unsigned int resolving_count = 0;
 
 #ifdef HOOK_CHDIR_AND_FRIENDS
-    tGlobals * g = get_globals();
-    g->chdir_ok = test_sceIoChdir();
+        globals->chdir_ok = test_sceIoChdir();
 #endif
 
 	LOGSTR1("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
@@ -118,16 +117,16 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	{
 		LOGSTR1("Pointer to stub entry: 0x%08lX\n", (u32)pstub_entry);
 
-		cur_nid = pstub_entry->nid_pointer;
-		cur_call = pstub_entry->jump_pointer;
+		cur_nid = pstub_entry->nid_p;
+		cur_call = pstub_entry->jump_p;
 
-		LOGSTR1("Current library: %s\n", (u32)pstub_entry->library_name);
+		LOGSTR1("Current library: %s\n", (u32)pstub_entry->lib_name);
 
 		// Load utility if necessary
-		int mod_id = is_utility((char*)pstub_entry->library_name);
+		int mod_id = is_utility((char*)pstub_entry->lib_name);
 		if (mod_id > 0)
 		{
-			load_export_utility_module(mod_id, (char*)pstub_entry->library_name, (void **)&utility_exp);
+			load_export_utility_module(mod_id, (char*)pstub_entry->lib_name, (void **)&utility_exp);
 		}
 
 		/* For each stub header, browse all stubs */
@@ -166,7 +165,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
                 real_call = setup_default_nid(*cur_nid);
 #else
-				real_call = estimate_syscall((char *)pstub_entry->library_name, *cur_nid, g->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
+				real_call = estimate_syscall((char *)pstub_entry->lib_name, *cur_nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
 #endif
 			}
 

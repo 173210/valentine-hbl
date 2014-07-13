@@ -3,7 +3,6 @@
 #include <common/debug.h>
 #include <hbl/mod/modmgr.h>
 #include <hbl/stubs/hook.h>
-#include <common/globals.h>
 #include <exploit_config.h>
 
 #define MODULES_START_ADDRESS 0x08804000
@@ -77,8 +76,7 @@ void SuicideAllThreads(void)
 	int nid_index = get_nid_index(0x809CE29B); // sceKernelExitDeleteThread
 	LOGSTR1("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
 
-	tGlobals * g = get_globals();
-	unsigned int syscall = g->nid_table.table[nid_index].call;
+		unsigned int syscall = globals->nid_table.table[nid_index].call;
 	LOGSTR2("Call for NID sceKernelExitDeleteThread is: 0x%08lX 0x%08lX\n", GET_SYSCALL_NUMBER(syscall), syscall);
 
 	// Write syscall instruction to memory and empty the memory
@@ -216,7 +214,7 @@ void UnloadModules()
 	int m = PSP_MODULE_AV_G729;
 	while (m >= PSP_MODULE_AV_AVCODEC)
 	{
-		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && getFirmwareVersion() <= 620 ) )
+		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && get_fw_ver() <= 620 ) )
 		{
 			result = sceUtilityUnloadModule(m);
 			LOGSTR2("unloading utility module 0x%08lX, result 0x%08lX\n", m, result);

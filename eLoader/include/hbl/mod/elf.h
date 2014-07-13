@@ -148,13 +148,13 @@ typedef struct
 /*******************/
 typedef struct
 {
-	Elf32_Addr library_name;     // Pointer to library name
+	Elf32_Addr lib_name;     // Pointer to library name
 	Elf32_Half import_flags;
-	Elf32_Half library_version;
+	Elf32_Half lib_ver;
 	Elf32_Half import_stubs;
 	Elf32_Half stub_size;        // Number of stubs imported from library
-	Elf32_Addr nid_pointer;      // Pointer to array of NIDs from library
-	Elf32_Addr jump_pointer;     // Pointer to array of stubs from library
+	Elf32_Addr nid_p;      // Pointer to array of NIDs from library
+	Elf32_Addr jump_p;     // Pointer to array of stubs from library
 } tStubEntry;
 
 /******************/
@@ -258,9 +258,9 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header);
 // Returns !=0 if stub entry is valid, 0 if it's not
 // Just checks if pointers are not NULL
 #define elf_check_stub_entry(pentry) ( \
-	valid_umem_pointer((u32)(pentry->library_name)) && \
-	valid_umem_pointer((u32)(pentry->nid_pointer)) && \
-	valid_umem_pointer((u32)(pentry->jump_pointer)))
+	valid_umem_pointer((u32)(pentry->lib_name)) && \
+	valid_umem_pointer((u32)(pentry->nid_p)) && \
+	valid_umem_pointer((u32)(pentry->jump_p)))
 
 #endif
 
