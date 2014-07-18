@@ -1,10 +1,10 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
+#include <common/utils/string.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
 #include <common/debug.h>
 #include <common/utils.h>
-#include <common/lib.h>
 #include <exploit_config.h>
 
 // Searches for NID in a NIDS file and returns the index

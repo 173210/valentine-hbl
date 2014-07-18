@@ -1,4 +1,5 @@
 #include <common/stubs/syscall.h>
+#include <common/utils/string.h>
 #include <common/sdk.h>
 #include <hbl/eloader.h>
 #include <common/debug.h>

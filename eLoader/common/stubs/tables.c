@@ -1,11 +1,11 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/graphics.h>
+#include <common/utils/string.h>
 #include <common/config.h>
 #include <hbl/mod/elf.h>
 #include <common/debug.h>
 #include <common/malloc.h>
-#include <common/lib.h>
 #include <common/utils.h>
 #include <common/globals.h>
 #include <common/runtime_stubs.h>

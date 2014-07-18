@@ -1,4 +1,5 @@
 #include <common/stubs/syscall.h>
+#include <common/utils/string.h>
 #include <common/globals.h>
 #include <common/debug.h>
 #include <common/utils.h>

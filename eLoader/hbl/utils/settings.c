@@ -5,8 +5,8 @@
 #include <hbl/utils/settings.h>
 #include <hbl/eloader.h>
 #include <common/utils/graphics.h>
+#include <common/utils/string.h>
 #include <common/debug.h>
-#include <common/lib.h>
 #include <common/globals.h>
 #include <common/utils.h>
 #include <exploit_config.h>

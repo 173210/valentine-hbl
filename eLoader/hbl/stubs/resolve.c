@@ -1,5 +1,6 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
+#include <common/utils/string.h>
 #include <common/sdk.h>
 #include <common/debug.h>
 #include <hbl/eloader.h>

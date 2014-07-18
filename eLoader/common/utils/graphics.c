@@ -1,7 +1,7 @@
 #include <common/utils/graphics.h>
+#include <common/utils/string.h>
 #include <common/utils.h>
 #include <common/debug.h>
-#include <common/lib.h>
 
 #define IS_ALPHA(color) (((color)&0xff000000)==0xff000000?0:1)
 #define FRAMEBUFFER_SIZE (PSP_LINE_SIZE*SCREEN_HEIGHT*4)

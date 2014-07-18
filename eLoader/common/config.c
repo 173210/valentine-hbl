@@ -1,3 +1,4 @@
+#include <common/utils/string.h>
 #include <common/sdk.h>
 #include <common/debug.h>
 #include <common/config.h>
@@ -140,11 +141,17 @@ int cfg_num_libs(int *num_libs)
 int cfg_next_lib(tImportedLib *importedlib)
 {
 	int ret;
+	char *p;
 
 	if (importedlib == NULL)
 		return -1;
 
-	fgets(importedlib->lib_name, MAX_LIB_NAME_LEN, g_cfg_fd);
+	p = importedlib->lib_name;
+	while(*p != '\0') {
+		ret = sceIoRead(g_cfg_fd, p, sizeof(char));
+		if (ret != sizeof(char))
+			return ret;
+	}
 
 	ret = sceIoRead(g_cfg_fd, &(importedlib->num_imports), sizeof(int));
 	if (ret >= 0)

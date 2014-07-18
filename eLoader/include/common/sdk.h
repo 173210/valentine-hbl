@@ -10,8 +10,6 @@
 #include <pspimpose_driver.h>
 #include <pspsuspend.h>
 
-#include <common/lib.h>
-
 #ifndef VAL_SDK_H
 #define VAL_SDK_H
 

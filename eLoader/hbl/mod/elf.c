@@ -1,3 +1,4 @@
+#include <common/utils/string.h>
 #include <common/sdk.h>
 #include <hbl/mod/elf.h>
 #include <common/debug.h>

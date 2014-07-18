@@ -35,8 +35,8 @@ distrib: base
 base: HBL.BIN H.BIN
 
 OBJS_COMMON = common/stubs/tables.o \
-	common/utils/font.o common/utils/graphics.o \
-	common/config.o common/debug.o common/globals.o common/lib.o common/malloc.o common/runtime_stubs.o common/utils.o
+	common/utils/font.o common/utils/graphics.o common/utils/string.o \
+	common/config.o common/debug.o common/globals.o common/malloc.o common/runtime_stubs.o common/utils.o
 ifndef VITA
 OBJS_COMMON += common/stubs/syscall.o
 endif

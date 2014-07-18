@@ -1,11 +1,11 @@
 #include <common/stubs/syscall.h>
+#include <common/utils/string.h>
 #include <hbl/eloader.h>
 #include <hbl/mod/elf.h>
 #include <hbl/stubs/hook.h>
 #include <common/debug.h>
 #include <hbl/mod/modmgr.h>
 #include <common/malloc.h>
-#include <common/lib.h>
 #include <hbl/mod/reloc.h>
 #include <hbl/stubs/resolve.h>
 #include <common/runtime_stubs.h>
