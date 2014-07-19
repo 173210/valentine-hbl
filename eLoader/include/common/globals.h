@@ -24,6 +24,7 @@ in a safe memory zone. If you need globals, it is better to have them here
 	enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
 #define GLOBALS_ADDR 0x10200
+#define globals (*(tGlobals **)GLOBALS_ADDR)
 
 #define MAX_OS_ALLOCS 400
 #define SIZE_THREAD_TRACKING_ARRAY 20
@@ -111,12 +112,9 @@ typedef struct
 	char menupath[128];
 } tGlobals;
 
-static tGlobals *globals = (tGlobals *)GLOBALS_ADDR;
-
 
 //This should fail with a weird error at compile time if globals is too big
 //We also have a runtime check so you can comment out this line if you don't understand its meaning
-STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
 STATIC_ASSERT(HBL_STUBS_START + NUM_HBL_IMPORTS * 2 * sizeof(int) <= GLOBALS_ADDR);
 
 //inits global variables. This needs to be called once and only once, preferably at the start of the HBL

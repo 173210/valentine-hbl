@@ -137,10 +137,12 @@ void load_hbl(SceUID hbl_file)
 #endif
 
 
-	HBL_block = sceKernelAllocPartitionMemory(2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDR);
+	HBL_block = sceKernelAllocPartitionMemory(
+		2, "Valentine", PSP_SMEM_Addr, file_size + sizeof(tGlobals), (void *)HBL_LOAD_ADDR);
 	if(HBL_block < 0)
 		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
+	globals = (tGlobals *)((int)run_eloader + file_size);
 
 	// Load HBL to allocated memory
 	ret = sceIoRead(hbl_file, (void *)run_eloader, file_size);
@@ -586,6 +588,12 @@ void _start()
 	CloseFiles();
 #endif
 
+	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
+		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
+
+	LOGSTR("Loading HBL\n");
+	load_hbl(hbl_file);
+
 	//reset the contents of the debug file;
 	init_debug();
 
@@ -623,15 +631,8 @@ void _start()
 	if(num_nids <= 0)
 		exit_with_log("No Nids ???", NULL, 0);
 
-	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
-		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
-	else {
-		LOGSTR("Loading HBL\n");
-		load_hbl(hbl_file);
-
-		LOGSTR("Resolving HBL stubs\n");
-		resolve_stubs();
-		LOGSTR("HBL stubs copied, running eLoader\n");
-		run_eloader();
-	}
+	LOGSTR("Resolving HBL stubs\n");
+	resolve_stubs();
+	LOGSTR("HBL stubs copied, running eLoader\n");
+	run_eloader();
 }
