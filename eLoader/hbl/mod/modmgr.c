@@ -423,23 +423,32 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 {
 	LOGSTR("Loading utility module for library %s\n", (u32)lib_name);
 
-    //force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
-    if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729)
-    {
-        LOGSTR("Force-Loading AVCODEC\n");
-        load_utility_module(PSP_MODULE_AV_AVCODEC);
-    }
-
-	if( mod_id == PSP_MODULE_NET_HTTP)
-	{
-        LOGSTR("Force-Loading HTTP\n");
-        load_utility_module(PSP_MODULE_NET_COMMON);
-        load_utility_module(PSP_MODULE_NET_INET);
-        load_utility_module(PSP_MODULE_NET_PARSEURI);
-        load_utility_module(PSP_MODULE_NET_PARSEHTTP);
+		//force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
+	if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729) {
+		LOGSTR("Force-Loading AVCODEC\n");
+#ifdef USE_AV_MODULE_LOAD_FUNCTION
+		sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
+#else
+		sceUtilityLoadModule(PSP_MODULE_AV_AVCODEC);
+#endif
 	}
 
-    int ret = load_utility_module(mod_id);
+	if( mod_id == PSP_MODULE_NET_HTTP) {
+		LOGSTR("Force-Loading HTTP\n");
+#ifdef USE_NET_MODULE_LOAD_FUNCTION
+		sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
+		sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
+		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEURI);
+		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEHTTP);
+#else
+		sceUtilityLoadModule(PSP_MODULE_NET_COMMON);
+		sceUtilityLoadModule(PSP_MODULE_NET_INET);
+		sceUtilityLoadModule(PSP_MODULE_NET_PARSEURI);
+		sceUtilityLoadModule(PSP_MODULE_NET_PARSEHTTP);
+#endif
+	}
+
+    int ret = load_util(mod_id);
     if (ret <0)
         return ret;
 

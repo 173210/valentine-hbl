@@ -4,13 +4,8 @@
 #include <common/runtime_stubs.h>
 #include <exploit_config.h>
 
-// If we want to load additional modules in advance to use their syscalls
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-#ifndef AUTO_SEARCH_STUBS
-#define AUTO_SEARCH_STUBS
-#endif
-
-int load_utility_module(int module) {
+int load_util(int module)
+{
 	LOGSTR("Loading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
@@ -37,7 +32,8 @@ int load_utility_module(int module) {
 #endif
 }
 
-int unload_utility_module(int module) {
+int unload_util(int module)
+{
 	LOGSTR("Unloading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
@@ -64,53 +60,123 @@ int unload_utility_module(int module) {
 #endif
 }
 
-void load_utility_modules(unsigned int moduleIDs[]) {
-    int i, result;
+
+#if defined(LOAD_MODULES_FOR_SYSCALLS) && !defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
+static int modules[] = {
+#if VITA < 310 || !defined(AVOID_NET_UTILITY)
+	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
+	PSP_MODULE_NET_PARSEURI, PSP_MODULE_NET_PARSEHTTP, PSP_MODULE_NET_HTTP,
+	PSP_MODULE_NET_SSL, PSP_MODULE_NET_UPNP, PSP_MODULE_NET_GAMEUPDATE,
+#endif
+#ifndef VITA
+	PSP_MODULE_IRDA,
+#endif
+	PSP_MODULE_USB_PSPCM, PSP_MODULE_USB_MIC, PSP_MODULE_USB_CAM, PSP_MODULE_USB_GPS,
+	PSP_MODULE_AV_SASCORE, PSP_MODULE_AV_ATRAC3PLUS, PSP_MODULE_AV_MPEGBASE, PSP_MODULE_AV_MP3,
+	PSP_MODULE_AV_VAUDIO, PSP_MODULE_AV_AAC, PSP_MODULE_AV_G729, PSP_MODULE_AV_MP4,
+	PSP_MODULE_NP_COMMON, PSP_MODULE_NP_SERVICE, PSP_MODULE_NP_MATCHING2, PSP_MODULE_NP_DRM
+};
+	// PSP_MODULE_AV_AVCODEC <-- removed to cast syscall of sceAudiocodec and sceVideocodec
+#endif
+
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+void load_utils()
+{
+	int ret;
+#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+	int module;
+
+#ifdef USE_NET_MODULE_LOAD_FUNCTION
+	for (module = 1; module <= 7; module++) {
+		ret = sceUtilityLoadNetModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Loading net module 0x%08X\n", ret, module);
+	}
+#endif
+#ifdef USE_USB_MODULE_LOAD_FUNCTION
+	for (module = 1; module <= 5; module++) {
+		ret = sceUtilityLoadUsbModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Loading usb module 0x%08X\n", ret, module);
+	}
+#endif
+#ifdef USE_AV_MODULE_LOAD_FUNCTION
+	for (module = 1; module <= 7; module++) {
+		ret = sceUtilityLoadAvModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Loading av module 0x%08X\n", ret, module);
+	}
+#endif
+#else
+	unsigned i;
 
 	// Load modules in order
-	for(i = 0; (u32)i < sizeof(moduleIDs)/sizeof(u32); i++)
-	{
-		unsigned int modid = moduleIDs[i];
-		result = load_utility_module(modid);
-		if (result < 0)
-		{
-			LOGSTR("...Error 0x%08X Loading 0x%08X\n", (u32)result, (u32)(modid) );
-		}
+	for(i = 0; i < sizeof(modules) / sizeof(int); i++) {
+		ret = sceUtilityLoadModule(modules[i]);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Loading 0x%08X\n", ret, modules[i]);
 	}
-}
 #endif
+}
 
-void unload_utility_modules(unsigned int moduleIDs[]) {
-	int i, result;
-	//Unload modules in reverse order
-	for(i = sizeof(moduleIDs)/sizeof(u32) - 1 ; i >= 0; i--)
-	{
-		unsigned int modid = moduleIDs[i];
-#ifndef VITA
-		if( !(modid == PSP_MODULE_AV_MP3 && get_fw_ver() <= 620) )
-#endif
-		{
-			result = unload_utility_module(modid);
-			if (result < 0)
-			{
-				LOGSTR("...Error 0x%08X Unloading 0x%08X\n", (u32)result, (u32)(modid) );
-			}
-		}
+void unload_utils()
+{
+	int ret;
+#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+	int module;
+
+#ifdef USE_NET_MODULE_LOAD_FUNCTION
+	for (module = 7; module >= 1; module--) {
+		ret = sceUtilityUnloadNetModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Unloading net module 0x%08X\n", ret, module);
 	}
+#endif
+#ifdef USE_USB_MODULE_LOAD_FUNCTION
+	for (module = 5; module >= 1; module--) {
+		ret = sceUtilityUnloadUsbModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Unloading usb module 0x%08X\n", ret, module);
+	}
+#endif
+#ifdef USE_AV_MODULE_LOAD_FUNCTION
+	for (module = 7; module >= 5; module--) {
+		ret = sceUtilityUnloadAvModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
+	}
+#ifndef VITA
+	if (get_fw_ver() <= 620)
+		module--; // Skip PSP_AV_MODULE_MP3
+#endif
+	while (module >= 1) {
+		ret = sceUtilityUnloadAvModule(module);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
+
+		module--;
+	}
+#endif
+#else
+	int i;
+
+	//Unload modules in reverse order
+	for(i = sizeof(modules) / sizeof(int) - 1; i >= 0; i--) {
+#ifndef VITA
+		if(modules[i] == PSP_MODULE_AV_MP3 && get_fw_ver() <= 620)
+			continue;
+#endif
+		ret = sceUtilityUnloadModule(modules[i]);
+		if (ret < 0)
+			LOGSTR("...Error 0x%08X Unloading 0x%08X\n", ret, modules[i]);
+	}
+#endif
 }
+#endif
 
 #ifdef AUTO_SEARCH_STUBS
-int strong_check_stub_entry(tStubEntry* pentry)
+int search_stubs(tStubEntry **stub_pointers)
 {
-	return (
-    elf_check_stub_entry(pentry) &&
-    (pentry->import_stubs && (pentry->import_stubs < 100)) &&
-    (pentry->stub_size && (pentry->stub_size < 100)) &&
-    ((pentry->import_flags == 0x11) || (pentry->import_flags == 0))
-    );
-}
-
-int search_stubs(tStubEntry **stub_pointers) {
 	tStubEntry *pentry;
 	int end = 0x0A000000;
 	int cur = 0;
@@ -119,7 +185,11 @@ int search_stubs(tStubEntry **stub_pointers) {
 		(int)pentry < end;
 		pentry = (tStubEntry *)((int)pentry + 4)) {
 
-		if (strong_check_stub_entry(pentry)) {
+		if (elf_check_stub_entry(pentry) &&
+			pentry->import_stubs && pentry->import_stubs < 100 &&
+			pentry->stub_size && pentry->stub_size < 100 &&
+			(pentry->import_flags == 0x11 || pentry->import_flags == 0)) {
+
 			//boundaries check
 			if (cur >= MAX_RUNTIME_STUB_HEADERS) {
 				LOGSTR("More stubs than Maximum allowed number, won't enumerate all stubs\n");
@@ -137,26 +207,4 @@ int search_stubs(tStubEntry **stub_pointers) {
 
 	return cur;
 }
-
-void load_modules_for_stubs() {
-#ifdef MODULES
- 	unsigned int moduleIDs[] = MODULES;
-	load_utility_modules(moduleIDs);
-#endif
-}
-
-void unload_modules_for_stubs() {
-#ifdef MODULES
-    unsigned int moduleIDs[] = MODULES;
-    unload_utility_modules(moduleIDs);
-#endif
-}
-
-#else
-// Dummy functions
-int search_stubs(u32 * stub_addresses) {
-    return stub_addresses ? -1 : -2;
-}
-void load_modules_for_stubs() {}
-void unload_modules_for_stubs() {}
 #endif

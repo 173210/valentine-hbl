@@ -356,7 +356,7 @@ int build_nid_table()
 	tStubEntry *stubs[MAX_RUNTIME_STUB_HEADERS];
     
 #ifdef LOAD_MODULES_FOR_SYSCALLS
-	load_modules_for_stubs();
+	load_utils();
 #endif
 	nlib_stubs = search_stubs(stubs);
 	LOGSTR("Found %d stubs\n", nlib_stubs);
@@ -391,7 +391,7 @@ int build_nid_table()
 	p5_close_savedata();
 
 #ifdef LOAD_MODULES_FOR_SYSCALLS
-	unload_modules_for_stubs();
+	unload_utils();
 #endif
 #else
 	int ret;

@@ -160,7 +160,7 @@ void cleanup(u32 num_lib)
 #endif
 			{
 	            LOGSTR("UNLoad utility module id  0x%08X \n", modid);
-				int ret = unload_utility_module(modid);
+				int ret = unload_util(modid);
 	            if (ret < 0)
 	            {
 	                LOGSTR("WARNING! error unloading module %d: 0x%08X\n",globals->mod_table.utility[i], ret);
