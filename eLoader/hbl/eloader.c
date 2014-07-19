@@ -140,7 +140,7 @@ void cleanup(u32 num_lib)
 
         threads_cleanup();
     ram_cleanup();
-    free_all_mallocs();
+    free_allmalloc_hbls();
 
 
 	#ifndef DISABLE_UNLOAD_UTILITY_MODULES

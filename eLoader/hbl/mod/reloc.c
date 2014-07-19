@@ -149,7 +149,7 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 			}
 
 			// Free section memory
-			free(reloc_entry);
+			_free(reloc_entry);
 
 			CLEAR_CACHE;
 		}

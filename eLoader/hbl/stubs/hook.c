@@ -434,7 +434,7 @@ SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
     char * buf = relative_to_absolute(file);
     LOGSTR("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
     SceUID ret = sceIoOpen(buf, flags, mode);
-    free(buf);
+    _free(buf);
     return ret;
 }
 
@@ -1010,7 +1010,7 @@ SceUID _hook_sceIoDopen(const char *dirname)
 #else
     SceUID ret = sceIoDopen(buf);
 #endif
-    free(buf);
+    _free(buf);
     return ret;
 }
 
@@ -1121,7 +1121,7 @@ int _hook_sceIoChdir(const char *dirname)
     {
         if (globals->mod_chdir)
         {
-            free(globals->mod_chdir);
+            _free(globals->mod_chdir);
             globals->mod_chdir = 0;
         }
         globals->mod_chdir = relative_to_absolute(dirname);
@@ -1131,7 +1131,7 @@ int _hook_sceIoChdir(const char *dirname)
         char * result = relative_to_absolute(dirname);
          if (globals->mod_chdir)
         {
-            free(globals->mod_chdir);
+            _free(globals->mod_chdir);
         }
         globals->mod_chdir = result;
     }

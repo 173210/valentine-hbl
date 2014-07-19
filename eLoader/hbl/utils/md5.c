@@ -90,8 +90,8 @@ unsigned char *md5 (unsigned char *M, md5_size len, unsigned char *_digest)
 
 	md5_final (_digest, context);
 
-        free (context->buf);
-	free (context);
+        _free (context->buf);
+	_free (context);
 
 	return _digest;
 }

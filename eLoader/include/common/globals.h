@@ -103,7 +103,7 @@ typedef struct
 	u32 force_exit_buttons;
 	//malloc.c
 	u32 nblocks; //Number of allocated blocks
-	HBLMemBlock blocks[MAX_ALLOCS]; /* Blocks */
+	SceUID blockids[MAX_ALLOCS]; /* Blocks */
 	//modmgr.c
 	HBLModTable mod_table;
 	tMenuApi menu_api;
