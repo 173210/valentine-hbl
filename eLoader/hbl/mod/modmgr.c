@@ -417,6 +417,62 @@ int add_utility_to_table(unsigned int id)
 	return globals->mod_table.num_utility - 1;
 }
 
+int load_util(int module)
+{
+	LOGSTR("Loading 0x%08X\n", module);
+
+#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+#ifdef USE_NET_MODULE_LOAD_FUNCTION
+	if (module <= PSP_MODULE_NET_SSL)
+		return sceUtilityLoadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
+	else
+#endif
+#ifdef USE_USB_MODULE_LOAD_FUNCTION
+	if (module == PSP_MODULE_USB_PSPCM)
+		return sceUtilityLoadUsbModule(PSP_USB_MODULE_PSPCM);
+	else if (module <= PSP_MODULE_USB_GPS)
+		return sceUtilityLoadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
+	else
+#endif
+#ifdef USE_AV_MODULE_LOAD_FUNCTION
+	if (module <= PSP_MODULE_AV_G729)
+		return sceUtilityLoadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
+	else
+#endif
+	return SCE_KERNEL_ERROR_ERROR;
+#else
+	return sceUtilityLoadModule(module);
+#endif
+}
+
+int unload_util(int module)
+{
+	LOGSTR("Unloading 0x%08X\n", module);
+
+#ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
+#ifdef USE_NET_MODULE_UNLOAD_FUNCTION
+	if (module <= PSP_MODULE_NET_SSL)
+		return sceUtilityUnloadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
+	else
+#endif
+#ifdef USE_USB_MODULE_UNLOAD_FUNCTION
+	if (module == PSP_MODULE_USB_PSPCM)
+		return sceUtilityUnloadUsbModule(PSP_USB_MODULE_PSPCM);
+	else if (module <= PSP_MODULE_USB_GPS)
+		return sceUtilityUnloadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
+	else
+#endif
+#ifdef USE_AV_MODULE_UNLOAD_FUNCTION
+	if (module <= PSP_MODULE_AV_G729)
+		return sceUtilityUnloadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
+	else
+#endif
+	return SCE_KERNEL_ERROR_ERROR;
+#else
+		return sceUtilityUnloadModule(module);
+#endif
+}
+
 // See also resolve.c:162
 // Loads and registers exports from an utility module
 int load_export_utility_module(int mod_id, const char* lib_name , void **pexport_out )

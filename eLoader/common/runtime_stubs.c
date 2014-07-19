@@ -4,64 +4,9 @@
 #include <common/runtime_stubs.h>
 #include <exploit_config.h>
 
-int load_util(int module)
-{
-	LOGSTR("Loading 0x%08X\n", module);
 
-#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
-#ifdef USE_NET_MODULE_LOAD_FUNCTION
-	if (module <= PSP_MODULE_NET_SSL)
-		return sceUtilityLoadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
-	else
-#endif
-#ifdef USE_USB_MODULE_LOAD_FUNCTION
-	if (module == PSP_MODULE_USB_PSPCM)
-		return sceUtilityLoadUsbModule(PSP_USB_MODULE_PSPCM);
-	else if (module <= PSP_MODULE_USB_GPS)
-		return sceUtilityLoadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
-	else
-#endif
-#ifdef USE_AV_MODULE_LOAD_FUNCTION
-	if (module <= PSP_MODULE_AV_G729)
-		return sceUtilityLoadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
-	else
-#endif
-	return SCE_KERNEL_ERROR_ERROR;
-#else
-	return sceUtilityLoadModule(module);
-#endif
-}
-
-int unload_util(int module)
-{
-	LOGSTR("Unloading 0x%08X\n", module);
-
-#ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
-#ifdef USE_NET_MODULE_UNLOAD_FUNCTION
-	if (module <= PSP_MODULE_NET_SSL)
-		return sceUtilityUnloadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
-	else
-#endif
-#ifdef USE_USB_MODULE_UNLOAD_FUNCTION
-	if (module == PSP_MODULE_USB_PSPCM)
-		return sceUtilityUnloadUsbModule(PSP_USB_MODULE_PSPCM);
-	else if (module <= PSP_MODULE_USB_GPS)
-		return sceUtilityUnloadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
-	else
-#endif
-#ifdef USE_AV_MODULE_UNLOAD_FUNCTION
-	if (module <= PSP_MODULE_AV_G729)
-		return sceUtilityUnloadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
-	else
-#endif
-	return SCE_KERNEL_ERROR_ERROR;
-#else
-		return sceUtilityUnloadModule(module);
-#endif
-}
-
-
-#if defined(LOAD_MODULES_FOR_SYSCALLS) && !defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+#ifndef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
 static int modules[] = {
 #if VITA < 310 || !defined(AVOID_NET_UTILITY)
 	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
@@ -79,7 +24,6 @@ static int modules[] = {
 	// PSP_MODULE_AV_AVCODEC <-- removed to cast syscall of sceAudiocodec and sceVideocodec
 #endif
 
-#ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils()
 {
 	int ret;

@@ -3,10 +3,6 @@
 
 #define MAX_RUNTIME_STUB_HEADERS 64
 
-
-int load_util(int module);
-int unload_util(int module);
-
 // If we want to load additional modules in advance to use their syscalls
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 #ifndef AUTO_SEARCH_STUBS

@@ -50,6 +50,9 @@ void* init_load_module();
 // Returns UID for a given module name
 SceUID find_module_by_name(const char* mod_name);
 
+int load_util(int module);
+int unload_util(int module);
+
 // Loads and registers exports from an utility module
 int load_export_utility_module(int mod_id, const char* lib_name , void **pexport_out );
 
