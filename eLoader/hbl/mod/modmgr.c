@@ -8,7 +8,6 @@
 #include <common/malloc.h>
 #include <hbl/mod/reloc.h>
 #include <hbl/stubs/resolve.h>
-#include <common/runtime_stubs.h>
 #include <common/globals.h>
 #include <svnversion.h>
 #include <exploit_config.h>

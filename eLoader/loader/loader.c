@@ -1,6 +1,7 @@
 /* Half Byte Loader loader :P */
 /* This loads HBL on memory */
 
+#include <loader/runtime_stubs.h>
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/graphics.h>
@@ -12,7 +13,6 @@
 #include <hbl/eloader.h>
 #include <common/malloc.h>
 #include <common/globals.h>
-#include <common/runtime_stubs.h>
 #include <exploit_config.h>
 #include <svnversion.h>
 

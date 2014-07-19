@@ -8,7 +8,6 @@
 #include <common/malloc.h>
 #include <common/utils.h>
 #include <common/globals.h>
-#include <common/runtime_stubs.h>
 #include <exploit_config.h>
 
 #ifdef LOAD_MODULES_FOR_SYSCALLS
