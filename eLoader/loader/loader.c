@@ -299,7 +299,7 @@ void p5_close_savedata()
 	}
 }
 
-int p5_find_add_stubs_to_table(const char *libname, void *p, size_t size, int *index)
+int p5_find_add_stubs_to_table(const char *libname, void *p, size_t size)
 {
 	int num = 0;
 	tStubEntry *pentry = *(tStubEntry **)(memfindsz(libname, p, size) + 40);
@@ -313,7 +313,7 @@ int p5_find_add_stubs_to_table(const char *libname, void *p, size_t size, int *i
 			// Variable import, skip it
 			pentry = (tStubEntry *)((int)pentry + sizeof(int));
 		} else {
-			num += add_stub_to_table(pentry, index);
+			num += add_stub_to_table(pentry);
 			// Next entry
 			pentry++;
 		}
@@ -323,7 +323,7 @@ int p5_find_add_stubs_to_table(const char *libname, void *p, size_t size, int *i
 }
 
 
-int add_stubs_to_table(tStubEntry *pentry, int *index)
+int add_stubs_to_table(tStubEntry *pentry)
 {
 	int num = 0;
 
@@ -333,7 +333,7 @@ int add_stubs_to_table(tStubEntry *pentry, int *index)
 			// Variable import, skip it
 			pentry = (tStubEntry *)((int)pentry + sizeof(int));
 		} else {
-			num += add_stub_to_table(pentry, index);
+			num += add_stub_to_table(pentry);
 			// Next entry
 			pentry++;
 		}
@@ -349,7 +349,6 @@ int build_nid_table()
 {
 	int num = 0;
 	int nlib_stubs;
-	int lib_index = 0;
 
 #ifdef AUTO_SEARCH_STUBS
 	int cur_stub;
@@ -368,7 +367,7 @@ int build_nid_table()
 	for (cur_stub = 0; cur_stub < nlib_stubs; cur_stub++) {
 		NID_LOGSTR("-->CURRENT MODULE LIBSTUB: 0x%08X\n", (int)stubs[cur_stub]);
 
-		num += add_stubs_to_table((tStubEntry *)stubs[cur_stub], &lib_index);
+		num += add_stubs_to_table((tStubEntry *)stubs[cur_stub]);
 	}
 
 #ifndef HOOK_sceKernelVolatileMemUnlock_WITH_dummy
@@ -377,16 +376,16 @@ int build_nid_table()
 
 	p5_open_savedata(PSP_UTILITY_SAVEDATA_SAVE);
 
-	num += p5_find_add_stubs_to_table("scePaf_Module", (void *)0x084C0000, 0x00010000, &lib_index);
-	num += p5_find_add_stubs_to_table("sceVshCommonUtil_Module", (void *)0x08760000, 0x00010000, &lib_index);
-	num += p5_find_add_stubs_to_table("sceDialogmain_Module", (void *)0x08770000, 0x00010000, &lib_index);
+	num += p5_find_add_stubs_to_table("scePaf_Module", (void *)0x084C0000, 0x00010000);
+	num += p5_find_add_stubs_to_table("sceVshCommonUtil_Module", (void *)0x08760000, 0x00010000);
+	num += p5_find_add_stubs_to_table("sceDialogmain_Module", (void *)0x08770000, 0x00010000);
 
 	p5_close_savedata();
 	cls();
 
 	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
 
-	num += p5_find_add_stubs_to_table("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000, &lib_index);
+	num += p5_find_add_stubs_to_table("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
 
 	p5_close_savedata();
 
@@ -417,7 +416,7 @@ int build_nid_table()
 
 		NID_LOGSTR("-->CURRENT MODULE LIBSTUB: 0x%08X\n", (int)pentry);
 
-		num += add_stubs_nid_to_table(pentry, &lib_index);
+		num += add_stubs_nid_to_table(pentry);
 
 		nlib_stubs--;
 	}
@@ -433,7 +432,7 @@ int build_nid_table()
 		globals->lib_table.table[get_lib_index("SysMemUserForUser")].lowest_syscall
 			- globals->lib_table.table[get_lib_index("InterruptManager")].lowest_syscall > 244;
 	int estimated_correctly = 0;
-	int i, nid_index, pos, syscall;
+	int i, lib_index, nid_index, pos, syscall;
 
 	if (globals->syscalls_known && (get_fw_ver() <= 610))
 	{
@@ -542,10 +541,6 @@ int build_nid_table()
 
 		LOGSTR("\n\n");
 	}
-#endif
-
-#ifndef XMB_LAUNCHER
-	globals->nid_table.num = num;
 #endif
 
 	return num;

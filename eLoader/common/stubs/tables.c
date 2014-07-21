@@ -651,21 +651,11 @@ int add_library_to_table(const tSceLibrary lib)
 	return index;
 }
 
-int add_stub_to_table(tStubEntry *pentry, int *index)
+int add_stub_to_table(tStubEntry *pentry)
 {
 	Elf32_Addr cur_nid, cur_call;
 	int nid_index, lib_index, syscall_num, good_call, nid;
 	int num = 0;
-
-#ifndef XMB_LAUNCHER
-	// Even if the stub appears to be valid, we shouldn't overflow the static arrays
-	if (*index >= MAX_LIBRARIES) {
-		LOGSTR(" NID TABLE COUNTER: 0x%08X\n", (int)num);
-		LOGSTR(" LIBRARY TABLE COUNTER: 0x%08X\n", (int)*index);
-		LOGSTR(" NID/LIBRARY TABLES TOO SMALL ");
-		sceKernelExitGame();
-	}
-#endif
 
 	NID_LOGSTR("-->Processing library: %s ", (u32)(pentry->lib_name));
 
@@ -685,7 +675,16 @@ int add_stub_to_table(tStubEntry *pentry, int *index)
 
 		if (lib_index < 0) {
 			// New library
-			lib_index = *index++;
+#ifndef XMB_LAUNCHER
+			// Even if the stub appears to be valid, we shouldn't overflow the static arrays
+			if (globals->lib_table.num >= MAX_LIBRARIES) {
+				LOGSTR(" LIBRARY TABLE COUNTER: 0x%08X\n",
+					globals->lib_table.num);
+				LOGSTR(" LIBRARY TABLES TOO SMALL ");
+				sceKernelExitGame();
+			}
+#endif
+			lib_index = globals->lib_table.num;
 			NID_LOGSTR(" --> New: %d\n", lib_index);
 
 			strcpy(globals->lib_table.table[lib_index].name, (char *)pentry->lib_name);

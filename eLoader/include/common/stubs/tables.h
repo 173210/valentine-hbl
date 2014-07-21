@@ -146,6 +146,6 @@ int add_nid_to_table(u32 nid, u32 call, unsigned int lib_index);
 // Adds a new library
 int add_library_to_table(const tSceLibrary lib);
 
-int add_stub_to_table(tStubEntry *pentry, int *index);
+int add_stub_to_table(tStubEntry *pentry);
 
 #endif
