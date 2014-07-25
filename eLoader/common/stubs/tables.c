@@ -2,7 +2,6 @@
 #include <common/stubs/tables.h>
 #include <common/utils/graphics.h>
 #include <common/utils/string.h>
-#include <common/config.h>
 #include <hbl/mod/elf.h>
 #include <common/debug.h>
 #include <common/malloc.h>
@@ -27,41 +26,6 @@ int get_call_index(u32 call)
 	}
 
 	return i;
-}
-
-// Gets i-th nid and its associated library
-// Returns library name length
-int get_lib_nid(int index, char *lib_name, int *nid)
-{
-	int num_libs, i = 0, count = 0;
-	tImportedLib cur_lib;
-
-	// DEBUG_PRINT("**GETTING NID INDEX:**", &index, sizeof(index));
-
-	index += 1;
-	cfg_num_libs(&num_libs);
-	cfg_first_library(&cur_lib);
-
-	while (i<num_libs) {
-		/*
-		DEBUG_PRINT("**CURRENT LIB**", cur_lib.lib_name, strlen(cur_lib.lib_name));
-		DEBUG_PRINT(NULL, &(cur_lib.num_imports), sizeof(unsigned int));
-		DEBUG_PRINT(NULL, &(cur_lib.nids_offset), sizeof(SceOff));
-		*/
-
-		count += cur_lib.num_imports;
-		if (index > count)
-			cfg_next_lib(&cur_lib);
-		else {
-			cfg_seek_nid(--index, nid);
-			// DEBUG_PRINT("**SEEK NID**", nid, sizeof(u32));
-			break;
-		}
-	}
-
-	strcpy(lib_name, cur_lib.lib_name);
-
-	return strlen(lib_name);
 }
 
 // Return index in NID table for the call that corresponds to the NID pointed by "nid"

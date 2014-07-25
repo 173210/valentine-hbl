@@ -164,7 +164,10 @@ void resolve_stubs()
 	int num_nids;
 	int *cur_stub = (int *)HBL_STUBS_START;
 	int nid = 0, syscall = 0;
-	char lib_name[MAX_LIB_NAME_LEN];
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	int num_libs, count;
+	tImportedLib cur_lib;
+#endif
 
 	ret = cfg_init();
 
@@ -172,14 +175,17 @@ void resolve_stubs()
 		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
 
 	cfg_num_nids_total(&num_nids);
+	cfg_first_nid(&nid);
+
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	cfg_num_libs(&num_libs);
+	cfg_first_library(&cur_lib);
+	count = cur_lib.num_imports;
+#endif
 
 	for (index = 0; index < num_nids; index++) {
 		LOGSTR("-Resolving import 0x%08X: ", index * 2 * sizeof(int));
 
-		// NID & library for i-th import
-		get_lib_nid(index, lib_name, &nid);
-
-		LOGSTR(lib_name);
 		LOGSTR(" 0x%08X\n", nid);
 
 		// Is it known by HBL?
@@ -195,12 +201,20 @@ void resolve_stubs()
 			syscall = NOP_OPCODE;
 #else
 			// If not, estimate
+			while (index > count) {
+				cfg_next_lib(&cur_lib);
+				count += cur_lib.num_imports;
+			}
+
 			syscall = estimate_syscall(lib_name, nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
 #endif
 		}
 
 		*cur_stub++ = JR_RA_OPCODE;
 		*cur_stub++ = syscall;
+
+		// NID & library for next import
+		cfg_next_nid(&nid);
 	}
 
 	CLEAR_CACHE;

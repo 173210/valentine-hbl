@@ -99,10 +99,6 @@ extern HBLNIDTable nid_table;
 // Returns nid_table index where the call is found, -1 if not found
 int get_call_index(u32 call);
 
-// Gets i-th nid and its associated library
-// Returns library name length
-int get_lib_nid(int index, char *lib_name, int *nid);
-
 // Return index in NID table for the call that corresponds to the NID pointed by "nid"
 // Puts call in call_buffer
 u32 get_call_nidtable(u32 nid, u32* call_buffer);
