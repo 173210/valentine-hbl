@@ -9,12 +9,6 @@
 #include <common/globals.h>
 #include <exploit_config.h>
 
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-#ifndef AUTO_SEARCH_STUBS
-#define AUTO_SEARCH_STUBS
-#endif
-#endif
-
 // Returns the index on nid_table for the given call
 // NOTE: the whole calling instruction is to be passed
 int get_call_index(u32 call)

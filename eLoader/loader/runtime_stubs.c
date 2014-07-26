@@ -118,7 +118,6 @@ void unload_utils()
 }
 #endif
 
-#ifdef AUTO_SEARCH_STUBS
 int search_stubs(tStubEntry **stub_pointers)
 {
 	tStubEntry *pentry;
@@ -151,4 +150,4 @@ int search_stubs(tStubEntry **stub_pointers)
 
 	return cur;
 }
-#endif
+

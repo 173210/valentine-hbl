@@ -16,28 +16,6 @@
 #include <exploit_config.h>
 #include <svnversion.h>
 
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-#ifndef AUTO_SEARCH_STUBS
-#define AUTO_SEARCH_STUBS
-#endif
-#endif
-
-// These are the addresses were we copy p5 stuff
-// This might overwrite some important things in ram,
-// so overwrite these values in exploit_config.h if needed
-#ifndef RELOC_MODULE_ADDR_1
-#define RELOC_MODULE_ADDR_1 0x09d10000
-#endif
-#ifndef RELOC_MODULE_ADDR_2
-#define RELOC_MODULE_ADDR_2 0x09d30000
-#endif
-#ifndef RELOC_MODULE_ADDR_3
-#define RELOC_MODULE_ADDR_3 0x09d50000
-#endif
-#ifndef RELOC_MODULE_ADDR_4
-#define RELOC_MODULE_ADDR_4 0x09d70000
-#endif
-
 
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
@@ -362,10 +340,7 @@ int add_stubs_to_table(tStubEntry *pentry)
 int build_nid_table()
 {
 	int num = 0;
-	int nlib_stubs;
-
-#ifdef AUTO_SEARCH_STUBS
-	int cur_stub;
+	int nlib_stubs, cur_stub;
 	tStubEntry *stubs[MAX_RUNTIME_STUB_HEADERS];
     
 #ifdef LOAD_MODULES_FOR_SYSCALLS
@@ -406,38 +381,6 @@ int build_nid_table()
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 	unload_utils();
 #endif
-#else
-	int ret;
-	tStubEntry *pentry;
-
-	// Getting game's .lib.stub address
-	ret = cfg_init();
-	if (ret < 0)
-		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
-
-	ret = cfg_num_lib_stub(&nlib_stubs);
-	if (ret < 0)
-	    exit_with_log(" ERROR READING NUMBER OF LIBSTUBS FROM CONFIG ", &ret, sizeof(ret));
-
-	if (nlib_stubs == 0)
-		exit_with_log(" ERROR: NO LIBSTUBS DEFINED IN CONFIG ", NULL, 0);
-
-	//DEBUG_PRINT(" build_nid_table() ENTERING MAIN LOOP ", NULL, 0);
-	while (nlib_stubs > 0) {
-		ret = cfg_next_lib_stub(&pentry);
-		if (ret < 0)
-			exit_with_log(" ERROR GETTING NEXT LIBSTUB FROM CONFIG ", &ret, sizeof(ret));
-
-		NID_LOGSTR("-->CURRENT MODULE LIBSTUB: 0x%08X\n", (int)pentry);
-
-		num += add_stubs_nid_to_table(pentry);
-
-		nlib_stubs--;
-	}
-
-	cfg_close();
-#endif
-	CLEAR_CACHE;
 
 #if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
 	SceUID fd;

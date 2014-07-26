@@ -46,12 +46,6 @@ int cfg_close();
 // Returns how many .lib.stub addresses are referenced
 int cfg_num_lib_stub(int *num_lib_stub);
 
-// Returns first .lib.stub address
-int cfg_first_lib_stub(int *lib_stub);
-
-// Returns next .lib.stub address
-int cfg_next_lib_stub(tStubEntry **lib_stub);
-
 // Returns number of nids imported
 int cfg_num_nids_total(int *num_nids_total);
 

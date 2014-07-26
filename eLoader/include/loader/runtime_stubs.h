@@ -5,16 +5,10 @@
 
 // If we want to load additional modules in advance to use their syscalls
 #ifdef LOAD_MODULES_FOR_SYSCALLS
-#ifndef AUTO_SEARCH_STUBS
-#define AUTO_SEARCH_STUBS
-#endif
-
 void load_utils();
 void unload_utils();
 #endif
-#ifdef AUTO_SEARCH_STUBS
 int search_stubs(tStubEntry **stub_pointers);
-#endif
 
 #define PSP_MODULE_NET_UPNP             0x0107
 #define PSP_MODULE_NET_GAMEUPDATE       0x0108

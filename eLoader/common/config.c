@@ -90,18 +90,6 @@ int cfg_num_lib_stub(int *num_lib_stub)
 	return ret;
 }
 
-// Returns first .lib.stub address
-int cfg_first_lib_stub(int *lib_stub)
-{
-	return cfg_int(lib_stub, LIBSTUB_OFF);
-}
-
-// Returns next .lib.stub pointer
-int cfg_next_lib_stub(tStubEntry **lib_stub)
-{
-	return sceIoRead(g_cfg_fd, (void *)lib_stub, sizeof(tStubEntry *));
-}
-
 // Returns number of nids imported
 int cfg_num_nids_total(int *num_nids_total)
 {
