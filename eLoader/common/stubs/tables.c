@@ -9,6 +9,24 @@
 #include <common/globals.h>
 #include <exploit_config.h>
 
+#ifdef DEBUG
+static void log_lib(tSceLibrary lib)
+{
+	log_printf("\n-->Library name: %s\n"
+		"--Calling mode: %d\n"
+		"--Total library exports: %d\n"
+		"--Known library exports: %d\n"
+		"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
+		"--Lowest index in file: %d\n",
+		lib.name,
+		lib.calling_mode,
+		lib.num_lib_exports,
+		lib.num_known_exports,
+		lib.lowest_nid, lib.lowest_syscall,
+		lib.lowest_index);
+}
+#endif
+
 // Returns the index on nid_table for the given call
 // NOTE: the whole calling instruction is to be passed
 int get_call_index(u32 call)
@@ -603,7 +621,9 @@ int add_library_to_table(const tSceLibrary lib)
 
 
 	LOG_PRINTF("Added library %s @ %d\n", (u32)globals->lib_table.table[index].name, index);
-	LOGLIB(globals->lib_table.table[index]);
+#ifdef DEBUG
+	log_lib(globals->lib_table.table[index]);
+#endif
 
 	return index;
 }
@@ -674,9 +694,9 @@ int add_stub_to_table(tStubEntry *pentry)
 
 			globals->lib_table.table[lib_index].num_known_exports++;
 		}
-
-		LOGLIB(globals->lib_table.table[lib_index]);
-
+#ifdef DEBUG
+		log_lib(globals->lib_table.table[lib_index]);
+#endif
 		NID_LOG_PRINTF("Current lowest nid/syscall: 0x%08X/0x%08X \n",
 			globals->lib_table.table[lib_index].lowest_syscall, globals->lib_table.table[lib_index].lowest_nid);
 

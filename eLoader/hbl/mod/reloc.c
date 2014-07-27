@@ -143,7 +143,6 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 
 			for(j=0; j<num_entries; j++)
 			{
-				//DEBUG_PRINT(" RELOC_ENTRY ", &(reloc_entry[j]), sizeof(tRelEntry));
                 relocate_entry(reloc_entry[j], reloc_addr);
 				entries_relocated++;
 			}

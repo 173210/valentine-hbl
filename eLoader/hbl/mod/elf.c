@@ -8,6 +8,26 @@
 #include <common/utils.h>
 #include <exploit_config.h>
 
+#ifdef DEBUG
+static void log_modinfo(SceModuleInfo modinfo)
+{
+	log_printf("\n->Module information:\n"
+		"Module name: %s\n"
+		"Module version: %d.%d\n"
+		"Module attributes: 0x%08X\n"
+		"Entry top: 0x%08X\n"
+		"Stubs top: 0x%08X\n"
+		"Stubs end: 0x%08X\n"
+		"GP value: 0x%08X\n",
+		modinfo.modname,
+		modinfo.modversion[0], modinfo.modversion[1],
+		modinfo.modattribute,
+		(int)modinfo.ent_top,
+		(int)modinfo.stub_top,
+		(int)modinfo.stub_end,
+		(int)modinfo.gp_value);
+}
+#endif
 
 //utility
 // Allocates memory for homebrew so it doesn't overwrite itself
@@ -97,7 +117,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 // Returns number of stubs
 unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr)
 {
-	Elf32_Phdr program_header;
+	Elf32_Phdr pheader;
 	int excess;
     void * buffer;
 	_sceModuleInfo module_info;
@@ -106,30 +126,45 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 
 	// Read the program header
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
-	sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
+	sceIoRead(elf_file, &pheader, sizeof(Elf32_Phdr));
 
-	LOGELFPROGHEADER(program_header);
-
-    // DEBUG_PRINT("Program Header:", &program_header, sizeof(Elf32_Phdr));
+	LOG_PRINTF("\n->Program header:\n"
+		"Segment type: 0x%08X\n"
+		"Segment offset: 0x%08X\n"
+		"Virtual address for segment: 0x%08X\n"
+		"Physical address for segment: 0x%08X\n"
+		"Segment image size in file: 0x%08X\n"
+		"Segment image size in memory: 0x%08X\n"
+		"Flags: 0x%08X\n"
+		"Alignment: 0x%08X\n",
+		pheader.p_type,
+		pheader.p_off,
+		(int)pheader.p_vaddr,
+		(int)pheader.p_paddr,
+		pheader.p_filesz,
+		pheader.p_memsz,
+		pheader.p_flags,
+		pheader.p_align);
     
 	// Check if kernel mode
-	if ((unsigned int)program_header.p_paddr & 0x80000000)
+	if ((unsigned int)pheader.p_paddr & 0x80000000)
 		return 0;
 
-	LOG_PRINTF("Module info @ 0x%08X offset\n", (u32)start_offset + (u32)program_header.p_paddr);
+	LOG_PRINTF("Module info @ 0x%08X offset\n", (u32)start_offset + (u32)pheader.p_paddr);
 
 	// Read module info from PRX
-	sceIoLseek(elf_file, (u32)start_offset + (u32)program_header.p_paddr, PSP_SEEK_SET);
+	sceIoLseek(elf_file, (u32)start_offset + (u32)pheader.p_paddr, PSP_SEEK_SET);
 	sceIoRead(elf_file, &module_info, sizeof(_sceModuleInfo));
 
+#ifdef DEBUG
+	log_modinfo(module_info);
+#endif
 
-    LOGMODINFO(module_info);
-    
 	// Loads program segment at fixed address
-	sceIoLseek(elf_file, start_offset + (SceOff) program_header.p_off, PSP_SEEK_SET);
+	sceIoLseek(elf_file, start_offset + (SceOff) pheader.p_off, PSP_SEEK_SET);
 
 	LOG_PRINTF("Address to allocate from: 0x%08X\n", (u32)*addr);
-    buffer = allocate_memory(program_header.p_memsz, *addr);
+    buffer = allocate_memory(pheader.p_memsz, *addr);
     *addr = buffer;
 
 	if (!buffer)
@@ -140,15 +175,15 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 
 	LOG_PRINTF("Allocated memory address from: 0x%08X\n", (u32) *addr);
 	
-	sceIoRead(elf_file, buffer, program_header.p_filesz);
+	sceIoRead(elf_file, buffer, pheader.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
-	buffer = buffer + program_header.p_filesz + 1;
+	buffer = buffer + pheader.p_filesz + 1;
 
 	LOG_PRINTF("Zero filling\n");
 	// Fills excess memory with zeroes
-    *size = program_header.p_memsz;
-	excess = program_header.p_memsz - program_header.p_filesz;
+    *size = pheader.p_memsz;
+	excess = pheader.p_memsz - pheader.p_filesz;
 	if(excess > 0) {
 		LOG_PRINTF("Zero filling: %d bytes\n", excess);
         memset(buffer, 0, excess);
@@ -231,9 +266,9 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 	// Read in module info
     sceIoLseek(elf_file, start_offset + section_header.sh_offset, PSP_SEEK_SET);
     sceIoRead(elf_file, &module_info, sizeof(SceModuleInfo));
-
-    LOGMODINFO(module_info);
-
+#ifdef DEBUG
+	log_modinfo(module_info);
+#endif
     return (u32) module_info.gp_value;
 }
 

@@ -14,6 +14,29 @@
 #include <exploit_config.h>
 #include <svnversion.h>
 
+#ifdef DEBUG
+static void log_mod_entry(HBLModInfo modinfo)
+{
+	log_printf("\n->Module entry:\n"
+		"ID: 0x%08X\n"
+		"ELF type: 0x%08X\n"
+		"State: %d\n"
+		"Size: 0x%08X\n"
+		"Text address: 0x%08X\n"
+		"Entry point: 0x%08X\n"
+		".lib.stub address: 0x%08X\n"
+		"GP: 0x%08X\n",
+		modinfo.id,
+		modinfo.type,
+		modinfo.state,
+		modinfo.size,
+		(int)modinfo.text_addr,
+		(int)modinfo.text_entry,
+		(int)modinfo.libstub_addr,
+		(int)modinfo.gp);
+}
+#endif
+
 /******************************************************************************/
 /* Menu API definition By noobz. We'll pass the address of this struct to the */
 /* menu, and it can use it if it understands it.                              */
@@ -77,7 +100,23 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	if (strncmp(elf_hdr.e_ident, "~PSP", 4) == 0)
 		return SCE_KERNEL_ERROR_ERROR;
 
-	LOGELFHEADER(elf_hdr);
+	LOG_PRINTF("\n->ELF header:\n"
+		"Type: 0x%08X\n"
+		"Code entry: 0x%08X\n"
+		"Program header table offset: 0x%08X\n"
+		"Program header size: 0x%08X\n"
+		"Number of program headers: 0x%08X\n"
+		"Section header table offset: 0x%08X\n"
+		"Section header size: 0x%08X\n"
+		"Number of section headers: 0x%08X\n",
+		elf_hdr.e_type,
+		(int)elf_hdr.e_entry,
+		elf_hdr.e_phoff,
+		elf_hdr.e_phentsize,
+		elf_hdr.e_phnum,
+		elf_hdr.e_shoff,
+		elf_hdr.e_shentsize,
+		elf_hdr.e_shnum);
 
 	// Loading module
 	tStubEntry* pstub;
@@ -163,7 +202,9 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 	LOG_PRINTF("\n->Actual number of loaded modules: %d\n", mod_table.num_loaded_mod);
 	LOG_PRINTF("Last loaded module [%d]:\n", i);
-	LOGMODENTRY(mod_table.table[i]);
+#ifdef DEBUG
+	log_mod_entry(mod_table.table[i]);
+#endif
 
 	CLEAR_CACHE;
 
@@ -197,7 +238,9 @@ SceUID start_module(SceUID modid)
 	if (mod_table.table[index].state == RUNNING)
 		return SCE_KERNEL_ERROR_ALREADY_STARTED;
 
-	LOGMODENTRY(mod_table.table[index]);
+#ifdef DEBUG
+	log_mod_entry(mod_table.table[index]);
+#endif
 
 	u32 gp_bak;
 
