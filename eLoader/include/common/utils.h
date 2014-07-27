@@ -11,8 +11,8 @@ u32 get_fw_ver();
 u32 getPSPModel();
 #endif
 
-//Returns 1 if address is a valid PSP umem address, 0 otherwise
-int valid_umem_pointer(u32 addr);
+// Returns 1 if pointer is a valid PSP umem pointer, 0 otherwise
+#define valid_umem_pointer(p) ((int)(p) >= 0x08400000 && (int)(p) < 0x0A000000)
 
 // Searches for s1 string in memory
 // Returns pointer to string

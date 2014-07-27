@@ -8,7 +8,12 @@
 void load_utils();
 void unload_utils();
 #endif
-int search_stubs(tStubEntry **stub_pointers);
+
+// Returns !=0 if stub entry is valid, 0 if it's not
+int elf_check_stub_entry(tStubEntry *pentry);
+
+int p2_add_stubs();
+void resolve_stubs();
 
 #define PSP_MODULE_NET_UPNP             0x0107
 #define PSP_MODULE_NET_GAMEUPDATE       0x0108

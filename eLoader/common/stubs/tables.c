@@ -666,8 +666,6 @@ int add_stub_to_table(tStubEntry *pentry)
 				// Old library
 			NID_LOGSTR(" --> Old: %d\n", lib_index);
 
-			LOGLIB(globals->lib_table.table[lib_index]);
-
 			NID_LOGSTR("Number of imports of this stub: %d\n", pentry->stub_size);
 
 			if (globals->lib_table.table[lib_index].calling_mode != SYSCALL_MODE) {
@@ -676,6 +674,8 @@ int add_stub_to_table(tStubEntry *pentry)
 
 			globals->lib_table.table[lib_index].num_known_exports++;
 		}
+
+		LOGLIB(globals->lib_table.table[lib_index]);
 
 		NID_LOGSTR("Current lowest nid/syscall: 0x%08X/0x%08X \n",
 			globals->lib_table.table[lib_index].lowest_syscall, globals->lib_table.table[lib_index].lowest_nid);
@@ -722,4 +722,123 @@ int add_stub_to_table(tStubEntry *pentry)
 
 	return num;
 }
+
+#if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
+void dump_lib_table()
+{
+	SceUID fd;
+	int fw_ver = get_fw_ver();
+	int is_cfw = fw_ver <= 550 &&
+		globals->lib_table.table[get_lib_index("SysMemUserForUser")].lowest_syscall
+			- globals->lib_table.table[get_lib_index("InterruptManager")].lowest_syscall > 244;
+	int estimated_correctly = 0;
+	int i, lib_index, nid_index, pos, syscall;
+
+	if (globals->syscalls_known && (get_fw_ver() <= 610))
+	{
+		// Write out a library table
+		int num_lib_exports;
+		int ref_lib_index = get_lib_index(SYSCALL_REF_LIB);
+		int base_syscall = globals->lib_table.table[ref_lib_index].lowest_syscall;
+
+		if (num_lib_exports < 0)
+			num_lib_exports = -1;
+
+		for (lib_index = 0; lib_index < globals->lib_table.num; lib_index++) {
+			fd = open_nids_file(globals->lib_table.table[lib_index].name);
+			num_lib_exports = sceIoLseek(fd, 0, PSP_SEEK_END) / sizeof(int);
+			sceIoClose(fd);
+
+			LOGSTR("%d %s %s %d ", fw_ver,
+				(int)globals->lib_table.table[lib_index].name,
+				globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall
+					== (int)num_lib_exports - 1 ?
+					(int)"aligned" : (int)"not aligned",
+				(int)num_lib_exports);
+			LOGSTR("%d ", globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall + 1);
+			LOGSTR("%d %d %d %d\n", globals->lib_table.table[lib_index].lowest_syscall - base_syscall,
+				globals->lib_table.table[lib_index].highest_syscall - base_syscall,
+				globals->lib_table.table[lib_index].lowest_syscall,
+				globals->lib_table.table[lib_index].highest_syscall);
+		}
+
+		LOGSTR("\n");
+	}
+
+	// On CFW there is a higher syscall difference between SysmemUserForUser
+	// and lower libraries than without it.
+	if (is_cfw)
+		puts_scr("Using offsets for Custom Firmware");
+
+
+	// Fill remaining data after the reference library is known
+	for (lib_index = 0; lib_index < globals->lib_table.num; lib_index++) {
+		LOGSTR("Completing library...%d\n", lib_index);
+		complete_library(&(globals->lib_table.table[lib_index]), ref_lib_index, is_cfw);
+	}
+
+	LOGSTR("\n==LIBRARY TABLE DUMP==\n");
+	for (lib_index = 0; lib_index < globals->lib_table.num; lib_index++) {
+		LOGSTR("->Index: %d, name %s\n", lib_index, (u32)globals->lib_table.table[lib_index].name);
+		LOGSTR("predicted syscall range from 0x%08X to 0x%08X\n",
+			globals->lib_table.table[lib_index].lowest_syscall,
+			globals->lib_table.table[lib_index].lowest_syscall
+				+ globals->lib_table.table[lib_index].num_lib_exports
+				+ globals->lib_table.table[lib_index].gap - 1);
+
+		fd = open_nids_file(globals->lib_table.table[lib_index].name);
+
+		for (nid_index = 0; nid_index < globals->nid_table.num; nid_index++) {
+			if (globals->nid_table.table[nid_index].lib_index == lib_index) {
+				syscall = globals->nid_table.table[nid_index].call & SYSCALL_MASK_RESOLVE ?
+					syscall = globals->nid_table.table[nid_index].call :
+					syscall = GET_SYSCALL_NUMBER(globals->nid_table.table[nid_index].call);
+
+				LOGSTR("[%d] 0x%08X 0x%08X ", nid_index, globals->nid_table.table[nid_index].nid, syscall);
+
+				// Check nid in table against the estimated nids
+				if (globals->syscalls_known && fd > 0) {
+					int cur_nid = 0;
+					pos = -1;
+					i = globals->lib_table.table[lib_index].lowest_index;
+
+					do {
+						pos++;
+
+						if (i >= globals->lib_table.table[lib_index].num_lib_exports) {
+							// gap
+							pos += globals->lib_table.table[lib_index].gap;
+
+							sceIoLseek(fd, 0, PSP_SEEK_SET);
+							for (i = 0; i < globals->lib_table.table[lib_index].lowest_index; i++) {
+								sceIoLseek(fd, 4 * i, PSP_SEEK_SET);
+								sceIoRead(fd, &cur_nid, sizeof(cur_nid));
+
+								if (cur_nid == globals->nid_table.table[nid_index].nid)
+									break;
+								else
+									pos++;
+							}
+							break;
+						}
+
+						sceIoLseek(fd, 4 * i++, PSP_SEEK_SET);
+						sceIoRead(fd, &cur_nid, sizeof(int));
+					} while (cur_nid != globals->nid_table.table[nid_index].nid)
+
+					// format: estimated call, index in nid-file, correctly estimated?
+					LOGSTR("0x%08X %d %s\n", globals->lib_table.table[lib_index].lowest_syscall + pos, lib_index,
+						globals->lib_table.table[lib_index].lowest_syscall + pos == syscall ?
+							(int)"YES" : (int)"NO";
+				} else
+					LOGSTR("\n");
+			}
+		}
+
+		sceIoClose(fd);
+
+		LOGSTR("\n\n");
+	}
+}
+#endif
 

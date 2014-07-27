@@ -1,3 +1,5 @@
+#include <common/stubs/runtime.h>
+#include <common/stubs/syscall.h>
 #include <common/utils/graphics.h>
 #include <common/utils/string.h>
 #include <common/sdk.h>
@@ -307,6 +309,20 @@ int start_thread() //SceSize args, void *argp)
     free_game_memory();
 
     puts_scr("-- Done");
+
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+	puts_scr("Building NIDs table with utilities");
+	load_utils();
+	p2_add_stubs();
+	unload_utils();
+
+	LOGSTR("Resolving HBL stubs\n");
+	resolve_stubs();
+
+#if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
+	dump_lib_table();
+#endif
+#endif
 
     // Start Callback Thread
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);

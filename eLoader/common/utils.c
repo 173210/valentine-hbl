@@ -84,12 +84,6 @@ u32 getPSPModel()
 }
 #endif
 
-int valid_umem_pointer(u32 addr)
-{
-    return (addr >= 0x08800000) &&
-    (addr < 0x0A000000);
-}
-
 // Searches for s1 string on memory
 // Returns pointer to string
 void *memfindsz(const char *s, const void *p, size_t size)

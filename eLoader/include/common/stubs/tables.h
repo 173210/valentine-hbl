@@ -144,4 +144,8 @@ int add_library_to_table(const tSceLibrary lib);
 
 int add_stub_to_table(tStubEntry *pentry);
 
+#if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
+void dump_lib_table();
+#endif
+
 #endif
