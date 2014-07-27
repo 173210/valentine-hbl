@@ -1,5 +1,7 @@
 #include <common/utils/string.h>
 
+char *_sprintf_dst;
+
 // Sets a memory region to a specific value
 void *memset(void *s, int c, size_t n)
 {
@@ -73,29 +75,24 @@ char *strcpy(char *dst, const char *src)
  * Basic Sprintf functions
  */ 
 
-void _itoa(unsigned val, char **buf, int base, int w)
+static void _itoa(unsigned val, void (* f)(int), int base, int w)
 {
-	char *p2;
-	char *p1 = *buf;
-	char c;
+	char buf[10];
+	int i = 0;
 	int rem;
 
 	do {
 		rem = val % base;
-		*(*buf)++ = (rem < 10 ? 0x30 : 0x37) + rem;
+		buf[i++] = (rem < 10 ? 0x30 : 0x37) + rem;
 		val /= base;
 		w--;
 	} while (val || w > 0);
 
-	p2 = *buf - 1;
-	while (p1 < p2) {
-		c = *p1;
-		*p1++ = *p2;
-		*p2-- = c;
-	}
+	while (i > 0)
+		f(buf[--i]);
 }
 
-void _vsprintf(char *s, const char *fmt, va_list va)
+void _vfprintf(void (* f)(int), const char *fmt, va_list va)
 {
 	const char *p;
 	char c, w;
@@ -103,7 +100,7 @@ void _vsprintf(char *s, const char *fmt, va_list va)
 
 	while ((c = *fmt++) != '\0') {
 		if (c != '%') {
-			*s++ = c;
+			f(c);
 		} else {
 			c = *fmt++;
 
@@ -120,35 +117,43 @@ void _vsprintf(char *s, const char *fmt, va_list va)
 				case 'd':
 					val = va_arg(va, int);
 					if (val < 0) {
-						*s++ = '-';
+						f('-');
 						val = -val;
 					}
-					_itoa((unsigned)val, &s, 10, w);
+					_itoa((unsigned)val, f, 10, w);
 					break;
 				case 'X' : 
-					_itoa((unsigned)va_arg(va, int), &s, 16, w);
+					_itoa((unsigned)va_arg(va, int), f, 16, w);
 					break;
 				case 'c' :
-					*s++ = (char)va_arg(va, int);
+					f((char)va_arg(va, int));
 					break;
 				case 's' :
 					p = va_arg(va, const char *);
 					while (*p != '\0')
-						*s++ = *p++;
+						f(*p++);
 					break;
 			}
 		}
 	}
-	*s = '\0';
+}
+
+static void _sprintf_write(int s)
+{
+	*_sprintf_dst++ = s;
 }
 
 void _sprintf(char *s, const char *fmt, ...)
 {
 	va_list va;
 
+	_sprintf_dst = s;
+
 	va_start(va, fmt);
-	_vsprintf(s, fmt, va);
+	_vfprintf(_sprintf_write, fmt, va);
 	va_end(va);
+
+	*_sprintf_dst = '\0';
 }
 
 

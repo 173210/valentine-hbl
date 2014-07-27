@@ -4,7 +4,7 @@
 #include <common/stubs/runtime.h>
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
-#include <common/utils/graphics.h>
+#include <common/utils/scr.h>
 #include <common/config.h>
 #include <common/debug.h>
 #include <common/globals.h>
@@ -49,7 +49,7 @@ static void PreloadFreeMem()
 	for(i = 0; i < sizeof(blockids) / sizeof(int); i++) {
 		int ret = sceKernelFreePartitionMemory(*(SceUID *)blockids[i]);
 		if (ret < 0)
-			LOGSTR("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
+			LOG_PRINTF("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
 	}
 }
 #endif
@@ -59,11 +59,11 @@ static void FreeFpl()
 {
 	SceUID uid;
 
-	LOGSTR("loader.c: FreeFpl\n");
+	LOG_PRINTF("loader.c: FreeFpl\n");
 
 	for (uid =  0x03000000; uid < 0xE0000000; uid++)
         	if (sceKernelDeleteFpl(uid) >= 0) {
-			LOGSTR("Succesfully Deleted FPL ID 0x%08X\n", uid);
+			LOG_PRINTF("Succesfully Deleted FPL ID 0x%08X\n", uid);
 			return;
         	}
 }
@@ -75,12 +75,12 @@ static void CloseFiles()
 	SceUID fd;
 	int ret;
 
-	LOGSTR("memory.c:CloseFiles\n");
+	LOG_PRINTF("memory.c:CloseFiles\n");
 
 	for (fd = 0; fd < 8; fd++) {
 		ret = sceIoClose(fd);
 		if (ret != SCE_KERNEL_ERROR_BADF)
-			LOGSTR("tried closing file %d, result 0x%08X\n", fd, ret);
+			LOG_PRINTF("tried closing file %d, result 0x%08X\n", fd, ret);
 	}
 }
 #endif
@@ -99,38 +99,40 @@ static void load_hbl(SceUID hbl_file)
 
 	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
 
-	//write_debug(" HBL SIZE ", &file_size, sizeof(file_size));
-
 	// Allocate memory for HBL
 #ifdef GAME_PRELOAD_FREEMEM
 	PreloadFreeMem();
 #endif
 #ifdef FPL_EARLY_LOAD_ADDR_LIST
 	//early memory cleanup to be able to load HBL at a convenient place
-	LOGSTR("loader.c: PreloadFreeFPL\n");
+	LOG_PRINTF("loader.c: PreloadFreeFPL\n");
 
 	int uids[] = FPL_EARLY_LOAD_ADDR_LIST;
 
 	for(i = 0; i < sizeof(uids) / sizeof(int); i++)
 		if (sceKernelDeleteFpl(*(SceUID *)uids[i]) < 0)
-			LOGSTR("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
+			LOG_PRINTF("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
 #endif
 
 
 	HBL_block = sceKernelAllocPartitionMemory(
 		2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDR);
-	if(HBL_block < 0)
-		exit_with_log(" ERROR ALLOCATING HBL MEMORY ", &HBL_block, sizeof(HBL_block));
+	if(HBL_block < 0) {
+		log_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
+		sceKernelExitGame();
+	}
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
 
 	// Load HBL to allocated memory
 	ret = sceIoRead(hbl_file, (void *)run_eloader, file_size);
-	if (ret < 0)
-		exit_with_log(" ERROR READING HBL ", &ret, sizeof(ret));
+	if (ret < 0) {
+		log_printf(" ERROR READING HBL 0x%08X\n", ret);
+		sceKernelExitGame();
+	}
 
 	sceIoClose(hbl_file);
 
-	LOGSTR("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
+	LOG_PRINTF("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
 	// Commit changes to RAM
 	CLEAR_CACHE;
@@ -180,13 +182,13 @@ static void p5_close_savedata()
 	int status;
 	int last_status = -1;
 
-	LOGSTR("entering savedata dialog loop\n");
+	LOG_PRINTF("entering savedata dialog loop\n");
 
 	while(1) {
 		status = sceUtilitySavedataGetStatus();
 
 		if (status != last_status) {
-			LOGSTR("status changed from %d to %d\n", last_status, status);
+			LOG_PRINTF("status changed from %d to %d\n", last_status, status);
 			last_status = status;
 		}
 
@@ -201,7 +203,7 @@ static void p5_close_savedata()
 				break;
 
 			case PSP_UTILITY_DIALOG_NONE:
-				LOGSTR("dialog has shut down\n");
+				LOG_PRINTF("dialog has shut down\n");
 				return;
 		}
 
@@ -253,7 +255,7 @@ static int p5_add_stubs()
 	num += p5_find_add_stubs("sceDialogmain_Module", (void *)0x08770000, 0x00010000);
 
 	p5_close_savedata();
-	cls();
+	scr_init();
 
 	return num;
 }
@@ -265,16 +267,16 @@ void _start()
 	SceUID hbl_file;
 	int num_nids;
 
-	cls();
-	puts_scr("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl");
+	scr_init();
+	scr_puts("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl\n");
 #ifdef DEBUG
 #ifdef NID_DEBUG
-	puts_scr("DEBUG version (+NIDS)");
+	scr_puts("DEBUG version (+NIDS)\n");
 #else
-	puts_scr("DEBUG version");
+	scr_puts("DEBUG version\n");
 #endif
 #else
-	puts_scr_color("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
+	scr_puts_col("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!\n", 0x000000FF);
 #endif
 
 #ifdef PRE_LOADER_EXEC
@@ -288,17 +290,20 @@ void _start()
 
 #if defined(FORCE_FIRST_LOG) || defined(DEBUG)
 	// Some exploits need to "trigger" file I/O in order for HBL to work, not sure why
-	logstr("Loader running\n");
+	log_printf("Loader running\n");
 #endif
 
 #ifdef FORCE_CLOSE_FILES_IN_LOADER
 	CloseFiles();
 #endif
 
-	if ((hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777)) < 0)
-		exit_with_log(" FAILED TO LOAD HBL ", &hbl_file, sizeof(hbl_file));
+	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
+	if (hbl_file < 0) {
+		log_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
+		sceKernelExitGame();
+	}
 
-	LOGSTR("Loading HBL\n");
+	LOG_PRINTF("Loading HBL\n");
 	load_hbl(hbl_file);
 
 	//reset the contents of the debug file;
@@ -313,15 +318,15 @@ void _start()
 	{
 		case 0:
 		case 1:
-			puts_scr("Unknown Firmware :(");
+			scr_puts("Unknown Firmware :(\n");
 			break;
 		default:
-			prtstr("Firmware %d.%dx detected", fw_ver / 100,  (fw_ver % 100) / 10);
+			scr_printf("Firmware %d.%dx detected\n", fw_ver / 100,  (fw_ver % 100) / 10);
 			break;
 	}
 
 	if (getPSPModel() == PSP_GO) {
-		puts_scr("PSP Go Detected");
+		scr_puts("PSP Go Detected\n");
 #ifndef DISABLE_KERNEL_DUMP
 		// If PSPGo on 6.20+, do a kmem dump
 		if (get_fw_ver() >= 620)
@@ -331,21 +336,23 @@ void _start()
 #endif
 
 	// Build NID table
-	puts_scr("Building NIDs table with game");
+	scr_puts("Building NIDs table with game\n");
 	num_nids = p2_add_stubs();
-	puts_scr("Building NIDs table with savedata utility");
+	scr_puts("Building NIDs table with savedata utility\n");
 	num_nids += p5_add_stubs();
-	LOGSTR("NUM NIDS: %d\n", num_nids);
+	LOG_PRINTF("NUM NIDS: %d\n", num_nids);
 
-	if(num_nids <= 0)
-		exit_with_log("No Nids ???", NULL, 0);
+	if(num_nids <= 0) {
+		log_printf("No Nids ???\n");
+		sceKernelExitGame();
+	}
 
 #if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
 	dump_lib_table();
 #endif
 
-	LOGSTR("Resolving HBL stubs\n");
+	LOG_PRINTF("Resolving HBL stubs\n");
 	resolve_stubs();
-	LOGSTR("HBL stubs copied, running eLoader\n");
+	LOG_PRINTF("HBL stubs copied, running eLoader\n");
 	run_eloader();
 }

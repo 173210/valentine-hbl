@@ -36,21 +36,21 @@ void load_utils()
 	for (module = 1; module <= 7; module++) {
 		ret = sceUtilityLoadNetModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Loading net module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Loading net module 0x%08X\n", ret, module);
 	}
 #endif
 #ifdef USE_USB_MODULE_LOAD_FUNCTION
 	for (module = 1; module <= 5; module++) {
 		ret = sceUtilityLoadUsbModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Loading usb module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Loading usb module 0x%08X\n", ret, module);
 	}
 #endif
 #ifdef USE_AV_MODULE_LOAD_FUNCTION
 	for (module = 1; module <= 7; module++) {
 		ret = sceUtilityLoadAvModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Loading av module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Loading av module 0x%08X\n", ret, module);
 	}
 #endif
 #else
@@ -60,7 +60,7 @@ void load_utils()
 	for(i = 0; i < sizeof(modules) / sizeof(int); i++) {
 		ret = sceUtilityLoadModule(modules[i]);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Loading 0x%08X\n", ret, modules[i]);
+			LOG_PRINTF("...Error 0x%08X Loading 0x%08X\n", ret, modules[i]);
 	}
 #endif
 }
@@ -75,21 +75,21 @@ void unload_utils()
 	for (module = 7; module >= 1; module--) {
 		ret = sceUtilityUnloadNetModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Unloading net module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Unloading net module 0x%08X\n", ret, module);
 	}
 #endif
 #ifdef USE_USB_MODULE_LOAD_FUNCTION
 	for (module = 5; module >= 1; module--) {
 		ret = sceUtilityUnloadUsbModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Unloading usb module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Unloading usb module 0x%08X\n", ret, module);
 	}
 #endif
 #ifdef USE_AV_MODULE_LOAD_FUNCTION
 	for (module = 7; module >= 5; module--) {
 		ret = sceUtilityUnloadAvModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
 	}
 #ifndef VITA
 	if (get_fw_ver() <= 620)
@@ -98,7 +98,7 @@ void unload_utils()
 	while (module >= 1) {
 		ret = sceUtilityUnloadAvModule(module);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
+			LOG_PRINTF("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
 
 		module--;
 	}
@@ -114,7 +114,7 @@ void unload_utils()
 #endif
 		ret = sceUtilityUnloadModule(modules[i]);
 		if (ret < 0)
-			LOGSTR("...Error 0x%08X Unloading 0x%08X\n", ret, modules[i]);
+			LOG_PRINTF("...Error 0x%08X Unloading 0x%08X\n", ret, modules[i]);
 	}
 #endif
 }
@@ -168,8 +168,10 @@ void resolve_stubs()
 
 	ret = cfg_init();
 
-	if (ret < 0)
-		exit_with_log(" ERROR INITIALIZING CONFIG ", &ret, sizeof(ret));
+	if (ret < 0) {
+		log_printf(" ERROR INITIALIZING CONFIG 0x%08X", ret);
+		sceKernelExitGame();
+	}
 
 	num_nids = cfg_num_nids();
 	cfg_first_nid(&nid);
@@ -181,18 +183,18 @@ void resolve_stubs()
 #endif
 
 	for (index = 0; index < num_nids; index++) {
-		LOGSTR("-Resolving import 0x%08X: 0x%08X\n", index * 8, nid);
+		LOG_PRINTF("-Resolving import 0x%08X: 0x%08X\n", index * 8, nid);
 
 		// Is it known by HBL?
 		ret = get_nid_index(nid);
 
 		// If it's known, get the call
 		if (ret > 0) {
-			LOGSTR("-Found in NID table, using real call\n");
+			LOG_PRINTF("-Found in NID table, using real call\n");
 			syscall = globals->nid_table.table[ret].call;
 		} else {
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
-			LOGSTR("HBL Function missing at 0x%08X, this can lead to trouble\n",  (int)cur_stub);
+			LOG_PRINTF("HBL Function missing at 0x%08X, this can lead to trouble\n",  (int)cur_stub);
 			syscall = NOP_OPCODE;
 #else
 			// If not, estimate
@@ -216,6 +218,6 @@ void resolve_stubs()
 
 	cfg_close();
 
-	LOGSTR(" ****STUBS SEARCHED\n");
+	LOG_PRINTF(" ****STUBS SEARCHED\n");
 }
 

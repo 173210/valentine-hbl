@@ -60,15 +60,15 @@ int get_module_index(SceUID modid)
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 {
-	LOGSTR("\n\n->Entering load_module...\n");
+	LOG_PRINTF("\n\n->Entering load_module...\n");
 
 	
-	//LOGSTR("mod_table address: 0x%08X\n", mod_table);
+	//LOG_PRINTF("mod_table address: 0x%08X\n", mod_table);
 
 	if (mod_table.num_loaded_mod >= MAX_MODULES)
 		return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 
-	LOGSTR("Reading ELF header...\n");
+	LOG_PRINTF("Reading ELF header...\n");
 	// Read ELF header
 	Elf32_Ehdr elf_hdr;
 	sceIoRead(elf_file, &elf_hdr, sizeof(elf_hdr));
@@ -88,7 +88,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Static ELF
 	if(elf_hdr.e_type == (Elf32_Half) ELF_STATIC)
 	{
-		//LOGSTR("STATIC\n");
+		//LOG_PRINTF("STATIC\n");
 
 		mod_table.table[i].type = ELF_STATIC;
 
@@ -108,11 +108,11 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Relocatable ELF (PRX)
 	else if(elf_hdr.e_type == (Elf32_Half) ELF_RELOC)
 	{
-		LOGSTR("RELOC\n");
+		LOG_PRINTF("RELOC\n");
 
 		mod_table.table[i].type = ELF_RELOC;
 
-		LOGSTR("load_module -> Offset: 0x%08X\n", offset);
+		LOG_PRINTF("load_module -> Offset: 0x%08X\n", offset);
 
 		// Load PRX program section
 		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, (u32*)&program_size, &addr)) == 0)
@@ -120,15 +120,15 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 		CLEAR_CACHE;
 
-		LOGSTR("Before reloc -> Offset: 0x%08X\n", offset);
+		LOG_PRINTF("Before reloc -> Offset: 0x%08X\n", offset);
 		//Relocate all sections that need to
 		unsigned int ret = relocate_sections(elf_file, offset, &elf_hdr, addr);
 
-		LOGSTR("Relocated entries: %d\n", ret);
+		LOG_PRINTF("Relocated entries: %d\n", ret);
 
 		if (ret == 0)
 		{
-			LOGSTR("WARNING: no entries to relocate on a relocatable ELF\n");
+			LOG_PRINTF("WARNING: no entries to relocate on a relocatable ELF\n");
 		}
 
 		// Relocate ELF entry point and GP register
@@ -139,18 +139,18 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Unknown ELF type
 	else
 	{
-        LOGSTR("Uknown ELF type: 0x%08X\n", elf_hdr.e_type);
+        LOG_PRINTF("Uknown ELF type: 0x%08X\n", elf_hdr.e_type);
 		return SCE_KERNEL_ERROR_ERROR;
 	}
-	LOGSTR("resolve stubs\n");
+	LOG_PRINTF("resolve stubs\n");
 	// Resolve ELF's stubs with game's stubs and syscall estimation
 	unsigned int stubs_resolved = resolve_imports(pstub, stubs_size);
 
 	if (stubs_resolved == 0)
     {
-		LOGSTR("WARNING: no stubs found!!\n");
+		LOG_PRINTF("WARNING: no stubs found!!\n");
     }
-	//LOGSTR("\nUpdating module table\n");
+	//LOG_PRINTF("\nUpdating module table\n");
 
 	mod_table.table[i].id = MOD_ID_START + i;
 	mod_table.table[i].state = LOADED;
@@ -159,10 +159,10 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	mod_table.table[i].libstub_addr = pstub;
 	mod_table.num_loaded_mod++;
 
-	//LOGSTR("Module table updated\n");
+	//LOG_PRINTF("Module table updated\n");
 
-	LOGSTR("\n->Actual number of loaded modules: %d\n", mod_table.num_loaded_mod);
-	LOGSTR("Last loaded module [%d]:\n", i);
+	LOG_PRINTF("\n->Actual number of loaded modules: %d\n", mod_table.num_loaded_mod);
+	LOG_PRINTF("Last loaded module [%d]:\n", i);
 	LOGMODENTRY(mod_table.table[i]);
 
 	CLEAR_CACHE;
@@ -183,7 +183,7 @@ void launch_module(int mod_index, void* dummy)
 // Starts an already loaded module
 SceUID start_module(SceUID modid)
 {
-	LOGSTR("\n\n-->Starting module ID: 0x%08X\n", modid);
+	LOG_PRINTF("\n\n-->Starting module ID: 0x%08X\n", modid);
 
 	
 	if (mod_table.num_loaded_mod == 0)
@@ -229,34 +229,34 @@ SceUID start_module(SceUID modid)
 
 		char * lptr = largbuff + larglen + 1;
 
-		LOGSTR("lptr: %08X\n", (u32)lptr);
+		LOG_PRINTF("lptr: %08X\n", (u32)lptr);
 
 		_sprintf(lptr, "%08X", (u32)(&(menu_api)));
 
 		larglen += 9;
 
-		LOGSTR("new larglen: %08X\n", larglen);
+		LOG_PRINTF("new larglen: %08X\n", larglen);
 
 		menu_api.fname = hb_fname;
 	}
 
-    LOGSTR("argv[0]: '%s'\n", (u32)largbuff);
-    LOGSTR("argc:  %08X\n", (u32)larglen);
+    LOG_PRINTF("argv[0]: '%s'\n", (u32)largbuff);
+    LOG_PRINTF("argc:  %08X\n", (u32)larglen);
 
 	if(thid >= 0)
 	{
-		LOGSTR("->MODULE MAIN THID: 0x%08X ", thid);
+		LOG_PRINTF("->MODULE MAIN THID: 0x%08X ", thid);
         //The hook is called here to handle thread monitoring
 		thid = _hook_sceKernelStartThread(thid, larglen, (void *)largbuff);
 		if (thid < 0)
 		{
-			LOGSTR(" HB Thread couldn't start. Error 0x%08X\n", thid);
+			LOG_PRINTF(" HB Thread couldn't start. Error 0x%08X\n", thid);
 			return thid;
 		}
     }
 	else
 	{
-        LOGSTR(" HB Thread couldn't be created. Error 0x%08X\n", thid);
+        LOG_PRINTF(" HB Thread couldn't be created. Error 0x%08X\n", thid);
 		return thid;
 	}
 
@@ -388,7 +388,7 @@ tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_
 
 	if (name_found == NULL)
 	{
-		LOGSTR("->ERROR: could not find module %s\n", (u32)mod_name);
+		LOG_PRINTF("->ERROR: could not find module %s\n", (u32)mod_name);
 		return NULL;
 	}
 
@@ -397,7 +397,7 @@ tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_
 
 	if (name_found == NULL)
 	{
-		LOGSTR("->ERROR: could not find library name %s\n", (u32)lib_name);
+		LOG_PRINTF("->ERROR: could not find library name %s\n", (u32)lib_name);
 		return NULL;
 	}
 
@@ -439,7 +439,7 @@ int add_utility_to_table(unsigned int id)
 
 int load_util(int module)
 {
-	LOGSTR("Loading 0x%08X\n", module);
+	LOG_PRINTF("Loading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
 #ifdef USE_NET_MODULE_LOAD_FUNCTION
@@ -467,7 +467,7 @@ int load_util(int module)
 
 int unload_util(int module)
 {
-	LOGSTR("Unloading 0x%08X\n", module);
+	LOG_PRINTF("Unloading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
 #ifdef USE_NET_MODULE_UNLOAD_FUNCTION
@@ -497,11 +497,11 @@ int unload_util(int module)
 // Loads and registers exports from an utility module
 int load_export_utility_module(int mod_id, const char* lib_name , void **pexport_out )
 {
-	LOGSTR("Loading utility module for library %s\n", (u32)lib_name);
+	LOG_PRINTF("Loading utility module for library %s\n", (u32)lib_name);
 
 		//force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
 	if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729) {
-		LOGSTR("Force-Loading AVCODEC\n");
+		LOG_PRINTF("Force-Loading AVCODEC\n");
 #ifdef USE_AV_MODULE_LOAD_FUNCTION
 		sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
 #else
@@ -510,7 +510,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	}
 
 	if( mod_id == PSP_MODULE_NET_HTTP) {
-		LOGSTR("Force-Loading HTTP\n");
+		LOG_PRINTF("Force-Loading HTTP\n");
 #ifdef USE_NET_MODULE_LOAD_FUNCTION
 		sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
@@ -533,7 +533,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	if (get_utility_modname(lib_name, mod_name) < 0)
 	{
-		LOGSTR("Unknown/unsupported utility 0x%08X\n", mod_id);
+		LOG_PRINTF("Unknown/unsupported utility 0x%08X\n", mod_id);
 		return -1;
 	}
 
@@ -542,7 +542,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	if (pexports == NULL)
 	{
-		LOGSTR("->ERROR: could not find module exports for %s\n", (u32)mod_name);
+		LOG_PRINTF("->ERROR: could not find module exports for %s\n", (u32)mod_name);
 		return -1;
 	}
 
@@ -557,13 +557,13 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	*(tExportEntry **)pexport_out = NULL;
 
-	LOGSTR("Number of export functions: %d\n", (u16)pexports->num_functions);
-	LOGSTR("Pointer to exports: 0x%08X\n", (u32)pexports->exports_pointer);
+	LOG_PRINTF("Number of export functions: %d\n", (u16)pexports->num_functions);
+	LOG_PRINTF("Pointer to exports: 0x%08X\n", (u32)pexports->exports_pointer);
 
 	u32* pnids = (u32*)pexports->exports_pointer;
 	u32* pfunctions = (u32*)((u32)pexports->exports_pointer + (u16)pexports->num_functions * 4);
 
-	LOGSTR("Pointer to functions: 0x%08X\n", (u32)pfunctions);
+	LOG_PRINTF("Pointer to functions: 0x%08X\n", (u32)pfunctions);
 
 	// Insert new library on library table
 	tSceLibrary newlib;
@@ -577,7 +577,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	int lib_index = add_library_to_table(newlib);
 	if (lib_index < 0)
 	{
-		LOGSTR("->WARNING: could not add library to table\n");
+		LOG_PRINTF("->WARNING: could not add library to table\n");
 		return lib_index;
 	}
 
@@ -585,7 +585,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	int i;
 	for (i=0; i<(u16)pexports->num_functions; i++)
 	{
-		LOGSTR("NID %d: 0x%08X Function: 0x%08X\n", i, pnids[i], pfunctions[i]);
+		LOG_PRINTF("NID %d: 0x%08X Function: 0x%08X\n", i, pnids[i], pfunctions[i]);
 		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
 	}
 

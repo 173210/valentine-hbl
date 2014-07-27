@@ -33,13 +33,13 @@ typedef struct
 	HBLLibTable lib_table;
 	//malloc.c
 	SceUID blockids[MAX_ALLOCS]; /* Blocks */
+	SceUID dbg_fd;
 } tGlobals;
 
 #define GLOBALS_ADDR 0x10200
 #define globals ((tGlobals *)GLOBALS_ADDR)
 
 //This should fail with a weird error at compile time if globals is too big
-//We also have a runtime check so you can comment out this line if you don't understand its meaning
 STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
 STATIC_ASSERT(HBL_STUBS_START + NUM_HBL_IMPORTS * 2 * sizeof(int) <= GLOBALS_ADDR);
 

@@ -22,7 +22,7 @@ size_t strlen(const char *s);
 char *strcpy(char *dst, const char *src);
 
 // limited sprintf function - avoids pulling in large library
-void _vsprintf(char *s, const char *fmt, va_list va);
+void _vfprintf(void (* f)(int), const char *fmt, va_list va);
 void _sprintf(char *s, const char *fmt, ...);
 
 // Compares s1 with s2, returns 0 if both equal

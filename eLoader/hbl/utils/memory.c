@@ -19,7 +19,7 @@ int kill_thread(SceUID thid)
     {
         if (ret != (int)0x800201A2) //if thread already dormant, let's assume it's not really an error, we still want to delete it!
         {
-            LOGSTR("--> ERROR 0x%08X TERMINATING THREAD ID 0x%08X\n", ret, thid);
+            LOG_PRINTF("--> ERROR 0x%08X TERMINATING THREAD ID 0x%08X\n", ret, thid);
             return ret;
         }
     }
@@ -28,7 +28,7 @@ int kill_thread(SceUID thid)
     ret = sceKernelDeleteThread(thid);
     if (ret < 0)
     {
-        LOGSTR("--> ERROR 0x%08X DELETING THREAD ID 0x%08X\n", ret, thid);
+        LOG_PRINTF("--> ERROR 0x%08X DELETING THREAD ID 0x%08X\n", ret, thid);
     }
 #endif
 
@@ -37,7 +37,7 @@ int kill_thread(SceUID thid)
 #ifdef SUSPEND_THEN_DELETE_THREADS
 void SuspendAllThreads()
 {
-    LOGSTR("memory.c:SuspendAllThreads\n");
+    LOG_PRINTF("memory.c:SuspendAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 	SceUID thuids[] = TH_ADDR_LIST;
@@ -47,10 +47,10 @@ void SuspendAllThreads()
 	{
 		thuids[i] = *(SceUID*)(thaddrs[i]);
 		int result = sceKernelSuspendThread(thuids[i]);
-		LOGSTR("Suspending thread 0x%08X, result is 0x%08X\n", thuids[i], result);
+		LOG_PRINTF("Suspending thread 0x%08X, result is 0x%08X\n", thuids[i], result);
 	}
 
-	LOGSTR("All threads suspended\n");
+	LOG_PRINTF("All threads suspended\n");
 }
 
 
@@ -65,19 +65,19 @@ void SuicideAllThreads(void)
 	{
 		thuids[i] = *(SceUID*)(thaddrs[i]);
 		int result = sceKernelSuspendThread(thuids[i]);
-		LOGSTR("Suspending thread 0x%08X, result is 0x%08X\n", thuids[i], result);
+		LOG_PRINTF("Suspending thread 0x%08X, result is 0x%08X\n", thuids[i], result);
 	}
 
-	LOGSTR("All threads suspended\n");
+	LOG_PRINTF("All threads suspended\n");
 
 	unsigned int* address = (unsigned int*)0x09A00000;
 
 	// Get call for sceKernelExitDeleteThread
 	int nid_index = get_nid_index(0x809CE29B); // sceKernelExitDeleteThread
-	LOGSTR("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
+	LOG_PRINTF("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
 
 		unsigned int syscall = globals->nid_table.table[nid_index].call;
-	LOGSTR("Call for NID sceKernelExitDeleteThread is: 0x%08X 0x%08X\n", GET_SYSCALL_NUMBER(syscall), syscall);
+	LOG_PRINTF("Call for NID sceKernelExitDeleteThread is: 0x%08X 0x%08X\n", GET_SYSCALL_NUMBER(syscall), syscall);
 
 	// Write syscall instruction to memory and empty the memory
 	*address =  syscall;
@@ -91,17 +91,17 @@ void SuicideAllThreads(void)
 	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
 	{
 		int result = sceKernelResumeThread(thuids[i]);
-		LOGSTR("Resuming thread 0x%08X, result is 0x%08X\n", thuids[i], result);
+		LOG_PRINTF("Resuming thread 0x%08X, result is 0x%08X\n", thuids[i], result);
 	}
 
-	LOGSTR("All threads resumed\n");
+	LOG_PRINTF("All threads resumed\n");
 }
 #endif
 
 #ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)
 {
-    LOGSTR("memory.c:DeleteAllThreads\n");
+    LOG_PRINTF("memory.c:DeleteAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 
@@ -116,7 +116,7 @@ void DeleteAllThreads(void)
 #ifdef ALARM_ADDR_LIST
 void CancelAllAlarms(void)
 {
-    LOGSTR("memory.c:CancelAllAlarms\n");
+    LOG_PRINTF("memory.c:CancelAllAlarms\n");
 	u32 i;
 	u32 alarmaddrs[] = ALARM_ADDR_LIST;
 
@@ -126,7 +126,7 @@ void CancelAllAlarms(void)
 		int ret = sceKernelCancelAlarm(*(SceUID*)(alarmaddrs[i]));
 		if (ret < 0)
 		{
-			LOGSTR("--> ERROR 0x%08X CANCELING ALARM 0x%08X\n", ret, *(SceUID*)(alarmaddrs[i]));
+			LOG_PRINTF("--> ERROR 0x%08X CANCELING ALARM 0x%08X\n", ret, *(SceUID*)(alarmaddrs[i]));
 		}
 	}
 }
@@ -135,7 +135,7 @@ void CancelAllAlarms(void)
 #ifdef LWMUTEX_ADDR_LIST
 void DeleteAllLwMutexes(void)
 {
-    LOGSTR("memory.c:DeleteAllLwMutexes\n");
+    LOG_PRINTF("memory.c:DeleteAllLwMutexes\n");
 	u32 i;
 	u32 lwmutexaddrs[] = LWMUTEX_ADDR_LIST;
 
@@ -144,7 +144,7 @@ void DeleteAllLwMutexes(void)
 		int ret = sceKernelDeleteLwMutex((SceLwMutexWorkarea *)(lwmutexaddrs[i]));
 		if (ret < 0)
 		{
-			LOGSTR("--> ERROR 0x%08X DELETING LWMUTEX 0x%08X\n", ret, lwmutexaddrs[i]);
+			LOG_PRINTF("--> ERROR 0x%08X DELETING LWMUTEX 0x%08X\n", ret, lwmutexaddrs[i]);
 		}
 	}
 }
@@ -153,7 +153,7 @@ void DeleteAllLwMutexes(void)
 #ifdef EV_ADDR_LIST
 void DeleteAllEventFlags(void)
 {
-    LOGSTR("memory.c:DeleteAllEventFlags\n");
+    LOG_PRINTF("memory.c:DeleteAllEventFlags\n");
 	u32 i;
 	u32 evaddrs[] = EV_ADDR_LIST;
 
@@ -163,7 +163,7 @@ void DeleteAllEventFlags(void)
 		int ret = sceKernelDeleteEventFlag(*(SceUID*)(evaddrs[i]));
 		if (ret < 0)
 		{
-			LOGSTR("--> ERROR 0x%08X DELETING EVENT FLAG 0x%08X\n", ret, *(SceUID*)(evaddrs[i]));
+			LOG_PRINTF("--> ERROR 0x%08X DELETING EVENT FLAG 0x%08X\n", ret, *(SceUID*)(evaddrs[i]));
 		}
 	}
 }
@@ -173,7 +173,7 @@ void DeleteAllEventFlags(void)
 void DeleteAllSemaphores(void)
 {
 #ifndef HOOK_sceKernelDeleteSema_WITH_dummy
-    LOGSTR("memory.c:DeleteAllSemaphores\n");
+    LOG_PRINTF("memory.c:DeleteAllSemaphores\n");
 	u32 i;
 	u32 semaaddrs[] = SEMA_ADDR_LIST;
 
@@ -190,7 +190,7 @@ void DeleteAllSemaphores(void)
 		int ret = sceKernelDeleteSema(*(SceUID*)(semaaddrs[i]));
 		if (ret < 0)
 		{
-			LOGSTR("--> ERROR 0x%08X DELETING SEMAPHORE 0x%08X\n", ret, *(SceUID*)(semaaddrs[i]));
+			LOG_PRINTF("--> ERROR 0x%08X DELETING SEMAPHORE 0x%08X\n", ret, *(SceUID*)(semaaddrs[i]));
 		}
 	}
 #endif
@@ -205,7 +205,7 @@ void UnloadModules()
 {
 #ifndef LOAD_MODULES_FOR_SYSCALLS
 #ifdef UNLOAD_ADDITIONAL_MODULES
-    LOGSTR("memory.c:UnloadModules\n");
+    LOG_PRINTF("memory.c:UnloadModules\n");
 	// Unload user modules first
 	// The more basic modules got a lower ID, so this should be the correct
 	// order to unload
@@ -217,7 +217,7 @@ void UnloadModules()
 		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && get_fw_ver() <= 620 ) )
 		{
 			result = sceUtilityUnloadModule(m);
-			LOGSTR("unloading utility module 0x%08X, result 0x%08X\n", m, result);
+			LOG_PRINTF("unloading utility module 0x%08X, result 0x%08X\n", m, result);
 			m--;
 		}
 	}
@@ -225,9 +225,9 @@ void UnloadModules()
 	m = PSP_MODULE_NET_SSL;
 	while (m >= PSP_MODULE_NET_COMMON)
 	{
-        LOGSTR("unloading utility module 0x%08X...", m);
+        LOG_PRINTF("unloading utility module 0x%08X...", m);
 		result = sceUtilityUnloadModule(m);
-		LOGSTR("result 0x%08X\n", result);
+		LOG_PRINTF("result 0x%08X\n", result);
 		m--;
 	}
 #endif
@@ -235,9 +235,9 @@ void UnloadModules()
 
 #ifdef KILL_MODULE_MEMSET
 	if( unload_memset_flag != 0){
-		LOGSTR("memory.c:memset start\n");
+		LOG_PRINTF("memory.c:memset start\n");
 		KILL_MODULE_MEMSET;
-		LOGSTR("memory.c:memset done\n");
+		LOG_PRINTF("memory.c:memset done\n");
 		unload_memset_flag = 0;
 	}
 #endif
@@ -266,7 +266,7 @@ void UnloadModules()
 
 			if (cur_uid == MAX_MODULES_TO_FREE)
 			{
-				LOGSTR("\n->WARNING: Max number of modules to unload reached\n");
+				LOG_PRINTF("\n->WARNING: Max number of modules to unload reached\n");
 				break;
 			}
 		}
@@ -279,7 +279,7 @@ void UnloadModules()
 		int ret = sceKernelUnloadModule(uids[i]);
 		if (ret < 0)
 		{
-			LOGSTR("--> ERROR 0x%08X UNLOADING MODULE ID 0x%08X\n", ret, uids[i]);
+			LOG_PRINTF("--> ERROR 0x%08X UNLOADING MODULE ID 0x%08X\n", ret, uids[i]);
 		}
 	}
 }
@@ -289,7 +289,7 @@ void FreeMem()
 {
 	unsigned i;
 
-	LOGSTR("memory.c:FreeMem\n");
+	LOG_PRINTF("memory.c:FreeMem\n");
 
 #ifdef GAME_FREEMEM_ADDR
     SceUID memids[] = GAME_FREEMEM_ADDR;
@@ -299,7 +299,7 @@ void FreeMem()
         int ret = sceKernelFreePartitionMemory(*(SceUID*)memids[i]);
         if (ret < 0)
         {
-            LOGSTR("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID*)memids[i]);
+            LOG_PRINTF("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID*)memids[i]);
         }
     }
 #endif
@@ -353,7 +353,7 @@ void FreeMem()
 #ifdef VPL_ADDR_LIST
 void FreeVpl()
 {
-    LOGSTR("memory.c:FreeVpl\n");
+    LOG_PRINTF("memory.c:FreeVpl\n");
     u32 i;
     SceUID memids[] = VPL_ADDR_LIST;
 
@@ -362,7 +362,7 @@ void FreeVpl()
         int ret = sceKernelDeleteVpl(*(SceUID*)memids[i]);
         if (ret < 0)
         {
-            LOGSTR("--> ERROR 0x%08X Deleting VPL ID 0x%08X\n", ret, *(SceUID*)memids[i]);
+            LOG_PRINTF("--> ERROR 0x%08X Deleting VPL ID 0x%08X\n", ret, *(SceUID*)memids[i]);
         }
     }
 }
@@ -371,7 +371,7 @@ void FreeVpl()
 #ifdef FPL_ADDR_LIST
 void FreeFpl()
 {
-    LOGSTR("memory.c:FreeFpl\n");
+    LOG_PRINTF("memory.c:FreeFpl\n");
     u32 i;
     SceUID memids[] = FPL_ADDR_LIST;
 
@@ -380,7 +380,7 @@ void FreeFpl()
         int ret = sceKernelDeleteFpl(*(SceUID*)memids[i]);
         if (ret < 0)
         {
-            LOGSTR("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID*)memids[i]);
+            LOG_PRINTF("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID*)memids[i]);
         }
     }
 }
@@ -390,7 +390,7 @@ void FreeFpl()
 // open by the exploitet game
 void CloseFiles()
 {
-    LOGSTR("memory.c:CloseFiles\n");
+    LOG_PRINTF("memory.c:CloseFiles\n");
 	SceUID result;
 	int i;
 
@@ -399,7 +399,7 @@ void CloseFiles()
 		result = sceIoClose(i);
 		if (result != (int)0x80020323) // bad file descriptor
 		{
-			LOGSTR("tried closing file %d, result 0x%08X\n", i, result);
+			LOG_PRINTF("tried closing file %d, result 0x%08X\n", i, result);
 		}
 	}
 }
@@ -419,7 +419,7 @@ void free_game_memory()
     int max_free;
 	is_free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
-	LOGSTR(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", is_free, max_free);
+	LOG_PRINTF(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", is_free, max_free);
 #endif
 
 #if defined(GAME_FREEMEM_ADDR) || defined(GAME_FREEMEM_BRUTEFORCE_NUM)
@@ -485,7 +485,7 @@ unload_memset_flag = 1;
 #ifdef DEBUG
 	is_free = sceKernelTotalFreeMemSize();
     max_free = sceKernelMaxFreeMemSize();
-	LOGSTR(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", is_free, max_free);
+	LOG_PRINTF(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", is_free, max_free);
 #endif
 
 	return;
@@ -498,7 +498,7 @@ SceSize sceKernelMaxFreeMemSize()
     SceSize size, sizeblock;
     SceUID uid;
 
-    LOGSTR("Call to sceKernelMaxFreeMemSize()\n");
+    LOG_PRINTF("Call to sceKernelMaxFreeMemSize()\n");
     // Init variables
     size = 0;
     sizeblock = 1024 * 1024;
@@ -532,7 +532,7 @@ SceSize sceKernelTotalFreeMemSize()
     u32 count,i;
     SceSize size, x;
 
-    LOGSTR("Call to sceKernelTotalFreeMemSize()\n");
+    LOG_PRINTF("Call to sceKernelTotalFreeMemSize()\n");
     // Init variables
     size = 0;
     count = 0;
@@ -542,7 +542,7 @@ SceSize sceKernelTotalFreeMemSize()
     {
         if (count >= sizeof(blocks)/sizeof(blocks[0]))
         {
-            LOGSTR("Too many blocks in sceKernelTotalFreeSize, return value will be approximate\n");
+            LOG_PRINTF("Too many blocks in sceKernelTotalFreeSize, return value will be approximate\n");
             return size;
         }
 
@@ -554,7 +554,7 @@ SceSize sceKernelTotalFreeMemSize()
         blocks[count] = sceKernelAllocPartitionMemory(2, "ValentineFreeMemMalloc", PSP_SMEM_Low, x, NULL);
         if (!(blocks[count]))
         {
-            LOGSTR("Discrepency between sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
+            LOG_PRINTF("Discrepency between sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
             return size;
         }
 

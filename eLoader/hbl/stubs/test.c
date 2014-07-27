@@ -11,7 +11,7 @@ SceUID _test_sceIoDopen(const char* path)
 	while (ret < 0 && i < MAX_REESTIMATE_ATTEMPTS)
 	{
 		i++;
-		LOGSTR("Reestimating sceIoDopen -> Method: %d\n", i);
+		LOG_PRINTF("Reestimating sceIoDopen -> Method: %d\n", i);
 		//reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0028, i);
 		reestimate_syscall("IoFileMgrForUser", 0xb29ddf9c, (u32*)0x10028, i);
 		ret = sceIoDopen(path);
@@ -30,7 +30,7 @@ int _test_sceIoDread(SceUID id, SceIoDirent* entry)
 	while (ret < 0 && i < MAX_REESTIMATE_ATTEMPTS)
 	{
 		i++;
-		LOGSTR("Reestimating sceIoDread -> Method: %d\n", i);
+		LOG_PRINTF("Reestimating sceIoDread -> Method: %d\n", i);
 		//reestimate_syscall("IoFileMgrForUser", 0xe3eb004c, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0030, i);
 		reestimate_syscall("IoFileMgrForUser", 0xe3eb004c, (u32*)0x10030, i);
 		ret = sceIoDread(id, entry);
@@ -49,7 +49,7 @@ int _test_sceIoDclose(SceUID id)
 	while (ret < 0 && i < MAX_REESTIMATE_ATTEMPTS)
 	{
 		i++;
-		LOGSTR("Reestimating sceIoDclose -> Method: %d\n", i);
+		LOG_PRINTF("Reestimating sceIoDclose -> Method: %d\n", i);
 		//reestimate_syscall("IoFileMgrForUser", 0xeb092469, *(u32*)ADDR_HBL_STUBS_BLOCK_ADDR + 0x0038, i);
 		reestimate_syscall("IoFileMgrForUser", 0xeb092469, (u32*)0x10038, i);
 		ret = sceIoDclose(id);

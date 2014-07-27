@@ -37,9 +37,9 @@ u32 get_fw_ver()
    cnt = Entry->vstubcount + Entry->stubcount;
    u32** pointer =(u32**) Entry->entrytable;
 
-//   LOGSTR("Entry is 0x%08X \n",(u32)Entry);
-//   LOGSTR("cnt is 0x%08X \n",(u32)cnt);
-//   LOGSTR("pointer is 0x%08X \n",(u32)pointer);
+//   LOG_PRINTF("Entry is 0x%08X \n",(u32)Entry);
+//   LOG_PRINTF("cnt is 0x%08X \n",(u32)cnt);
+//   LOG_PRINTF("pointer is 0x%08X \n",(u32)pointer);
 
    for(i=0;i< cnt;i++)
    {
@@ -49,7 +49,7 @@ u32 get_fw_ver()
          break;
       }
    }
-   LOGSTR("Detected firmware version is 0x%08X\n", (u32)version);
+   LOG_PRINTF("Detected firmware version is 0x%08X\n", (u32)version);
 
    if(version)
    {
@@ -59,7 +59,7 @@ u32 get_fw_ver()
    }
    else
    {
-      LOGSTR("Warning: Cannot find module_sdk_version function \n");
+      LOG_PRINTF("Warning: Cannot find module_sdk_version function \n");
    }
 
     return globals->fw_ver;

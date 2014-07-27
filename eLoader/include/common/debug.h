@@ -15,16 +15,9 @@
 //init the debug file
 void init_debug();
 
-// Write a string + data to debug path
-void write_debug(const char* desc, void* val, size_t size);
-
-// Write a debug string + carriage return to debug path
-void write_debug_newline (const char *desc);
-
-// Write debug and exit
-void exit_with_log(const char *desc, void *val, size_t size);
-
-void logstr(const char *fmt, ...);
+void log_putc(int c);
+void scr_puts(const char *s);
+void log_printf(const char *fmt, ...);
 
 
 #ifdef DEBUG
@@ -36,7 +29,8 @@ void log_mod_entry(HBLModInfo modinfo);
 void log_elf_section_header(Elf32_Shdr shdr);
 #define DEBUG_PRINT(a,b,c) write_debug(a,b,c)
 #define DEBUG_PRINT_NL(a) write_debug_newline(a)
-#define LOGSTR(...) logstr(__VA_ARGS__)
+#define LOG_PUTC(s) log_putc(s)
+#define LOG_PRINTF(...) log_printf(__VA_ARGS__)
 #define LOGLIB(a) log_lib(a)
 #define LOGMODINFO(a) log_modinfo(a)
 #define LOGELFHEADER(a) log_elf_header(a)
@@ -47,7 +41,8 @@ void log_elf_section_header(Elf32_Shdr shdr);
 #else
 #define DEBUG_PRINT(a,b,c) {}
 #define DEBUG_PRINT_NL(a) {}
-#define LOGSTR(...) {}
+#define LOG_PUTS(s) {}
+#define LOG_PRINTF(...) {}
 #define LOGLIB(a) {}
 #define LOGMODINFO(a) {}
 #define LOGELFHEADER(a) {}
@@ -57,10 +52,10 @@ void log_elf_section_header(Elf32_Shdr shdr);
 #endif
 
 #ifdef NID_DEBUG
-#define NID_LOGSTR(...) logstr(__VA_ARGS__)
+#define NID_LOG_PRINTF(...) log_printf(__VA_ARGS__)
 
 #else
-#define NID_LOGSTR(...) {}
+#define NID_LOG_PRINTF(...) {}
 #endif
 
 #endif

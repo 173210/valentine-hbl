@@ -54,7 +54,7 @@ int cfg_init()
 	}
 #endif
 
-	LOGSTR("Config file:%s\n", (int)file);
+	LOG_PRINTF("Config file:%s\n", (int)file);
 
 	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 
