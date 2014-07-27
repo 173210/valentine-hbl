@@ -3,13 +3,20 @@
 //
 
 #include <hbl/utils/settings.h>
-#include <hbl/eloader.h>
 #include <common/utils/graphics.h>
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
+#include <common/path.h>
 #include <common/utils.h>
 #include <exploit_config.h>
+
+//default values
+int override_sceIoMkdir = DONT_OVERRIDE;
+int override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;
+int return_to_xmb_on_exit = 0;
+unsigned int force_exit_buttons = 0;
+char hb_fname[512] = "ms0:/PSP/GAME/";
 
 /*****************************************************************************/
 /* configYnParse : return TRUE if parameter is Y, FALSE if N                 */
@@ -221,30 +228,30 @@ void configGetProcessingOptions()
         LOGSTR("Parm %s = %s\n", (u32)lstr, (u32)lval);
         if (strcmp(lstr,"override_sceIoMkdir")==0)
         {
-            globals->override_sceIoMkdir = configIntParse(lval);
+            override_sceIoMkdir = configIntParse(lval);
         }
         else if (strcmp(lstr,"override_sceCtrlPeekBufferPositive")==0)
         {
-            globals->override_sceCtrlPeekBufferPositive = configIntParse(lval);
+            override_sceCtrlPeekBufferPositive = configIntParse(lval);
         }
         else if (strcmp(lstr,"return_to_xmb_on_exit")==0)
         {
-            globals->return_to_xmb_on_exit = configIntParse(lval);
+            return_to_xmb_on_exit = configIntParse(lval);
         }
         else if (strcmp(lstr,"force_exit_buttons")==0)
         {
-            globals->force_exit_buttons = configAddrParse(lval);
+            force_exit_buttons = configAddrParse(lval);
         }
 #ifndef VITA
         else if (strcmp(lstr,"syscalls_known")==0)
         {
-            globals->syscalls_known = configIntParse(lval);
+            syscalls_known = configIntParse(lval);
         }
 #endif
         else if (strcmp(lstr,"hb_folder")==0)
         {
-            //note: globals->hb_folder is initialized in loadGlobalConfig
-            strcpy(globals->hb_fname,lval);
+            //note: hb_folder is initialized in loadGlobalConfig
+            strcpy(hb_fname,lval);
         }
         else
         {
@@ -257,15 +264,6 @@ void configGetProcessingOptions()
 // Load default config
 void loadGlobalConfig()
 {
-        //default values
-    globals->override_sceIoMkdir = DONT_OVERRIDE;
-    globals->override_sceCtrlPeekBufferPositive = DONT_OVERRIDE;
-    globals->return_to_xmb_on_exit = 0;
-    globals->force_exit_buttons = 0;
-    strcpy(globals->hb_fname, "ms0:/PSP/GAME/");
-#ifdef VITA
-    reset_vita_dirs();
-#endif
 
     //load Config file
     loadConfig(HBL_ROOT HBL_CONFIG);

@@ -38,6 +38,8 @@ typedef struct
 	unsigned int utility[MAX_MODULES]; 		// List of ID for utility modules loaded
 } HBLModTable;
 
+extern HBLModTable mod_table;
+
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset);
 

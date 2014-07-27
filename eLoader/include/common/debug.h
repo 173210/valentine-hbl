@@ -3,7 +3,6 @@
 
 #include <common/stubs/tables.h>
 #include <common/sdk.h>
-#include <hbl/eloader.h>
 #include <hbl/mod/elf.h>
 #include <hbl/mod/modmgr.h>
 

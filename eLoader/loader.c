@@ -5,15 +5,15 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/graphics.h>
-#include <common/sdk.h>
-#include <loader.h>
-#include <common/debug.h>
 #include <common/config.h>
-#include <common/utils.h>
-#include <hbl/eloader.h>
-#include <common/malloc.h>
+#include <common/debug.h>
 #include <common/globals.h>
+#include <common/malloc.h>
+#include <common/path.h>
+#include <common/sdk.h>
+#include <common/utils.h>
 #include <exploit_config.h>
+#include <loader.h>
 #include <svnversion.h>
 
 #ifdef VITA

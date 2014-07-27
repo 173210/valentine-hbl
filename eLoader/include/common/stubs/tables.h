@@ -3,7 +3,12 @@
 
 #include <common/sdk.h>
 #include <hbl/mod/elf.h>
-#include <hbl/eloader.h>
+
+// Max libraries to consider
+#define MAX_LIBRARIES 40
+
+// Size of NID-to-call table
+#define NID_TABLE_SIZE 600
 
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
 typedef struct

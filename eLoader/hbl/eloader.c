@@ -2,31 +2,30 @@
 #include <common/stubs/syscall.h>
 #include <common/utils/graphics.h>
 #include <common/utils/string.h>
-#include <common/sdk.h>
-#include <hbl/eloader.h>
 #include <common/debug.h>
-#include <hbl/stubs/hook.h>
-#include <common/utils.h>
-#include <hbl/stubs/test.h>
-#include <hbl/utils/settings.h>
-#include <svnversion.h>
-#include <common/malloc.h>
-#include <hbl/utils/memory.h>
-#include <hbl/mod/modmgr.h>
 #include <common/globals.h>
+#include <common/malloc.h>
+#include <common/path.h>
+#include <common/sdk.h>
+#include <common/utils.h>
+#include <hbl/mod/modmgr.h>
+#include <hbl/stubs/hook.h>
+#include <hbl/stubs/test.h>
+#include <hbl/utils/memory.h>
+#include <hbl/utils/settings.h>
+#include <hbl/eloader.h>
 #include <exploit_config.h>
+#include <svnversion.h>
 
-// Additional globals initialization.
-// some games do not import those, so loader.c (and therefore globals.c)
-// cannot have them
-void init_globals_2() {
-    
-    globals->memSema = sceKernelCreateSema("hblmemsema",0,1,1,0);
-    globals->thSema = sceKernelCreateSema("hblthSema",0,1,1,0);
-    globals->cbSema = sceKernelCreateSema("hblcbsema",0,1,1,0);
-    globals->audioSema = sceKernelCreateSema("hblaudiosema",0,1,1,0);
-	globals->ioSema = sceKernelCreateSema("hbliosema",0,1,1,0);
-};
+int chdir_ok;
+
+static int hbl_exit_cb_called = 0;
+int hook_exit_cb_called = 0;
+SceKernelCallbackFunction hook_exit_cb = NULL;
+
+int num_pend_th = 0;
+int num_run_th = 0;
+int num_exit_th = 0;
 
 // HBL entry point
 // Needs path to ELF or EBOOT
@@ -103,31 +102,31 @@ void wait_for_eboot_end()
         //sceKernelWaitSema(gthSema, 1, 0);
 
         //Check for force exit to the menu
-        if (globals->force_exit_buttons)
+        if (force_exit_buttons)
         {
 #ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
             sceCtrlReadBufferPositive(&pad, 1);
 #else
 			sceCtrlPeekBufferPositive(&pad, 1);
 #endif
-            if (pad.Buttons == globals->force_exit_buttons)
+            if (pad.Buttons == force_exit_buttons)
             {
                 exit_everything_but_me();
             }
         }
 
 		// Quit if the exit callback was called and has finished processing
-		if (globals->exit_cb_called == 2)
+		if (hbl_exit_cb_called == 2)
 		{
 			// Increment the time the homebrew is taking to exit
 			exit_callback_timeout++;
 
 			// Force quit if the timeout is reached or no exit callback was defined
-			if (!globals->exitcb || (exit_callback_timeout > 20))
+			if (!hook_exit_cb || (exit_callback_timeout > 20))
 				exit_everything_but_me();
 		}
 
-        lwait = globals->num_run_th + globals->num_pend_th;
+        lwait = num_run_th + num_pend_th;
         //sceKernelSignalSema(gthSema, 1);
 
         sceKernelDelayThread(1000000);
@@ -148,11 +147,11 @@ void cleanup(u32 num_lib)
     //unload utility modules
     int i;
     int modid;
-    u32 num_utility = globals->mod_table.num_utility;
+    u32 num_utility = mod_table.num_utility;
 	for (i=num_utility-1; i>=0; i--)
 	{
 
-		if ((modid = globals->mod_table.utility[i]) != 0)
+		if ((modid = mod_table.utility[i]) != 0)
 		{
 			//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
 			//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
@@ -164,28 +163,28 @@ void cleanup(u32 num_lib)
 				int ret = unload_util(modid);
 	            if (ret < 0)
 	            {
-	                LOGSTR("WARNING! error unloading module %d: 0x%08X\n",globals->mod_table.utility[i], ret);
+	                LOGSTR("WARNING! error unloading module %d: 0x%08X\n",mod_table.utility[i], ret);
 	                puts_scr("WARNING! ERROR UNLOADING UTILITY");
 	                sceKernelDelayThread(1000000);
 	            }
 	            else
 	            {
-	                globals->mod_table.utility[i] = 0;
-	                globals->mod_table.utility[i] = globals->mod_table.utility[globals->mod_table.num_utility-1];
-	                globals->mod_table.utility[globals->mod_table.num_utility-1] = 0;
-	                globals->mod_table.num_utility--;
+	                mod_table.utility[i] = 0;
+	                mod_table.utility[i] = mod_table.utility[mod_table.num_utility-1];
+	                mod_table.utility[mod_table.num_utility-1] = 0;
+	                mod_table.num_utility--;
 	            }
 	        }
 		}
 	}
 	#endif
     //cleanup globals
-    globals->mod_table.num_loaded_mod = 0;
-    memset(&(globals->mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
+    mod_table.num_loaded_mod = 0;
+    memset(&(mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
     globals->lib_table.num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
     //memset(&(globals->lib_table), 0, sizeof(HBLLibTable));
-    globals->calledexitcb = 0;
-    globals->exitcb = 0;
+    hook_exit_cb_called = 0;
+    hook_exit_cb = NULL;
 
     return;
 }
@@ -244,7 +243,7 @@ void run_menu()
             puts_scr_color("--success", 0x0000FF00);
     }
 
-    run_eboot(globals->menupath, 1);
+    run_eboot(MENU_PATH, 1);
 }
 
 // HBL exit callback
@@ -259,17 +258,17 @@ int hbl_exit_callback(int arg1, int arg2, void *arg)
 	LOGSTR("HBL Exit Callback Called\n");
 
 	// Signal that the callback is being run now
-	globals->exit_cb_called = 1;
+	hbl_exit_cb_called = 1;
 
-	if (globals->exitcb)
+	if (hook_exit_cb)
     {
-        LOGSTR("Call exit CB: %08X\n", (u32) globals->exitcb);
-        globals->calledexitcb = 1;
-        globals->exitcb(0, 0, NULL);
+        LOGSTR("Call exit CB: %08X\n", (int)hook_exit_cb);
+        hook_exit_cb_called = 1;
+        hook_exit_cb(0, 0, NULL);
     }
 
 	// Signal that the callback has finished
-	globals->exit_cb_called = 2;
+	hbl_exit_cb_called = 2;
 
 	return 0;
 }
@@ -324,6 +323,8 @@ int start_thread() //SceSize args, void *argp)
 #endif
 #endif
 
+	init_hook();
+
     // Start Callback Thread
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
 	if(thid > -1)
@@ -342,10 +343,10 @@ int start_thread() //SceSize args, void *argp)
     if (file_exists(EBOOT_PATH))
     {
         exit = 1;
-        globals->return_to_xmb_on_exit = 1;
+        return_to_xmb_on_exit = 1;
         run_eboot(EBOOT_PATH, 1);
         //we wait infinitely here, or until exit callback is called
-        while(!globals->exit_cb_called)
+        while(!hbl_exit_cb_called)
             sceKernelDelayThread(100000);
     }
 
@@ -360,14 +361,14 @@ int start_thread() //SceSize args, void *argp)
         wait_for_eboot_end();
         cleanup(num_lib);
         ramcheck(initial_free_ram);
-        if (strcmp("quit", globals->hb_fname) == 0 || globals->exit_cb_called){
+        if (strcmp("quit", hb_fname) == 0 || hbl_exit_cb_called){
             exit = 1;
             continue;
         }
 
         initial_free_ram = sceKernelTotalFreeMemSize();
         char filename[512];
-        strcpy(filename, globals->hb_fname);
+        strcpy(filename, hb_fname);
         LOGSTR("Eboot is: %s\n", (u32)filename);
         //re-Load default config
         loadGlobalConfig();
@@ -379,7 +380,7 @@ int start_thread() //SceSize args, void *argp)
         wait_for_eboot_end();
         cleanup(num_lib);
         ramcheck(initial_free_ram);
-        if (globals->exit_cb_called)
+        if (hbl_exit_cb_called)
 			exit = 1;
     }
 
@@ -393,9 +394,6 @@ void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
 	SceUID thid;
-
-    // Second step of globals initalization
-	init_globals_2();
 
 
 	// Create and start eloader thread

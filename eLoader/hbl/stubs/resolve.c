@@ -109,7 +109,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	unsigned int resolving_count = 0;
 
 #ifdef HOOK_CHDIR_AND_FRIENDS
-        globals->chdir_ok = test_sceIoChdir();
+        chdir_ok = test_sceIoChdir();
 #endif
 
 	LOGSTR("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);

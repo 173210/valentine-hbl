@@ -35,10 +35,9 @@
 // Comment to avoid overriding sceUtility functions
 #define HOOK_UTILITY
 
-extern int chdir_ok;
-
 
 //Own functions
+void init_hook();
 int test_sceIoChdir();
 void threads_cleanup();
 void ram_cleanup();

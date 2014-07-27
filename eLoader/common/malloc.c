@@ -1,6 +1,5 @@
 #include <common/utils/string.h>
 #include <common/sdk.h>
-#include <hbl/eloader.h>
 #include <common/malloc.h>
 #include <common/debug.h>
 #include <common/globals.h>

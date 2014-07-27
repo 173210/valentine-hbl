@@ -8,11 +8,7 @@
 void init_globals()
 {
         memset(globals, 0, sizeof(tGlobals));
-#ifdef VITA
-	strcpy(globals->menupath, HBL_ROOT"EBOOT.PBP");
-#else
-	strcpy(globals->menupath, HBL_ROOT"menu/EBOOT.PBP");
-
+#ifndef VITA
 	// Intialize firmware and model
 	get_fw_ver();
 	getPSPModel();
@@ -41,18 +37,5 @@ void init_globals()
 	}
 #endif
 #endif
-	globals->cur_ch_id = -1;
 }
-
-#ifdef VITA
-void reset_vita_dirs()
-{
-	int i, j;
-
-	for (i = 0; i < MAX_OPEN_DIR_VITA; i++)
-		for (j = 0; j < 2; j++)
- 			globals->dirFix[i][j] = -1;
-}
-#endif
-
 

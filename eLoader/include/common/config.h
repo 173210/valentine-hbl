@@ -4,11 +4,14 @@
 // This defines data about .config file used by loader and HBL own stubs resolver
 
 #include <common/stubs/tables.h>
+#include <common/path.h>
 #include <common/sdk.h>
-#include <hbl/eloader.h>
+#include <exploit_config.h>
 
 // Imports file
-# define IMPORTS_PATH HBL_ROOT"config/imports.config"
+#ifndef IMPORTS_PATH
+#define IMPORTS_PATH HBL_ROOT"config/imports.config"
+#endif
 
 // Defining a library and its imports
 typedef struct {
