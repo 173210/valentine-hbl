@@ -214,7 +214,7 @@ void UnloadModules()
 	int m = PSP_MODULE_AV_G729;
 	while (m >= PSP_MODULE_AV_AVCODEC)
 	{
-		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && get_fw_ver() <= 620 ) )
+		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && globals->fw_ver <= 0x06020010 ) )
 		{
 			result = sceUtilityUnloadModule(m);
 			LOG_PRINTF("unloading utility module 0x%08X, result 0x%08X\n", m, result);

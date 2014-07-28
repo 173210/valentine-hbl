@@ -17,6 +17,10 @@
 #define REESTIMATE_SYSCALL
 #endif
 
+// Path for NID libraries
+#define LIB_PATH HBL_ROOT "libs"
+#define LIB_EXT ".nid"
+
 typedef enum
 {
 	FROM_LOWER = 0,

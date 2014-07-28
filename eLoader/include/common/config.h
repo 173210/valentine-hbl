@@ -9,8 +9,10 @@
 #include <exploit_config.h>
 
 // Imports file
-#ifndef IMPORTS_PATH
-#define IMPORTS_PATH HBL_ROOT"config/imports.config"
+#if VITA >= 180
+#define IMPORTS_PATH HBL_ROOT "IMPORTS.DAT"
+#else
+#define IMPORTS_PATH HBL_ROOT "config/imports.config"
 #endif
 
 // Defining a library and its imports

@@ -24,10 +24,11 @@ typedef struct
 #ifndef VITA
 	// firmware and model
 	int fw_ver;
-	int psp_model;
-#else
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	int psp_go;
 	//tables.c
 	int syscalls_known;
+#endif
 #endif
 	HBLNIDTable nid_table;
 	HBLLibTable lib_table;

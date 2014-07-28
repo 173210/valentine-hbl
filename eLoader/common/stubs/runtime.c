@@ -92,7 +92,7 @@ void unload_utils()
 			LOG_PRINTF("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
 	}
 #ifndef VITA
-	if (get_fw_ver() <= 620)
+	if (globals->fw_ver <= 0x06020010)
 		module--; // Skip PSP_AV_MODULE_MP3
 #endif
 	while (module >= 1) {
@@ -109,7 +109,7 @@ void unload_utils()
 	//Unload modules in reverse order
 	for(i = sizeof(modules) / sizeof(int) - 1; i >= 0; i--) {
 #ifndef VITA
-		if(modules[i] == PSP_MODULE_AV_MP3 && get_fw_ver() <= 620)
+		if(modules[i] == PSP_MODULE_AV_MP3 && globals->fw_ver <= 0x06020010)
 			continue;
 #endif
 		ret = sceUtilityUnloadModule(modules[i]);

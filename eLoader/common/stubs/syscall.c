@@ -1,8 +1,9 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/string.h>
-#include <common/sdk.h>
 #include <common/debug.h>
+#include <common/globals.h>
+#include <common/sdk.h>
 #include <common/utils.h>
 #include <exploit_config.h>
 
@@ -79,62 +80,58 @@ int toBase36 (char * dest,const unsigned long src)
 // Opens .nids file for a given library
 SceUID open_nids_file(const char* libname)
 {
-	char file[MAX_LIB_NAME_LEN + 100];
+	const char lib_path[] = LIB_PATH;
+	const char lib_ext[] = LIB_EXT;
+	const char *lib = libname;
+	char file[sizeof(lib_path) + MAX_LIB_NAME_LEN + sizeof(lib_ext) + 3];
+	int fw_ver = globals->fw_ver;
+	int i, j, ret;
 
-    int fw_ver = get_fw_ver();
+	for (i = 0; lib_path[i]; i++)
+		file[i] = lib_path[i];
 
-	int i = 0;
+	//We try to open a lib file base on the version of the firmware as precisely as possible,
+	//then fallback to less precise versions. for example,try in this order:
+	// libs_503, libs_50x, libs_5xx, libs
+	file[i++] = '_';
 
-#ifdef SMALL_FILENAMES
-    char lib[9];
-    unsigned long hash = hash_djb2(libname);
-    toBase36 (lib,hash);
-    LOG_PRINTF("converted lib name %s into %s", (u32) libname, (u32) lib);
-#else
-    const char * lib = libname;
-#endif
-    //We try to open a lib file base on the version of the firmware as precisely as possible,
-    //then fallback to less precise versions. for example,try in this order:
-    // libs_503, libs_50x, libs_5xx, libs
-	do
-	{
-		switch (i)
-		{
-#ifdef FLAT_FOLDER
-			case 0:
-				_sprintf(file, "%s_%d%s%s", (u32)LIB_PATH, fw_ver, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-			case 1:
-				_sprintf(file, "%s_%dx%s%s", (u32)LIB_PATH, fw_ver / 10, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-			case 2:
-				_sprintf(file, "%s_%dxx%s%s", (u32)LIB_PATH, fw_ver / 100, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-			case 3:
-				_sprintf(file, "%s%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-#else
-			case 0:
-				_sprintf(file, "%s_%d/%s%s", (u32)LIB_PATH, fw_ver, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-			case 1:
-				_sprintf(file, "%s_%dx/%s%s", (u32)LIB_PATH, fw_ver / 10, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-			case 2:
-				_sprintf(file, "%s_%dxx/%s%s", (u32)LIB_PATH, fw_ver / 100, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-			case 3:
-				_sprintf(file, "%s/%s%s", (u32)LIB_PATH, (u32)lib, (u32)LIB_EXTENSION);
-				break;
-#endif
-		}
-		i++;
+	j = i + 2;
+	while (i <= j) {
+		fw_ver >>= 8;
+		file[i++] = '0' + (fw_ver & 0xF);
 	}
-	while ((i < 4) && !file_exists(file));
 
-	LOG_PRINTF("Opening %s\n", (u32)file);
+	for (j = 0; lib[j]; j++) {
+		file[i++] = lib[j];
+	}
 
-	return sceIoOpen(file, PSP_O_RDONLY, 0777);
+	for (j = 0; lib_ext[j]; j++) {
+		file[i++] = lib_ext[j];
+	}
+
+	file[i] = '\0';
+
+	for (i = 0; i < 3; i++) {
+		ret = sceIoOpen(file, PSP_O_RDONLY, 0777);
+		if (ret > 0)
+			break;
+
+		file[j--] = 'x';
+	}
+
+	if (ret < 0) {
+		for (i = 0; lib[i]; i++) {
+			file[j++] = lib[i];
+		}
+
+		for (i = 0; lib_ext[i]; i++) {
+			file[j++] = lib_ext[i];
+		}
+
+		ret = sceIoOpen(file, PSP_O_RDONLY, 0777);
+	}
+
+	return ret;
 }
 
 

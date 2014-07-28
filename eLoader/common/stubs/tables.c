@@ -142,20 +142,20 @@ int get_library_kernel_memory_offset(char* lib_name)
 
 	if (lib_index > -1)
 	{
-		switch (get_fw_ver())
+		switch (globals->fw_ver)
 		{
 #ifdef SYSCALL_KERNEL_OFFSETS_620
-			case 620:
+			case 0x06020010:
 				return offset_620[lib_index];
 #endif
 #ifdef SYSCALL_KERNEL_OFFSETS_630
 
-			case 630:
-			case 631:
+			case 0x06030010:
+			case 0x06030110:
 				return offset_630[lib_index];
 #endif
 #ifdef SYSCALL_KERNEL_OFFSETS_635
-			case 635:
+			case 0x06030510:
 				return offset_635[lib_index];
 #endif
 		}
@@ -196,10 +196,10 @@ int get_library_offset(char* lib_name, int is_cfw)
 
 	if (lib_index > -1)
 	{
-		switch (get_fw_ver())
+		switch (globals->fw_ver)
 		{
-			case 500:
-			case 503:
+			case 0x05000010:
+			case 0x05000310:
 				if (is_cfw)
 #ifdef SYSCALL_OFFSETS_500_CFW
 					return offset_500_cfw[lib_index];
@@ -213,9 +213,9 @@ int get_library_offset(char* lib_name, int is_cfw)
 					break;
 #endif
 
-			case 550:
-			case 551:
-			case 555:
+			case 0x05050010:
+			case 0x05050110:
+			case 0x05050510:
 				if (is_cfw)
 #ifdef SYSCALL_OFFSETS_550_CFW
 					return offset_550_cfw[lib_index];
@@ -229,8 +229,8 @@ int get_library_offset(char* lib_name, int is_cfw)
 					break;
 #endif
 
-			case 570:
-				if (getPSPModel() == PSP_GO)
+			case 0x05070010:
+				if (globals->psp_go)
 #ifdef SYSCALL_OFFSETS_570_GO
 					return offset_570_go[lib_index];
 #else
@@ -243,9 +243,9 @@ int get_library_offset(char* lib_name, int is_cfw)
 					break;
 #endif
 
-			case 600:
-			case 610:
-				if (getPSPModel() == PSP_GO)
+			case 0x06000010:
+			case 0x06010010:
+				if (globals->psp_go)
 #ifdef SYSCALL_OFFSETS_600_GO
 					return offset_600_go[lib_index];
 #else
@@ -275,7 +275,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int ref_lib_index, int is_cfw)
 
 	if (globals->syscalls_known)
 	{
-		if (get_fw_ver() <= 610)
+		if (globals->fw_ver <= 0x06010010)
 		{
 			// Syscalls can be calculated from the library offsets on FW <= 6.10
 			tSceLibrary* lib_base = &(globals->lib_table.table[ref_lib_index]);
@@ -287,7 +287,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int ref_lib_index, int is_cfw)
 			LOG_PRINTF("Lowest syscall is %d\n", lowest_syscall);
 		}
 #ifdef XMB_LAUNCHER
-		else if (get_fw_ver() >= 660)
+		else if (globals->fw_ver >= 0x06060010)
 		{
 			// Lowest syscall and gap is extracted from the launcher imports
 			if (library->lowest_index == 0)
@@ -747,14 +747,13 @@ int add_stub_to_table(tStubEntry *pentry)
 void dump_lib_table()
 {
 	SceUID fd;
-	int fw_ver = get_fw_ver();
-	int is_cfw = fw_ver <= 550 &&
+	int is_cfw = globals->fw_ver <= 0x05050010 &&
 		globals->lib_table.table[get_lib_index("SysMemUserForUser")].lowest_syscall
 			- globals->lib_table.table[get_lib_index("InterruptManager")].lowest_syscall > 244;
 	int estimated_correctly = 0;
 	int i, lib_index, nid_index, pos, syscall;
 
-	if (globals->syscalls_known && (get_fw_ver() <= 610))
+	if (globals->syscalls_known && (globals->fw_ver <= 0x06010010))
 	{
 		// Write out a library table
 		int num_lib_exports;
@@ -769,7 +768,7 @@ void dump_lib_table()
 			num_lib_exports = sceIoLseek(fd, 0, PSP_SEEK_END) / sizeof(int);
 			sceIoClose(fd);
 
-			LOG_PRINTF("%d %s %s %d ", fw_ver,
+			LOG_PRINTF("0x%08X %s %s %d ", globals->fw_ver,
 				(int)globals->lib_table.table[lib_index].name,
 				globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall
 					== (int)num_lib_exports - 1 ?

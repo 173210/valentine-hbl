@@ -3,14 +3,6 @@
 
 #include <common/sdk.h>
 
-#define PSP_GO 2
-#define PSP_OTHER 3
-
-#ifndef VITA
-u32 get_fw_ver();
-u32 getPSPModel();
-#endif
-
 // Returns 1 if pointer is a valid PSP umem pointer, 0 otherwise
 #define valid_umem_pointer(p) ((int)(p) >= 0x08400000 && (int)(p) < 0x0A000000)
 

@@ -1,7 +1,7 @@
-#include <common/utils/string.h>
-#include <common/sdk.h>
-#include <common/debug.h>
 #include <common/config.h>
+#include <common/debug.h>
+#include <common/globals.h>
+#include <common/sdk.h>
 #include <common/utils.h>
 #include <exploit_config.h>
 
@@ -25,40 +25,31 @@ int cfg_init()
 {
 	int ret;
 #if VITA >= 180
-	const char *file = IMPORTS_PATH"IMPORTS.DAT";
+	const char file[] = IMPORTS_PATH;
 
 	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 #else
-	char file[512];
-	int fw_ver = get_fw_ver();
+	char file[sizeof(IMPORTS_PATH) + 4] = IMPORTS_PATH "_";
+	int fw_ver = globals->fw_ver;
+	int i;
 
-	//We try to open a lib file base on the version of the firmware as precisely as possible,
-	//then fallback to less precise versions. for example,try in this order:
-	// libs_503, libs_50x, libs_5xx, libs
+	for (i = 0; i < 3; i++) {
+		fw_ver >>= 8;
+		*(file + sizeof(IMPORTS_PATH "_") + i) = '0' + (fw_ver & 0xF);
+	}
 
-	_sprintf(file, "%s_%d", (int)IMPORTS_PATH, fw_ver);
-	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
-	if (g_cfg_fd < 0) {
-		_sprintf(file, "%s_%dx", (int)IMPORTS_PATH, fw_ver / 10);
+	for (i = 0; i < 3; i++) {
 		g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+		if (g_cfg_fd > 0)
+			break;
 
-		if (g_cfg_fd < 0) {
-			_sprintf(file, "%s_%dxx", (int)IMPORTS_PATH, fw_ver / 100);
-			g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
-
-			if (g_cfg_fd < 0) {
-				strcpy(file, IMPORTS_PATH);
-				g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
-			}
-		}
+		*(file + sizeof(IMPORTS_PATH "_") + i) = 'x';
 	}
 #endif
 
-	LOG_PRINTF("Config file:%s\n", (int)file);
-
-	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
-
 	if (g_cfg_fd > 0) {
+		LOG_PRINTF("Config file:%s\n", (int)file);
+
 		ret = sceIoRead(g_cfg_fd, &cfg_info, sizeof(tCfgInfo));
 		if (ret != sizeof(tCfgInfo)) {
 			cfg_close();

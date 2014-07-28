@@ -637,7 +637,7 @@ void net_term()
 	    }
 	}
 }
-#ifndef VITA
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 // Release the kernel audio channel
 void audio_term()
 {
@@ -699,7 +699,7 @@ void subinterrupthandler_cleanup()
 void exit_everything_but_me()
 {
     net_term();
-#ifndef VITA
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	audio_term();
 #endif
 	subinterrupthandler_cleanup();
@@ -1256,15 +1256,9 @@ int _hook_scePowerGetBatteryLifePercent()
 int _hook_sceKernelDevkitVersion()
 {
 #ifdef VITA
-	return 660;
+	return 0x06060010;
 #else
-	//There has to be a more efficient way...maybe get_fw_ver should directly do this
-	u32 version = get_fw_ver();
-	// 0x0w0y0z10 <==> firmware w.yz
-	return 0x01000000 * (version / 100)
-		+ 0x010000 * ((version % 100) / 10)
-		+ 0x0100 * (version % 10)
-		+ 0x10;
+	return globals->fw_ver;
 #endif
 }
 
@@ -1677,7 +1671,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
     if (hook_call)
         return hook_call;
-#ifndef VITA
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	// Overrides below this point don't need to be done if we have perfect syscall estimation
 	if (globals->syscalls_known)
 		return 0;

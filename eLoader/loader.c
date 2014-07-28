@@ -16,7 +16,7 @@
 #include <loader.h>
 #include <svnversion.h>
 
-#ifdef VITA
+#ifdef DEACTIVATE_SYSCALL_ESTIMATION
 #define DISABLE_KERNEL_DUMP
 #endif
 
@@ -312,24 +312,12 @@ void _start()
 	//init global variables
 	init_globals();
 
-#ifndef VITA
-	int fw_ver = get_fw_ver();
-	switch (fw_ver)
-	{
-		case 0:
-		case 1:
-			scr_puts("Unknown Firmware :(\n");
-			break;
-		default:
-			scr_printf("Firmware %d.%dx detected\n", fw_ver / 100,  (fw_ver % 100) / 10);
-			break;
-	}
-
-	if (getPSPModel() == PSP_GO) {
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	if (globals->psp_go) {
 		scr_puts("PSP Go Detected\n");
 #ifndef DISABLE_KERNEL_DUMP
 		// If PSPGo on 6.20+, do a kmem dump
-		if (get_fw_ver() >= 620)
+		if (globals->fw_ver >= 0x06020010)
 			get_kmem_dump();
 #endif
 	}

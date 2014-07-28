@@ -3,6 +3,7 @@
 //
 
 #include <hbl/utils/settings.h>
+#include <common/stubs/syscall.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
 #include <common/debug.h>
@@ -243,7 +244,7 @@ void configGetProcessingOptions()
         {
             force_exit_buttons = configAddrParse(lval);
         }
-#ifndef VITA
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
         else if (strcmp(lstr,"syscalls_known")==0)
         {
             syscalls_known = configIntParse(lval);
