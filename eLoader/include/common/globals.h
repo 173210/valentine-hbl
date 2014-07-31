@@ -44,8 +44,5 @@ typedef struct
 STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
 STATIC_ASSERT(HBL_STUBS_START + NUM_HBL_IMPORTS * 2 * sizeof(int) <= GLOBALS_ADDR);
 
-//inits global variables. This needs to be called once and only once, preferably at the start of the HBL
-void init_globals();
-
 #endif
 

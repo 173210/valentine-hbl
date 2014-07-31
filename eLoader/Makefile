@@ -36,7 +36,7 @@ base: HBL.BIN H.BIN
 
 OBJS_COMMON = common/stubs/runtime.o common/stubs/tables.o \
 	common/utils/fnt.o common/utils/scr.o common/utils/string.o \
-	common/config.o common/debug.o common/globals.o common/malloc.o common/utils.o
+	common/config.o common/debug.o common/malloc.o common/utils.o
 ifndef VITA
 OBJS_COMMON += common/stubs/syscall.o
 endif
@@ -46,7 +46,7 @@ OBJS_HBL = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_hbl.o hbl/eloader.o \
 	hbl/stubs/hook.o hbl/stubs/resolve.o hbl/stubs/test.o \
 	hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
 
-OBJS_LOADER = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_loader.o loader.o
+OBJS_LOADER = $(OBJS_COMMON) $(FOLDER_PATH)/sdk_loader.o loader/loader.o
 
 %.BIN: %.elf
 	psp-strip -O binary -s $< -o $@
