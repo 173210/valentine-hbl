@@ -156,7 +156,7 @@ void cleanup(u32 num_lib)
 			//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
 			//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
 #ifndef VITA
-			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && globals->fw_ver <= 0x06020010)) )
+			if ( ! ( modid == PSP_MODULE_AV_AVCODEC || (modid == PSP_MODULE_AV_MP3 && globals->module_sdk_version <= 0x06020010)) )
 #endif
 			{
 	            LOG_PRINTF("UNLoad utility module id  0x%08X \n", modid);

@@ -30,7 +30,7 @@ int cfg_init()
 	g_cfg_fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
 #else
 	char file[sizeof(IMPORTS_PATH) + 4] = IMPORTS_PATH "_";
-	int fw_ver = globals->fw_ver;
+	int fw_ver = globals->module_sdk_version;
 	int i;
 
 	for (i = 0; i < 3; i++) {

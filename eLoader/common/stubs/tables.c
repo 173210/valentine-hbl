@@ -142,7 +142,7 @@ int get_library_kernel_memory_offset(char* lib_name)
 
 	if (lib_index > -1)
 	{
-		switch (globals->fw_ver)
+		switch (globals->module_sdk_version)
 		{
 #ifdef SYSCALL_KERNEL_OFFSETS_620
 			case 0x06020010:
@@ -196,7 +196,7 @@ int get_library_offset(char* lib_name, int is_cfw)
 
 	if (lib_index > -1)
 	{
-		switch (globals->fw_ver)
+		switch (globals->module_sdk_version)
 		{
 			case 0x05000010:
 			case 0x05000310:
@@ -275,7 +275,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int ref_lib_index, int is_cfw)
 
 	if (globals->syscalls_known)
 	{
-		if (globals->fw_ver <= 0x06010010)
+		if (globals->module_sdk_version <= 0x06010010)
 		{
 			// Syscalls can be calculated from the library offsets on FW <= 6.10
 			tSceLibrary* lib_base = &(globals->lib_table.table[ref_lib_index]);
@@ -287,7 +287,7 @@ u32 get_klowest_syscall(tSceLibrary* library, int ref_lib_index, int is_cfw)
 			LOG_PRINTF("Lowest syscall is %d\n", lowest_syscall);
 		}
 #ifdef XMB_LAUNCHER
-		else if (globals->fw_ver >= 0x06060010)
+		else if (globals->module_sdk_version >= 0x06060010)
 		{
 			// Lowest syscall and gap is extracted from the launcher imports
 			if (library->lowest_index == 0)
@@ -747,13 +747,13 @@ int add_stub_to_table(tStubEntry *pentry)
 void dump_lib_table()
 {
 	SceUID fd;
-	int is_cfw = globals->fw_ver <= 0x05050010 &&
+	int is_cfw = globals->module_sdk_version <= 0x05050010 &&
 		globals->lib_table.table[get_lib_index("SysMemUserForUser")].lowest_syscall
 			- globals->lib_table.table[get_lib_index("InterruptManager")].lowest_syscall > 244;
 	int estimated_correctly = 0;
 	int i, lib_index, nid_index, pos, syscall;
 
-	if (globals->syscalls_known && (globals->fw_ver <= 0x06010010))
+	if (globals->syscalls_known && (globals->module_sdk_version <= 0x06010010))
 	{
 		// Write out a library table
 		int num_lib_exports;
@@ -768,7 +768,7 @@ void dump_lib_table()
 			num_lib_exports = sceIoLseek(fd, 0, PSP_SEEK_END) / sizeof(int);
 			sceIoClose(fd);
 
-			LOG_PRINTF("0x%08X %s %s %d ", globals->fw_ver,
+			LOG_PRINTF("0x%08X %s %s %d ", globals->module_sdk_version,
 				(int)globals->lib_table.table[lib_index].name,
 				globals->lib_table.table[lib_index].highest_syscall - globals->lib_table.table[lib_index].lowest_syscall
 					== (int)num_lib_exports - 1 ?

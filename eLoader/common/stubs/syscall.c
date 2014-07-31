@@ -84,7 +84,7 @@ SceUID open_nids_file(const char* libname)
 	const char lib_ext[] = LIB_EXT;
 	const char *lib = libname;
 	char file[sizeof(lib_path) + MAX_LIB_NAME_LEN + sizeof(lib_ext) + 3];
-	int fw_ver = globals->fw_ver;
+	int fw_ver = globals->module_sdk_version;
 	int i, j, ret;
 
 	for (i = 0; lib_path[i]; i++)

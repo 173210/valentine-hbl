@@ -208,7 +208,7 @@ void _start()
 		scr_puts("PSP Go Detected\n");
 #ifndef DISABLE_KERNEL_DUMP
 		// If PSPGo on 6.20+, do a kmem dump
-		if (globals->fw_ver >= 0x06020010)
+		if (globals->module_sdk_version >= 0x06020010)
 			get_kmem_dump();
 #endif
 	}

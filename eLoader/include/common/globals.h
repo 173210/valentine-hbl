@@ -23,7 +23,7 @@ typedef struct
 {
 #ifndef VITA
 	// firmware and model
-	int fw_ver;
+	int module_sdk_version;
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	int psp_go;
 	//tables.c

@@ -35,9 +35,9 @@ static void detect_fw_ver()
 			return;
 		}
 
-	globals->fw_ver = *((int **)tbl->entrytable)[i + cnt];
+	globals->module_sdk_version = *((int **)tbl->entrytable)[i + cnt];
 
-	LOG_PRINTF("Detected firmware version is 0x%08X\n", globals->fw_ver);
+	LOG_PRINTF("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
 }
 
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
@@ -66,7 +66,7 @@ static void detect_syscall()
 	}
 
 	for (i = 0; i < fw_array_size; i++) {
-		if (fw_array[i] == globals->fw_ver) {
+		if (fw_array[i] == globals->module_sdk_version) {
 			globals->syscalls_known = 1;
 			break;
 		}

@@ -1258,7 +1258,7 @@ int _hook_sceKernelDevkitVersion()
 #ifdef VITA
 	return 0x06060010;
 #else
-	return globals->fw_ver;
+	return globals->module_sdk_version;
 #endif
 }
 
