@@ -15,7 +15,6 @@
 #include <hbl/utils/settings.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>
-#include <svnversion.h>
 
 int chdir_ok;
 
