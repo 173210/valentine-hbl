@@ -28,7 +28,7 @@ int num_exit_th = 0;
 
 // HBL entry point
 // Needs path to ELF or EBOOT
-void run_eboot(const char *path, int is_eboot)
+void run_eboot(SceUID elf_file)
 {
 	SceUID elf_file;
 	SceOff offset = 0;
@@ -47,11 +47,7 @@ void run_eboot(const char *path, int is_eboot)
     loadConfig(cfg_path);
 
 	// Extracts ELF from PBP
-	if (is_eboot)
-		elf_file = elf_eboot_extract_open(path, &offset);
-	// Plain ELF
-	else
-		elf_file = sceIoOpen(path, PSP_O_RDONLY, 0777);
+	elf_eboot_extract_seek(elf_file, &offset);
 
 	dbg_printf("Loading module\n");
 
@@ -242,7 +238,7 @@ void run_menu()
             scr_puts_col("--success\n", 0x0000FF00);
     }
 
-    run_eboot(MENU_PATH, 1);
+    run_eboot(sceIoOpen(MENU_PATH, PSP_O_RDONLY, 777));
 }
 
 // HBL exit callback
@@ -299,6 +295,7 @@ int callback_thread(SceSize args, void *argp)
 // HBL main thread
 int start_thread() //SceSize args, void *argp)
 {
+	SceUID fd;
     int exit = 0;
 	int thid;
     
@@ -347,16 +344,16 @@ int start_thread() //SceSize args, void *argp)
 
     u32 num_lib = globals->lib_table.num;
 
-    //Run the hardcoded eboot if it exists...
-    if (file_exists(EBOOT_PATH))
-    {
-        exit = 1;
-        return_to_xmb_on_exit = 1;
-        run_eboot(EBOOT_PATH, 1);
-        //we wait infinitely here, or until exit callback is called
-        while(!hbl_exit_cb_called)
-            sceKernelDelayThread(100000);
-    }
+	//Run the hardcoded eboot if it exists...
+	fd = sceIoOpen(EBOOT_PATH, PSP_O_RDONLY, 777);
+	if (fd > 0) {
+		exit = 1;
+		return_to_xmb_on_exit = 1;
+		run_eboot(fd);
+		//we wait infinitely here, or until exit callback is called
+		while(!hbl_exit_cb_called)
+			sceKernelDelayThread(65536);
+	}
 
     //...otherwise launch the menu
     while (!exit)
@@ -383,7 +380,7 @@ int start_thread() //SceSize args, void *argp)
         dbg_printf("Config Loaded OK\n");
         dbg_printf("Eboot is: %s\n", (u32)filename);
         //run homebrew
-        run_eboot(filename, 1);
+        run_eboot(sceIoOpen(filename, PSP_O_RDONLY, 777));
         dbg_printf("Eboot Started OK\n");
         wait_for_eboot_end();
         cleanup(num_lib);

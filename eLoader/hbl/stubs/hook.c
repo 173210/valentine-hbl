@@ -1051,11 +1051,18 @@ int _hook_sceAudioSRCChRelease()
 int test_sceIoChdir()
 {
 #ifndef CHDIR_CRASH
-    sceIoChdir(HBL_ROOT);
-    if (file_exists(HBL_BIN))
-        return 1;
+	SceUID fd;
+
+	sceIoChdir(HBL_ROOT);
+
+	SceUID fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+	if (fd > 0) {
+		sceIoClose(fd);
+
+		return 1;
+	}
 #endif
-    return 0;
+	return 0;
 }
 
 //hook this ONLY if test_sceIoChdir() fails!

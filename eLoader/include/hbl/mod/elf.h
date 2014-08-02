@@ -222,8 +222,8 @@ unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buff
 /* Returns size and address (pstub) of ".lib.stub" section (imports) */
 unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub);
 
-// Extracts ELF from PBP,returns pointer to EBOOT File & fills offset
-SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset);
+// Extracts ELF from PBP, and fills offset
+void elf_eboot_extract_seek(SceUID eboot, SceOff *offset);
 
 // Get ELF GP value
 u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header);

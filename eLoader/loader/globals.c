@@ -22,7 +22,7 @@ static void get_module_sdk_version()
 	int i, cnt;
 
 	SceLibraryEntryTable *tbl = *(SceLibraryEntryTable **)
-		(memfindsz("sceKernelLibrary", (void *)0x08800300, 0x00001000) + 32);
+		(findstr("sceKernelLibrary", (void *)0x08800300, 0x00001000) + 32);
 
 	cnt = tbl->vstubcount + tbl->stubcount;
 

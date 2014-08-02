@@ -333,17 +333,14 @@ unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 }
 
 
-// Extracts ELF from PBP,returns pointer to EBOOT File + fills offset
-SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset)
+// Extracts ELF from PBP, and fills offset
+void elf_eboot_extract_seek(SceUID eboot, SceOff *offset)
 {
-	SceUID eboot;
 	*offset = 0;
-
-	eboot = sceIoOpen(eboot_path, PSP_O_RDONLY, 777);
 
 	sceIoLseek(eboot, 0x20, PSP_SEEK_SET);
 	sceIoRead(eboot, offset, sizeof(u32));
 	sceIoLseek(eboot, *offset, PSP_SEEK_SET);
 
-	return eboot;
+	return;
 }

@@ -434,7 +434,7 @@ int get_utility_modname(const char* lib, char* name)
 SceLibraryEntryTable* find_module_exports_by_name(const char* mod_name, const char* lib_name)
 {
 	// Search for module name
-	char* name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
+	char* name_found = findstr(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
 
 	if (name_found == NULL)
 	{
@@ -443,7 +443,7 @@ SceLibraryEntryTable* find_module_exports_by_name(const char* mod_name, const ch
 	}
 
 	// Search for library name next to module name (1 KiB size enough I guess)
-	name_found = memfindsz(lib_name, name_found, 0x400);
+	name_found = findstr(lib_name, name_found, 0x400);
 
 	if (name_found == NULL)
 	{
@@ -452,7 +452,7 @@ SceLibraryEntryTable* find_module_exports_by_name(const char* mod_name, const ch
 	}
 
 	// Search for pointer to library name close to library name
-	u32* export = memfindint((int)name_found, (void *)(name_found - 0x400), 0x400);
+	u32* export = findw((int)name_found, (void *)(name_found - 0x400), 0x400);
 
 	return (SceLibraryEntryTable*)export;
 }

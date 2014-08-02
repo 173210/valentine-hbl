@@ -75,7 +75,7 @@ static void p5_close_savedata()
 static int p5_find_add_stubs(const char *libname, void *p, size_t size)
 {
 	int num = 0;
-	tStubEntry *pentry = *(tStubEntry **)(memfindsz(libname, p, size) + 40);
+	tStubEntry *pentry = *(tStubEntry **)(findstr(libname, p, size) + 40);
 
 	// While it's a valid stub header
 	while (elf_check_stub_entry(pentry)) {
