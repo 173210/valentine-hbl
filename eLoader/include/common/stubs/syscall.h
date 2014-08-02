@@ -2,6 +2,7 @@
 #define ELOADER_SYSCALL
 
 #include <common/sdk.h>
+#include <exploit_config.h>
 
 #if defined(VITA) || !defined(SYSCALL_REF_LIB) \
 	|| !(defined(SYSCALL_OFFSETS_500) || defined(SYSCALL_OFFSETS_500_CFW) \
@@ -23,28 +24,25 @@
 
 typedef enum
 {
-	FROM_LOWER = 0,
-	FROM_HIGHER = 1,
-	SUBSTRACT = 2,		// Only for reestimation
-	ADD_TWICE = 3,		// Only for reestimation
-	FROM_LOWEST = 4,
-	FROM_CLOSEST = 5
+	FROM_LOWER,
+	FROM_HIGHER,
+	SUBSTRACT,	// Only for reestimation
+	ADD_TWICE,	// Only for reestimation
+	FROM_LOWEST,
+	FROM_CLOSEST
 } HBLEstimateMethod;
+
+SceUID open_nids_file(const char *lib);
 
 /* Estimate a syscall */
 /* Pass library name and NID */
 /* Return syscall number */
-u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method);
-
-u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file);
-u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file);
+int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method);
 
 /*
  * Reestimate a syscall if it's suspected of being incorrect
 */
-u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod type);
-
-SceUID open_nids_file(const char* lib);
+int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod method);
 
 #endif
 

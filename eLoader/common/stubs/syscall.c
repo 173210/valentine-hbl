@@ -1,88 +1,31 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
-#include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
 #include <common/sdk.h>
-#include <common/utils.h>
 #include <exploit_config.h>
 
 // Searches for NID in a NIDS file and returns the index
-int find_nid_in_file(SceUID nid_file, u32 nid)
+static int find_nid_file(SceUID fd, int nid)
 {
 	int i = 0;
-	u32 cur_nid;
+	int cur, ret;
 
-	sceIoLseek(nid_file, 0, PSP_SEEK_SET);
-	while(sceIoRead(nid_file, &cur_nid, sizeof(cur_nid)) > 0)
-		if (cur_nid == nid)
+	sceIoLseek(fd, 0, PSP_SEEK_SET);
+	while((ret = sceIoRead(fd, &cur, sizeof(cur))) > 0)
+		if (cur == nid)
 			return i;
 		else
 			i++;
 
-	return -1;
+	return ret;
 }
-
-/* the PS3 does not allow long filenames,
-So we are using a hash + base36 encoding for nids
-*/
-#ifdef SMALL_FILENAMES
-unsigned long hash_djb2(const char *str)
-{
-    unsigned long hash = 5381;
-    int c;
-
-    while ((c = *str++))
-    {
-        //We convert to lowercase here because it matches our requirements.
-       // This, of course, completely ruins the hash algorithm for case sensitive strings, don't do this at home!!!
-        if ( c >= 'A' && c <= 'Z' )
-        {
-            c+= 'a' - 'A';
-        }
-
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    }
-    return hash;
-}
-
-int toBase36 (char * dest,const unsigned long src)
-{
-       char base_digits[36] =
-	 {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-
-   int converted_number[64];
-   int base, index=0;
-
-   base = 36;
-   unsigned long number_to_convert = src;
-
-   /* convert to the indicated base */
-   while (number_to_convert != 0)
-   {
-	 converted_number[index] = number_to_convert % base;
-	 number_to_convert = number_to_convert / base;
-	 ++index;
-   }
-
-   /* now print the result in reverse order */
-   --index;  /* back up to last entry in the array */
-   for(  ; index>=0; index--) /* go backward through array */
-   {
-	 *dest = base_digits[converted_number[index]];
-     dest++;
-   }
-   *dest = 0; //terminate string
-   return 1;
-}
-#endif
 
 // Opens .nids file for a given library
-SceUID open_nids_file(const char* libname)
+SceUID open_nids_file(const char *lib)
 {
 	const char lib_path[] = LIB_PATH;
 	const char lib_ext[] = LIB_EXT;
-	const char *lib = libname;
 	char file[sizeof(lib_path) + MAX_LIB_NAME_LEN + sizeof(lib_ext) + 3];
 	int fw_ver = globals->module_sdk_version;
 	int i, j, ret;
@@ -138,412 +81,213 @@ SceUID open_nids_file(const char* libname)
 /*
  * Checks if a syscall looks normal compared to other libraries boundaries.
  * returns 1 if ok, 0 if not
-*/
-int check_syscall_boundaries (u32 syscall, u32 boundary_low, u32 boundary_high)
+ */
+static int check_syscall(int call, int low, int high)
 {
-    if (syscall <= boundary_low)
-    {
-        dbg_printf("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be higher than 0x%08X, but we got 0x%08X\n", boundary_low, syscall);
-        return 0;
-    }
-    if (syscall >= boundary_high)
-    {
-        dbg_printf("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be lower than 0x%08X, but we got 0x%08X\n", boundary_high, syscall);
-        return 0;
-    }
-
-    return 1;
+	if (call <= low) {
+        	dbg_printf("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be higher than 0x%08X, but we got 0x%08X\n",
+			low, call);
+		return 0;
+	} else if (call >= high) {
+		dbg_printf("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be lower than 0x%08X, but we got 0x%08X\n",
+			high, call);
+		return 0;
+	} else
+		return 1;
 }
 
-u32 find_first_free_syscall (int lib_index, u32 start_syscall)
+static int find_first_free_syscall(int lib, int start)
 {
-	int index = -1;
-    u32 syscall = start_syscall;
-	int boundary_low = 0, boundary_high = 0;
+	int syscall = start;
+	int low = 0, high = 0;
+	int index;
 
-    int ret = get_syscall_boundaries(lib_index, &boundary_low,  &boundary_high);
-
-    if (!ret)
-    {
-        dbg_printf("--ERROR GETTING SYSCALL BOUNDARIES\n");
-        return 0;
-    }
-
-	while ((index = get_call_index(MAKE_SYSCALL(syscall))) >= 0)
-	{
-		dbg_printf("--ESTIMATED SYSCALL 0x%08X ALREADY EXISTS AT INDEX %d\n", syscall, index);
-		syscall--;
-        if (!check_syscall_boundaries (syscall, boundary_low, boundary_high))
-        {
-            syscall = boundary_high - 1;
-            //Risk of infinite loop here ?
-        }
-	}
-
-    return syscall;
-}
-
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-// Estimate a syscall from library's closest known syscall
-u32 estimate_syscall_closest(int lib_index, u32 nid, SceUID nid_file)
-{
-	dbg_printf("=> FROM CLOSEST\n");
-	
-	// Get NIDs index in file
-	int nid_index = find_nid_in_file(nid_file, nid);
-
-	if (nid_index < 0)
-	{
-		dbg_printf("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
+	if (!get_syscall_boundaries(lib, &low,  &high)) {
+		dbg_printf("--ERROR GETTING SYSCALL BOUNDARIES\n");
 		return 0;
 	}
 
-	dbg_printf("NID index in file: %d\n", nid_index);
-
-	// Get higher and lower known NIDs
-	int higher_nid_index = get_higher_known_nid(lib_index, nid);
-	int lower_nid_index = get_lower_known_nid(lib_index, nid);
-
-	// Get higher and lower NID index on file
-	int higher_index_file = -1;
-	if (higher_nid_index >= 0)
-	{
-		higher_index_file = find_nid_in_file(nid_file, globals->nid_table.table[higher_nid_index].nid);
-		dbg_printf("Higher known NID: 0x%08X; index: %d\n", globals->nid_table.table[higher_nid_index].nid, higher_index_file);
+	while ((index = get_call_index(MAKE_SYSCALL(syscall))) >= 0) {
+		dbg_printf("--ESTIMATED SYSCALL 0x%08X ALREADY EXISTS AT INDEX %d\n", syscall, index);
+		syscall--;
+		if (!check_syscall(syscall, low, high)) {
+			syscall = high - 1;
+			//Risk of infinite loop here ?
+		}
 	}
 
-	int lower_index_file = -1;
-	if (lower_nid_index >= 0)
-	{
-		lower_index_file = find_nid_in_file(nid_file, globals->nid_table.table[lower_nid_index].nid);
-		dbg_printf("Lower known NID: 0x%08X; index: %d\n", globals->nid_table.table[lower_nid_index].nid, lower_index_file);
-	}
+	return syscall;
+}
 
-	// Check which one is closer
+// Estimate a syscall from library's closest known syscall
+static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUID fd)
+{
+	int higher_nid_index, lower_nid_index;
 	int closest_index = -1;
 
-	if (higher_index_file >= 0)
-	{
-		if (lower_index_file >= 0)
-		{
-			int higher_dist = higher_index_file - nid_index;
-			int lower_dist = nid_index - lower_index_file;
-			if (higher_dist < lower_dist)
-				closest_index = higher_index_file;
-			else
-				closest_index = lower_index_file;
-		}
-		else
-			closest_index = higher_index_file;
+	int higher_file_index = -1;
+	int lower_file_index = -1;
+
+	int est_call;
+
+	dbg_printf("=> FROM CLOSEST\n");
+
+	// Get higher and lower known NIDs
+	higher_nid_index = get_higher_known_nid(lib_index, nid);
+	lower_nid_index = get_lower_known_nid(lib_index, nid);
+
+	if (lower_nid_index >= 0) {
+		lower_file_index = find_nid_file(fd, globals->nid_table.table[lower_nid_index].nid);
+		dbg_printf("Lower known NID: 0x%08X; index: %d\n",
+			globals->nid_table.table[lower_nid_index].nid, lower_file_index);
 	}
-	else
-		closest_index = lower_index_file;
+
+	// Get higher and lower NID index on file
+	if (higher_nid_index >= 0) {
+		higher_file_index = find_nid_file(fd, globals->nid_table.table[higher_nid_index].nid);
+		dbg_printf("Higher known NID: 0x%08X; index: %d\n",
+			globals->nid_table.table[higher_nid_index].nid, higher_file_index);
+
+		// Check which one is closer
+		closest_index = higher_file_index < 0 ||
+			(lower_file_index >= 0 && higher_file_index - nid_index >= nid_index - lower_file_index) ?
+				lower_file_index : higher_file_index;
+	}
 
 	dbg_printf("Closest: %d\n", closest_index);
 
 	// Estimate based on closest known NID
-	u32 estimated_syscall;
 	if (closest_index > nid_index)
-		estimated_syscall = GET_SYSCALL_NUMBER(globals->nid_table.table[higher_nid_index].call) - (higher_index_file - nid_index);
+		est_call = GET_SYSCALL_NUMBER(globals->nid_table.table[higher_nid_index].call)
+				+ nid_index - higher_file_index;
 	else
-		estimated_syscall = GET_SYSCALL_NUMBER(globals->nid_table.table[lower_nid_index].call) + (nid_index - lower_index_file);
+		est_call = GET_SYSCALL_NUMBER(globals->nid_table.table[lower_nid_index].call)
+				+ nid_index - lower_file_index;
 
-	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	// Check if estimated syscall already exists (should be very rare)
-    estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
-
-	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
-
-	dbg_printf("--FINAL ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	return estimated_syscall;
-}
-
-// Estimate a syscall from library's closest lower known syscall
-u32 estimate_syscall_higher(int lib_index, u32 nid, SceUID nid_file)
-{
-	dbg_printf("=> FROM HIGHER\n");
-    
-	// Get NIDs index in file
-	int nid_index = find_nid_in_file(nid_file, nid);
-
-	if (nid_index < 0)
-	{
-		dbg_printf("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
-		return 0;
-	}
-
-	dbg_printf("NID index in file: %d\n", nid_index);
-
-	int higher_nid_index = get_higher_known_nid(lib_index, nid);
-
-	if (higher_nid_index < 0)
-	{
-		dbg_printf("NID is highest in library, switching to lower method\n");
-		return estimate_syscall_lower(lib_index, nid, nid_file);  // Infinite call risk here!!
-	}
-
-	dbg_printf("Higher known NID/SYSCALL: 0x%08X/0x%08X\n", globals->nid_table.table[higher_nid_index].nid, GET_SYSCALL_NUMBER(globals->nid_table.table[higher_nid_index].call));
-
-	int higher_index = find_nid_in_file(nid_file, globals->nid_table.table[higher_nid_index].nid);
-
-	if (higher_index < 0)
-	{
-		dbg_printf("->ERROR: LOWER NID NOT FOUND ON .NIDS FILE\n");
-		return 0;
-	}
-
-	dbg_printf("Lower known NID index: %d\n", higher_index);
-
-	u32 estimated_syscall = GET_SYSCALL_NUMBER(globals->nid_table.table[higher_nid_index].call) - (higher_index - nid_index);
-
-	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	// Check if estimated syscall already exists (should be very rare)
-    estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
-
-	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
-
-	dbg_printf("--FINAL ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	return estimated_syscall;
-}
-
-// Estimate a syscall from library's closest lower known syscall
-u32 estimate_syscall_lower(int lib_index, u32 nid, SceUID nid_file)
-{
-	dbg_printf("=> FROM LOWER\n");
-    
-	// Get NIDs index in file
-	int nid_index = find_nid_in_file(nid_file, nid);
-
-	if (nid_index < 0)
-	{
-		dbg_printf("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
-		return 0;
-	}
-
-	dbg_printf("NID index in file: %d\n", nid_index);
-
-	int lower_nid_index = get_lower_known_nid(lib_index, nid);
-
-	if (lower_nid_index < 0)
-	{
-		dbg_printf("NID is lowest in library, switching to higher method\n");
-		return estimate_syscall_higher(lib_index, nid, nid_file);  // Infinite call risk here!!
-	}
-
-	dbg_printf("Lower known NID/SYSCALL: 0x%08X/0x%08X\n", globals->nid_table.table[lower_nid_index].nid, GET_SYSCALL_NUMBER(globals->nid_table.table[lower_nid_index].call));
-
-	int lower_index = find_nid_in_file(nid_file, globals->nid_table.table[lower_nid_index].nid);
-
-	if (lower_index < 0)
-	{
-		dbg_printf("->ERROR: LOWER NID NOT FOUND ON .NIDS FILE\n");
-		return 0;
-	}
-
-	dbg_printf("Lower known NID index: %d\n", lower_index);
-
-	u32 estimated_syscall = GET_SYSCALL_NUMBER(globals->nid_table.table[lower_nid_index].call) + (nid_index - lower_index);
-
-	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	// Check if estimated syscall already exists (should be very rare)
-    estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
-
-	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
-
-	dbg_printf("--FINAL ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	return estimated_syscall;
+	return est_call;
 }
 
 // Estimate a syscall from library's lowest known syscall
-u32 estimate_syscall_lowest(int lib_index, u32 nid, SceUID nid_file)
+static int estimate_syscall_lowest(int lib_index, int nid_index)
 {
+	int est_call;
+
 	dbg_printf("=> FROM LOWEST\n");
-    
-	// Get NIDs index in file
-	int nid_index = find_nid_in_file(nid_file, nid);
 
-	sceIoClose(nid_file);
+	est_call = globals->lib_table.table[lib_index].lowest_syscall + nid_index - globals->lib_table.table[lib_index].lowest_index;
+	if (nid_index < globals->lib_table.table[lib_index].lowest_index)
+		est_call += globals->lib_table.table[lib_index].num_lib_exports + globals->lib_table.table[lib_index].gap;
 
-	dbg_printf("--NID index in file: %d\n", nid_index);
-
-	if (nid_index < 0)
-	{
-		dbg_printf("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
-		return 0;
-	}
-
-	int estimated_syscall;
-	if ((u32)nid_index >= globals->lib_table.table[lib_index].lowest_index)
-	{
-		estimated_syscall = (int)globals->lib_table.table[lib_index].lowest_syscall + nid_index - (int)globals->lib_table.table[lib_index].lowest_index;
-	}
-	else
-	{
-		estimated_syscall = (int)globals->lib_table.table[lib_index].lowest_syscall + nid_index + (int)globals->lib_table.table[lib_index].num_lib_exports - (int)globals->lib_table.table[lib_index].lowest_index + (int)globals->lib_table.table[lib_index].gap;
-	}
-
-	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	// Check if estimated syscall already exists (should be very rare)
-	// This is not needed if the syscalls are known to be there
-	if (!globals->syscalls_known)
-		estimated_syscall = find_first_free_syscall(lib_index, estimated_syscall);
-
-	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
-
-	dbg_printf("--FINAL ESTIMATED SYSCALL: 0x%08X\n", estimated_syscall);
-
-	return estimated_syscall;
+	return est_call;
 }
 
 // Estimate a syscall
 // Pass reference NID and distance from desidered function in the export table
-// Return syscall instruction
+// Return syscall number
 // Syscall accuracy (%) = (exports known from library / total exports from library) x 100
 // m0skit0's implementation
-u32 estimate_syscall(const char *lib, u32 nid, HBLEstimateMethod method)
+int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 {
-	dbg_printf("=> ESTIMATING %s : 0x%08X\n", (u32)lib, nid);
+	SceUID fd;
+	int lib_index, nid_index, est_call;
+
+	dbg_printf("=> ESTIMATING %s : 0x%08X\n", lib, nid);
 
 	// Finding the library on table
-	int lib_index = get_lib_index(lib);
-
-	if (lib_index < 0)
-	{
-		dbg_printf("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (u32)lib);
-        return 0;
-    }
-
-	
-	LOGLIB(globals->lib_table.table[lib_index]);
+	lib_index = get_lib_index(lib);
+	if (lib_index < 0) {
+		dbg_printf("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", lib);
+		return 0;
+	}
 
 	// Cannot estimate jump system call
-	if (globals->lib_table.table[lib_index].calling_mode == JUMP_MODE)
-	{
+	if (globals->lib_table.table[lib_index].calling_mode == JUMP_MODE) {
 		dbg_printf("->WARNING: trying to estimate jump system call\n");
 		return 0;
 	}
 
-	SceUID nid_file = open_nids_file(lib);
-
-	if (nid_file < 0)
-	{
-		dbg_printf("->ERROR: couldn't open NIDS file for %s\n", (u32)lib);
+	fd = open_nids_file(lib);
+	if (fd < 0) {
+		dbg_printf("->ERROR: couldn't open NIDS file for %s\n", lib);
 		return 0;
 	}
+	
+	// Get NIDs index in file
+	nid_index = find_nid_file(fd, nid);
+	if (nid_index < 0) {
+		dbg_printf("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
+		return 0;
+	}
+	dbg_printf("NID index in file: %d\n", nid_index);
 
-	u32 estimated_syscall;
 	switch (method)
 	{
 		case FROM_CLOSEST:
-			estimated_syscall = estimate_syscall_closest(lib_index, nid, nid_file);
+			est_call = estimate_syscall_closest(lib_index, nid_index, nid, fd);
 			break;
 
 		case FROM_LOWEST:
-			estimated_syscall = estimate_syscall_lowest(lib_index, nid, nid_file);
-			break;
-
-		case FROM_LOWER:
-			estimated_syscall = estimate_syscall_lower(lib_index, nid, nid_file);
-			break;
-
-		case FROM_HIGHER:
-			estimated_syscall = estimate_syscall_higher(lib_index, nid, nid_file);
+			est_call = estimate_syscall_lowest(lib_index, nid_index);
 			break;
 
 		default:
 			dbg_printf("Unknown estimation method %d\n", method);
-			estimated_syscall = 0;
+			est_call = 0;
 			break;
 	}
 
-    sceIoClose(nid_file);
+	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", est_call);
 
-	add_nid_to_table(nid, MAKE_SYSCALL(estimated_syscall), lib_index);
+	// Check if estimated syscall already exists (should be very rare)
+	// This is not needed if the syscalls are known to be there
+	if (!globals->syscalls_known)
+		est_call = find_first_free_syscall(lib_index, est_call);
+
+	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
+
+	dbg_printf("--FINAL ESTIMATED SYSCALL: 0x%08X\n", est_call);
+
+	sceIoClose(fd);
+
+	add_nid_to_table(nid, MAKE_SYSCALL(est_call), lib_index);
 
 	dbg_printf("Estimation done\n");
 
-	return MAKE_SYSCALL(estimated_syscall);
+	return est_call;
 }
 
 // m0skit0's attempt
 // Needs to be more independent from sdk_hbl.S
-u32 reestimate_syscall(const char * lib, u32 nid, u32* stub, HBLEstimateMethod type)
+int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod method)
 {
 #ifdef REESTIMATE_SYSCALL
-	dbg_printf("=Reestimating function 0x%08X for stub 0x%08X: ", nid, (u32)stub);
+	SceUID fd;
+	int lib_index, syscall;
 
-	// Finding the library on table
-	int lib_index = get_lib_index(lib);
+	syscall = GET_SYSCALL_NUMBER(stub[1]);
 
-	if (lib_index < 0)
-	{
-		dbg_printf("--ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", (u32)lib);
-        return 0;
-    }
+	dbg_printf("=Reestimating function 0x%08X for stub 0x%08X: 0x%08X ",
+		nid, stub, syscall);
 
-	SceUID nid_file = open_nids_file(lib);
-
-	if (nid_file < 0)
-	{
-		dbg_printf("->ERROR: couldn't open NIDS file for %s\n", (u32)lib);
-		return 0;
-	}
-
-	stub++;
-	u32 syscall = GET_SYSCALL_NUMBER(*stub);
-    dbg_printf("0x%08X -->", syscall);
-
-	switch (type)
-	{
-		case FROM_CLOSEST:
-			syscall = estimate_syscall_closest(lib_index, nid, nid_file);
-			break;
-
-		case FROM_LOWER:
-			syscall = estimate_syscall_lower(lib_index, nid, nid_file);
-			break;
-
-		case FROM_HIGHER:
-			syscall = estimate_syscall_higher(lib_index, nid, nid_file);
-			break;
-
-		case FROM_LOWEST:
-			syscall = estimate_syscall_lowest(lib_index, nid, nid_file);
-			break;
-
+	switch (type) {
 		case SUBSTRACT:
-			syscall--;
+			syscall = find_first_free_syscall(lib, --syscall);
 			break;
-
 		case ADD_TWICE:
-			syscall += 2;
+			syscall = find_first_free_syscall(lib, ++syscall);
+			syscall++;
 			break;
-
 		default:
-			dbg_printf("Method %d not known\n", type);
-			break;
+			syscall = estimate_syscall(lib, nid, method);
 	}
+	dbg_printf("--> 0x%08X\n", syscall);
 
-    sceIoClose(nid_file);
+	stub[1] = MAKE_SYSCALL(syscall);
 
-    syscall = find_first_free_syscall(lib_index, syscall);
-    dbg_printf(" 0x%08X\n", syscall);
-
-	*stub = MAKE_SYSCALL(syscall);
-    dbg_printf("--Done.\n");
-
-	add_nid_to_table(nid, MAKE_SYSCALL(syscall), lib_index);
+	dbg_printf("--Done.\n");
 
 	return syscall;
 #else
-    return 0;
+	return 0;
 #endif
 }
-#endif

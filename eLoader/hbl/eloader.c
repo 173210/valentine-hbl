@@ -28,9 +28,8 @@ int num_exit_th = 0;
 
 // HBL entry point
 // Needs path to ELF or EBOOT
-void run_eboot(SceUID elf_file)
+static void run_eboot(SceUID elf_file, const char *path)
 {
-	SceUID elf_file;
 	SceOff offset = 0;
 	SceUID mod_id;
 
@@ -238,7 +237,7 @@ void run_menu()
             scr_puts_col("--success\n", 0x0000FF00);
     }
 
-    run_eboot(sceIoOpen(MENU_PATH, PSP_O_RDONLY, 777));
+    run_eboot(sceIoOpen(MENU_PATH, PSP_O_RDONLY, 777), MENU_PATH);
 }
 
 // HBL exit callback
@@ -349,7 +348,7 @@ int start_thread() //SceSize args, void *argp)
 	if (fd > 0) {
 		exit = 1;
 		return_to_xmb_on_exit = 1;
-		run_eboot(fd);
+		run_eboot(fd, EBOOT_PATH);
 		//we wait infinitely here, or until exit callback is called
 		while(!hbl_exit_cb_called)
 			sceKernelDelayThread(65536);
@@ -380,7 +379,7 @@ int start_thread() //SceSize args, void *argp)
         dbg_printf("Config Loaded OK\n");
         dbg_printf("Eboot is: %s\n", (u32)filename);
         //run homebrew
-        run_eboot(sceIoOpen(filename, PSP_O_RDONLY, 777));
+        run_eboot(sceIoOpen(filename, PSP_O_RDONLY, 777), filename);
         dbg_printf("Eboot Started OK\n");
         wait_for_eboot_end();
         cleanup(num_lib);

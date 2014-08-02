@@ -166,7 +166,8 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
                 real_call = setup_default_nid(*cur_nid);
 #else
-				real_call = estimate_syscall((char *)pstub_entry->lib_name, *cur_nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
+				real_call = MAKE_SYSCALL(estimate_syscall(
+					(char *)pstub_entry->lib_name, *cur_nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
 #endif
 			}
 

@@ -21,7 +21,4 @@ extern int num_exit_th;
 extern u32 gp;
 extern u32 *entry_point;
 
-// Should receive a file path (plain ELFs or EBOOT.PBP)
-void run_eboot(const char *path, int is_eboot);
-
 #endif

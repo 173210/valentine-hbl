@@ -204,7 +204,8 @@ void resolve_stubs()
 				count += cur_lib.num_imports;
 			}
 
-			syscall = estimate_syscall(lib_name, nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST);
+			syscall = MAKE_SYSCALL(estimate_syscall(
+				lib_name, nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
 #endif
 		}
 
