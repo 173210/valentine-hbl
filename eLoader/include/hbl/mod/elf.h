@@ -196,18 +196,6 @@ typedef struct
 #define R_MIPS_CALL16 11
 #define R_MIPS_GPREL32 12
 
-// .lib.ent
-typedef struct
-{
-	Elf32_Addr name;
-	Elf32_Half version;
-	Elf32_Half attributes;
-	BYTE       size;  //Size of exports in 64-bit words
-	BYTE       num_variables;
-	Elf32_Half num_functions;
-	Elf32_Addr exports_pointer;
-} tExportEntry;
-
 /**************/
 /* PROTOTYPES */
 /**************/

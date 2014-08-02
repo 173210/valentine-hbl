@@ -78,15 +78,15 @@ int is_utility(const char* lib_name)
 		return -1;
 }
 
-static u32 get_jump_from_export(u32 nid, tExportEntry *pexports)
+static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
 {
 	if( pexports != NULL){
-		u32* pnids = (u32*)pexports->exports_pointer;
-		u32* pfunctions = (u32*)((u32)pexports->exports_pointer + (u16)pexports->num_functions * 4);
+		u32* pnids = (u32*)pexports->entrytable;
+		u32* pfunctions = (u32*)((u32)pexports->entrytable + (u16)pexports->stubcount * 4);
 
 		// Insert NIDs on NID table
 		int i;
-		for (i=0; i<(u16)pexports->num_functions; i++)
+		for (i=0; i<(u16)pexports->stubcount; i++)
 		{
 			if( pnids[i] == nid){
 				dbg_printf("NID FOUND in %s: 0x%08X Function: 0x%08X\n", (u32)pexports->name , pnids[i], pfunctions[i]);
@@ -105,7 +105,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	u32* cur_nid;
 	u32* cur_call;
 	u32 real_call;
-	tExportEntry* utility_exp = NULL;
+	SceLibraryEntryTable* utility_exp = NULL;
 	unsigned int resolving_count = 0;
 
 #ifdef HOOK_CHDIR_AND_FRIENDS

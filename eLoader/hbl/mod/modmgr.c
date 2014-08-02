@@ -431,7 +431,7 @@ int get_utility_modname(const char* lib, char* name)
 }
 
 // Returns pointer to first export entry for a given module name and library
-tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_name)
+SceLibraryEntryTable* find_module_exports_by_name(const char* mod_name, const char* lib_name)
 {
 	// Search for module name
 	char* name_found = memfindsz(mod_name, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
@@ -454,7 +454,7 @@ tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_
 	// Search for pointer to library name close to library name
 	u32* export = memfindint((int)name_found, (void *)(name_found - 0x400), 0x400);
 
-	return (tExportEntry*)export;
+	return (SceLibraryEntryTable*)export;
 }
 
 // Returns true if utility module ID is already loaded, false otherwise
@@ -588,7 +588,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	}
 
 	// Get module exports
-	tExportEntry* pexports = find_module_exports_by_name(mod_name, lib_name);
+	SceLibraryEntryTable* pexports = find_module_exports_by_name(mod_name, lib_name);
 
 	if (pexports == NULL)
 	{
@@ -601,17 +601,17 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	if( mod_id != PSP_MODULE_NET_INET
 		&& mod_id != PSP_MODULE_NET_COMMON )
 	{
-		*(tExportEntry **)pexport_out = pexports;
+		*(SceLibraryEntryTable **)pexport_out = pexports;
 		return 0;
 	}
 
-	*(tExportEntry **)pexport_out = NULL;
+	*(SceLibraryEntryTable **)pexport_out = NULL;
 
-	dbg_printf("Number of export functions: %d\n", (u16)pexports->num_functions);
-	dbg_printf("Pointer to exports: 0x%08X\n", (u32)pexports->exports_pointer);
+	dbg_printf("Number of export functions: %d\n", (u16)pexports->stubcount);
+	dbg_printf("Pointer to exports: 0x%08X\n", (u32)pexports->entrytable);
 
-	u32* pnids = (u32*)pexports->exports_pointer;
-	u32* pfunctions = (u32*)((u32)pexports->exports_pointer + (u16)pexports->num_functions * 4);
+	u32* pnids = (u32*)pexports->entrytable;
+	u32* pfunctions = (u32*)((u32)pexports->entrytable + (u16)pexports->stubcount * 4);
 
 	dbg_printf("Pointer to functions: 0x%08X\n", (u32)pfunctions);
 
@@ -621,8 +621,8 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	strcpy(newlib.name, lib_name);
 	newlib.calling_mode = JUMP_MODE;
-	newlib.num_lib_exports = pexports->num_functions;
-	newlib.num_known_exports = pexports->num_functions;
+	newlib.num_lib_exports = pexports->stubcount;
+	newlib.num_known_exports = pexports->stubcount;
 
 	int lib_index = add_library_to_table(newlib);
 	if (lib_index < 0)
@@ -633,7 +633,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	// Insert NIDs on NID table
 	int i;
-	for (i=0; i<(u16)pexports->num_functions; i++)
+	for (i=0; i<(u16)pexports->stubcount; i++)
 	{
 		dbg_printf("NID %d: 0x%08X Function: 0x%08X\n", i, pnids[i], pfunctions[i]);
 		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
