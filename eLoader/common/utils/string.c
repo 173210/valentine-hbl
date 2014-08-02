@@ -125,9 +125,6 @@ void _vfprintf(void (* f)(int), const char *fmt, va_list va)
 				case 'X' : 
 					_itoa((unsigned)va_arg(va, int), f, 16, w);
 					break;
-				case 'c' :
-					f((char)va_arg(va, int));
-					break;
 				case 's' :
 					p = va_arg(va, const char *);
 					while (*p != '\0')

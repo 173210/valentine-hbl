@@ -11,7 +11,7 @@
 #ifdef DEBUG
 static void log_modinfo(SceModuleInfo modinfo)
 {
-	log_printf("\n->Module information:\n"
+	dbg_printf("\n->Module information:\n"
 		"Module name: %s\n"
 		"Module version: %d.%d\n"
 		"Module attributes: 0x%08X\n"
@@ -40,17 +40,17 @@ void * allocate_memory(u32 size, void* addr)
         type = PSP_SMEM_Addr;
     }
 
-    LOG_PRINTF("-->ALLOCATING MEMORY @ 0x%08X size 0x%08X... ", (u32)addr, size);
+    dbg_printf("-->ALLOCATING MEMORY @ 0x%08X size 0x%08X... ", (u32)addr, size);
     //hook is used to monitor ram usage and free it on exit
     SceUID mem = _hook_sceKernelAllocPartitionMemory(2, "ELFMemory", type, size, addr);
 
 	if (mem < 0)
 	{
-		LOG_PRINTF("FAILED: 0x%08X\n", mem);
+		dbg_printf("FAILED: 0x%08X\n", mem);
         return NULL;
 	}
 
-    LOG_PRINTF("OK\n");
+    dbg_printf("OK\n");
 
 	return sceKernelGetBlockHeadAddr(mem);
 }
@@ -86,7 +86,7 @@ unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	int i;
 	for (i = 0; i < pelf_header->e_phnum; i++)
 	{
-		LOG_PRINTF("Reading program section %d of %d\n", i, pelf_header->e_phnum);
+		dbg_printf("Reading program section %d of %d\n", i, pelf_header->e_phnum);
 
 		// Read the program header
 		sceIoLseek(elf_file, start_offset + pelf_header->e_phoff + (sizeof(Elf32_Phdr) * i), PSP_SEEK_SET);
@@ -122,13 +122,13 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
     void * buffer;
 	_sceModuleInfo module_info;
 
-	//LOG_PRINTF("prx_load_program -> Offset: 0x%08X\n", start_offset);
+	//dbg_printf("prx_load_program -> Offset: 0x%08X\n", start_offset);
 
 	// Read the program header
 	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
 	sceIoRead(elf_file, &pheader, sizeof(Elf32_Phdr));
 
-	LOG_PRINTF("\n->Program header:\n"
+	dbg_printf("\n->Program header:\n"
 		"Segment type: 0x%08X\n"
 		"Segment offset: 0x%08X\n"
 		"Virtual address for segment: 0x%08X\n"
@@ -150,7 +150,7 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	if ((unsigned int)pheader.p_paddr & 0x80000000)
 		return 0;
 
-	LOG_PRINTF("Module info @ 0x%08X offset\n", (u32)start_offset + (u32)pheader.p_paddr);
+	dbg_printf("Module info @ 0x%08X offset\n", (u32)start_offset + (u32)pheader.p_paddr);
 
 	// Read module info from PRX
 	sceIoLseek(elf_file, (u32)start_offset + (u32)pheader.p_paddr, PSP_SEEK_SET);
@@ -163,35 +163,35 @@ unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* 
 	// Loads program segment at fixed address
 	sceIoLseek(elf_file, start_offset + (SceOff) pheader.p_off, PSP_SEEK_SET);
 
-	LOG_PRINTF("Address to allocate from: 0x%08X\n", (u32)*addr);
+	dbg_printf("Address to allocate from: 0x%08X\n", (u32)*addr);
     buffer = allocate_memory(pheader.p_memsz, *addr);
     *addr = buffer;
 
 	if (!buffer)
 	{
-		LOG_PRINTF("Failed to allocate memory for the module\n");
+		dbg_printf("Failed to allocate memory for the module\n");
 		return 0;
 	}
 
-	LOG_PRINTF("Allocated memory address from: 0x%08X\n", (u32) *addr);
+	dbg_printf("Allocated memory address from: 0x%08X\n", (u32) *addr);
 	
 	sceIoRead(elf_file, buffer, pheader.p_filesz);
 
 	// Sets the buffer pointer to end of program segment
 	buffer = buffer + pheader.p_filesz + 1;
 
-	LOG_PRINTF("Zero filling\n");
+	dbg_printf("Zero filling\n");
 	// Fills excess memory with zeroes
     *size = pheader.p_memsz;
 	excess = pheader.p_memsz - pheader.p_filesz;
 	if(excess > 0) {
-		LOG_PRINTF("Zero filling: %d bytes\n", excess);
+		dbg_printf("Zero filling: %d bytes\n", excess);
         memset(buffer, 0, excess);
 	}
 
 	*pstub_entry = (tStubEntry*)((u32)module_info.stub_top + (u32)*addr);
 
-	LOG_PRINTF("stub_entry address: 0x%08X\n", (u32)*pstub_entry);
+	dbg_printf("stub_entry address: 0x%08X\n", (u32)*pstub_entry);
 
 	// Return size of stubs
 	return ((u32)module_info.stub_end - (u32)module_info.stub_top);
@@ -210,7 +210,7 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 	if (section_name_length > SECTION_NAME_MAX_LENGTH)
 	{
 		// Section name too long
-		LOG_PRINTF("Section name to find is too long (strlen = %d, max = %d)\n", section_name_length, SECTION_NAME_MAX_LENGTH);
+		dbg_printf("Section name to find is too long (strlen = %d, max = %d)\n", section_name_length, SECTION_NAME_MAX_LENGTH);
 		return -1;
 	}
 
@@ -234,13 +234,13 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 
 		if (strncmp(section_name, section_name_to_find, section_name_length) == 0)
 		{
-			LOG_PRINTF("Found section index %d\n", i);
+			dbg_printf("Found section index %d\n", i);
 			return i;
 		}
 	}
 
 	// Section not found
-	LOG_PRINTF("ERROR: Section could not be found!\n");
+	dbg_printf("ERROR: Section could not be found!\n");
 	return -1;
 }
 
@@ -255,7 +255,7 @@ u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
 	if (section_index < 0)
 	{
 		// Module info not found in sections
-		LOG_PRINTF("ERROR: section rodata.sceModuleInfo not found\n");
+		dbg_printf("ERROR: section rodata.sceModuleInfo not found\n");
 		return 0;
 	}
 
@@ -338,8 +338,6 @@ SceUID elf_eboot_extract_open(const char* eboot_path, SceOff *offset)
 {
 	SceUID eboot;
 	*offset = 0;
-
-	CLEAR_CACHE;
 
 	eboot = sceIoOpen(eboot_path, PSP_O_RDONLY, 777);
 

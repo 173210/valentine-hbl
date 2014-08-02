@@ -48,7 +48,7 @@ int cfg_init()
 #endif
 
 	if (g_cfg_fd > 0) {
-		LOG_PRINTF("Config file:%s\n", (int)file);
+		dbg_printf("Config file:%s\n", (int)file);
 
 		ret = sceIoRead(g_cfg_fd, &cfg_info, sizeof(tCfgInfo));
 		if (ret != sizeof(tCfgInfo)) {

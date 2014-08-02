@@ -3,28 +3,20 @@
 
 #define PSPLINK_OUT 2
 
-//init the debug file
-void init_debug();
-
-void log_putc(int c);
-void scr_puts(const char *s);
-void log_printf(const char *fmt, ...);
-
+#define DBG_PATH HBL_ROOT"DBGLOG"
 
 #ifdef DEBUG
-#define LOG_PUTC(s) log_putc(s)
-#define LOG_PRINTF(...) log_printf(__VA_ARGS__)
-
+void dbg_puts(const char *s);
+void dbg_printf(const char *fmt, ...);
 #else
-#define LOG_PUTS(s) {}
-#define LOG_PRINTF(...) {}
+#define dbg_puts(s) {}
+#define dbg_printf(...) {}
 #endif
 
 #ifdef NID_DEBUG
-#define NID_LOG_PRINTF(...) log_printf(__VA_ARGS__)
-
+#define NID_DBG_PRINTF(...) dbg_printf(__VA_ARGS__)
 #else
-#define NID_LOG_PRINTF(...) {}
+#define NID_DBG_PRINTF(...) {}
 #endif
 
 #endif

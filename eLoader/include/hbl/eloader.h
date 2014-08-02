@@ -9,9 +9,6 @@
 // Fixed loading address for relocatables
 #define PRX_LOAD_ADDRESS 0x08900000
 
-//Comment to disable the function Subinterrupthandler Cleanup
-#define SUB_INTR_HANDLER_CLEANUP
-
 extern int chdir_ok;
 
 extern int hook_exit_cb_called;

@@ -17,7 +17,7 @@
 #ifdef DEBUG
 static void log_mod_entry(HBLModInfo modinfo)
 {
-	log_printf("\n->Module entry:\n"
+	dbg_printf("\n->Module entry:\n"
 		"ID: 0x%08X\n"
 		"ELF type: 0x%08X\n"
 		"State: %d\n"
@@ -83,15 +83,15 @@ int get_module_index(SceUID modid)
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 {
-	LOG_PRINTF("\n\n->Entering load_module...\n");
+	dbg_printf("\n\n->Entering load_module...\n");
 
 	
-	//LOG_PRINTF("mod_table address: 0x%08X\n", mod_table);
+	//dbg_printf("mod_table address: 0x%08X\n", mod_table);
 
 	if (mod_table.num_loaded_mod >= MAX_MODULES)
 		return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 
-	LOG_PRINTF("Reading ELF header...\n");
+	dbg_printf("Reading ELF header...\n");
 	// Read ELF header
 	Elf32_Ehdr elf_hdr;
 	sceIoRead(elf_file, &elf_hdr, sizeof(elf_hdr));
@@ -100,7 +100,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	if (strncmp(elf_hdr.e_ident, "~PSP", 4) == 0)
 		return SCE_KERNEL_ERROR_ERROR;
 
-	LOG_PRINTF("\n->ELF header:\n"
+	dbg_printf("\n->ELF header:\n"
 		"Type: 0x%08X\n"
 		"Code entry: 0x%08X\n"
 		"Program header table offset: 0x%08X\n"
@@ -127,7 +127,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Static ELF
 	if(elf_hdr.e_type == (Elf32_Half) ELF_STATIC)
 	{
-		//LOG_PRINTF("STATIC\n");
+		//dbg_printf("STATIC\n");
 
 		mod_table.table[i].type = ELF_STATIC;
 
@@ -147,27 +147,25 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Relocatable ELF (PRX)
 	else if(elf_hdr.e_type == (Elf32_Half) ELF_RELOC)
 	{
-		LOG_PRINTF("RELOC\n");
+		dbg_printf("RELOC\n");
 
 		mod_table.table[i].type = ELF_RELOC;
 
-		LOG_PRINTF("load_module -> Offset: 0x%08X\n", offset);
+		dbg_printf("load_module -> Offset: 0x%08X\n", offset);
 
 		// Load PRX program section
 		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, (u32*)&program_size, &addr)) == 0)
 			return SCE_KERNEL_ERROR_ERROR;
 
-		CLEAR_CACHE;
-
-		LOG_PRINTF("Before reloc -> Offset: 0x%08X\n", offset);
+		dbg_printf("Before reloc -> Offset: 0x%08X\n", offset);
 		//Relocate all sections that need to
 		unsigned int ret = relocate_sections(elf_file, offset, &elf_hdr, addr);
 
-		LOG_PRINTF("Relocated entries: %d\n", ret);
+		dbg_printf("Relocated entries: %d\n", ret);
 
 		if (ret == 0)
 		{
-			LOG_PRINTF("WARNING: no entries to relocate on a relocatable ELF\n");
+			dbg_printf("WARNING: no entries to relocate on a relocatable ELF\n");
 		}
 
 		// Relocate ELF entry point and GP register
@@ -178,18 +176,18 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	// Unknown ELF type
 	else
 	{
-        LOG_PRINTF("Uknown ELF type: 0x%08X\n", elf_hdr.e_type);
+        dbg_printf("Uknown ELF type: 0x%08X\n", elf_hdr.e_type);
 		return SCE_KERNEL_ERROR_ERROR;
 	}
-	LOG_PRINTF("resolve stubs\n");
+	dbg_printf("resolve stubs\n");
 	// Resolve ELF's stubs with game's stubs and syscall estimation
 	unsigned int stubs_resolved = resolve_imports(pstub, stubs_size);
 
 	if (stubs_resolved == 0)
     {
-		LOG_PRINTF("WARNING: no stubs found!!\n");
+		dbg_printf("WARNING: no stubs found!!\n");
     }
-	//LOG_PRINTF("\nUpdating module table\n");
+	//dbg_printf("\nUpdating module table\n");
 
 	mod_table.table[i].id = MOD_ID_START + i;
 	mod_table.table[i].state = LOADED;
@@ -198,15 +196,24 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	mod_table.table[i].libstub_addr = pstub;
 	mod_table.num_loaded_mod++;
 
-	//LOG_PRINTF("Module table updated\n");
+	//dbg_printf("Module table updated\n");
 
-	LOG_PRINTF("\n->Actual number of loaded modules: %d\n", mod_table.num_loaded_mod);
-	LOG_PRINTF("Last loaded module [%d]:\n", i);
+	dbg_printf("\n->Actual number of loaded modules: %d\n", mod_table.num_loaded_mod);
+	dbg_printf("Last loaded module [%d]:\n", i);
 #ifdef DEBUG
 	log_mod_entry(mod_table.table[i]);
 #endif
 
-	CLEAR_CACHE;
+#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
+	sceKernelDcacheWritebackRange(addr, program_size);
+#else
+	sceKernelDcacheWritebackAll();
+#endif
+#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
+	sceKernelIcacheInvalidateRange(addr, program_size);
+#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
+	sceKernelIcacheInvalidateAll();
+#endif
 
 	return mod_table.table[i].id;
 }
@@ -224,7 +231,7 @@ void launch_module(int mod_index, void* dummy)
 // Starts an already loaded module
 SceUID start_module(SceUID modid)
 {
-	LOG_PRINTF("\n\n-->Starting module ID: 0x%08X\n", modid);
+	dbg_printf("\n\n-->Starting module ID: 0x%08X\n", modid);
 
 	
 	if (mod_table.num_loaded_mod == 0)
@@ -272,34 +279,34 @@ SceUID start_module(SceUID modid)
 
 		char * lptr = largbuff + larglen + 1;
 
-		LOG_PRINTF("lptr: %08X\n", (u32)lptr);
+		dbg_printf("lptr: %08X\n", (u32)lptr);
 
 		_sprintf(lptr, "%08X", (u32)(&(menu_api)));
 
 		larglen += 9;
 
-		LOG_PRINTF("new larglen: %08X\n", larglen);
+		dbg_printf("new larglen: %08X\n", larglen);
 
 		menu_api.fname = hb_fname;
 	}
 
-    LOG_PRINTF("argv[0]: '%s'\n", (u32)largbuff);
-    LOG_PRINTF("argc:  %08X\n", (u32)larglen);
+    dbg_printf("argv[0]: '%s'\n", (u32)largbuff);
+    dbg_printf("argc:  %08X\n", (u32)larglen);
 
 	if(thid >= 0)
 	{
-		LOG_PRINTF("->MODULE MAIN THID: 0x%08X ", thid);
+		dbg_printf("->MODULE MAIN THID: 0x%08X ", thid);
         //The hook is called here to handle thread monitoring
 		thid = _hook_sceKernelStartThread(thid, larglen, (void *)largbuff);
 		if (thid < 0)
 		{
-			LOG_PRINTF(" HB Thread couldn't start. Error 0x%08X\n", thid);
+			dbg_printf(" HB Thread couldn't start. Error 0x%08X\n", thid);
 			return thid;
 		}
     }
 	else
 	{
-        LOG_PRINTF(" HB Thread couldn't be created. Error 0x%08X\n", thid);
+        dbg_printf(" HB Thread couldn't be created. Error 0x%08X\n", thid);
 		return thid;
 	}
 
@@ -431,7 +438,7 @@ tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_
 
 	if (name_found == NULL)
 	{
-		LOG_PRINTF("->ERROR: could not find module %s\n", (u32)mod_name);
+		dbg_printf("->ERROR: could not find module %s\n", (u32)mod_name);
 		return NULL;
 	}
 
@@ -440,7 +447,7 @@ tExportEntry* find_module_exports_by_name(const char* mod_name, const char* lib_
 
 	if (name_found == NULL)
 	{
-		LOG_PRINTF("->ERROR: could not find library name %s\n", (u32)lib_name);
+		dbg_printf("->ERROR: could not find library name %s\n", (u32)lib_name);
 		return NULL;
 	}
 
@@ -482,7 +489,7 @@ int add_utility_to_table(unsigned int id)
 
 int load_util(int module)
 {
-	LOG_PRINTF("Loading 0x%08X\n", module);
+	dbg_printf("Loading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
 #ifdef USE_NET_MODULE_LOAD_FUNCTION
@@ -510,7 +517,7 @@ int load_util(int module)
 
 int unload_util(int module)
 {
-	LOG_PRINTF("Unloading 0x%08X\n", module);
+	dbg_printf("Unloading 0x%08X\n", module);
 
 #ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
 #ifdef USE_NET_MODULE_UNLOAD_FUNCTION
@@ -540,11 +547,11 @@ int unload_util(int module)
 // Loads and registers exports from an utility module
 int load_export_utility_module(int mod_id, const char* lib_name , void **pexport_out )
 {
-	LOG_PRINTF("Loading utility module for library %s\n", (u32)lib_name);
+	dbg_printf("Loading utility module for library %s\n", (u32)lib_name);
 
 		//force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
 	if (mod_id > PSP_MODULE_AV_AVCODEC && mod_id <= PSP_MODULE_AV_G729) {
-		LOG_PRINTF("Force-Loading AVCODEC\n");
+		dbg_printf("Force-Loading AVCODEC\n");
 #ifdef USE_AV_MODULE_LOAD_FUNCTION
 		sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
 #else
@@ -553,7 +560,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	}
 
 	if( mod_id == PSP_MODULE_NET_HTTP) {
-		LOG_PRINTF("Force-Loading HTTP\n");
+		dbg_printf("Force-Loading HTTP\n");
 #ifdef USE_NET_MODULE_LOAD_FUNCTION
 		sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
@@ -576,7 +583,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	if (get_utility_modname(lib_name, mod_name) < 0)
 	{
-		LOG_PRINTF("Unknown/unsupported utility 0x%08X\n", mod_id);
+		dbg_printf("Unknown/unsupported utility 0x%08X\n", mod_id);
 		return -1;
 	}
 
@@ -585,7 +592,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	if (pexports == NULL)
 	{
-		LOG_PRINTF("->ERROR: could not find module exports for %s\n", (u32)mod_name);
+		dbg_printf("->ERROR: could not find module exports for %s\n", (u32)mod_name);
 		return -1;
 	}
 
@@ -600,13 +607,13 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	*(tExportEntry **)pexport_out = NULL;
 
-	LOG_PRINTF("Number of export functions: %d\n", (u16)pexports->num_functions);
-	LOG_PRINTF("Pointer to exports: 0x%08X\n", (u32)pexports->exports_pointer);
+	dbg_printf("Number of export functions: %d\n", (u16)pexports->num_functions);
+	dbg_printf("Pointer to exports: 0x%08X\n", (u32)pexports->exports_pointer);
 
 	u32* pnids = (u32*)pexports->exports_pointer;
 	u32* pfunctions = (u32*)((u32)pexports->exports_pointer + (u16)pexports->num_functions * 4);
 
-	LOG_PRINTF("Pointer to functions: 0x%08X\n", (u32)pfunctions);
+	dbg_printf("Pointer to functions: 0x%08X\n", (u32)pfunctions);
 
 	// Insert new library on library table
 	tSceLibrary newlib;
@@ -620,7 +627,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	int lib_index = add_library_to_table(newlib);
 	if (lib_index < 0)
 	{
-		LOG_PRINTF("->WARNING: could not add library to table\n");
+		dbg_printf("->WARNING: could not add library to table\n");
 		return lib_index;
 	}
 
@@ -628,7 +635,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	int i;
 	for (i=0; i<(u16)pexports->num_functions; i++)
 	{
-		LOG_PRINTF("NID %d: 0x%08X Function: 0x%08X\n", i, pnids[i], pfunctions[i]);
+		dbg_printf("NID %d: 0x%08X Function: 0x%08X\n", i, pnids[i], pfunctions[i]);
 		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
 	}
 

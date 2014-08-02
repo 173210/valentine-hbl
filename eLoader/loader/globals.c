@@ -21,23 +21,22 @@ static void get_module_sdk_version()
 {
 	int i, cnt;
 
-	SceLibraryEntryTable *tbl = (SceLibraryEntryTable *)
-		(memfindsz("sceKernelLibrary", (void *)0x08800300, 0x00001000) + 8);
+	SceLibraryEntryTable *tbl = *(SceLibraryEntryTable **)
+		(memfindsz("sceKernelLibrary", (void *)0x08800300, 0x00001000) + 32);
 
 	cnt = tbl->vstubcount + tbl->stubcount;
 
-	// LOG_PRINTF("Entry is 0x%08X \n", (int)Entry);
-	// LOG_PRINTF("cnt is 0x%08X \n", cnt);
+	// dbg_printf("cnt is 0x%08X \n", cnt);
 
-	for (i = 0; ((int *)tbl->entrytable)[i] != 0x11B97506; i--)
+	for (i = 0; ((int *)tbl->entrytable)[i] != 0x11B97506; i++)
 		if (i >= cnt) {
-			LOG_PRINTF("Warning: Cannot find module_sdk_version function\n");
+			dbg_printf("Warning: Cannot find module_sdk_version\n");
 			return;
 		}
 
 	globals->module_sdk_version = *((int **)tbl->entrytable)[i + cnt];
 
-	LOG_PRINTF("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
+	dbg_printf("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
 }
 
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION

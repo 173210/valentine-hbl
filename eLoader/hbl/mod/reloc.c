@@ -103,18 +103,18 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 	unsigned int j, entries_relocated = 0, num_entries;
 	tRelEntry* reloc_entry;
 
-	LOG_PRINTF("relocate_sections\n");
+	dbg_printf("relocate_sections\n");
 
 	// Seek string table
 	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
 	sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
 
-	//LOG_PRINTF("String table offset: 0x%08X\n", sec_header.sh_offset);
+	//dbg_printf("String table offset: 0x%08X\n", sec_header.sh_offset);
 
 	// First section header
 	cur_offset = pelf_header->e_shoff;
 
-	LOG_PRINTF("Number of sections: %d\n", pelf_header->e_shnum);
+	dbg_printf("Number of sections: %d\n", pelf_header->e_shnum);
 
 	// Browse all section headers
 	for(i=0; i<pelf_header->e_shnum; i++)
@@ -125,15 +125,15 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 
 		if(sec_header.sh_type == LOPROC)
 		{
-			//LOG_PRINTF("Relocating...\n");
+			//dbg_printf("Relocating...\n");
 
 			// Allocate memory for section
 			num_entries = sec_header.sh_size / sizeof(tRelEntry);
 			reloc_entry = malloc_hbl(sec_header.sh_size);
 			if(!reloc_entry)
 			{
-				LOG_PRINTF("\nWARNING: cannot allocate memory (size: %d) for section\n", sec_header.sh_size);
-				LOG_PRINTF("Free memory: %d (max: %d)\n ", sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
+				dbg_printf("\nWARNING: cannot allocate memory (size: %d) for section\n", sec_header.sh_size);
+				dbg_printf("Free memory: %d (max: %d)\n ", sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
 				continue;
 			}
 
@@ -149,8 +149,6 @@ unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, Elf32_Ehdr 
 
 			// Free section memory
 			_free(reloc_entry);
-
-			CLEAR_CACHE;
 		}
 
 		// Next section header

@@ -34,7 +34,6 @@ typedef struct
 	HBLLibTable lib_table;
 	//malloc.c
 	SceUID blockids[MAX_ALLOCS]; /* Blocks */
-	SceUID dbg_fd;
 } tGlobals;
 
 #define GLOBALS_ADDR 0x10200

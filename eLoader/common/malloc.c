@@ -19,24 +19,24 @@ int find_free_block()
 void *malloc_hbl(SceSize size)
 {
 	SceUID blockid;
-    	LOG_PRINTF("-->ALLOCATING MEMORY from partition 2, size 0x%08X... ", size);
+    	dbg_printf("-->ALLOCATING MEMORY from partition 2, size 0x%08X... ", size);
 
 	int i = find_free_block();
 	if(i == MAX_ALLOCS) {
-		LOG_PRINTF("WARNING: no free blocks remaining\n");
+		dbg_printf("WARNING: no free blocks remaining\n");
 		return NULL;
 	}
 
-	LOG_PRINTF("Found free block %d\n", i);
+	dbg_printf("Found free block %d\n", i);
 
 	// Allocate block
 	blockid = sceKernelAllocPartitionMemory(2, "ValentineMalloc", PSP_SMEM_Low, size, NULL); // Try to allocate from the lowest available address
 	if(blockid < 0) {
-		LOG_PRINTF("WARNING: malloc failed with error 0x%08X\n", blockid);
+		dbg_printf("WARNING: malloc failed with error 0x%08X\n", blockid);
 		return NULL;
 	}
 
-	LOG_PRINTF("Got block from kernel with UID 0x%08X\n", blockid);
+	dbg_printf("Got block from kernel with UID 0x%08X\n", blockid);
 
 	// Fill block info
 	globals->blockids[i] = blockid;

@@ -61,7 +61,7 @@ int configIntParse(const char *xival)
     }
 
     lrunningvalue *= minus;
-    LOG_PRINTF("Parsed int param: %d\n", lrunningvalue);
+    dbg_printf("Parsed int param: %d\n", lrunningvalue);
 
     return(lrunningvalue);
 }
@@ -115,7 +115,7 @@ u32 configAddrParse(const char *xival)
         lptr++;
     }
 
-    LOG_PRINTF("Parsed addr param: %08X\n", lrunningvalue);
+    dbg_printf("Parsed addr param: %08X\n", lrunningvalue);
 
     return(lrunningvalue);
 }
@@ -193,7 +193,7 @@ int configReadParameter(char *xoname, char *xoval)
         lrc = readLine(lbuff, 256, gconfigfd, &gconfigoffset);
         if (lrc)
         {
-            //    LOG_PRINTF("Got line: %s\n", lbuff);
+            //    dbg_printf("Got line: %s\n", lbuff);
             if (lbuff[0] != '#')
             {
                 if (lbuff[0] == '[')
@@ -224,10 +224,10 @@ void configGetProcessingOptions()
     char lstr[256];
     char lval[256];
 
-        LOG_PRINTF("Read params\n");
+        dbg_printf("Read params\n");
     while (configReadParameter(lstr, lval))
     {
-        LOG_PRINTF("Parm %s = %s\n", (u32)lstr, (u32)lval);
+        dbg_printf("Parm %s = %s\n", (u32)lstr, (u32)lval);
         if (strcmp(lstr,"override_sceIoMkdir")==0)
         {
             override_sceIoMkdir = configIntParse(lval);
@@ -298,7 +298,7 @@ void closeConfig() {
 /*****************************************************************************/
 void loadConfig(const char * path)
 {
-    LOG_PRINTF("Attempt to Load Config file: %s\n", (u32)path);
+    dbg_printf("Attempt to Load Config file: %s\n", (u32)path);
     closeConfig();
 
     /***************************************************************************/
@@ -307,7 +307,7 @@ void loadConfig(const char * path)
     gconfigfd = sceIoOpen(path, PSP_O_RDONLY, 0777);
     if (gconfigfd < 0 )
     {
-        LOG_PRINTF("Couldn't load config file, error 0x%08X (that's usually not an issue)\n",gconfigfd);
+        dbg_printf("Couldn't load config file, error 0x%08X (that's usually not an issue)\n",gconfigfd);
         return;
     }
     scr_printf("Config file: %s\n", path);

@@ -23,6 +23,8 @@
 #define DISABLE_KERNEL_DUMP
 #endif
 
+#define FIRST_LOG "Loader running\n"
+
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
 static void resetHomeSettings()
@@ -52,7 +54,7 @@ static void PreloadFreeMem()
 	for(i = 0; i < sizeof(blockids) / sizeof(int); i++) {
 		int ret = sceKernelFreePartitionMemory(*(SceUID *)blockids[i]);
 		if (ret < 0)
-			LOG_PRINTF("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
+			dbg_printf("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
 	}
 }
 #endif
@@ -62,11 +64,11 @@ static void FreeFpl()
 {
 	SceUID uid;
 
-	LOG_PRINTF("loader.c: FreeFpl\n");
+	dbg_printf("loader.c: FreeFpl\n");
 
 	for (uid =  0x03000000; uid < 0xE0000000; uid++)
         	if (sceKernelDeleteFpl(uid) >= 0) {
-			LOG_PRINTF("Succesfully Deleted FPL ID 0x%08X\n", uid);
+			dbg_printf("Succesfully Deleted FPL ID 0x%08X\n", uid);
 			return;
         	}
 }
@@ -78,12 +80,12 @@ static void CloseFiles()
 	SceUID fd;
 	int ret;
 
-	LOG_PRINTF("memory.c:CloseFiles\n");
+	dbg_printf("memory.c:CloseFiles\n");
 
 	for (fd = 0; fd < 8; fd++) {
 		ret = sceIoClose(fd);
 		if (ret != SCE_KERNEL_ERROR_BADF)
-			LOG_PRINTF("tried closing file %d, result 0x%08X\n", fd, ret);
+			dbg_printf("tried closing file %d, result 0x%08X\n", fd, ret);
 	}
 }
 #endif
@@ -108,20 +110,20 @@ static void load_hbl(SceUID hbl_file)
 #endif
 #ifdef FPL_EARLY_LOAD_ADDR_LIST
 	//early memory cleanup to be able to load HBL at a convenient place
-	LOG_PRINTF("loader.c: PreloadFreeFPL\n");
+	dbg_printf("loader.c: PreloadFreeFPL\n");
 
 	int uids[] = FPL_EARLY_LOAD_ADDR_LIST;
 
 	for(i = 0; i < sizeof(uids) / sizeof(int); i++)
 		if (sceKernelDeleteFpl(*(SceUID *)uids[i]) < 0)
-			LOG_PRINTF("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
+			dbg_printf("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
 #endif
 
 
 	HBL_block = sceKernelAllocPartitionMemory(
 		2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDR);
 	if(HBL_block < 0) {
-		log_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
+		scr_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
 		sceKernelExitGame();
 	}
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
@@ -129,16 +131,30 @@ static void load_hbl(SceUID hbl_file)
 	// Load HBL to allocated memory
 	ret = sceIoRead(hbl_file, (void *)run_eloader, file_size);
 	if (ret < 0) {
-		log_printf(" ERROR READING HBL 0x%08X\n", ret);
+		scr_printf(" ERROR READING HBL 0x%08X\n", ret);
 		sceKernelExitGame();
 	}
 
 	sceIoClose(hbl_file);
 
-	LOG_PRINTF("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
+	dbg_printf("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
+
+	dbg_printf("Resolving HBL stubs\n");
+	resolve_stubs();
 
 	// Commit changes to RAM
-	CLEAR_CACHE;
+#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
+	sceKernelDcacheWritebackRange(run_eloader, file_size);
+	sceKernelDcacheWritebackRange((void *)HBL_STUBS_START, NUM_HBL_IMPORTS * 2 * 4);
+#else
+	sceKernelDcacheWritebackAll();
+#endif
+#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
+	sceKernelIcacheInvalidateRange(run_eloader, file_size);
+	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_START, NUM_HBL_IMPORTS * 2 * 4);
+#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
+	sceKernelIcacheInvalidateAll();
+#endif
 }
 
 #ifndef DISABLE_KERNEL_DUMP
@@ -151,12 +167,32 @@ static void get_kmem_dump()
 }
 #endif
 
+#if defined(DEBUG) || defined(FORCE_FIRST_LOG)
+static void dbg_init()
+{
+	SceUID fd = sceIoOpen(DBG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777);
+
+	sceIoWrite(PSPLINK_OUT, FIRST_LOG, sizeof(FIRST_LOG) - sizeof(char));
+	sceIoWrite(fd, FIRST_LOG, sizeof(FIRST_LOG) - sizeof(char));
+
+	sceIoClose(fd);
+}
+#endif
+
 // Entry point
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
 	SceUID hbl_file;
 	int num_nids;
+
+#if defined(DEBUG) || defined(FORCE_FIRST_LOG)
+	//reset the contents of the debug file;
+	dbg_init();
+#endif
+
+	//init global variables
+	init_globals();
 
 	scr_init();
 	scr_puts("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl\n");
@@ -179,29 +215,9 @@ void _start()
 	resetHomeSettings();
 #endif
 
-#if defined(FORCE_FIRST_LOG) || defined(DEBUG)
-	// Some exploits need to "trigger" file I/O in order for HBL to work, not sure why
-	log_printf("Loader running\n");
-#endif
-
 #ifdef FORCE_CLOSE_FILES_IN_LOADER
 	CloseFiles();
 #endif
-
-	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
-	if (hbl_file < 0) {
-		log_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
-		sceKernelExitGame();
-	}
-
-	LOG_PRINTF("Loading HBL\n");
-	load_hbl(hbl_file);
-
-	//reset the contents of the debug file;
-	init_debug();
-
-	//init global variables
-	init_globals();
 
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	if (globals->psp_go) {
@@ -219,10 +235,10 @@ void _start()
 	num_nids = p2_add_stubs();
 	scr_puts("Building NIDs table with savedata utility\n");
 	num_nids += p5_add_stubs();
-	LOG_PRINTF("NUM NIDS: %d\n", num_nids);
+	dbg_printf("NUM NIDS: %d\n", num_nids);
 
 	if(num_nids <= 0) {
-		log_printf("No Nids ???\n");
+		scr_puts("No Nids ???\n");
 		sceKernelExitGame();
 	}
 
@@ -230,8 +246,14 @@ void _start()
 	dump_lib_table();
 #endif
 
-	LOG_PRINTF("Resolving HBL stubs\n");
-	resolve_stubs();
-	LOG_PRINTF("HBL stubs copied, running eLoader\n");
+	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
+	if (hbl_file < 0) {
+		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
+		sceKernelExitGame();
+	}
+
+	dbg_printf("Loading HBL\n");
+	load_hbl(hbl_file);
+	dbg_printf("Running eLoader\n");
 	run_eloader();
 }

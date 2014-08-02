@@ -111,7 +111,7 @@ int _hook_sceKernelExitThread(int status)
 	int found = 0;
 	int thid = sceKernelGetThreadId();
 
-	LOG_PRINTF("Enter hookExitThread : %08X\n", thid);
+	dbg_printf("Enter hookExitThread : %08X\n", thid);
 
 	WAIT_SEMA(thSema, 1, 0);
 
@@ -119,7 +119,7 @@ int _hook_sceKernelExitThread(int status)
 		if (running_th[i] == thid) {
 			found = 1;
 			num_run_th--;
-			LOG_PRINTF("Running threads: %d\n", num_run_th);
+			dbg_printf("Running threads: %d\n", num_run_th);
 		}
 
 		if (found && i <= SIZE_THREAD_TRACKING_ARRAY - 2)
@@ -130,18 +130,18 @@ int _hook_sceKernelExitThread(int status)
 
 
 #ifdef DELETE_EXIT_THREADS
-	LOG_PRINTF("Num exit thr: %08X\n", num_exit_th);
+	dbg_printf("Num exit thr: %08X\n", num_exit_th);
 
 	/*************************************************************************/
 	/* Add to exited list                                                    */
 	/*************************************************************************/
 	if (num_exit_th < SIZE_THREAD_TRACKING_ARRAY)
 	{
-		LOG_PRINTF("Set array\n");
+		dbg_printf("Set array\n");
 		exited_th[num_exit_th] = thid;
 		num_exit_th++;
 
-		LOG_PRINTF("Exited threads: %d\n", num_exit_th);
+		dbg_printf("Exited threads: %d\n", num_exit_th);
 	}
 #endif
 
@@ -158,7 +158,7 @@ int _hook_sceKernelExitThread(int status)
 
 	sceKernelSignalSema(thSema, 1);
 
-	LOG_PRINTF("Exit hookExitThread\n");
+	dbg_printf("Exit hookExitThread\n");
 
 	return sceKernelExitThread(status);
 }
@@ -178,7 +178,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 	int thid = sceKernelGetThreadId();
 
     
-	LOG_PRINTF("Enter hookExitDeleteThread : %08X\n", thid);
+	dbg_printf("Enter hookExitDeleteThread : %08X\n", thid);
 
 	WAIT_SEMA(thSema, 1, 0);
 
@@ -186,7 +186,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 		if (running_th[i] == thid) {
 			found = 1;
 			num_run_th--;
-			LOG_PRINTF("Running threads: %d\n", num_run_th);
+			dbg_printf("Running threads: %d\n", num_run_th);
 		}
 
 		if (found && i <= SIZE_THREAD_TRACKING_ARRAY - 2)
@@ -197,7 +197,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 
 
 
-	LOG_PRINTF("Exit hookExitDeleteThread\n");
+	dbg_printf("Exit hookExitDeleteThread\n");
 
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
@@ -214,18 +214,18 @@ int _hook_sceKernelExitDeleteThread(int status)
 	// But modules on p5 do.
 
 #ifdef DELETE_EXIT_THREADS
-	LOG_PRINTF("Num exit thr: %08X\n", num_exit_th);
+	dbg_printf("Num exit thr: %08X\n", num_exit_th);
 
 	/*************************************************************************/
 	/* Add to exited list                                                    */
 	/*************************************************************************/
 	if (num_exit_th < SIZE_THREAD_TRACKING_ARRAY)
 	{
-		LOG_PRINTF("Set array\n");
+		dbg_printf("Set array\n");
 		exited_th[num_exit_th] = thid;
 		num_exit_th++;
 
-		LOG_PRINTF("Exited threads: %d\n", num_exit_th);
+		dbg_printf("Exited threads: %d\n", num_exit_th);
 	}
 #endif
 
@@ -254,7 +254,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     }
 
 
-    LOG_PRINTF("API returned %08X\n", lreturn);
+    dbg_printf("API returned %08X\n", lreturn);
 
     /*************************************************************************/
     /* Add to pending list                                                   */
@@ -262,11 +262,11 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     WAIT_SEMA(thSema, 1, 0);
     if (num_pend_th < SIZE_THREAD_TRACKING_ARRAY)
     {
-      LOG_PRINTF("Set array\n");
+      dbg_printf("Set array\n");
       pending_th[num_pend_th] = lreturn;
       num_pend_th++;
 
-      LOG_PRINTF("Pending threads: %d\n", num_pend_th);
+      dbg_printf("Pending threads: %d\n", num_pend_th);
     }
 
     sceKernelSignalSema(thSema, 1);
@@ -285,11 +285,11 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 	int i;
 	int found = 0;
 
-	LOG_PRINTF("Enter hookRunThread: %08X\n", thid);
+	dbg_printf("Enter hookRunThread: %08X\n", thid);
 
 	WAIT_SEMA(thSema, 1, 0);
 
-	LOG_PRINTF("Number of pending threads: %08X\n", num_pend_th);
+	dbg_printf("Number of pending threads: %08X\n", num_pend_th);
 
 	/***************************************************************************/
 	/* Remove from pending list                                                */
@@ -298,7 +298,7 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 		if (pending_th[i] == thid) {
 			found = 1;
 			num_pend_th--;
-			LOG_PRINTF("Pending threads: %d\n", num_pend_th);
+			dbg_printf("Pending threads: %d\n", num_pend_th);
 		}
 
 		if (found && i <= SIZE_THREAD_TRACKING_ARRAY - 2)
@@ -311,18 +311,18 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 		/***************************************************************************/
 		/* Add to running list                                                     */
 		/***************************************************************************/
-		LOG_PRINTF("Number of running threads: %08X\n", num_run_th);
+		dbg_printf("Number of running threads: %08X\n", num_run_th);
 		if (num_run_th < SIZE_THREAD_TRACKING_ARRAY) {
 			running_th[num_run_th] = thid;
 			num_run_th++;
-			LOG_PRINTF("Running threads: %d\n", num_run_th);
+			dbg_printf("Running threads: %d\n", num_run_th);
 		}
 	}
 
 	sceKernelSignalSema(thSema, 1);
 
 
-	LOG_PRINTF("Exit hookRunThread: %08X\n", thid);
+	dbg_printf("Exit hookRunThread: %08X\n", thid);
 
 	return sceKernelStartThread(thid, arglen, argp);
 
@@ -336,11 +336,11 @@ void threads_cleanup()
 
         int lthisthread = sceKernelGetThreadId();
     u32 i;
-    LOG_PRINTF("Threads cleanup\n");
+    dbg_printf("Threads cleanup\n");
     WAIT_SEMA(thSema, 1, 0);
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
-    LOG_PRINTF("cleaning audio threads\n");
+    dbg_printf("cleaning audio threads\n");
 	for (i=0;i<8;i++)
 	{
 		//WAIT_SEMA(audioSema, 1, 0);
@@ -349,66 +349,66 @@ void threads_cleanup()
 	}
 #endif
 
-    LOG_PRINTF("Running Threads cleanup\n");
+    dbg_printf("Running Threads cleanup\n");
     while (num_run_th > 0)
     {
-        LOG_PRINTF("%d running threads remain\n", num_run_th);
+        dbg_printf("%d running threads remain\n", num_run_th);
         if (running_th[num_run_th - 1] != lthisthread)
         {
-            LOG_PRINTF("Kill thread ID %08X\n", running_th[num_run_th - 1]);
+            dbg_printf("Kill thread ID %08X\n", running_th[num_run_th - 1]);
             kill_thread(running_th[num_run_th - 1]);
         }
         else
         {
-        LOG_PRINTF("Not killing myself - yet\n");
+        dbg_printf("Not killing myself - yet\n");
         }
         num_run_th--;
     }
 
 
-    LOG_PRINTF("Pending Threads cleanup\n");
+    dbg_printf("Pending Threads cleanup\n");
     while (num_pend_th > 0)
     {
-        LOG_PRINTF("%d pending threads remain\n", num_pend_th);
+        dbg_printf("%d pending threads remain\n", num_pend_th);
         /*************************************************************************/
         /* This test shouldn't really apply to pending threads, but do it        */
         /* anyway                                                                */
         /*************************************************************************/
         if (pending_th[num_pend_th - 1] != lthisthread)
         {
-            LOG_PRINTF("Kill thread ID %08X\n", pending_th[num_pend_th - 1]);
+            dbg_printf("Kill thread ID %08X\n", pending_th[num_pend_th - 1]);
             sceKernelDeleteThread(pending_th[num_pend_th - 1]);
         }
         else
         {
-            LOG_PRINTF("Not killing myself - yet\n");
+            dbg_printf("Not killing myself - yet\n");
         }
         num_pend_th--;
     }
 
 #ifdef DELETE_EXIT_THREADS
-    LOG_PRINTF("Sleeping Threads cleanup\n");
+    dbg_printf("Sleeping Threads cleanup\n");
     /***************************************************************************/
     /* Delete the threads that exitted but haven't been deleted yet            */
     /***************************************************************************/
     while (num_exit_th > 0)
     {
-        LOG_PRINTF("%d exited threads remain\n", num_exit_th);
+        dbg_printf("%d exited threads remain\n", num_exit_th);
         if (exited_th[num_exit_th - 1] != lthisthread)
         {
-            LOG_PRINTF("Delete thread ID %08X\n", exited_th[num_exit_th - 1]);
+            dbg_printf("Delete thread ID %08X\n", exited_th[num_exit_th - 1]);
             sceKernelDeleteThread(exited_th[num_exit_th - 1]);
         }
         else
         {
-            LOG_PRINTF("Not killing myself - yet\n");
+            dbg_printf("Not killing myself - yet\n");
         }
         num_exit_th--;
     }
 #endif
 
     sceKernelSignalSema(thSema, 1);
-    LOG_PRINTF("Threads cleanup Done\n");
+    dbg_printf("Threads cleanup Done\n");
 }
 
 //
@@ -480,7 +480,7 @@ SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
         return sceIoOpen(file, flags, mode);
 
     char * buf = relative_to_absolute(file);
-    LOG_PRINTF("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
+    dbg_printf("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
     SceUID ret = sceIoOpen(buf, flags, mode);
     _free(buf);
     return ret;
@@ -512,12 +512,12 @@ SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 		}
 		else
 		{
-			LOG_PRINTF("WARNING: file list full, cannot add newly opened file\n");
+			dbg_printf("WARNING: file list full, cannot add newly opened file\n");
 		}
 	}
 
 	sceKernelSignalSema(ioSema, 1);
-	//LOG_PRINTF("_hook_sceIoOpen(%s, %d, %d) = 0x%08X\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
+	//dbg_printf("_hook_sceIoOpen(%s, %d, %d) = 0x%08X\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
 	return ret;
 }
 
@@ -545,7 +545,7 @@ int _hook_sceIoClose(SceUID fd)
 	}
 
 	sceKernelSignalSema(ioSema, 1);
-	//LOG_PRINTF("_hook_sceIoClose(0x%08X) = 0x%08X\n", (u32)fd, (u32)result);
+	//dbg_printf("_hook_sceIoClose(0x%08X) = 0x%08X\n", (u32)fd, (u32)result);
 	return ret;
 }
 
@@ -555,7 +555,7 @@ void files_cleanup()
 {
 	unsigned i;
 
-	LOG_PRINTF("Files Cleanup\n");
+	dbg_printf("Files Cleanup\n");
     
 	WAIT_SEMA(ioSema, 1, 0);
 	for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
@@ -563,14 +563,14 @@ void files_cleanup()
 		if (openFiles[i] != 0)
 		{
 			sceIoClose(openFiles[i]);
-			LOG_PRINTF("closing file UID 0x%08X\n", openFiles[i]);
+			dbg_printf("closing file UID 0x%08X\n", openFiles[i]);
 			openFiles[i] = 0;
 		}
 	}
 
 	numOpenFiles = 0;
 	sceKernelSignalSema(ioSema, 1);
-	LOG_PRINTF("Files Cleanup Done\n");
+	dbg_printf("Files Cleanup Done\n");
 }
 
 
@@ -581,27 +581,40 @@ void files_cleanup()
 int run_nid (u32 nid){
         // Is it known by HBL?
     int ret = get_nid_index(nid);
-    LOG_PRINTF("NID: 0x%08X\n", nid);
+    dbg_printf("NID: 0x%08X\n", nid);
     if (ret <= 0)
     {
-        LOG_PRINTF("Unknown NID: 0x%08X\n", nid);
+        dbg_printf("Unknown NID: 0x%08X\n", nid);
         return 0;
     }
     u32 syscall = globals->nid_table.table[ret].call;
 
     if (!syscall)
     {
-        LOG_PRINTF("No syscall for NID: 0x%08X\n", nid);
+        dbg_printf("No syscall for NID: 0x%08X\n", nid);
         return 0;
     }
 
     u32 cur_stub[2];
     resolve_call(cur_stub, syscall);
-    CLEAR_CACHE;
-
-	// This debug line must also be present in the release build!
-	// Otherwise the PSP will freeze and turn off when jumping to function().
-    log_printf("call is: 0x%08X\n", cur_stub[0]);
+#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
+    sceKernelDcacheWritebackRange(cur_stub, sizeof(cur_stub));
+#else
+    sceKernelDcacheWritebackAll();
+#endif
+#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_dummy
+#ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
+    sceKernelDelayThread(256);
+#elif defined(HOOK_sceDisplayWaitVblankStart_WITH_sceDisplayWaitVblankStartCB)
+    sceDisplayWaitVblankStartCB();
+#else
+    sceDisplayWaitVblankStart();
+#endif
+#elif defined(HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange)
+    sceKernelIcacheInvalidateRange(cur_stub, sizeof(cur_stub));
+#else
+    sceKernelIcacheInvalidateAll();
+#endif
 
     void (*function)() = (void *)(&cur_stub);
     function();
@@ -662,7 +675,7 @@ void ram_cleanup()
 {
         unsigned i;
 
-	LOG_PRINTF("Ram Cleanup\n");
+	dbg_printf("Ram Cleanup\n");
 
 	WAIT_SEMA(memSema, 1, 0);
 	for (i = 0; i < osAllocNum; i++)
@@ -670,7 +683,7 @@ void ram_cleanup()
 	osAllocNum = 0;
 	sceKernelSignalSema(memSema, 1);
 
-	LOG_PRINTF("Ram Cleanup Done\n");
+	dbg_printf("Ram Cleanup Done\n");
 }
 
 
@@ -678,7 +691,7 @@ void ram_cleanup()
 void subinterrupthandler_cleanup()
 {
 #ifdef SUB_INTR_HANDLER_CLEANUP
-    LOG_PRINTF("Subinterrupthandler Cleanup\n");
+    dbg_printf("Subinterrupthandler Cleanup\n");
 	int i, j;
 
 	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
@@ -687,11 +700,11 @@ void subinterrupthandler_cleanup()
 		{
 			if (sceKernelReleaseSubIntrHandler(i, j) > -1)
 			{
-				LOG_PRINTF("Subinterrupt handler released for %d, %d\n", i, j);
+				dbg_printf("Subinterrupt handler released for %d, %d\n", i, j);
 			}
 		}
 	}
-    LOG_PRINTF("Subinterrupthandler Cleanup Done\n");
+    dbg_printf("Subinterrupthandler Cleanup Done\n");
 #endif
 }
 
@@ -718,19 +731,19 @@ void  _hook_sceKernelExitGame()
 /*
 	    if (!hook_exit_cb_called && hook_exit_cb)
     {
-        LOG_PRINTF("Call exit CB: %08X\n", hook_exit_cb);
+        dbg_printf("Call exit CB: %08X\n", hook_exit_cb);
         hook_exit_cb_called = 1;
         hook_exit_cb(0,0,NULL);
     }
 */
-	LOG_PRINTF("_hook_sceKernelExitGame called\n");
+	dbg_printf("_hook_sceKernelExitGame called\n");
     exit_everything_but_me();
     sceKernelExitDeleteThread(0);
 }
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
-        LOG_PRINTF("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
+        dbg_printf("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
     WAIT_SEMA(memSema, 1, 0);
 
 	// Try to allocate the requested memory. If the allocation fails due to an insufficient
@@ -758,7 +771,7 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 	}
     while (uid <= 0);
 
-	LOG_PRINTF("-> final allocation made for %d of %d requested bytes with result 0x%08X\n", size, original_size, uid);
+	dbg_printf("-> final allocation made for %d of %d requested bytes with result 0x%08X\n", size, original_size, uid);
 
 	if (uid > 0)
 	{
@@ -771,11 +784,11 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
         {
             osAllocs[osAllocNum] = uid;
             osAllocNum ++;
-            LOG_PRINTF("Num tracked OS blocks now: %08X\n", osAllocNum);
+            dbg_printf("Num tracked OS blocks now: %08X\n", osAllocNum);
         }
         else
         {
-            LOG_PRINTF("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
+            dbg_printf("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
         }
     }
     sceKernelSignalSema(memSema, 1);
@@ -820,7 +833,7 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 {
         int lrc = sceKernelCreateCallback(name, func, arg);
 
-    LOG_PRINTF("Enter createcallback: %s\n", (u32)name);
+    dbg_printf("Enter createcallback: %s\n", (u32)name);
 
     WAIT_SEMA(cbSema, 1, 0);
     if (cbcount < MAX_CALLBACKS)
@@ -831,7 +844,7 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
     }
     sceKernelSignalSema(cbSema, 1);
 
-    LOG_PRINTF("Exit createcallback: %s ID: %08X\n", (u32) name, lrc);
+    dbg_printf("Exit createcallback: %s ID: %08X\n", (u32) name, lrc);
 
     return(lrc);
 }
@@ -843,21 +856,21 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
 {
         int i;
 
-    LOG_PRINTF("Enter registerexitCB: %08X\n", cbid);
+    dbg_printf("Enter registerexitCB: %08X\n", cbid);
 
     WAIT_SEMA(cbSema, 1, 0);
     for (i = 0; i < cbcount; i++)
     {
         if (cbids[i] == cbid)
         {
-            LOG_PRINTF("Found matching CB, func: %08X\n", cbfuncs[i]);
+            dbg_printf("Found matching CB, func: %08X\n", cbfuncs[i]);
             hook_exit_cb = cbfuncs[i];
             break;
         }
     }
     sceKernelSignalSema(cbSema, 1);
 
-    LOG_PRINTF("Exit registerexitCB: %08X\n",cbid);
+    dbg_printf("Exit registerexitCB: %08X\n",cbid);
 
     return(0);
 }
@@ -943,7 +956,7 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 	{
 	    if (lreturn >= 8)
 		{
-			LOG_PRINTF("AudioChReserve return out of range: %08X\n", lreturn);
+			dbg_printf("AudioChReserve return out of range: %08X\n", lreturn);
 			//waitForButtons();
 		}
 		else
@@ -1027,7 +1040,7 @@ int _hook_sceAudioSRCChRelease()
 {
         if (cur_ch_id < 0 || cur_ch_id > 7)
     {
-        LOG_PRINTF("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
+        dbg_printf("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
         return -1;
     }
     int result = _hook_sceAudioChRelease(cur_ch_id);
@@ -1072,7 +1085,7 @@ SceUID _hook_sceIoDopen(const char *dirname)
 
 SceUID sceIoDopen_Vita(const char *dirname)
 {
-    	LOG_PRINTF("sceIoDopen_Vita start\n");
+    	dbg_printf("sceIoDopen_Vita start\n");
     SceUID id = sceIoDopen(dirname);
 
 	if (id >= 0)
@@ -1100,14 +1113,14 @@ SceUID sceIoDopen_Vita(const char *dirname)
 	}
 
 
-	LOG_PRINTF("sceIoDopen_Vita Done\n");
+	dbg_printf("sceIoDopen_Vita Done\n");
     return id;
 }
 
 
 int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 {
-    	LOG_PRINTF("sceIoDread_Vita start\n");
+    	dbg_printf("sceIoDread_Vita start\n");
 	int i = 0, errCode = 1;
 	while (i < dirLen && id != dirFix[i][0])
 		++i;
@@ -1141,13 +1154,13 @@ int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 		errCode = sceIoDread(id, dir);
 	}
 
-	LOG_PRINTF("sceIoDread_Vita Done\n");
+	dbg_printf("sceIoDread_Vita Done\n");
 	return errCode;
 }
 
 int sceIoDclose_Vita(SceUID id)
 {
-    	LOG_PRINTF("sceIoDclose_Vita start\n");
+    	dbg_printf("sceIoDclose_Vita start\n");
 	int i = 0;
 	while (i < dirLen && id != dirFix[i][0] )
 		++i;
@@ -1159,7 +1172,7 @@ int sceIoDclose_Vita(SceUID id)
 			dirFix[i][1] = -1;
 	}
 
-	LOG_PRINTF("sceIoDclose_Vita Done\n");
+	dbg_printf("sceIoDclose_Vita Done\n");
 	return sceIoDclose(id);
 }
 #endif
@@ -1168,7 +1181,7 @@ int sceIoDclose_Vita(SceUID id)
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)
 {
-	LOG_PRINTF("_hook_sceIoChdir start\n");
+	dbg_printf("_hook_sceIoChdir start\n");
         // save chDir into global variable
     if (path_is_absolute(dirname))
     {
@@ -1193,7 +1206,7 @@ int _hook_sceIoChdir(const char *dirname)
     {
         return -1;
     }
-	LOG_PRINTF("_hook_sceIoChdir: %s becomes %s\n", (u32) dirname, (u32) mod_chdir);
+	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", (u32) dirname, (u32) mod_chdir);
 
     return 0;
 }
@@ -1344,32 +1357,32 @@ int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
 {
-	LOG_PRINTF("_hook_sceKernelLoadModule\n");
-	LOG_PRINTF("Attempting to load %s\n", (u32)path);
+	dbg_printf("_hook_sceKernelLoadModule\n");
+	dbg_printf("Attempting to load %s\n", (u32)path);
 
 	SceUID elf_file = _hook_sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	if (elf_file < 0)
 	{
-		LOG_PRINTF("Error 0x%08X opening requested module %s\n", elf_file, (u32)path);
+		dbg_printf("Error 0x%08X opening requested module %s\n", elf_file, (u32)path);
 		return elf_file;
 	}
 
 	SceOff offset = 0;
-	LOG_PRINTF("_hook_sceKernelLoadModule offset: 0x%08X\n", offset);
+	dbg_printf("_hook_sceKernelLoadModule offset: 0x%08X\n", offset);
 	SceUID ret = load_module(elf_file, path, NULL, offset);
     sceIoClose(elf_file);
-	LOG_PRINTF("load_module returned 0x%08X\n", ret);
+	dbg_printf("load_module returned 0x%08X\n", ret);
 
 	return ret;
 }
 
 int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUSED(argp), int *UNUSED(status), SceKernelSMOption *UNUSED(option))
 {
-	LOG_PRINTF("_hook_sceKernelStartModule\n");
+	dbg_printf("_hook_sceKernelStartModule\n");
 
 	SceUID ret = start_module(modid);
-	LOG_PRINTF("start_module returned 0x%08X\n", ret);
+	dbg_printf("start_module returned 0x%08X\n", ret);
 
 	return ret;
 }
@@ -1556,12 +1569,12 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 //utility functions, we need those
         case 0x237DBD4F: // sceKernelAllocPartitionMemory
-            LOG_PRINTF(" mem trick ");
+            dbg_printf(" mem trick ");
             hook_call = MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
             break;
 
         case 0xB6D61D02: // sceKernelFreePartitionMemory
-            LOG_PRINTF(" mem trick ");
+            dbg_printf(" mem trick ");
             hook_call = MAKE_JUMP(_hook_sceKernelFreePartitionMemory);
             break;
 
@@ -1606,7 +1619,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 #ifdef LOAD_MODULE
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
 		case 0x977DE386: // sceKernelLoadModule
-			LOG_PRINTF(" loadmodule trick ");
+			dbg_printf(" loadmodule trick ");
 #ifdef HOOK_sceKernelLoadModule_WITH_error
             hook_call = MAKE_JUMP(_hook_generic_error);
 #else
@@ -1619,7 +1632,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 			break;
 
 		case 0x50F0C1EC: // sceKernelStartModule
-			LOG_PRINTF(" loadmodule trick ");
+			dbg_printf(" loadmodule trick ");
 			hook_call = MAKE_JUMP(_hook_sceKernelStartModule);
 			break;
 #endif
@@ -1627,22 +1640,22 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 #ifdef HOOK_UTILITY
 		case 0xC629AF26: //sceUtilityLoadAvModule
-			LOG_PRINTF(" Hook sceUtilityLoadAvModule\n");
+			dbg_printf(" Hook sceUtilityLoadAvModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadAvModule);
 			break;
 
 		case 0x0D5BC6D2: //sceUtilityLoadUsbModule
-			LOG_PRINTF(" Hook sceUtilityLoadUsbModule\n");
+			dbg_printf(" Hook sceUtilityLoadUsbModule\n");
 			hook_call = MAKE_JUMP(_hook_generic_error);
 			break;
 
 		case 0x1579a159: //sceUtilityLoadNetModule
-			LOG_PRINTF(" Hook sceUtilityLoadNetModule\n");
+			dbg_printf(" Hook sceUtilityLoadNetModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadNetModule);
 			break;
 
 		case 0x2A2B3DE0: // sceUtilityLoadModule
-			LOG_PRINTF(" Hook sceUtilityLoadModule\n");
+			dbg_printf(" Hook sceUtilityLoadModule\n");
 			hook_call = MAKE_JUMP(_hook_sceUtilityLoadModule);
 			break;
 
@@ -1650,7 +1663,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 		case 0xF64910F0: //sceUtilityUnloadUsbModule
 		case 0x64d50c56: //sceUtilityUnloadNetModule
 		case 0xE49BFE92: // sceUtilityUnloadModule
-			LOG_PRINTF(" Hook sceUtilityUnloadModule\n");
+			dbg_printf(" Hook sceUtilityUnloadModule\n");
 			hook_call = MAKE_JUMP(_hook_generic_ok);
 			break;
 #endif
@@ -1658,12 +1671,12 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 		// Hook these to keep track of open files when the homebrew quits
 
 		case 0x109F50BC: //	sceIoOpen
-            LOG_PRINTF("Hook sceIoOpen\n");
+            dbg_printf("Hook sceIoOpen\n");
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
             break;
 
 		case 0x810C4BC3: //	sceIoClose
-            LOG_PRINTF("Hook sceIoClose\n");
+            dbg_printf("Hook sceIoClose\n");
             hook_call = MAKE_JUMP(_hook_sceIoClose);
             break;
 
@@ -1681,7 +1694,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0x55F4717D: //	sceIoChdir (only if it failed)
             if (chdir_ok)
                 break;
-            LOG_PRINTF(" Chdir trick sceIoChdir\n");
+            dbg_printf(" Chdir trick sceIoChdir\n");
             hook_call = MAKE_JUMP(_hook_sceIoChdir);
             break;
 
@@ -1689,7 +1702,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
             if (chdir_ok)
                 break;
-            LOG_PRINTF(" Chdir trick sceIoOpen\n");
+            dbg_printf(" Chdir trick sceIoOpen\n");
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
             break;
 */
@@ -1697,23 +1710,23 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
             if (chdir_ok)
                 break;
-            LOG_PRINTF(" Chdir trick sceIoDopen\n");
+            dbg_printf(" Chdir trick sceIoDopen\n");
             hook_call = MAKE_JUMP(_hook_sceIoDopen);
             break;
 #elif defined VITA
         case 0xB29DDF9C: //	sceIoDopen
-            LOG_PRINTF("VITA sceIoDopen\n");
+            dbg_printf("VITA sceIoDopen\n");
             hook_call = MAKE_JUMP(sceIoDopen_Vita);
             break;
 #endif
 
 #ifdef VITA
         case 0xE3EB004C: //	sceIoDread
-            LOG_PRINTF("VITA sceIoDread\n");
+            dbg_printf("VITA sceIoDread\n");
             hook_call = MAKE_JUMP(sceIoDread_Vita);
             break;
         case 0xEB092469: //	sceIoDclose
-            LOG_PRINTF("VITA sceIoDclose\n");
+            dbg_printf("VITA sceIoDclose\n");
             hook_call = MAKE_JUMP(sceIoDclose_Vita);
             break;
 #endif
@@ -1754,7 +1767,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         case 0x06A70004: //	sceIoMkdir
             if (override_sceIoMkdir == GENERIC_SUCCESS)
             {
-                LOG_PRINTF(" sceIoMkdir goes to void because of settings ");
+                dbg_printf(" sceIoMkdir goes to void because of settings ");
                 hook_call = MAKE_JUMP(_hook_generic_ok);
             }
             break;
@@ -1768,7 +1781,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
             break;
 
         case 0xA291F107: // sceKernelMaxFreeMemSize (avoid syscall estimation)
-            LOG_PRINTF(" mem trick ");
+            dbg_printf(" mem trick ");
             hook_call = MAKE_JUMP(sceKernelMaxFreeMemSize);
             break;
 
@@ -2132,7 +2145,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 #endif
 
-    LOG_PRINTF("Missing function: 0x%08X Hooked with: 0x%08X\n\n",nid,hook_call);
+    dbg_printf("Missing function: 0x%08X Hooked with: 0x%08X\n\n",nid,hook_call);
 	return hook_call;
 }
 
@@ -2154,7 +2167,7 @@ u32 setup_default_nid(u32 nid){
 		break;
 	}
 
-	LOG_PRINTF("Missing function: 0x%08X Defaulted to generic: 0x%08X\n\n",nid,hook_call);
+	dbg_printf("Missing function: 0x%08X Defaulted to generic: 0x%08X\n\n",nid,hook_call);
 
 	return hook_call;
 }

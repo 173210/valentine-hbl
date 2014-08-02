@@ -1,11 +1,6 @@
-# make distrib to compile without debug info
-# make or make dev to compile with debug info
-all: dev
-dev: CFLAGS += -D DEBUG -D NID_DEBUG
-nonids: CFLAGS += -D DEBUG
-
-clean:
-	rm -Rf $(OBJS_COMMON) $(OBJS_HBL) $(OBJS_LOADER) svnversion.h HBL.elf H.elf HBL.BIN H.BIN
+# make  to compile without debug info
+# make DEBUG=1 to compile with debug info
+all: HBL.BIN H.BIN
 
 # use a different FOLDER to make for different exploits
 # Exploit-specific files go in the subfolders, see targets hbl and loader below
@@ -17,24 +12,31 @@ AS	= psp-as
 
 INCDIR	= -I $(shell psp-config --pspsdk-path)/include -I include -I $(FOLDER_PATH) -I .
 
-CFLAGS	= $(INCDIR) -Os -Werror -G1 -fno-pic -mno-abicalls -fomit-frame-pointer
+CFLAGS	= $(INCDIR) -Os -Wall -Werror -G1 -fno-pic -mno-abicalls -fomit-frame-pointer
 ifdef VITA
-	CFLAGS += -D VITA=$(VITA)
+CFLAGS += -D VITA=$(VITA)
+endif
+
+ifdef NID_DEBUG
+DEBUG = 1
+CFLAGS += -D NID_DEBUG
+endif
+ifdef DEBUG
+CFLAGS += -D DEBUG
 endif
 
 LDFLAGS = -O1 -G 0 --no-keep-memory
 
 
-dev: base
-nonids: base
-distrib: base
-base: HBL.BIN H.BIN
-
 OBJS_COMMON = common/stubs/runtime.o common/stubs/tables.o \
 	common/utils/fnt.o common/utils/scr.o common/utils/string.o \
-	common/config.o common/debug.o common/malloc.o common/utils.o
+	common/config.o common/malloc.o common/utils.o
 ifndef VITA
 OBJS_COMMON += common/stubs/syscall.o
+endif
+
+ifdef DEBUG
+OBJS_COMMON += common/debug.o
 endif
 
 OBJS_HBL = $(OBJS_COMMON) hbl/sdk.o hbl/eloader.o \
@@ -75,3 +77,7 @@ else
 	@echo "#define SVNVERSION \"$(shell svnversion -n)\"" >> svnversion.h
 	@echo "#endif" >> svnversion.h
 endif
+
+clean:
+	rm -Rf $(OBJS_COMMON) common/stubs/syscall.o common/debug.o $(OBJS_HBL) $(OBJS_LOADER) svnversion.h HBL.elf H.elf HBL.BIN H.BIN
+

@@ -37,13 +37,13 @@ static void p5_close_savedata()
 	int status;
 	int last_status = -1;
 
-	LOG_PRINTF("entering savedata dialog loop\n");
+	dbg_printf("entering savedata dialog loop\n");
 
 	while(1) {
 		status = sceUtilitySavedataGetStatus();
 
 		if (status != last_status) {
-			LOG_PRINTF("status changed from %d to %d\n", last_status, status);
+			dbg_printf("status changed from %d to %d\n", last_status, status);
 			last_status = status;
 		}
 
@@ -58,7 +58,7 @@ static void p5_close_savedata()
 				break;
 
 			case PSP_UTILITY_DIALOG_NONE:
-				LOG_PRINTF("dialog has shut down\n");
+				dbg_printf("dialog has shut down\n");
 				return;
 		}
 
