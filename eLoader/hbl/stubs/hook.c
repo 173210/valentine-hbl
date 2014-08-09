@@ -1826,6 +1826,14 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 			hook_call = MAKE_JUMP(_hook_sceIoLseek32);
             break;
 
+#ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
+	case 0x3A622550: //sceCtrlPeekBufferPositive (avoid syscall estimation)
+		//based on http://forums.ps2dev.org/viewtopic.php?p=27173
+		//This will be slow and should not be active for high performance programs...
+		hook_call = MAKE_JUMP(sceCtrlReadBufferPositive);
+		break;
+#endif
+
         case 0x737486F2: // scePowerSetClockFrequency   - yay, that's a pure alias :)
 			hook_call = MAKE_JUMP(_hook_scePowerSetClockFrequency);
             break;
