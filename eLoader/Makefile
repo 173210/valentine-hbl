@@ -47,7 +47,7 @@ OBJS_HBL = $(OBJS_COMMON) hbl/sdk.o hbl/eloader.o \
 OBJS_LOADER = $(OBJS_COMMON) loader/sdk.o loader/loader.o
 
 %.BIN: %.elf
-	psp-strip -O binary -s $< -o $@
+	psp-objcopy -S -O binary --set-section-flags .bss=load,contents $< $@
 
 HBL.elf: $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
 	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_hbl.x $(OBJS_HBL) -o $@
