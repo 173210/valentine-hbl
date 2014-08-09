@@ -509,12 +509,13 @@ int load_util(int module)
 		return sceUtilityLoadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
 	else
 #endif
-	return SCE_KERNEL_ERROR_ERROR;
+		return SCE_KERNEL_ERROR_ERROR;
 #else
 	return sceUtilityLoadModule(module);
 #endif
 }
 
+#ifdef DISABLE_UNLOAD_UTILITY_MODULES
 int unload_util(int module)
 {
 	dbg_printf("Unloading 0x%08X\n", module);
@@ -537,11 +538,12 @@ int unload_util(int module)
 		return sceUtilityUnloadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
 	else
 #endif
-	return SCE_KERNEL_ERROR_ERROR;
+		return SCE_KERNEL_ERROR_ERROR;
 #else
-		return sceUtilityUnloadModule(module);
+	return sceUtilityUnloadModule(module);
 #endif
 }
+#endif
 
 // See also resolve.c:162
 // Loads and registers exports from an utility module

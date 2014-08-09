@@ -8,11 +8,13 @@
 #include <exploit_config.h>
 #include <loader.h>
 
-#ifdef LOAD_MODULES_FOR_SYSCALLS
 #ifndef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
 static int modules[] = {
 #if VITA < 310 || !defined(AVOID_NET_UTILITY)
-	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
+	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC,
+#ifndef DISABLE_UNLOAD_UTILITY_MODULES
+	PSP_MODULE_NET_INET,
+#endif
 	PSP_MODULE_NET_PARSEURI, PSP_MODULE_NET_PARSEHTTP, PSP_MODULE_NET_HTTP,
 	PSP_MODULE_NET_SSL, PSP_MODULE_NET_UPNP, PSP_MODULE_NET_GAMEUPDATE,
 #endif
@@ -27,6 +29,7 @@ static int modules[] = {
 	// PSP_MODULE_AV_AVCODEC <-- removed to cast syscall of sceAudiocodec and sceVideocodec
 #endif
 
+#ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils()
 {
 	int ret;
@@ -65,11 +68,12 @@ void load_utils()
 	}
 #endif
 }
-
+#endif
+#ifndef DISABLE_UNLOAD_UTILITY_MODULES
 void unload_utils()
 {
 	int ret;
-#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+#if defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
 	int module;
 
 #ifdef USE_NET_MODULE_LOAD_FUNCTION

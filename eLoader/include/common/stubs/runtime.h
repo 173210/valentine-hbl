@@ -6,6 +6,8 @@
 // If we want to load additional modules in advance to use their syscalls
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils();
+#endif
+#ifndef DISABLE_UNLOAD_UTILITY_MODULES
 void unload_utils();
 #endif
 

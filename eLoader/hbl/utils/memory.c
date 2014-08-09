@@ -1,8 +1,9 @@
-#include <common/sdk.h>
-#include <hbl/eloader.h>
 #include <common/debug.h>
+#include <common/globals.h>
+#include <common/sdk.h>
 #include <hbl/mod/modmgr.h>
 #include <hbl/stubs/hook.h>
+#include <hbl/eloader.h>
 #include <exploit_config.h>
 
 #define MODULES_START_ADDRESS 0x08804000
@@ -203,36 +204,6 @@ static int unload_memset_flag = 0;
 
 void UnloadModules()
 {
-#ifndef LOAD_MODULES_FOR_SYSCALLS
-#ifdef UNLOAD_ADDITIONAL_MODULES
-    dbg_printf("memory.c:UnloadModules\n");
-	// Unload user modules first
-	// The more basic modules got a lower ID, so this should be the correct
-	// order to unload
-
-	SceUID result;
-	int m = PSP_MODULE_AV_G729;
-	while (m >= PSP_MODULE_AV_AVCODEC)
-	{
-		if( !( (m == PSP_MODULE_AV_AVCODEC || m == PSP_MODULE_AV_MP3) && globals->module_sdk_version <= 0x06020010 ) )
-		{
-			result = sceUtilityUnloadModule(m);
-			dbg_printf("unloading utility module 0x%08X, result 0x%08X\n", m, result);
-			m--;
-		}
-	}
-
-	m = PSP_MODULE_NET_SSL;
-	while (m >= PSP_MODULE_NET_COMMON)
-	{
-        dbg_printf("unloading utility module 0x%08X...", m);
-		result = sceUtilityUnloadModule(m);
-		dbg_printf("result 0x%08X\n", result);
-		m--;
-	}
-#endif
-#endif
-
 #ifdef KILL_MODULE_MEMSET
 	if( unload_memset_flag != 0){
 		dbg_printf("memory.c:memset start\n");
@@ -329,10 +300,10 @@ void FreeMem()
 #ifdef GAME_FREEMEM_BRUTEFORCE_UNDER_ADDR
 	SceUID underaddr[] = GAME_FREEMEM_BRUTEFORCE_UNDER_ADDR;
 
-	for (i = 0; i < sizeof(overaddr) / sizeof(SceUID); i++)
+	for (i = 0; i < sizeof(underaddr) / sizeof(SceUID); i++)
 	{
 		init = *(SceUID *)underaddr[i];
-		for (blockid = init; GAME_FREEMEM_BRUTEFORCE_UNDER_CONDITION(blockid, init); blockid++)
+		for (blockid = init; GAME_FREEMEM_BRUTEFORCE_UNDER_CONDITION(blockid, init); blockid--)
 		{
 			if (!sceKernelFreePartitionMemory(blockid))
 			{
@@ -468,6 +439,9 @@ void free_game_memory()
 unload_memset_flag = 1;
 #endif
 
+#ifndef LOAD_MODULES_FOR_SYSCALLS
+	unload_utils();
+#endif
 #ifdef SUSPEND_THEN_DELETE_THREADS
 	// Delete module here before cleaning the threads,
 	// otherwise the main module cannot be unloaded

@@ -137,7 +137,9 @@ void cleanup(u32 num_lib)
     free_allmalloc_hbls();
 
 
-	#ifndef DISABLE_UNLOAD_UTILITY_MODULES
+#ifdef DISABLE_UNLOAD_UTILITY_MODULES
+	UnloadModules();
+#else
     //unload utility modules
     int i;
     int modid;
@@ -171,7 +173,7 @@ void cleanup(u32 num_lib)
 	        }
 		}
 	}
-	#endif
+#endif
     //cleanup globals
     mod_table.num_loaded_mod = 0;
     memset(&(mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
@@ -308,7 +310,11 @@ int start_thread() //SceSize args, void *argp)
 	scr_puts("Building NIDs table with utilities\n");
 	load_utils();
 	p2_add_stubs();
+#ifdef DISABLE_UNLOAD_UTILITY_MODULES
+	UnloadModules();
+#else
 	unload_utils();
+#endif
 
 	dbg_printf("Resolving HBL stubs\n");
 	resolve_stubs();
