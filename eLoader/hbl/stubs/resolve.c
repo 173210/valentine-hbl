@@ -89,7 +89,8 @@ static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
 		for (i=0; i<(u16)pexports->stubcount; i++)
 		{
 			if( pnids[i] == nid){
-				dbg_printf("NID FOUND in %s: 0x%08X Function: 0x%08X\n", (u32)pexports->name , pnids[i], pfunctions[i]);
+				dbg_printf("NID FOUND in %s: 0x%08X Function: 0x%08X\n",
+					pexports->libname, pnids[i], pfunctions[i]);
 				return MAKE_JUMP(pfunctions[i]);
 			}
 		}
