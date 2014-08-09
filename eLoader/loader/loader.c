@@ -45,10 +45,12 @@ static void resetHomeSettings()
 #endif
 
 
-#ifdef GAME_PRELOAD_FREEMEM
+#if defined(GAME_PRELOAD_FREEMEM) || defined(GAME_PRELOAD_FREEMEM_BRUTEFORCE_NUM)
 static void PreloadFreeMem()
 {
 	unsigned i;
+
+#ifdef GAME_PRELOAD_FREEMEM
 	int blockids[] = GAME_PRELOAD_FREEMEM;
 
 	for(i = 0; i < sizeof(blockids) / sizeof(int); i++) {
@@ -56,6 +58,51 @@ static void PreloadFreeMem()
 		if (ret < 0)
 			dbg_printf("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
 	}
+#endif
+
+#ifdef GAME_PRELOAD_FREEMEM_BRUTEFORCE_NUM
+	SceUID blockid, init;
+	int freed = 0;
+
+#ifdef GAME_PRELOAD_FREEMEM_BRUTEFORCE_OVER_ADDR
+	SceUID overaddr[] = GAME_PRELOAD_FREEMEM_BRUTEFORCE_OVER_ADDR;
+
+	for (i = 0; i < sizeof(overaddr) / sizeof(SceUID); i++)
+	{
+		init = *(SceUID *)overaddr[i];
+		for (blockid = init; GAME_PRELOAD_FREEMEM_BRUTEFORCE_OVER_CONDITION(blockid, init); blockid++)
+		{
+			if (!sceKernelFreePartitionMemory(blockid))
+			{
+				freed++;
+				if (freed >= GAME_FREEMEM_BRUTEFORCE_NUM)
+				{
+					return;
+				}
+			}
+		}
+	}
+#endif
+#ifdef GAME_PRELOAD_FREEMEM_BRUTEFORCE_UNDER_ADDR
+	SceUID underaddr[] = GAME_PRELOAD_FREEMEM_BRUTEFORCE_UNDER_ADDR;
+
+	for (i = 0; i < sizeof(underaddr) / sizeof(SceUID); i++)
+	{
+		init = *(SceUID *)underaddr[i];
+		for (blockid = init; GAME_PRELOAD_FREEMEM_BRUTEFORCE_UNDER_CONDITION(blockid, init); blockid--)
+		{
+			if (!sceKernelFreePartitionMemory(blockid))
+			{
+				freed++;
+				if (freed >= GAME_PRELOAD_FREEMEM_BRUTEFORCE_NUM)
+				{
+					return;
+				}
+			}
+		}
+	}
+#endif
+#endif
 }
 #endif
 
@@ -105,7 +152,7 @@ static void load_hbl(SceUID hbl_file)
 	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
 
 	// Allocate memory for HBL
-#ifdef GAME_PRELOAD_FREEMEM
+#if defined(GAME_PRELOAD_FREEMEM) || defined(GAME_PRELOAD_FREEMEM_BRUTEFORCE_NUM)
 	PreloadFreeMem();
 #endif
 #ifdef FPL_EARLY_LOAD_ADDR_LIST
