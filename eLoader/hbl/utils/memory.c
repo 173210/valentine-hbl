@@ -255,14 +255,13 @@ void UnloadModules()
 	}
 }
 
-#if defined(GAME_FREEMEM_ADDR) || defined(GAME_FREEMEM_BRUTEFORCE_NUM)
+#ifdef GAME_FREEMEM_ADDR
 void FreeMem()
 {
 	unsigned i;
 
 	dbg_printf("memory.c:FreeMem\n");
 
-#ifdef GAME_FREEMEM_ADDR
     SceUID memids[] = GAME_FREEMEM_ADDR;
 
     for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
@@ -273,50 +272,6 @@ void FreeMem()
             dbg_printf("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID*)memids[i]);
         }
     }
-#endif
-#ifdef GAME_FREEMEM_BRUTEFORCE_NUM
-	SceUID blockid, init;
-	int freed = 0;
-
-#ifdef GAME_FREEMEM_BRUTEFORCE_OVER_ADDR
-	SceUID overaddr[] = GAME_FREEMEM_BRUTEFORCE_OVER_ADDR;
-
-	for (i = 0; i < sizeof(overaddr) / sizeof(SceUID); i++)
-	{
-		init = *(SceUID *)overaddr[i];
-		for (blockid = init; GAME_FREEMEM_BRUTEFORCE_OVER_CONDITION(blockid, init); blockid++)
-		{
-			if (!sceKernelFreePartitionMemory(blockid))
-			{
-				freed++;
-				if (freed >= GAME_FREEMEM_BRUTEFORCE_NUM)
-				{
-					return;
-				}
-			}
-		}
-	}
-#endif
-#ifdef GAME_FREEMEM_BRUTEFORCE_UNDER_ADDR
-	SceUID underaddr[] = GAME_FREEMEM_BRUTEFORCE_UNDER_ADDR;
-
-	for (i = 0; i < sizeof(underaddr) / sizeof(SceUID); i++)
-	{
-		init = *(SceUID *)underaddr[i];
-		for (blockid = init; GAME_FREEMEM_BRUTEFORCE_UNDER_CONDITION(blockid, init); blockid--)
-		{
-			if (!sceKernelFreePartitionMemory(blockid))
-			{
-				freed++;
-				if (freed >= GAME_FREEMEM_BRUTEFORCE_NUM)
-				{
-					return;
-				}
-			}
-		}
-	}
-#endif
-#endif
 }
 #endif
 
@@ -393,7 +348,7 @@ void free_game_memory()
 	dbg_printf(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", is_free, max_free);
 #endif
 
-#if defined(GAME_FREEMEM_ADDR) || defined(GAME_FREEMEM_BRUTEFORCE_NUM)
+#ifdef GAME_FREEMEM_ADDR
 	FreeMem();
 #endif
 
