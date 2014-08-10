@@ -9,7 +9,7 @@
 /*******************/
 /* Types for ELF file manipulation */
 /* Be sure to modify when used on other platform */
-typedef u32* Elf32_Addr;
+typedef void *Elf32_Addr;
 typedef int Elf32_Off;
 typedef int Elf32_Sword;
 typedef int Elf32_Word;

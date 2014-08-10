@@ -5,7 +5,7 @@
 #include <hbl/mod/elf.h>
 
 // Subsitutes the right instruction
-void resolve_call(u32 *call_to_resolve, u32 call_resolved);
+void resolve_call(int *call_to_resolve, u32 call_resolved);
 
 // Resolves imports in ELF's program section already loaded in memory
 // Uses game's imports to do the resolving (this can be further improved)

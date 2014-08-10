@@ -80,7 +80,7 @@ static int p5_find_add_stubs(const char *libname, void *p, size_t size)
 	// While it's a valid stub header
 	while (elf_check_stub_entry(pentry)) {
 		if (pentry->import_flags == 0x11 || !pentry->import_flags)
-			num += add_stub_to_table(pentry);
+			num += add_stub(pentry);
 
 		// Next entry
 		pentry++;

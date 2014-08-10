@@ -146,7 +146,7 @@ int p2_add_stubs()
 		while (elf_check_stub_entry(pentry)) {
 			if (*(char *)pentry->lib_name &&
 				(pentry->import_flags == 0x11 || !pentry->import_flags))
-				num += add_stub_to_table(pentry);
+				num += add_stub(pentry);
 
 			// Next entry
 			pentry++;
@@ -193,7 +193,7 @@ void resolve_stubs()
 		// If it's known, get the call
 		if (ret > 0) {
 			dbg_printf("-Found in NID table, using real call\n");
-			syscall = globals->nid_table.table[ret].call;
+			syscall = globals->nid_table[ret].call;
 		} else {
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
 			dbg_printf("HBL Function missing at 0x%08X, this can lead to trouble\n",  (int)cur_stub);

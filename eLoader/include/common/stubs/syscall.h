@@ -42,7 +42,9 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method);
 /*
  * Reestimate a syscall if it's suspected of being incorrect
 */
+#ifdef REESTIMATE_SYSCALL
 int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod method);
+#endif
 
 #endif
 

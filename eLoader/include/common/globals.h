@@ -18,6 +18,11 @@
 #define STATIC_ASSERT(e) \
 	enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
+// Max libraries to consider
+#define MAX_LIBRARIES 64
+
+// Size of NID-to-call table
+#define NID_TABLE_SIZE 512
 
 typedef struct
 {
@@ -30,8 +35,10 @@ typedef struct
 	int syscalls_known;
 #endif
 #endif
-	HBLNIDTable nid_table;
-	HBLLibTable lib_table;
+	int nid_num;
+	tNIDResolver nid_table[NID_TABLE_SIZE];
+	int lib_num;
+	tSceLibrary lib_table[MAX_LIBRARIES];
 	//malloc.c
 	SceUID blockids[MAX_ALLOCS]; /* Blocks */
 } tGlobals;

@@ -587,7 +587,7 @@ int run_nid (u32 nid){
         dbg_printf("Unknown NID: 0x%08X\n", nid);
         return 0;
     }
-    u32 syscall = globals->nid_table.table[ret].call;
+    u32 syscall = globals->nid_table[ret].call;
 
     if (!syscall)
     {
@@ -595,7 +595,7 @@ int run_nid (u32 nid){
         return 0;
     }
 
-    u32 cur_stub[2];
+    int cur_stub[2];
     resolve_call(cur_stub, syscall);
 #ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
     sceKernelDcacheWritebackRange(cur_stub, sizeof(cur_stub));

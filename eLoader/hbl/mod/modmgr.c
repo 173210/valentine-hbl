@@ -626,7 +626,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	newlib.num_lib_exports = pexports->stubcount;
 	newlib.num_known_exports = pexports->stubcount;
 
-	int lib_index = add_library_to_table(newlib);
+	int lib_index = add_lib(newlib);
 	if (lib_index < 0)
 	{
 		dbg_printf("->WARNING: could not add library to table\n");
@@ -638,7 +638,7 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 	for (i=0; i<(u16)pexports->stubcount; i++)
 	{
 		dbg_printf("NID %d: 0x%08X Function: 0x%08X\n", i, pnids[i], pfunctions[i]);
-		add_nid_to_table(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
+		add_nid(pnids[i], MAKE_JUMP(pfunctions[i]), lib_index);
 	}
 
 	return 0;

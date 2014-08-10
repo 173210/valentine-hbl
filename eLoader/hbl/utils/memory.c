@@ -77,7 +77,7 @@ void SuicideAllThreads(void)
 	int nid_index = get_nid_index(0x809CE29B); // sceKernelExitDeleteThread
 	dbg_printf("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
 
-		unsigned int syscall = globals->nid_table.table[nid_index].call;
+		unsigned int syscall = globals->nid_table[nid_index].call;
 	dbg_printf("Call for NID sceKernelExitDeleteThread is: 0x%08X 0x%08X\n", GET_SYSCALL_NUMBER(syscall), syscall);
 
 	// Write syscall instruction to memory and empty the memory

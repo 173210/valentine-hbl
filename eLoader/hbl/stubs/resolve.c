@@ -14,7 +14,7 @@
 #include <exploit_config.h>
 
 // Subsitutes the right instruction
-void resolve_call(u32 *call_to_resolve, u32 call_resolved)
+void resolve_call(int *call_to_resolve, u32 call_resolved)
 {
 	// SYSCALL
 	if(!(call_resolved & SYSCALL_MASK_RESOLVE))
@@ -102,9 +102,9 @@ static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
 // Returns number of resolves
 unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 {
-	unsigned int i,j,UNUSED(nid_index);
-	u32* cur_nid;
-	u32* cur_call;
+	int i, j, nid_index;
+	int *cur_nid;
+	int *cur_call;
 	u32 real_call;
 	SceLibraryEntryTable* utility_exp = NULL;
 	unsigned int resolving_count = 0;
@@ -147,8 +147,11 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 			}
 
 			if( real_call == 0){
-				nid_index = get_call_nidtable(*cur_nid, &real_call);
-				NID_DBG_PRINTF("Index for NID on table: %d\n", nid_index);
+				nid_index = get_nid_index(*cur_nid);
+				if (nid_index >= 0) {
+					NID_DBG_PRINTF("Index for NID on table: %d\n", nid_index);
+					real_call = globals->nid_table[nid_index].call;
+				}
 			}
 
 

@@ -137,16 +137,16 @@ static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUI
 	lower_nid_index = get_lower_known_nid(lib_index, nid);
 
 	if (lower_nid_index >= 0) {
-		lower_file_index = find_nid_file(fd, globals->nid_table.table[lower_nid_index].nid);
+		lower_file_index = find_nid_file(fd, globals->nid_table[lower_nid_index].nid);
 		dbg_printf("Lower known NID: 0x%08X; index: %d\n",
-			globals->nid_table.table[lower_nid_index].nid, lower_file_index);
+			globals->nid_table[lower_nid_index].nid, lower_file_index);
 	}
 
 	// Get higher and lower NID index on file
 	if (higher_nid_index >= 0) {
-		higher_file_index = find_nid_file(fd, globals->nid_table.table[higher_nid_index].nid);
+		higher_file_index = find_nid_file(fd, globals->nid_table[higher_nid_index].nid);
 		dbg_printf("Higher known NID: 0x%08X; index: %d\n",
-			globals->nid_table.table[higher_nid_index].nid, higher_file_index);
+			globals->nid_table[higher_nid_index].nid, higher_file_index);
 
 		// Check which one is closer
 		closest_index = higher_file_index < 0 ||
@@ -158,10 +158,10 @@ static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUI
 
 	// Estimate based on closest known NID
 	if (closest_index > nid_index)
-		est_call = GET_SYSCALL_NUMBER(globals->nid_table.table[higher_nid_index].call)
+		est_call = GET_SYSCALL_NUMBER(globals->nid_table[higher_nid_index].call)
 				+ nid_index - higher_file_index;
 	else
-		est_call = GET_SYSCALL_NUMBER(globals->nid_table.table[lower_nid_index].call)
+		est_call = GET_SYSCALL_NUMBER(globals->nid_table[lower_nid_index].call)
 				+ nid_index - lower_file_index;
 
 	return est_call;
@@ -174,9 +174,9 @@ static int estimate_syscall_lowest(int lib_index, int nid_index)
 
 	dbg_printf("=> FROM LOWEST\n");
 
-	est_call = globals->lib_table.table[lib_index].lowest_syscall + nid_index - globals->lib_table.table[lib_index].lowest_index;
-	if (nid_index < globals->lib_table.table[lib_index].lowest_index)
-		est_call += globals->lib_table.table[lib_index].num_lib_exports + globals->lib_table.table[lib_index].gap;
+	est_call = globals->lib_table[lib_index].lowest_syscall + nid_index - globals->lib_table[lib_index].lowest_index;
+	if (nid_index < globals->lib_table[lib_index].lowest_index)
+		est_call += globals->lib_table[lib_index].num_lib_exports + globals->lib_table[lib_index].gap;
 
 	return est_call;
 }
@@ -201,7 +201,7 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 	}
 
 	// Cannot estimate jump system call
-	if (globals->lib_table.table[lib_index].calling_mode == JUMP_MODE) {
+	if (globals->lib_table[lib_index].calling_mode == JUMP_MODE) {
 		dbg_printf("->WARNING: trying to estimate jump system call\n");
 		return 0;
 	}
@@ -258,15 +258,15 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 
 // m0skit0's attempt
 // Needs to be more independent from sdk_hbl.S
+#ifdef REESTIMATE_SYSCALL
 int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod method)
 {
-#ifdef REESTIMATE_SYSCALL
 	SceUID fd;
 	int lib_index, syscall;
 
 	syscall = GET_SYSCALL_NUMBER(stub[1]);
 
-	dbg_printf("=Reestimating function 0x%08X for stub 0x%08X: 0x%08X ",
+	dbg_printf("=Reestimating function 0x%08X for stub 0x%08X: 0x%08X\n",
 		nid, stub, syscall);
 
 	switch (type) {
@@ -287,7 +287,5 @@ int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod me
 	dbg_printf("--Done.\n");
 
 	return syscall;
-#else
-	return 0;
-#endif
 }
+#endif

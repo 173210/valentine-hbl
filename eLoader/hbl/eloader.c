@@ -177,8 +177,7 @@ void cleanup(u32 num_lib)
     //cleanup globals
     mod_table.num_loaded_mod = 0;
     memset(&(mod_table.table), 0, sizeof(HBLModInfo) * MAX_MODULES);
-    globals->lib_table.num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
-    //memset(&(globals->lib_table), 0, sizeof(HBLLibTable));
+    globals->lib_num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
     hook_exit_cb_called = 0;
     hook_exit_cb = NULL;
 
@@ -347,7 +346,7 @@ int start_thread() //SceSize args, void *argp)
 
     dbg_printf("START HBL\n");
 
-    u32 num_lib = globals->lib_table.num;
+    u32 num_lib = globals->lib_num;
 
 	//Run the hardcoded eboot if it exists...
 	fd = sceIoOpen(EBOOT_PATH, PSP_O_RDONLY, 777);
