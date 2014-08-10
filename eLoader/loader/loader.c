@@ -144,7 +144,6 @@ static void load_hbl(SceUID hbl_file)
 {
 	long file_size;
 	int ret;
-	SceUID HBL_block;
 
 	// Get HBL size
 	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
@@ -165,15 +164,17 @@ static void load_hbl(SceUID hbl_file)
 		if (sceKernelDeleteFpl(*(SceUID *)uids[i]) < 0)
 			dbg_printf("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
 #endif
-
-
-	HBL_block = sceKernelAllocPartitionMemory(
+#ifdef DONT_ALLOC_HBL_MEM
+	run_eloader = (void *)HBL_LOAD_ADDR;
+#else
+	SceUID HBL_block = sceKernelAllocPartitionMemory(
 		2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDR);
 	if(HBL_block < 0) {
 		scr_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
 		sceKernelExitGame();
 	}
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
+#endif
 
 	// Load HBL to allocated memory
 	ret = sceIoRead(hbl_file, (void *)run_eloader, file_size);
