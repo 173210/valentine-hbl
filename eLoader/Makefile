@@ -25,7 +25,7 @@ ifdef DEBUG
 CFLAGS += -D DEBUG
 endif
 
-LDFLAGS = -O1 -G 0 --no-keep-memory
+LDFLAGS = -O1 -G0 --no-keep-memory
 
 
 OBJS_COMMON = common/stubs/runtime.o common/stubs/tables.o \
@@ -53,7 +53,7 @@ HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
 	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_hbl.x $(OBJS_COMMON) $(OBJS_HBL) -o $@
 
 H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(FOLDER_PATH)/linker_loader.x
-	$(LD) $(LDFLAGS) --no-keep-memory -T $(FOLDER_PATH)/linker_loader.x $(OBJS_COMMON) $(OBJS_LOADER) -o $@
+	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_loader.x $(OBJS_COMMON) $(OBJS_LOADER) -o $@
 
 hbl/sdk.o: $(FOLDER_PATH)/sdk_hbl.S
 	$(AS) $< -o $@
