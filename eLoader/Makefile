@@ -39,21 +39,21 @@ ifdef DEBUG
 OBJS_COMMON += common/debug.o
 endif
 
-OBJS_HBL = $(OBJS_COMMON) hbl/sdk.o hbl/eloader.o \
+OBJS_HBL = hbl/sdk.o hbl/eloader.o \
 	hbl/mod/elf.o hbl/mod/modmgr.o hbl/mod/reloc.o \
 	hbl/stubs/hook.o hbl/stubs/resolve.o hbl/stubs/test.o \
 	hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
 
-OBJS_LOADER = $(OBJS_COMMON) loader/sdk.o loader/loader.o
+OBJS_LOADER = loader/sdk.o loader/loader.o
 
 %.BIN: %.elf
 	psp-objcopy -S -O binary --set-section-flags .bss=load,contents $< $@
 
-HBL.elf: $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
-	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_hbl.x $(OBJS_HBL) -o $@
+HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
+	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_hbl.x $(OBJS_COMMON) $(OBJS_HBL) -o $@
 
-H.elf: $(OBJS_LOADER) $(FOLDER_PATH)/linker_loader.x
-	$(LD) $(LDFLAGS) --no-keep-memory -T $(FOLDER_PATH)/linker_loader.x $(OBJS_LOADER) -o $@
+H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(FOLDER_PATH)/linker_loader.x
+	$(LD) $(LDFLAGS) --no-keep-memory -T $(FOLDER_PATH)/linker_loader.x $(OBJS_COMMON) $(OBJS_LOADER) -o $@
 
 hbl/sdk.o: $(FOLDER_PATH)/sdk_hbl.S
 	$(AS) $< -o $@
