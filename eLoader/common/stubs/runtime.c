@@ -190,16 +190,11 @@ void resolve_stubs()
 		// Is it known by HBL?
 		ret = get_nid_index(nid);
 
-		// If it's known, get the call
-		if (ret > 0) {
-			dbg_printf("-Found in NID table, using real call\n");
-			syscall = globals->nid_table[ret].call;
-		} else {
+		if (ret < 0) {
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
 			dbg_printf("HBL Function missing at 0x%08X, this can lead to trouble\n",  (int)cur_stub);
 			syscall = NOP_OPCODE;
 #else
-			// If not, estimate
 			while (index > count) {
 				cfg_next_lib(&cur_lib);
 				count += cur_lib.num_imports;
@@ -208,6 +203,9 @@ void resolve_stubs()
 			syscall = MAKE_SYSCALL(estimate_syscall(
 				lib_name, nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
 #endif
+		} else {
+			dbg_printf("-Found in NID table, using real call\n");
+			syscall = globals->nid_table[ret].call;
 		}
 
 		*cur_stub++ = JR_RA_OPCODE;

@@ -582,7 +582,7 @@ int run_nid (u32 nid){
         // Is it known by HBL?
     int ret = get_nid_index(nid);
     dbg_printf("NID: 0x%08X\n", nid);
-    if (ret <= 0)
+    if (ret < 0)
     {
         dbg_printf("Unknown NID: 0x%08X\n", nid);
         return 0;

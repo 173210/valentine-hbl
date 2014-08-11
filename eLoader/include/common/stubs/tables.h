@@ -38,7 +38,7 @@ int add_lib(const tSceLibrary lib);
 // Adds NID entry to nid_table
 int add_nid(int nid, int call, int lib);
 
-int add_stub(const tStubEntry *pentry);
+int add_stub(const tStubEntry *stub);
 
 // Returns nid_table index where the call is found, -1 if not found
 int get_call_index(int call);

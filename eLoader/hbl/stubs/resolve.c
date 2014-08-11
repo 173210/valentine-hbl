@@ -105,7 +105,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	int i, j, nid_index;
 	int *cur_nid;
 	int *cur_call;
-	u32 real_call;
+	int real_call;
 	SceLibraryEntryTable* utility_exp = NULL;
 	unsigned int resolving_count = 0;
 

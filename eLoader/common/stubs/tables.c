@@ -28,12 +28,12 @@ static void log_lib(tSceLibrary lib)
 #endif
 
 // Return real instruction that makes the system call (jump or syscall)
-static int get_good_call(int *buf)
+static int get_good_call(const void *buf)
 {
 	// Dirty hack here :P but works
-	if(*buf & SYSCALL_MASK_IMPORT)
-		buf++;
-	return *buf;
+	if(*(const int *)buf & SYSCALL_MASK_IMPORT)
+		buf += 4;
+	return *(const int *)buf;
 }
 
 // Adds a new library
@@ -98,17 +98,17 @@ int add_nid(int nid, int call, int lib)
 	return index;
 }
 
-int add_stub(const tStubEntry *pentry)
+int add_stub(const tStubEntry *stub)
 {
 	int *cur_nid;
 	int *cur_call;
 	int nid_index, lib_index, syscall_num, good_call, nid;
 	int num = 0;
 
-	NID_DBG_PRINTF("-->Processing library: %s\n", (u32)(pentry->lib_name));
+	NID_DBG_PRINTF("-->Processing library: %s\n", stub->lib_name);
 
 	// Get actual call
-	cur_call = pentry->jump_p;
+	cur_call = stub->jump_p;
 	good_call = get_good_call(cur_call);
 
 	// Only process if syscall and if the import is already resolved
@@ -116,10 +116,10 @@ int add_stub(const tStubEntry *pentry)
 		(GET_SYSCALL_NUMBER(good_call) != SYSCALL_IMPORT_NOT_RESOLVED_YET)) {
 
 		// Get current NID
-		cur_nid = pentry->nid_p;
+		cur_nid = stub->nid_p;
 
 		// Is this library on the table?
-		lib_index = get_lib_index((char *)pentry->lib_name);
+		lib_index = get_lib_index(stub->lib_name);
 
 		if (lib_index < 0) {
 			// New library
@@ -135,11 +135,11 @@ int add_stub(const tStubEntry *pentry)
 			lib_index = globals->lib_num;
 			NID_DBG_PRINTF(" --> New: %d\n", lib_index);
 
-			strcpy(globals->lib_table[lib_index].name, (char *)pentry->lib_name);
+			strcpy(globals->lib_table[lib_index].name, stub->lib_name);
 			globals->lib_table[lib_index].calling_mode = SYSCALL_MODE;
 
 			// Get number of syscalls imported
-			globals->lib_table[lib_index].num_known_exports = pentry->stub_size;
+			globals->lib_table[lib_index].num_known_exports = stub->stub_size;
 
 			NID_DBG_PRINTF("Total known exports: %d\n", globals->lib_table[lib_index].num_known_exports);
 
@@ -156,7 +156,7 @@ int add_stub(const tStubEntry *pentry)
 				// Old library
 			NID_DBG_PRINTF(" --> Old: %d\n", lib_index);
 
-			NID_DBG_PRINTF("Number of imports of this stub: %d\n", pentry->stub_size);
+			NID_DBG_PRINTF("Number of imports of this stub: %d\n", stub->stub_size);
 
 			if (globals->lib_table[lib_index].calling_mode != SYSCALL_MODE) {
 				dbg_printf(" ERROR OLD CALL MODE IS SYSCALL, NEW IS JUMP 0x%08X\n", &lib_index);
@@ -172,7 +172,7 @@ int add_stub(const tStubEntry *pentry)
 			globals->lib_table[lib_index].lowest_syscall, globals->lib_table[lib_index].lowest_nid);
 
 		// Browse all stubs defined by this header
-		for(nid_index = 0; nid_index < pentry->stub_size; nid_index++) {
+		for(nid_index = 0; nid_index < stub->stub_size; nid_index++) {
 			nid = *cur_nid;
 			NID_DBG_PRINTF(" --Current NID: 0x%08X\n", nid);
 
