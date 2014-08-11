@@ -75,7 +75,7 @@ static void PreloadFreeMem()
 			if (!sceKernelFreePartitionMemory(blockid))
 			{
 				freed++;
-				if (freed >= GAME_FREEMEM_BRUTEFORCE_NUM)
+				if (freed >= GAME_PRELOAD_FREEMEM_BRUTEFORCE_NUM)
 				{
 					return;
 				}
