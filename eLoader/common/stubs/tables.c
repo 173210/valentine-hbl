@@ -13,17 +13,20 @@
 static void log_lib(tSceLibrary lib)
 {
 	dbg_printf("\n-->Library name: %s\n"
-		"--Calling mode: %d\n"
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 		"--Total library exports: %d\n"
-		"--Known library exports: %d\n"
 		"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
-		"--Lowest index in file: %d\n",
+		"--Lowest index in file: %d\n"
+#endif
+		"--Calling mode: %d\n",
 		lib.name,
-		lib.calling_mode,
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 		lib.num_lib_exports,
-		lib.num_known_exports,
 		lib.lowest_nid, lib.lowest_syscall,
-		lib.lowest_index);
+		lib.lowest_index,
+#endif
+		lib.calling_mode
+	);
 }
 #endif
 
@@ -102,8 +105,11 @@ int add_stub(const tStubEntry *stub)
 {
 	int *cur_nid;
 	int *cur_call;
-	int nid_index, lib_index, syscall_num, good_call, nid;
+	int i, nid_index, lib_index, good_call, nid;
 	int num = 0;
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	int syscall_num;
+#endif
 
 	NID_DBG_PRINTF("-->Processing library: %s\n", stub->lib_name);
 
@@ -138,17 +144,17 @@ int add_stub(const tStubEntry *stub)
 			strcpy(globals->lib_table[lib_index].name, stub->lib_name);
 			globals->lib_table[lib_index].calling_mode = SYSCALL_MODE;
 
-			// Get number of syscalls imported
-			globals->lib_table[lib_index].num_known_exports = stub->stub_size;
-
-			NID_DBG_PRINTF("Total known exports: %d\n", globals->lib_table[lib_index].num_known_exports);
-
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 			// Initialize lowest syscall on library table
 			globals->lib_table[lib_index].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
 			globals->lib_table[lib_index].lowest_nid = *cur_nid;
 
 			// Initialize highest syscall on library table
 			globals->lib_table[lib_index].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
+
+			NID_DBG_PRINTF("Current lowest nid/syscall: 0x%08X/0x%08X\n",
+				globals->lib_table[lib_index].lowest_syscall, globals->lib_table[lib_index].lowest_nid);
+#endif
 
 			// New library
 			globals->lib_num++;
@@ -162,34 +168,34 @@ int add_stub(const tStubEntry *stub)
 				dbg_printf(" ERROR OLD CALL MODE IS SYSCALL, NEW IS JUMP 0x%08X\n", &lib_index);
 				return 0;
 			}
-
-			globals->lib_table[lib_index].num_known_exports++;
 		}
 #ifdef DEBUG
 		log_lib(globals->lib_table[lib_index]);
 #endif
-		NID_DBG_PRINTF("Current lowest nid/syscall: 0x%08X/0x%08X\n",
-			globals->lib_table[lib_index].lowest_syscall, globals->lib_table[lib_index].lowest_nid);
 
 		// Browse all stubs defined by this header
-		for(nid_index = 0; nid_index < stub->stub_size; nid_index++) {
+		for (i = 0; i < stub->stub_size; i++) {
 			nid = *cur_nid;
 			NID_DBG_PRINTF(" --Current NID: 0x%08X\n", nid);
 
 			// If NID is already in, don't put it again
-			if (get_nid_index(nid) < 0) {
+			nid_index = get_nid_index(nid);
+			if (nid_index < 0) {
 					// Fill NID table
 #ifdef XMB_LAUNCHER
 				good_call = get_good_call(cur_call);
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 				// Check lowest syscall
 				syscall_num = GET_SYSCALL_NUMBER(good_call);
+#endif
 #else
 				add_nid(nid, get_good_call(cur_call), lib_index);
-				NID_DBG_PRINTF("  --> new inserted @ %d\n", nid_index);
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 				// Check lowest syscall
 				syscall_num = GET_SYSCALL_NUMBER(globals->nid_table[nid_index].call);
-				nid = globals->nid_table[nid_index].nid;
 #endif
+#endif
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 				NID_DBG_PRINTF("  --> with syscall 0x%08X\n", syscall_num);
 
 				if (syscall_num < globals->lib_table[lib_index].lowest_syscall) {
@@ -203,6 +209,7 @@ int add_stub(const tStubEntry *stub)
 					globals->lib_table[lib_index].highest_syscall = syscall_num;
 					NID_DBG_PRINTF("New highest syscall/nid: 0x%08X/0x%08X\n", globals->lib_table[lib_index].highest_syscall, nid);
 				}
+#endif
 				num++;
 			}
 			cur_nid++;

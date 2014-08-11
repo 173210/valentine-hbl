@@ -23,13 +23,14 @@ typedef struct
 {
 	char name[MAX_LIB_NAME_LEN];	// Library name
 	tCallingMode calling_mode;	// Defines how library exports are called
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	int num_lib_exports;		// Number of exported functions in library
-	int num_known_exports;		// Number of known exported functions (exports we know the syscall of)
 	int lowest_syscall;		// Lowest syscall number found
 	int lowest_nid;			// NID associated to lowest syscall
 	int lowest_index;		// Lowest NID index nids_table
 	int highest_syscall;		// Highest syscall number found
 	int gap;			// Offset between the syscall for the highest and the lowest nid index in 6.20
+#endif
 } tSceLibrary;
 
 // Adds a new library

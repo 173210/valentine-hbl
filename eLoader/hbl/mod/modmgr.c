@@ -623,8 +623,9 @@ int load_export_utility_module(int mod_id, const char* lib_name , void **pexport
 
 	strcpy(newlib.name, lib_name);
 	newlib.calling_mode = JUMP_MODE;
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	newlib.num_lib_exports = pexports->stubcount;
-	newlib.num_known_exports = pexports->stubcount;
+#endif
 
 	int lib_index = add_lib(newlib);
 	if (lib_index < 0)

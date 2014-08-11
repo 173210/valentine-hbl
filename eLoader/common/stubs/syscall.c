@@ -249,7 +249,7 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 
 	sceIoClose(fd);
 
-	add_nid_to_table(nid, MAKE_SYSCALL(est_call), lib_index);
+	add_nid(nid, MAKE_SYSCALL(est_call), lib_index);
 
 	dbg_printf("Estimation done\n");
 
