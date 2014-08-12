@@ -510,7 +510,7 @@ int load_util(int module)
 #endif
 }
 
-#ifdef DISABLE_UNLOAD_UTILITY_MODULES
+#ifndef DISABLE_UNLOAD_UTILITY_MODULES
 int unload_util(int module)
 {
 	dbg_printf("Unloading 0x%08X\n", module);
