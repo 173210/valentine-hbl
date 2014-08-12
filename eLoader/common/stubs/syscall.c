@@ -255,37 +255,3 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 
 	return est_call;
 }
-
-// m0skit0's attempt
-// Needs to be more independent from sdk_hbl.S
-#ifdef REESTIMATE_SYSCALL
-int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod method)
-{
-	SceUID fd;
-	int lib_index, syscall;
-
-	syscall = GET_SYSCALL_NUMBER(stub[1]);
-
-	dbg_printf("=Reestimating function 0x%08X for stub 0x%08X: 0x%08X\n",
-		nid, stub, syscall);
-
-	switch (type) {
-		case SUBSTRACT:
-			syscall = find_first_free_syscall(lib, --syscall);
-			break;
-		case ADD_TWICE:
-			syscall = find_first_free_syscall(lib, ++syscall);
-			syscall++;
-			break;
-		default:
-			syscall = estimate_syscall(lib, nid, method);
-	}
-	dbg_printf("--> 0x%08X\n", syscall);
-
-	stub[1] = MAKE_SYSCALL(syscall);
-
-	dbg_printf("--Done.\n");
-
-	return syscall;
-}
-#endif

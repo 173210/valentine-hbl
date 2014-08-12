@@ -244,10 +244,6 @@ void _start()
 		sceKernelExitGame();
 	}
 
-#if defined(DEBUG) && !defined(DEACTIVATE_SYSCALL_ESTIMATION)
-	dump_lib_table();
-#endif
-
 	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
 	if (hbl_file < 0) {
 		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);

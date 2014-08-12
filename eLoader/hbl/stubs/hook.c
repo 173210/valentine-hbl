@@ -24,6 +24,7 @@
 #define MAX_CALLBACKS 32
 #define MAX_OPEN_DIR_VITA 10
 
+static int chdir_ok;
 static char *mod_chdir; //cwd of the currently running module
 static int cur_cpufreq = 0; //current cpu frequency
 static int cur_busfreq = 0; //current bus frequency
@@ -59,7 +60,9 @@ void init_hook()
 		for (j = 0; j < 2; j++)
  			dirFix[i][j] = -1;
 #endif
-
+#ifdef HOOK_CHDIR_AND_FRIENDS
+        chdir_ok = test_sceIoChdir();
+#endif
 	memSema = sceKernelCreateSema("hblmemsema", 0, 1, 1, 0);
 	thSema = sceKernelCreateSema("hblthSema", 0, 1, 1, 0);
 	cbSema = sceKernelCreateSema("hblcbsema", 0, 1, 1, 0);

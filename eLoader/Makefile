@@ -41,7 +41,7 @@ endif
 
 OBJS_HBL = hbl/sdk.o hbl/eloader.o \
 	hbl/mod/elf.o hbl/mod/modmgr.o hbl/mod/reloc.o \
-	hbl/stubs/hook.o hbl/stubs/resolve.o hbl/stubs/test.o \
+	hbl/stubs/hook.o hbl/stubs/resolve.o \
 	hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
 
 OBJS_LOADER = loader/sdk.o loader/loader.o

@@ -3,13 +3,8 @@
 
 #include <common/sdk.h>
 
-// Maximum attempts to reestimate a syscall
-#define MAX_REESTIMATE_ATTEMPTS 5
-
 // Fixed loading address for relocatables
 #define PRX_LOAD_ADDRESS 0x08900000
-
-extern int chdir_ok;
 
 extern int hook_exit_cb_called;
 extern SceKernelCallbackFunction hook_exit_cb;

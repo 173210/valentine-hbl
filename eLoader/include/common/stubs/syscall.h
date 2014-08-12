@@ -13,9 +13,6 @@
 	|| defined(SYSCALL_KERNEL_OFFSETS_630) \
 	|| defined(SYSCALL_KERNEL_OFFSETS_635))
 #define DEACTIVATE_SYSCALL_ESTIMATION
-#else
-//Comment the following line to avoid reestimation
-#define REESTIMATE_SYSCALL
 #endif
 
 // Path for NID libraries
@@ -38,13 +35,6 @@ SceUID open_nids_file(const char *lib);
 /* Pass library name and NID */
 /* Return syscall number */
 int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method);
-
-/*
- * Reestimate a syscall if it's suspected of being incorrect
-*/
-#ifdef REESTIMATE_SYSCALL
-int reestimate_syscall(const char *lib, int nid, int *stub, HBLEstimateMethod method);
-#endif
 
 #endif
 

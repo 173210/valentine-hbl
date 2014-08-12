@@ -109,10 +109,6 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 	SceLibraryEntryTable* utility_exp = NULL;
 	unsigned int resolving_count = 0;
 
-#ifdef HOOK_CHDIR_AND_FRIENDS
-        chdir_ok = test_sceIoChdir();
-#endif
-
 	dbg_printf("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
 	/* Browse ELF stub headers */
 	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
