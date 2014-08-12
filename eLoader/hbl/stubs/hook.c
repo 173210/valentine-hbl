@@ -1066,7 +1066,7 @@ int test_sceIoChdir()
 
 	sceIoChdir(HBL_ROOT);
 
-	SceUID fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
+	fd = sceIoOpen(HBL_BIN, PSP_O_RDONLY, 0777);
 	if (fd > 0) {
 		sceIoClose(fd);
 
