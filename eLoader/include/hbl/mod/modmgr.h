@@ -18,15 +18,11 @@ typedef enum
 // Module information
 typedef struct
 {
-	SceUID id;				// Module ID given by HBL
-	HBLModState state;		// Current module state
-	unsigned int type;		// Static or reloc
-	unsigned long size;		// Allocated size
-	void* text_addr;		// Text address (useful?)
-	void* text_entry;		// Entry point
-	void* libstub_addr;		// .lib.stub section address
-	void* gp;				// Global pointer
-	char path[256];			// Path (do we need this?)
+	SceUID id;		// Module ID given by HBL
+	HBLModState state;	// Current module state
+	void* text_entry;	// Entry point
+	void* gp;		// Global pointer
+	char path[256];		// Path (do we need this?)
 } HBLModInfo;
 
 // Loaded modules

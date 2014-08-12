@@ -25,9 +25,9 @@ int num_exit_th = 0;
 
 // HBL entry point
 // Needs path to ELF or EBOOT
-static void run_eboot(SceUID elf_file, const char *path)
+static void run_eboot(SceUID fd, const char *path)
 {
-	SceOff offset = 0;
+	SceOff off;
 	SceUID mod_id;
 	char cfg_path[256];
 
@@ -40,7 +40,7 @@ static void run_eboot(SceUID elf_file, const char *path)
 	loadConfig(cfg_path);
 
 	// Extracts ELF from PBP
-	elf_eboot_extract_seek(elf_file, &offset);
+	eboot_get_elf_off(fd, &off);
 
 	dbg_printf("Loading module\n");
 
@@ -53,10 +53,10 @@ static void run_eboot(SceUID elf_file, const char *path)
 	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
 #endif
 
-	mod_id = load_module(elf_file, path, (void*)PRX_LOAD_ADDRESS, offset);
+	mod_id = load_module(fd, path, (void *)PRX_LOAD_ADDRESS, off);
 
 	// No need for ELF file anymore
-	sceIoClose(elf_file);
+	sceIoClose(fd);
 
 	if (mod_id < 0) {
 		dbg_printf("ERROR 0x%08X loading main module\n", mod_id);

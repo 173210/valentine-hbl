@@ -9,7 +9,7 @@
 #include <exploit_config.h>
 
 #ifdef DEBUG
-static void log_modinfo(SceModuleInfo modinfo)
+static void log_modinfo(SceModuleInfo *modinfo)
 {
 	dbg_printf("\n->Module information:\n"
 		"Module name: %s\n"
@@ -19,224 +19,191 @@ static void log_modinfo(SceModuleInfo modinfo)
 		"Stubs top: 0x%08X\n"
 		"Stubs end: 0x%08X\n"
 		"GP value: 0x%08X\n",
-		modinfo.modname,
-		modinfo.modversion[0], modinfo.modversion[1],
-		modinfo.modattribute,
-		(int)modinfo.ent_top,
-		(int)modinfo.stub_top,
-		(int)modinfo.stub_end,
-		(int)modinfo.gp_value);
+		modinfo->modname,
+		modinfo->modversion[0], modinfo->modversion[1],
+		modinfo->modattribute,
+		(int)modinfo->ent_top,
+		(int)modinfo->stub_top,
+		(int)modinfo->stub_end,
+		(int)modinfo->gp_value);
 }
 #endif
 
 //utility
 // Allocates memory for homebrew so it doesn't overwrite itself
 //This function is inly used in elf.c. Let's move it to malloc.c ONLY if other files start to need it
-void * allocate_memory(u32 size, void* addr)
+static void *elf_malloc(SceSize size, void *addr)
 {
-    int type = PSP_SMEM_Low;
-    if (addr)
-    {
-        type = PSP_SMEM_Addr;
-    }
+	SceUID blockid;
 
-    dbg_printf("-->ALLOCATING MEMORY @ 0x%08X size 0x%08X... ", (u32)addr, size);
-    //hook is used to monitor ram usage and free it on exit
-    SceUID mem = _hook_sceKernelAllocPartitionMemory(2, "ELFMemory", type, size, addr);
+	dbg_printf("-->ALLOCATING MEMORY @ 0x%08X size 0x%08X... ",
+		(int)addr, size);
 
-	if (mem < 0)
-	{
-		dbg_printf("FAILED: 0x%08X\n", mem);
-        return NULL;
+	//hook is used to monitor ram usage and free it on exit
+	blockid = _hook_sceKernelAllocPartitionMemory(
+		2, "ELFMemory", addr == NULL ? PSP_SMEM_Low : PSP_SMEM_Addr, size, addr);
+
+	if (blockid < 0) {
+		dbg_printf("FAILED: 0x%08X\n", blockid);
+		return NULL;
 	}
 
-    dbg_printf("OK\n");
+	dbg_printf("OK\n");
 
-	return sceKernelGetBlockHeadAddr(mem);
+	return sceKernelGetBlockHeadAddr(blockid);
 }
 
 
 /*****************/
 /* ELF FUNCTIONS */
 /*****************/
-
-// Returns 1 if header is ELF, 0 otherwise
-int elf_check_magic(Elf32_Ehdr* pelf_header)
-{
-    if( (pelf_header->e_ident[EI_MAG0] == ELFMAG0) &&
-        (pelf_header->e_ident[EI_MAG1] == ELFMAG1) &&
-        (pelf_header->e_ident[EI_MAG2] == ELFMAG2) &&
-        (pelf_header->e_ident[EI_MAG3] == ELFMAG3))
-        return 1;
-    else
-        return 0;
-}
-
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
-unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size)
+int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr)
 {
-	Elf32_Phdr program_header;
+	Elf32_Phdr phdr;
+	size_t size, read;
 	int excess;
-	void *buffer;
-
-	// Initialize size return value
-	*size = 0;
-
 	int i;
-	for (i = 0; i < pelf_header->e_phnum; i++)
-	{
-		dbg_printf("Reading program section %d of %d\n", i, pelf_header->e_phnum);
+	void *buf;
+
+	if (hdr == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	size = 0;
+	for (i = 0; i < hdr->e_phnum; i++) {
+		dbg_printf("Reading program section %d of %d\n", i, hdr->e_phnum);
 
 		// Read the program header
-		sceIoLseek(elf_file, start_offset + pelf_header->e_phoff + (sizeof(Elf32_Phdr) * i), PSP_SEEK_SET);
-		sceIoRead(elf_file, &program_header, sizeof(Elf32_Phdr));
+		if (sceIoLseek(fd, off + hdr->e_phoff + sizeof(Elf32_Phdr) * i, PSP_SEEK_SET) < 0)
+			continue;
+		if (sceIoRead(fd, &phdr, sizeof(Elf32_Phdr)) < 0)
+			continue;
 
+		buf = elf_malloc(phdr.p_memsz, phdr.p_vaddr);
 		// Loads program segment at virtual address
-		sceIoLseek(elf_file, start_offset + program_header.p_off, PSP_SEEK_SET);
-		buffer = (void *) program_header.p_vaddr;
-		allocate_memory(program_header.p_memsz, buffer);
-		sceIoRead(elf_file, buffer, program_header.p_filesz);
-
-		// Sets the buffer pointer to end of program segment
-		buffer = buffer + program_header.p_filesz;
+		if (sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET) < 0)
+			continue;
+		read = sceIoRead(fd, buf, phdr.p_filesz);
+		if (read < 0)
+			continue;
 
 		// Fills excess memory with zeroes
-		excess = program_header.p_memsz - program_header.p_filesz;
-		if(excess > 0)
-			memset(buffer, 0, excess);
+		excess = phdr.p_memsz - read;
+		if (excess > 0)
+			memset(phdr.p_vaddr + read, 0, excess);
 
-		*size += program_header.p_memsz;
+		size += phdr.p_memsz;
 	}
 
-	return *size;
+	return size;
 }
 
 // Loads relocatable executable in memory using fixed address
-// Loads address of first stub header in pstub_entry
-// Returns number of stubs
-unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr)
+// Loads address of first stub header in stub
+// Returns total size copied in memory
+int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modinfo, void **addr)
 {
-	Elf32_Phdr pheader;
-	int excess;
-    void * buffer;
-	_sceModuleInfo module_info;
+	Elf32_Phdr phdr;
+	int excess, ret;
 
-	//dbg_printf("prx_load_program -> Offset: 0x%08X\n", start_offset);
+	//dbg_printf("prx_load_program -> Offset: 0x%08X\n", off);
+
+	if (hdr == NULL || addr == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	// Read the program header
-	sceIoLseek(elf_file, start_offset + pelf_header->e_phoff, PSP_SEEK_SET);
-	sceIoRead(elf_file, &pheader, sizeof(Elf32_Phdr));
-
-	dbg_printf("\n->Program header:\n"
-		"Segment type: 0x%08X\n"
-		"Segment offset: 0x%08X\n"
-		"Virtual address for segment: 0x%08X\n"
-		"Physical address for segment: 0x%08X\n"
-		"Segment image size in file: 0x%08X\n"
-		"Segment image size in memory: 0x%08X\n"
-		"Flags: 0x%08X\n"
-		"Alignment: 0x%08X\n",
-		pheader.p_type,
-		pheader.p_off,
-		(int)pheader.p_vaddr,
-		(int)pheader.p_paddr,
-		pheader.p_filesz,
-		pheader.p_memsz,
-		pheader.p_flags,
-		pheader.p_align);
+	ret = sceIoLseek(fd, off + hdr->e_phoff, PSP_SEEK_SET);
+	if (ret < 0)
+		return ret;
+	ret = sceIoRead(fd, &phdr, sizeof(Elf32_Phdr));
+	if (ret < 0)
+		return ret;
     
 	// Check if kernel mode
-	if ((unsigned int)pheader.p_paddr & 0x80000000)
-		return 0;
+	if ((int)phdr.p_paddr & 0x80000000)
+		return SCE_KERNEL_ERROR_UNSUPPORTED_PRX_TYPE;
 
-	dbg_printf("Module info @ 0x%08X offset\n", (u32)start_offset + (u32)pheader.p_paddr);
+	dbg_printf("Module info @ 0x%08X offset\n", off + (int)phdr.p_paddr);
 
 	// Read module info from PRX
-	sceIoLseek(elf_file, (u32)start_offset + (u32)pheader.p_paddr, PSP_SEEK_SET);
-	sceIoRead(elf_file, &module_info, sizeof(_sceModuleInfo));
+	ret = sceIoLseek(fd, off + (int)phdr.p_paddr, PSP_SEEK_SET);
+	if (ret < 0)
+		return ret;
+	ret = sceIoRead(fd, modinfo, sizeof(_sceModuleInfo));
+	if (ret < 0)
+		return ret;
 
 #ifdef DEBUG
-	log_modinfo(module_info);
+	log_modinfo(modinfo);
 #endif
 
+	*addr = elf_malloc(phdr.p_memsz, *addr);
+
 	// Loads program segment at fixed address
-	sceIoLseek(elf_file, start_offset + (SceOff) pheader.p_off, PSP_SEEK_SET);
+	ret = sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET);
+	if (ret < 0)
+		return ret;
+	ret = sceIoRead(fd, *addr, phdr.p_filesz);
+	if (ret < 0)
+		return ret;
 
-	dbg_printf("Address to allocate from: 0x%08X\n", (u32)*addr);
-    buffer = allocate_memory(pheader.p_memsz, *addr);
-    *addr = buffer;
+	excess = phdr.p_memsz - ret;
+	if (excess > 0)
+		memset(*addr + ret + 1, 0, excess);
 
-	if (!buffer)
-	{
-		dbg_printf("Failed to allocate memory for the module\n");
-		return 0;
-	}
-
-	dbg_printf("Allocated memory address from: 0x%08X\n", (u32) *addr);
-	
-	sceIoRead(elf_file, buffer, pheader.p_filesz);
-
-	// Sets the buffer pointer to end of program segment
-	buffer = buffer + pheader.p_filesz + 1;
-
-	dbg_printf("Zero filling\n");
-	// Fills excess memory with zeroes
-    *size = pheader.p_memsz;
-	excess = pheader.p_memsz - pheader.p_filesz;
-	if(excess > 0) {
-		dbg_printf("Zero filling: %d bytes\n", excess);
-        memset(buffer, 0, excess);
-	}
-
-	*pstub_entry = (tStubEntry*)((u32)module_info.stub_top + (u32)*addr);
-
-	dbg_printf("stub_entry address: 0x%08X\n", (u32)*pstub_entry);
-
-	// Return size of stubs
-	return ((u32)module_info.stub_end - (u32)module_info.stub_top);
+	// Return size of total size copied in memory
+	return phdr.p_memsz;
 }
 
 // Get index of section if you know the section name
-int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, char* section_name_to_find)
+static int elf_get_shdr(
+	SceUID fd, SceOff off, const Elf32_Ehdr* hdr, const char *name,
+	Elf32_Shdr *shdr)
 {
-	#define SECTION_NAME_MAX_LENGTH 50
+	Elf32_Shdr shdr_names;
+	const size_t name_max_len = 22;
+	char buf[name_max_len]; // Should be enough to hold the name
+	int i, ret;
+	size_t name_len = strlen(name);
 
-	Elf32_Shdr section_header;
-	Elf32_Shdr section_header_names;
-	char section_name[SECTION_NAME_MAX_LENGTH]; // Should be enough to hold the name
-	unsigned int section_name_length = strlen(section_name_to_find);
-
-	if (section_name_length > SECTION_NAME_MAX_LENGTH)
-	{
+	if (name_len + 1 > name_max_len) {
 		// Section name too long
-		dbg_printf("Section name to find is too long (strlen = %d, max = %d)\n", section_name_length, SECTION_NAME_MAX_LENGTH);
-		return -1;
+		dbg_printf("Section name to find is too long (strlen = %d, max = %d)\n",
+			name_len, name_max_len);
+		name_len = name_max_len;
 	}
 
 	// Seek to the section name table
-	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (pelf_header->e_shstrndx * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
-	sceIoRead(elf_file, &section_header_names, sizeof(Elf32_Shdr));
+	ret = sceIoLseek(fd, off + hdr->e_shoff + hdr->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
+	if (ret < 0)
+		return ret;
+	ret = sceIoRead(fd, &shdr_names, sizeof(Elf32_Shdr));
+	if (ret < 0)
+		return ret;
 
 	// Read section names and compare them
-	int i;
-	for (i = 0; i < pelf_header->e_shnum; i++)
+	for (i = 0; i < hdr->e_shnum; i++)
 	{
 		// Get name index from current section header
-		sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (i * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
-		sceIoRead(elf_file, &section_header, sizeof(Elf32_Shdr));
+		ret = sceIoLseek(fd, off + hdr->e_shoff + i * sizeof(Elf32_Shdr), PSP_SEEK_SET);
+		if (ret < 0)
+			continue;
+		ret = sceIoRead(fd, shdr, sizeof(Elf32_Shdr));
+		if (ret < 0)
+			continue;
 
 		// Seek to the name entry in the name table
-		sceIoLseek(elf_file, start_offset + section_header_names.sh_offset + section_header.sh_name, PSP_SEEK_SET);
-
+		ret = sceIoLseek(fd, off + shdr_names.sh_offset + shdr->sh_name, PSP_SEEK_SET);
+		if (ret < 0)
+			continue;
 		// Read name in (is the section name length stored anywhere?)
-		sceIoRead(elf_file, section_name, section_name_length);
+		ret = sceIoRead(fd, buf, name_len);
+		if (ret < 0)
+			continue;
 
-		if (strncmp(section_name, section_name_to_find, section_name_length) == 0)
-		{
-			dbg_printf("Found section index %d\n", i);
-			return i;
-		}
+		if (!strncmp(buf, name, name_len))
+			return 0;
 	}
 
 	// Section not found
@@ -244,103 +211,47 @@ int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, 
 	return -1;
 }
 
-// Get module GP
-u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header)
+// Returns address and size (size) of ".lib.stub" section (imports)
+tStubEntry *elf_find_imports(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, size_t *size)
 {
-	Elf32_Shdr section_header;
-	_sceModuleInfo module_info;
-	int section_index = -1;
+	Elf32_Shdr shdr;
+	int ret = elf_get_shdr(fd, off, hdr, ".lib.stub", &shdr);
+	if (ret < 0)
+		return NULL;
 
-    section_index = elf_get_section_index_by_section_name(elf_file, start_offset, pelf_header, ".rodata.sceModuleInfo");
-	if (section_index < 0)
-	{
+	*size = shdr.sh_size;
+
+	return (tStubEntry *)shdr.sh_addr;
+}
+
+// Get module GP
+int elf_get_gp(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, void **buf)
+{
+	Elf32_Shdr shdr;
+	int ret;
+
+	ret = elf_get_shdr(fd, off, hdr, ".rodata.sceModuleInfo", &shdr);
+	if (ret < 0) {
 		// Module info not found in sections
 		dbg_printf("ERROR: section rodata.sceModuleInfo not found\n");
-		return 0;
+		return ret;
 	}
-
-	// Read in section header
-    sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + (section_index * sizeof(Elf32_Shdr)), PSP_SEEK_SET);
-	sceIoRead(elf_file, &section_header, sizeof(Elf32_Shdr));
 
 	// Read in module info
-    sceIoLseek(elf_file, start_offset + section_header.sh_offset, PSP_SEEK_SET);
-    sceIoRead(elf_file, &module_info, sizeof(SceModuleInfo));
-#ifdef DEBUG
-	log_modinfo(module_info);
-#endif
-    return (u32) module_info.gp_value;
-}
+	ret = sceIoLseek(fd,
+		off + shdr.sh_offset + offsetof(SceModuleInfo, gp_value),
+		PSP_SEEK_SET);
+	if (ret < 0)
+		return ret;
 
-// Copies the string pointed by table_offset into "buffer"
-// WARNING: modifies file pointer. This behaviour MUST be changed
-unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buffer)
-{
-	int i;
-
-	sceIoLseek(elf_file, table_offset, PSP_SEEK_SET);
-
-	i = 0;
-	do
-	{
-		sceIoRead(elf_file, &(buffer[i]), sizeof(char));
-	} while(buffer[i++]);
-
-	return i-1;
-}
-
-// Returns size and address (pstub) of ".lib.stub" section (imports)
-unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub)
-{
-	Elf32_Half i;
-	Elf32_Shdr sec_header;
-	Elf32_Off strtab_offset;
-	Elf32_Off cur_offset;
-	char section_name[40];
-
-	// Seek string table
-	sceIoLseek(elf_file, start_offset + pelf_header->e_shoff + pelf_header->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
-	sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
-	strtab_offset = sec_header.sh_offset;
-
-	// First section header
-	cur_offset = pelf_header->e_shoff;
-
-	// Browse all section headers
-	for(i=0; i<pelf_header->e_shnum; i++)
-	{
-		// Get section header
-		sceIoLseek(elf_file, start_offset + cur_offset, PSP_SEEK_SET);
-		sceIoRead(elf_file, &sec_header, sizeof(Elf32_Shdr));
-
-		// Get section name
-		elf_read_string(elf_file,  start_offset + strtab_offset + sec_header.sh_name, section_name);
-
-		// Check if it's ".lib.stub"
-		if(!strcmp(section_name, ".lib.stub"))
-		{
-			// Return values
-			*pstub = (tStubEntry*) sec_header.sh_addr;
-			return sec_header.sh_size;
-		}
-
-		// Next section header
-		cur_offset += sizeof(Elf32_Shdr);
-	}
-
-	// If we get here, no ".lib.stub" section found
-	return 0;
+	return sceIoRead(fd, buf, sizeof(void *));
 }
 
 
-// Extracts ELF from PBP, and fills offset
-void elf_eboot_extract_seek(SceUID eboot, SceOff *offset)
+void eboot_get_elf_off(SceUID eboot, SceOff *off)
 {
-	*offset = 0;
+	*off = 0;
 
 	sceIoLseek(eboot, 0x20, PSP_SEEK_SET);
-	sceIoRead(eboot, offset, sizeof(u32));
-	sceIoLseek(eboot, *offset, PSP_SEEK_SET);
-
-	return;
+	sceIoRead(eboot, (void *)off, sizeof(int));
 }

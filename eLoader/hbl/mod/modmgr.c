@@ -19,20 +19,12 @@ static void log_mod_entry(HBLModInfo modinfo)
 {
 	dbg_printf("\n->Module entry:\n"
 		"ID: 0x%08X\n"
-		"ELF type: 0x%08X\n"
 		"State: %d\n"
-		"Size: 0x%08X\n"
-		"Text address: 0x%08X\n"
 		"Entry point: 0x%08X\n"
-		".lib.stub address: 0x%08X\n"
 		"GP: 0x%08X\n",
 		modinfo.id,
-		modinfo.type,
 		modinfo.state,
-		modinfo.size,
-		(int)modinfo.text_addr,
 		(int)modinfo.text_entry,
-		(int)modinfo.libstub_addr,
 		(int)modinfo.gp);
 }
 #endif
@@ -83,6 +75,8 @@ int get_module_index(SceUID modid)
 // Loads a module to memory
 SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 {
+	_sceModuleInfo modinfo;
+
 	dbg_printf("\n\n->Entering load_module...\n");
 
 	
@@ -91,9 +85,11 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	if (mod_table.num_loaded_mod >= MAX_MODULES)
 		return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 
+
 	dbg_printf("Reading ELF header...\n");
 	// Read ELF header
 	Elf32_Ehdr elf_hdr;
+	sceIoLseek(elf_file, offset, PSP_SEEK_SET);
 	sceIoRead(elf_file, &elf_hdr, sizeof(elf_hdr));
 
 	// Check for module encryption
@@ -120,7 +116,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 	// Loading module
 	tStubEntry* pstub;
-	unsigned int program_size, stubs_size = 0;
+	size_t program_size, stubs_size = 0;
 	unsigned int i = mod_table.num_loaded_mod;
     strcpy(mod_table.table[i].path, path);
 
@@ -129,19 +125,19 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	{
 		//dbg_printf("STATIC\n");
 
-		mod_table.table[i].type = ELF_STATIC;
-
 		if(mod_table.num_loaded_mod > 0)
 			return SCE_KERNEL_ERROR_UNKNOWN_MODULE;
 
 		// Load ELF program section into memory
-		elf_load_program(elf_file, offset, &elf_hdr, &program_size);
+		program_size = elf_load(elf_file, offset, &elf_hdr);
+		if (program_size < 0)
+			return program_size;
 
 		// Locate ELF's .lib.stubs section
-		stubs_size = elf_find_imports(elf_file, offset, &elf_hdr, &pstub);
+		pstub = elf_find_imports(elf_file, offset, &elf_hdr, &stubs_size);
 
 		mod_table.table[i].text_entry = (u32 *)elf_hdr.e_entry;
-		mod_table.table[i].gp = (void*)getGP(elf_file, offset, &elf_hdr);
+		elf_get_gp(elf_file, offset, &elf_hdr, &mod_table.table[i].gp);
 	}
 
 	// Relocatable ELF (PRX)
@@ -149,13 +145,15 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 	{
 		dbg_printf("RELOC\n");
 
-		mod_table.table[i].type = ELF_RELOC;
-
 		dbg_printf("load_module -> Offset: 0x%08X\n", offset);
 
 		// Load PRX program section
-		if ((stubs_size = prx_load_program(elf_file, offset, &elf_hdr, &pstub, (u32*)&program_size, &addr)) == 0)
-			return SCE_KERNEL_ERROR_ERROR;
+		program_size = prx_load(elf_file, offset, &elf_hdr, &modinfo, &addr);
+		if (program_size < 0)
+			return program_size;
+
+		pstub = (void *)((int)modinfo.stub_top + (int)addr);
+		stubs_size = (int)modinfo.stub_end - (int)modinfo.stub_top;
 
 		dbg_printf("Before reloc -> Offset: 0x%08X\n", offset);
 		//Relocate all sections that need to
@@ -170,7 +168,7 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 		// Relocate ELF entry point and GP register
 		mod_table.table[i].text_entry = (u32 *)((u32)elf_hdr.e_entry + (u32)addr);
-        mod_table.table[i].gp = (u32 *) (getGP(elf_file, offset, &elf_hdr) + (u32)addr);
+		mod_table.table[i].gp = (void *)((int)modinfo.gp_value + (int)addr);
 	}
 
 	// Unknown ELF type
@@ -191,9 +189,6 @@ SceUID load_module(SceUID elf_file, const char* path, void* addr, SceOff offset)
 
 	mod_table.table[i].id = MOD_ID_START + i;
 	mod_table.table[i].state = LOADED;
-	mod_table.table[i].size = program_size;
-	mod_table.table[i].text_addr = addr;
-	mod_table.table[i].libstub_addr = pstub;
 	mod_table.num_loaded_mod++;
 
 	//dbg_printf("Module table updated\n");

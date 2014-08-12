@@ -56,12 +56,6 @@ typedef struct
 #define EI_VERSION 6 //File version
 #define EI_PAD 7     //Start of padding bytes in header (should be set to zero)
 
-/* Magic number for ELF */
-#define ELFMAG0 0x7f //e_ident[EI_MAG0]
-#define ELFMAG1 'E'  //e_ident[EI_MAG1]
-#define ELFMAG2 'L'  //e_ident[EI_MAG2]
-#define ELFMAG3 'F'  //e_ident[EI_MAG3]
-
 /* File class */
 #define ELFCLASSNONE 0 //Invalid class
 #define ELFCLASS32 1   //32-bit objects
@@ -199,34 +193,23 @@ typedef struct
 /**************/
 /* PROTOTYPES */
 /**************/
-
-/* Returns 1 if header is ELF, 0 otherwise */
-int elf_check_magic(Elf32_Ehdr* pelf_header);
-
 /* Load static executable in memory using virtual address */
 /* Returns total size copied in memory */
-unsigned int elf_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, unsigned int* size);
+int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr);
 
 // Load relocatable executable in memory using fixed address
 // and fills pointer to stub with first stub entry
 // Returns total size copied in memory
-unsigned int prx_load_program(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub_entry, u32* size, void** addr);
-
-// Get index of section if you know the section name
-int elf_get_section_index_by_section_name(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, char* section_name_to_find);
-
-/* Copies the string pointed by table_offset into "buffer" */
-/* WARNING: modifies file pointer. This behaviour MUST be changed */
-unsigned int elf_read_string(SceUID elf_file, Elf32_Off table_offset, char *buffer);
+int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modinfo, void **addr);
 
 /* Returns size and address (pstub) of ".lib.stub" section (imports) */
-unsigned int elf_find_imports(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header, tStubEntry** pstub);
-
-// Extracts ELF from PBP, and fills offset
-void elf_eboot_extract_seek(SceUID eboot, SceOff *offset);
+tStubEntry *elf_find_imports(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, size_t *size);
 
 // Get ELF GP value
-u32 getGP(SceUID elf_file, SceOff start_offset, Elf32_Ehdr* pelf_header);
+int elf_get_gp(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, void **buf);
+
+
+void eboot_get_elf_off(SceUID eboot, SceOff *off);
 
 #endif
 
