@@ -25,6 +25,8 @@
 
 #define FIRST_LOG "Loader running\n"
 
+int preload_freemem_bruteforce(int blockid, void *p);
+
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
 static void resetHomeSettings()
@@ -107,6 +109,10 @@ static void load_hbl(SceUID hbl_file)
 	// Allocate memory for HBL
 #ifdef GAME_PRELOAD_FREEMEM
 	PreloadFreeMem();
+#endif
+#ifdef GAME_PRELOAD_FREEMEM_BRUTEFORCE_INIT
+	preload_freemem_bruteforce(GAME_PRELOAD_FREEMEM_BRUTEFORCE_INIT,
+		(void *)GAME_PRELOAD_FREEMEM_BRUTEFORCE_ADDR);
 #endif
 #ifdef FPL_EARLY_LOAD_ADDR_LIST
 	//early memory cleanup to be able to load HBL at a convenient place

@@ -44,7 +44,7 @@ OBJS_HBL = hbl/sdk.o hbl/eloader.o \
 	hbl/stubs/hook.o hbl/stubs/resolve.o \
 	hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
 
-OBJS_LOADER = loader/sdk.o loader/loader.o
+OBJS_LOADER = loader/sdk.o loader/loader.o loader/bruteforce.o
 
 %.BIN: %.elf
 	psp-objcopy -S -O binary --set-section-flags .bss=load,contents $< $@
