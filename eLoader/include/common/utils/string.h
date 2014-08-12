@@ -15,25 +15,20 @@ void *memcpy(void *dst, const void *src, size_t n);
 //    character we were looking for
 char *strchr(const char *s, int c);
 
-// Returns string length
-size_t strlen(const char *s);
+// Compares s1 with s2, returns 0 if both equal
+int strcmp(const char *s1, const char *s2);
+
+// Compares only "count" chars from strings
+int strncmp(const char *s1, const char *s2, size_t n);
 
 // Copies string src into dest
 char *strcpy(char *dst, const char *src);
 
+// Returns string length
+size_t strlen(const char *s);
+
 // limited sprintf function - avoids pulling in large library
 void _vfprintf(void (* f)(int), const char *fmt, va_list va);
 void _sprintf(char *s, const char *fmt, ...);
-
-// Compares s1 with s2, returns 0 if both equal
-int strcmp(const char *s1, const char *s2);
-
-// Concatenates string s + append
-char *strcat(char *s, const char *append);
-
-// Compares only "count" chars from strings
-int strncmp(const char *s1, const char *s2, size_t count);
-
-char * strrchr(const char *cp, int ch);
 
 #endif

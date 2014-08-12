@@ -39,10 +39,9 @@ static void run_eboot(SceUID elf_file, const char *path)
 
     //Load Game config overrides
     char cfg_path[256];
-    strcpy(cfg_path, path);
     int path_len = strlen(path) - strlen("EBOOT.PBP");
     cfg_path[path_len] = 0;
-    strcat(cfg_path, HBL_CONFIG);
+    _sprintf(cfg_path, "%s" HBL_CONFIG, path);
     loadConfig(cfg_path);
 
 	// Extracts ELF from PBP

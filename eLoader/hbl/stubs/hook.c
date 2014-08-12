@@ -431,6 +431,9 @@ int path_is_absolute(const char * file)
 // 2 - delete the returned char *
 char * relative_to_absolute(const char * file)
 {
+    int i;
+    int len;
+
         if (!mod_chdir)
     {
         char * buf = malloc_hbl(strlen(file) + 1);
@@ -446,28 +449,33 @@ char * relative_to_absolute(const char * file)
     }
     else if (!strcmp("..", file))
     {
-		char *ret;
+		len = strlen(mod_chdir);
+		for (i = len; i > 0; i--)
+			if (mod_chdir[i] == '/') {
+				if (mod_chdir[i - 1] != ':') {
+					mod_chdir[i] = '\0';
+					len = i;
+				}
+				break;
+			}
 
-		if ((ret = strrchr(mod_chdir, '/')) != NULL && ret[-1] != ':')
-		{
-		    ret[0] = 0;
-		}
-
-        char * buf = malloc_hbl(strlen(mod_chdir) + 1);
+        char * buf = malloc_hbl(len + 1);
         strcpy(buf, mod_chdir);
         return buf;
     }
 #endif
 
-    int len = strlen(mod_chdir);
+    len = strlen(mod_chdir);
 
     char * buf = malloc_hbl( len +  1 +  strlen(file) + 1);
 
     strcpy(buf, mod_chdir);
-    if(buf[len-1] !='/')
-        strcat(buf, "/");
+    if(buf[len-1] !='/') {
+        buf[len] = '/';
+        len++;
+    }
 
-    strcat(buf,file);
+    strcpy(buf + len, file);
 
     return buf;
 }
