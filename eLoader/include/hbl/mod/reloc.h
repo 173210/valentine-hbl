@@ -3,6 +3,6 @@
 
 // Relocates PRX sections that need to
 // Returns number of relocated entries
-unsigned int relocate_sections(SceUID elf_file, SceOff start_offset, const Elf32_Ehdr *pelf_header, void* reloc_addr);
+int reloc(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *addr);
 
 #endif

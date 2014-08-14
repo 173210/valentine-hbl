@@ -154,7 +154,7 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 	dbg_printf("Before reloc -> Offset: 0x%08X\n", off);
 
 	//Relocate all sections that need to
-	ret = relocate_sections(fd, off, hdr, *addr);
+	ret = reloc(fd, off, hdr, *addr);
 
 	dbg_printf("Relocated entries: %d\n", ret);
 	if (!ret)
