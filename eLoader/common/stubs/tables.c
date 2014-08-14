@@ -2,7 +2,7 @@
 #include <common/stubs/tables.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
-#include <hbl/mod/elf.h>
+#include <hbl/modmgr/elf.h>
 #include <common/debug.h>
 #include <common/malloc.h>
 #include <common/utils.h>

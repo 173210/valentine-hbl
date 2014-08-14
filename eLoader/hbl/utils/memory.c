@@ -1,7 +1,7 @@
 #include <common/debug.h>
 #include <common/globals.h>
 #include <common/sdk.h>
-#include <hbl/mod/modmgr.h>
+#include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>

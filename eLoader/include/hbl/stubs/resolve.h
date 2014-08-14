@@ -2,7 +2,7 @@
 #define ELOADER_RESOLVE
 
 #include <common/sdk.h>
-#include <hbl/mod/elf.h>
+#include <hbl/modmgr/elf.h>
 
 // Subsitutes the right instruction
 void resolve_call(int *call_to_resolve, u32 call_resolved);

@@ -1,7 +1,7 @@
 #include <common/utils/string.h>
 #include <common/sdk.h>
 #include <common/debug.h>
-#include <hbl/mod/elf.h>
+#include <hbl/modmgr/elf.h>
 #include <hbl/eloader.h>
 #include <common/malloc.h>
 #include <exploit_config.h>

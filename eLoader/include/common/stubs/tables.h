@@ -1,7 +1,7 @@
 #ifndef ELOADER_TABLES
 #define ELOADER_TABLES
 
-#include <hbl/mod/elf.h>
+#include <hbl/modmgr/elf.h>
 
 // Struct holding all NIDs imported by the game and their respective jump/syscalls
 typedef struct

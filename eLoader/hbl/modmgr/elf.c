@@ -2,8 +2,8 @@
 #include <common/sdk.h>
 #include <common/debug.h>
 #include <common/utils.h>
-#include <hbl/mod/elf.h>
-#include <hbl/mod/reloc.h>
+#include <hbl/modmgr/elf.h>
+#include <hbl/modmgr/reloc.h>
 #include <hbl/stubs/hook.h>
 #include <hbl/eloader.h>
 

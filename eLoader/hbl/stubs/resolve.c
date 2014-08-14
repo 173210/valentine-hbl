@@ -5,9 +5,9 @@
 #include <common/debug.h>
 #include <hbl/eloader.h>
 //#include "scratchpad.h"
-#include <hbl/mod/elf.h>
+#include <hbl/modmgr/elf.h>
 #include <hbl/stubs/hook.h>
-#include <hbl/mod/modmgr.h>
+#include <hbl/modmgr/modmgr.h>
 #include <common/config.h>
 #include <hbl/stubs/resolve.h>
 #include <common/globals.h>

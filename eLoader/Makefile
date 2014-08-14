@@ -40,7 +40,7 @@ OBJS_COMMON += common/debug.o
 endif
 
 OBJS_HBL = hbl/sdk.o hbl/eloader.o \
-	hbl/mod/elf.o hbl/mod/modmgr.o hbl/mod/reloc.o \
+	hbl/modmgr/elf.o hbl/modmgr/modmgr.o hbl/modmgr/reloc.o \
 	hbl/stubs/hook.o hbl/stubs/resolve.o \
 	hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
 
@@ -61,7 +61,7 @@ hbl/sdk.o: $(FOLDER_PATH)/sdk_hbl.S
 loader/sdk.o: $(FOLDER_PATH)/sdk_loader.S
 	$(AS) $< -o $@
 
-hbl/mod/modmgr.o: svnversion.h
+hbl/modmgr/modmgr.o: svnversion.h
 loader/loader.o: svnversion.h
 
 #svn version in code

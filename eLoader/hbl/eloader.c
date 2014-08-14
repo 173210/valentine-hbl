@@ -8,7 +8,7 @@
 #include <common/path.h>
 #include <common/sdk.h>
 #include <common/utils.h>
-#include <hbl/mod/modmgr.h>
+#include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
 #include <hbl/utils/memory.h>
 #include <hbl/utils/settings.h>
