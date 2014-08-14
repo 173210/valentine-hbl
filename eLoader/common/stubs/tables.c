@@ -10,16 +10,16 @@
 #include <exploit_config.h>
 
 #ifdef DEBUG
-static void log_lib(tSceLibrary lib)
+static void log_lib(const tSceLibrary *lib)
 {
-	dbg_printf("\n-->Library name: %s\n", lib.name);
+	dbg_printf("\n-->Library name: %s\n", lib->name);
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	dbg_printf("--Total library exports: %d\n"
 		"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
 		"--Lowest index in file: %d\n"
-		lib.num_lib_exports,
-		lib.lowest_nid, lib.lowest_syscall,
-		lib.lowest_index);
+		lib->num_lib_exports,
+		lib->lowest_nid, lib->lowest_syscall,
+		lib->lowest_index);
 #endif
 }
 #endif
@@ -128,7 +128,7 @@ int add_stub(const tStubEntry *stub)
 			NID_DBG_PRINTF("Number of imports of this stub: %d\n", stub->stub_size);
 		}
 #ifdef DEBUG
-		log_lib(globals->lib_table[lib_index]);
+		log_lib(globals->lib_table + lib_index);
 #endif
 
 		// Browse all stubs defined by this header
