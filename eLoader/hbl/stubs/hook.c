@@ -50,6 +50,8 @@ static int dirLen;
 static int dirFix[MAX_OPEN_DIR_VITA][2];
 #endif
 
+void (* net_term_func[5])();
+int net_term_num = 0;
 
 void init_hook()
 {
@@ -72,12 +74,9 @@ void init_hook()
 
 //Checks if the homebrew should return to xmb on exit
 // yes if user specified it in the cfg file AND it is not the menu
-int force_return_to_xmb()
+static int force_return_to_xmb()
 {
-        unsigned int i = mod_table.num_loaded_mod;
-    if (!return_to_xmb_on_exit) return 0;
-    if (strcmp(mod_table.table[i].path, MENU_PATH) == 0) return 0;
-    return 1;
+	return return_to_xmb_on_exit && find_module_by_path(MENU_PATH) < 0;
 }
 
 #ifdef FORCE_HARDCODED_VRAM_SIZE
@@ -632,35 +631,14 @@ int run_nid (u32 nid){
     return 1;
 }
 
-//Force close Net modules
 void net_term()
 {
-    //Call the closing functions only if the matching library is loaded
-	if( is_utility_loaded(PSP_MODULE_NET_INET) != 0 )
-	{
-	    if (get_lib_index("sceNetApctl") >= 0)
-	    {
-	        run_nid(0xB3EDD0EC); //sceNetApctlTerm();
-	    }
-
-	    if (get_lib_index("sceNetResolver") >= 0)
-	    {
-	        run_nid(0x6138194A); //sceNetResolverTerm();
-	    }
-	    if (get_lib_index("sceNetInet") >= 0)
-	    {
-	        run_nid(0xA9ED66B9); //sceNetInetTerm();
-	    }
-	}
-
-	if( is_utility_loaded(PSP_MODULE_NET_COMMON) != 0)
-	{
-	    if (get_lib_index("sceNet") >= 0)
-	    {
-	        run_nid(0x281928A9); //sceNetTerm();
-	    }
+	while (net_term_num > 0) {
+		net_term_num--;
+		net_term_func[net_term_num]();
 	}
 }
+
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 // Release the kernel audio channel
 void audio_term()
@@ -722,7 +700,7 @@ void subinterrupthandler_cleanup()
 
 void exit_everything_but_me()
 {
-    net_term();
+	net_term();
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	audio_term();
 #endif
@@ -1397,10 +1375,17 @@ SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelL
 
 int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUSED(argp), int *UNUSED(status), SceKernelSMOption *UNUSED(option))
 {
+	SceUID ret;
+	int gp;
+
 	dbg_printf("_hook_sceKernelStartModule\n");
 
-	SceUID ret = start_module(modid);
+	GET_GP(gp);
+
+	ret = start_module(modid);
 	dbg_printf("start_module returned 0x%08X\n", ret);
+
+	SET_GP(gp);
 
 	return ret;
 }
@@ -1410,11 +1395,14 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUS
 
 int _hook_sceUtilityLoadModule(int id)
 {
-	if (is_utility_loaded(id))
-    {
-		return 0;
-    }
-    return SCE_KERNEL_ERROR_ERROR;
+	return id == PSP_MODULE_AV_MPEGBASE
+		|| id == PSP_MODULE_AV_ATRAC3PLUS
+		|| id == PSP_MODULE_AV_MP3
+		|| id == PSP_MODULE_NET_INET
+		|| id == PSP_MODULE_NET_COMMON
+		|| id == PSP_MODULE_NET_ADHOC
+		|| id == PSP_MODULE_NET_HTTP ?
+		0 :  SCE_KERNEL_ERROR_ERROR;
 }
 
 int _hook_sceUtilityLoadNetModule(int id)

@@ -12,21 +12,15 @@
 #ifdef DEBUG
 static void log_lib(tSceLibrary lib)
 {
-	dbg_printf("\n-->Library name: %s\n"
+	dbg_printf("\n-->Library name: %s\n", lib.name);
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
-		"--Total library exports: %d\n"
+	dbg_printf("--Total library exports: %d\n"
 		"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
 		"--Lowest index in file: %d\n"
-#endif
-		"--Calling mode: %d\n",
-		lib.name,
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 		lib.num_lib_exports,
 		lib.lowest_nid, lib.lowest_syscall,
-		lib.lowest_index,
+		lib.lowest_index);
 #endif
-		lib.calling_mode
-	);
 }
 #endif
 
@@ -37,36 +31,6 @@ static int get_good_call(const void *buf)
 	if(*(const int *)buf & SYSCALL_MASK_IMPORT)
 		buf += 4;
 	return *(const int *)buf;
-}
-
-// Adds a new library
-int add_lib(const tSceLibrary lib)
-{
-	// Check if library exists
-	int index = get_lib_index(lib.name);
-
-	// Doesn't exist, insert new
-	if (index < 0) {
-		index = globals->lib_num;
-		// Check if there's space on the table
-		if (index >= MAX_LIBRARIES) {
-			dbg_printf("->WARNING: Library table full, skipping new library %s\n", lib.name);
-			return -1;
-		}
-
-		globals->lib_num++;
-	}
-
-	// Copying new library
-	memcpy(&(globals->lib_table[index]), &lib, sizeof(lib));
-
-
-	dbg_printf("Added library %s @ %d\n", globals->lib_table[index].name, index);
-#ifdef DEBUG
-	log_lib(globals->lib_table[index]);
-#endif
-
-	return index;
 }
 
 // Adds NID entry to nid_table
@@ -142,7 +106,6 @@ int add_stub(const tStubEntry *stub)
 			NID_DBG_PRINTF(" --> New: %d\n", lib_index);
 
 			strcpy(globals->lib_table[lib_index].name, stub->lib_name);
-			globals->lib_table[lib_index].calling_mode = SYSCALL_MODE;
 
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 			// Initialize lowest syscall on library table
@@ -163,11 +126,6 @@ int add_stub(const tStubEntry *stub)
 			NID_DBG_PRINTF(" --> Old: %d\n", lib_index);
 
 			NID_DBG_PRINTF("Number of imports of this stub: %d\n", stub->stub_size);
-
-			if (globals->lib_table[lib_index].calling_mode != SYSCALL_MODE) {
-				dbg_printf(" ERROR OLD CALL MODE IS SYSCALL, NEW IS JUMP 0x%08X\n", &lib_index);
-				return 0;
-			}
 		}
 #ifdef DEBUG
 		log_lib(globals->lib_table[lib_index]);

@@ -31,53 +31,6 @@ void resolve_call(int *call_to_resolve, u32 call_resolved)
 	}
 }
 
-// Returns utility ID that loads the given library
-int is_utility(const char* lib_name)
-{
-	if (strcmp(lib_name, "sceMpeg") == 0 )
-		return PSP_MODULE_AV_MPEGBASE;
-
-	if (strcmp(lib_name, "sceAtrac3plus") == 0)
-	    return PSP_MODULE_AV_ATRAC3PLUS;
-
-	if (strcmp(lib_name, "sceMp3") == 0)
-	    return PSP_MODULE_AV_MP3;
-
-	else if (strcmp(lib_name, "sceNetInet") == 0 ||
-			 strcmp(lib_name, "sceNetInet_lib") == 0 ||
-	    	 strcmp(lib_name, "sceNetApctl") == 0 ||
-	    	 strcmp(lib_name, "sceNetApctl_lib") == 0 ||
-	    	 strcmp(lib_name, "sceNetApctl_internal_user") == 0 ||
-	    	 strcmp(lib_name, "sceNetApctl_lib2") == 0 ||
-	    	 strcmp(lib_name, "sceNetResolver") == 0)
-		return PSP_MODULE_NET_INET;
-
-	else if (strcmp(lib_name, "sceNet") == 0 ||
-	    	 strcmp(lib_name, "sceNet_lib") == 0)
-		return PSP_MODULE_NET_COMMON;
-
-	else if (strcmp(lib_name, "sceNetAdhoc") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhoc_lib") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhocctl") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhocctl_lib") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhocMatching") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhocDownload") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhocDiscover") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhoc") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhoc") == 0 ||
-	    	 strcmp(lib_name, "sceNetAdhoc") == 0)
-		return PSP_MODULE_NET_ADHOC;
-
-	else if (strcmp(lib_name, "sceHttp") == 0 )
-		return PSP_MODULE_NET_HTTP;
-/*
-	else if (strcmp(lib_name, "sceSsl") == 0 )
-		return PSP_MODULE_NET_SSL;
-*/
-	else
-		return -1;
-}
-
 static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
 {
 	if( pexports != NULL){
@@ -121,11 +74,7 @@ unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
 		dbg_printf("Current library: %s\n", (u32)pstub_entry->lib_name);
 
 		// Load utility if necessary
-		int mod_id = is_utility((char*)pstub_entry->lib_name);
-		if (mod_id > 0)
-		{
-			load_export_utility_module(mod_id, (char*)pstub_entry->lib_name, (void **)&utility_exp);
-		}
+		utility_exp = load_export_util(pstub_entry->lib_name);
 
 		/* For each stub header, browse all stubs */
 		for(j=0; j<pstub_entry->stub_size; j++)

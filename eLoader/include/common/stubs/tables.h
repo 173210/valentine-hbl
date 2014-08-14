@@ -11,18 +11,11 @@ typedef struct
 	int lib;	// Index to the library descriptor tSceLibrary
 } tNIDResolver;
 
-typedef enum
-{
-	SYSCALL_MODE = 0,
-	JUMP_MODE = 1
-} tCallingMode;
-
 // Struct holding info to help syscall estimation
 // This struct is for each library imported by the game
 typedef struct
 {
 	char name[MAX_LIB_NAME_LEN];	// Library name
-	tCallingMode calling_mode;	// Defines how library exports are called
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	int num_lib_exports;		// Number of exported functions in library
 	int lowest_syscall;		// Lowest syscall number found
@@ -32,9 +25,6 @@ typedef struct
 	int gap;			// Offset between the syscall for the highest and the lowest nid index in 6.20
 #endif
 } tSceLibrary;
-
-// Adds a new library
-int add_lib(const tSceLibrary lib);
 
 // Adds NID entry to nid_table
 int add_nid(int nid, int call, int lib);

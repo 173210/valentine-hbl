@@ -35,6 +35,8 @@
 // Comment to avoid overriding sceUtility functions
 #define HOOK_UTILITY
 
+extern void (* net_term_func[])();
+extern int net_term_num;
 
 //Own functions
 void init_hook();

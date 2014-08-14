@@ -1,12 +1,11 @@
 #include <common/utils/string.h>
 #include <common/sdk.h>
-#include <hbl/mod/elf.h>
 #include <common/debug.h>
-#include <hbl/eloader.h>
-#include <hbl/stubs/hook.h>
-#include <common/malloc.h>
 #include <common/utils.h>
-#include <exploit_config.h>
+#include <hbl/mod/elf.h>
+#include <hbl/mod/reloc.h>
+#include <hbl/stubs/hook.h>
+#include <hbl/eloader.h>
 
 #ifdef DEBUG
 static void log_modinfo(SceModuleInfo *modinfo)
@@ -151,6 +150,15 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 	excess = phdr.p_memsz - ret;
 	if (excess > 0)
 		memset(*addr + ret + 1, 0, excess);
+
+	dbg_printf("Before reloc -> Offset: 0x%08X\n", off);
+
+	//Relocate all sections that need to
+	ret = relocate_sections(fd, off, hdr, *addr);
+
+	dbg_printf("Relocated entries: %d\n", ret);
+	if (!ret)
+		dbg_printf("WARNING: no entries to relocate on a relocatable ELF\n");
 
 	// Return size of total size copied in memory
 	return phdr.p_memsz;

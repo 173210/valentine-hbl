@@ -119,40 +119,9 @@ static void cleanup(u32 num_lib)
 	ram_cleanup();
 	free_allmalloc_hbls();
 
+	unload_modules();
 
-#ifdef DISABLE_UNLOAD_UTILITY_MODULES
-	UnloadModules();
-#else
-	//unload utility modules
-	int i, ret;
-	int modid;
-	int num_utility = mod_table.num_utility;
-	for (i = num_utility - 1; i >= 0; i--) {
-		modid = mod_table.utility[i];
-
-		//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
-		//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
-		if (modid && modid != PSP_MODULE_AV_AVCODEC
-#ifndef VITA
-			&& (modid != PSP_MODULE_AV_MP3 || globals->module_sdk_version > 0x06020010)
-#endif
-		) {
-			dbg_printf("UNLoad utility module id  0x%08X\n", modid);
-			ret = unload_util(modid);
-			if (ret < 0)
-				scr_printf("WARNING! error unloading module %d: 0x%08X\n",
-					mod_table.utility[i], ret);
-			else {
-				mod_table.num_utility--;
-				mod_table.utility[i] = 0;
-				mod_table.utility[i] = mod_table.utility[mod_table.num_utility];
-			}
-		}
-	}
-#endif
 	//cleanup globals
-	mod_table.num_loaded_mod = 0;
-	memset(&mod_table.table, 0, sizeof(mod_table));
 	globals->lib_num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
 	hook_exit_cb_called = 0;
 	hook_exit_cb = NULL;
@@ -161,8 +130,7 @@ static void cleanup(u32 num_lib)
 static void ramcheck(int expected_free_ram) {
 	int free_ram = sceKernelTotalFreeMemSize();
 
-	//for now, we admit that mp3 utility needs to be loaded all the time...
-	if (expected_free_ram > free_ram && !is_utility_loaded(PSP_MODULE_AV_MP3))
+	if (expected_free_ram > free_ram)
 		scr_printf("WARNING! Memory leak: %d -> %d\n",
 			expected_free_ram, free_ram);
 }

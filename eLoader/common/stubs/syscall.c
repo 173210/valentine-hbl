@@ -200,12 +200,6 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 		return 0;
 	}
 
-	// Cannot estimate jump system call
-	if (globals->lib_table[lib_index].calling_mode == JUMP_MODE) {
-		dbg_printf("->WARNING: trying to estimate jump system call\n");
-		return 0;
-	}
-
 	fd = open_nids_file(lib);
 	if (fd < 0) {
 		dbg_printf("->ERROR: couldn't open NIDS file for %s\n", lib);
