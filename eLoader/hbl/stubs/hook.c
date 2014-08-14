@@ -22,7 +22,14 @@
 
 #define SIZE_THREAD_TRACKING_ARRAY 32
 #define MAX_CALLBACKS 32
+
+#ifdef VITA
+#define HOOK_AUDIOFUNCTIONS
 #define MAX_OPEN_DIR_VITA 10
+
+static int dirLen;
+static int dirFix[MAX_OPEN_DIR_VITA][2];
+#endif
 
 static int chdir_ok;
 static char *mod_chdir; //cwd of the currently running module
@@ -45,10 +52,6 @@ static SceUID audioSema;
 static SceUID ioSema;
 static int audio_th[8];
 static int cur_ch_id = -1;
-#ifdef VITA
-static int dirLen;
-static int dirFix[MAX_OPEN_DIR_VITA][2];
-#endif
 
 void (* net_term_func[5])();
 int net_term_num = 0;
@@ -584,53 +587,6 @@ void files_cleanup()
 }
 
 
-
-
-//Resolve the call for a function and runs it without parameters
-// This is quite ugly, so if you find a better way of doing this I'm all ears
-int run_nid (u32 nid){
-        // Is it known by HBL?
-    int ret = get_nid_index(nid);
-    dbg_printf("NID: 0x%08X\n", nid);
-    if (ret < 0)
-    {
-        dbg_printf("Unknown NID: 0x%08X\n", nid);
-        return 0;
-    }
-    u32 syscall = globals->nid_table[ret].call;
-
-    if (!syscall)
-    {
-        dbg_printf("No syscall for NID: 0x%08X\n", nid);
-        return 0;
-    }
-
-    int cur_stub[2];
-    resolve_call(cur_stub, syscall);
-#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
-    sceKernelDcacheWritebackRange(cur_stub, sizeof(cur_stub));
-#else
-    sceKernelDcacheWritebackAll();
-#endif
-#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_dummy
-#ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
-    sceKernelDelayThread(256);
-#elif defined(HOOK_sceDisplayWaitVblankStart_WITH_sceDisplayWaitVblankStartCB)
-    sceDisplayWaitVblankStartCB();
-#else
-    sceDisplayWaitVblankStart();
-#endif
-#elif defined(HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange)
-    sceKernelIcacheInvalidateRange(cur_stub, sizeof(cur_stub));
-#else
-    sceKernelIcacheInvalidateAll();
-#endif
-
-    void (*function)() = (void *)(&cur_stub);
-    function();
-    return 1;
-}
-
 void net_term()
 {
 	while (net_term_num > 0) {
@@ -639,26 +595,17 @@ void net_term()
 	}
 }
 
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 // Release the kernel audio channel
-void audio_term()
+static void audio_term()
 {
-	
-	if (globals->syscalls_known)
-	{
-		// sceAudioSRCChRelease
+	// sceAudioSRCChRelease
 #ifdef HOOK_AUDIOFUNCTIONS
-		_hook_sceAudioSRCChRelease();
-#else
-		if (!run_nid(0x5C37C0AE))
-		{
-			estimate_syscall("sceAudio", 0x5C37C0AE, FROM_LOWEST);
-			run_nid(0x5C37C0AE);
-		}
+	_hook_sceAudioSRCChRelease();
+#elif defined(DEACTIVATE_SYSCALL_ESTIMATION)
+	if (globals->syscalls_known)
+		sceAudioSRCChRelease();
 #endif
-	}
 }
-#endif
 
 void ram_cleanup()
 {
@@ -701,9 +648,7 @@ void subinterrupthandler_cleanup()
 void exit_everything_but_me()
 {
 	net_term();
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	audio_term();
-#endif
 	subinterrupthandler_cleanup();
     threads_cleanup();
     ram_cleanup();
@@ -1030,7 +975,7 @@ int _hook_sceAudioSRCChRelease()
         if (cur_ch_id < 0 || cur_ch_id > 7)
     {
         dbg_printf("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
-        return -1;
+        return SCE_KERNEL_ERROR_ERROR;
     }
     int result = _hook_sceAudioChRelease(cur_ch_id);
     cur_ch_id--;
