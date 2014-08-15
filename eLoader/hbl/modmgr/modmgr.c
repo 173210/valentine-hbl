@@ -409,12 +409,12 @@ static int add_util_table(int module)
 	int index;
 
 	// Check if max utilities allowed is reached
-	if (mod_utility_num >= MAX_MODULES)
+	if (mod_utils_num >= MAX_MODULES)
 		return -1;
 
-	index = mod_utility_num;
-	mod_utility[index] = module;
-	mod_utility_num++;
+	index = mod_utils_num;
+	mod_utils[index] = module;
+	mod_utils_num++;
 
 	return index;
 }
@@ -428,12 +428,11 @@ void unload_modules()
 	//unload utility modules
 	int i, ret;
 	for (i = mod_utils_num - 1; i >= 0; i--) {
-
 		//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
 		//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
-		if (modid && modid != PSP_MODULE_AV_AVCODEC
+		if (mod_utils[i] && mod_utils[i] != PSP_MODULE_AV_AVCODEC
 #ifndef VITA
-			&& (modid != PSP_MODULE_AV_MP3 || globals->module_sdk_version > 0x06020010)
+			&& (mod_utils[i] != PSP_MODULE_AV_MP3 || globals->module_sdk_version > 0x06020010)
 #endif
 		) {
 			dbg_printf("UNLoad utility module id  0x%08X\n", mod_utils[i]);
