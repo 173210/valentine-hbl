@@ -2,10 +2,10 @@
 require 'rexml/document'
 
 doc = REXML::Document.new(open("libdoc.xml"))
-names = Hash.new
+funcs = []
 
 doc.elements.each("PSPLIBDOC/PRXFILES/PRXFILE/LIBRARIES/LIBRARY/FUNCTIONS/FUNCTION") { |func|
-	names[func.elements["NID"].text] = func.elements["NAME"].text
+	funcs << [ func.elements["NID"].text.hex, func.elements["NAME"].text]
 }
 
 modimp = File.new("modimp.txt", "r")
@@ -38,7 +38,8 @@ while (line = modimp.gets)
 		lib = line.scan(regexplib)[0][0]
 	elsif (line.match(regexpfunc))
 		line.scan(regexpfunc) { |nid, addr|
-			out.puts("\tAddNID " + (names[nid] ? names[nid] : lib + "_" + nid[2..-1]) + ", " + addr)
+			func = funcs.assoc(nid.hex)
+			out.puts("\tAddNID " + (func ? func[1] : lib + "_" + nid[2..-1]) + ", " + addr)
 		}
 	end
 end
