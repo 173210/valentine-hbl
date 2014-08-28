@@ -438,8 +438,8 @@ void unload_modules()
 			dbg_printf("UNLoad utility module id  0x%08X\n", mod_utils[i]);
 			ret = unload_util(mod_utils[i]);
 			if (ret)
-				scr_printf("WARNING! error unloading module %d: 0x%08X\n",
-					mod, ret);
+				scr_printf("WARNING! error unloading module 0x%X: 0x%08X\n",
+					mod_utils[i], ret);
 		}
 	}
 #endif
@@ -585,7 +585,7 @@ SceLibraryEntryTable *load_export_util(const char* lib)
 		return NULL;
 
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
-	add_util_table(util_mod.id);
+	add_util_table(util_mod->id);
 #endif
 
 	// Get module exports
