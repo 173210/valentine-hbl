@@ -15,7 +15,7 @@ void unload_utils();
 int elf_check_stub_entry(tStubEntry *pentry);
 
 int p2_add_stubs();
-void resolve_stubs();
+void resolve_hbl_stubs();
 
 #define PSP_MODULE_NET_UPNP             0x0107
 #define PSP_MODULE_NET_GAMEUPDATE       0x0108

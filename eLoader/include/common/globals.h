@@ -6,7 +6,7 @@
 #include <common/stubs/tables.h>
 #include <common/sdk.h>
 #include <common/malloc.h>
-#include <loader.h>
+#include <exploit_config.h>
 
 #define ASSERT_CONCAT_(a, b) a##b
 #define ASSERT_CONCAT(a, b) ASSERT_CONCAT_(a, b)
@@ -43,12 +43,13 @@ typedef struct
 	SceUID blockids[MAX_ALLOCS]; /* Blocks */
 } tGlobals;
 
+#define HBL_STUBS_ADDR 0x10000
 #define GLOBALS_ADDR 0x10200
 #define globals ((tGlobals *)GLOBALS_ADDR)
 
 //This should fail with a weird error at compile time if globals is too big
 STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
-STATIC_ASSERT(HBL_STUBS_START + NUM_HBL_IMPORTS * 2 * sizeof(int) <= GLOBALS_ADDR);
+STATIC_ASSERT(HBL_STUBS_ADDR + HBL_STUBS_NUM * 2 * sizeof(int) <= GLOBALS_ADDR);
 
 #endif
 

@@ -199,14 +199,9 @@ int start_thread() //SceSize args, void *argp)
 #endif
 
 	scr_puts("Resolving HBL stubs\n");
-	resolve_stubs();
-#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
-	sceKernelDcacheWritebackRange((void *)HBL_STUBS_START, NUM_HBL_IMPORTS * 2 * 4);
-#else
-	sceKernelDcacheWritebackAll();
-#endif
+	resolve_hbl_stubs();
 #ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_START, NUM_HBL_IMPORTS * 2 * 4);
+	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
 #elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
 	sceKernelIcacheInvalidateAll();
 #endif

@@ -13,7 +13,6 @@
 #include <common/sdk.h>
 #include <common/utils.h>
 #include <exploit_config.h>
-#include <loader.h>
 #include <svnversion.h>
 
 #include <loader/globals.c>
@@ -148,18 +147,17 @@ static void load_hbl(SceUID hbl_file)
 	dbg_printf("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
 	dbg_printf("Resolving HBL stubs\n");
-	resolve_stubs();
+	resolve_hbl_stubs();
 
 	// Commit changes to RAM
 #ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
 	sceKernelDcacheWritebackRange(run_eloader, file_size);
-	sceKernelDcacheWritebackRange((void *)HBL_STUBS_START, NUM_HBL_IMPORTS * 2 * 4);
 #else
 	sceKernelDcacheWritebackAll();
 #endif
 #ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
 	sceKernelIcacheInvalidateRange(run_eloader, file_size);
-	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_START, NUM_HBL_IMPORTS * 2 * 4);
+	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
 #elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
 	sceKernelIcacheInvalidateAll();
 #endif

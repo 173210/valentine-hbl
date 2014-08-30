@@ -9,7 +9,7 @@
 #include <loader.h>
 
 #ifndef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
-static int modules[] = {
+static const int modules[] = {
 #if VITA < 310 || !defined(AVOID_NET_UTILITY)
 	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
 	PSP_MODULE_NET_PARSEURI, PSP_MODULE_NET_PARSEHTTP, PSP_MODULE_NET_HTTP,
@@ -157,65 +157,48 @@ int p2_add_stubs()
 }
 
 // Autoresolves HBL stubs
-void resolve_stubs()
+void resolve_hbl_stubs()
 {
-	int index, ret;
-	int num_nids;
-	int *cur_stub = (int *)HBL_STUBS_START;
-	int nid = 0, syscall = 0;
+	unsigned u;
+	int i, ret;
+	int *stub, *nid;
+	int syscall;
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	int num_libs, count;
-	tImportedLib cur_lib;
+	const char *lib_name;
 #endif
 
-	ret = cfg_init();
-
-	if (ret < 0) {
-		scr_printf(" ERROR INITIALIZING CONFIG 0x%08X", ret);
-		sceKernelExitGame();
-	}
-
-	num_nids = cfg_num_nids();
-	cfg_first_nid(&nid);
-
+	for (u = 0; u < sizeof(hbl_stub_entires) / sizeof(tStubEntry); u++) {
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	num_libs = cfg_num_libs();
-	cfg_first_lib(&cur_lib);
-	count = cur_lib.num_imports;
+		lib_name = hbl_stub_entires[u].lib_name;
 #endif
+		stub = (int *)((int)hbl_stub_entires[u].jump_p | 0x40000000);
+		nid = (int *)hbl_stub_entires[u].nid_p;
 
-	for (index = 0; index < num_nids; index++) {
-		dbg_printf("-Resolving import 0x%08X: 0x%08X\n", index * 8, nid);
+		for (i = 0; i < hbl_stub_entires[u].stub_size; i++) {
+			dbg_printf("-Resolving import 0x%08X: 0x%08X\n",
+				(int)stub, *nid);
 
-		// Is it known by HBL?
-		ret = get_nid_index(nid);
+			// Is it known by HBL?
+			ret = get_nid_index(*nid);
 
-		if (ret < 0) {
+			if (ret < 0) {
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
-			dbg_printf("HBL Function missing at 0x%08X, this can lead to trouble\n",  (int)cur_stub);
-			syscall = NOP_OPCODE;
+				dbg_printf("HBL Function missing, this can lead to trouble\n");
+				syscall = NOP_OPCODE;
 #else
-			while (index > count) {
-				cfg_next_lib(&cur_lib);
-				count += cur_lib.num_imports;
+				syscall = MAKE_SYSCALL(estimate_syscall(
+					lib_name, *nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
+#endif
+			} else {
+				dbg_printf("-Found in NID table, using real call\n");
+				syscall = globals->nid_table[ret].call;
 			}
 
-			syscall = MAKE_SYSCALL(estimate_syscall(
-				lib_name, nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
-#endif
-		} else {
-			dbg_printf("-Found in NID table, using real call\n");
-			syscall = globals->nid_table[ret].call;
+			*stub++ = JR_RA_OPCODE;
+			*stub++ = syscall;
+			nid++;
 		}
-
-		*cur_stub++ = JR_RA_OPCODE;
-		*cur_stub++ = syscall;
-
-		// NID & library for next import
-		cfg_next_nid(&nid);
 	}
-
-	cfg_close();
 
 	dbg_printf(" ****STUBS SEARCHED\n");
 }
