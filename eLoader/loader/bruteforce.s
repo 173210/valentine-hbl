@@ -2,10 +2,10 @@
 	.align	2
 	.set	nomips16
 
-	.globl	preload_freemem_bruteforce
-	.ent	preload_freemem_bruteforce
-	.type	preload_freemem_bruteforce, @function
-preload_freemem_bruteforce:
+	.globl	freemem_bruteforce
+	.ent	freemem_bruteforce
+	.type	freemem_bruteforce, @function
+freemem_bruteforce:
 	.set	noreorder
 
 	lui	$a3, %hi(sceKernelGetBlockHeadAddr)
@@ -37,5 +37,5 @@ loop:
 	j	sceKernelFreePartitionMemory
 	addiu	$sp, $sp, 12
 
-	.end	preload_freemem_bruteforce
-	.size	preload_freemem_bruteforce, .-preload_freemem_bruteforce
+	.end	freemem_bruteforce
+	.size	freemem_bruteforce, .-freemem_bruteforce

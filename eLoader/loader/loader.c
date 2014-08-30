@@ -1,30 +1,27 @@
 /* Half Byte Loader loader :P */
-/* This loads HBL on memory */
+/* This initializes and loads HBL on memory */
 
-#include <common/stubs/runtime.h>
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/scr.h>
-#include <common/config.h>
+#include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
 #include <common/malloc.h>
+#include <common/memory.h>
 #include <common/path.h>
 #include <common/sdk.h>
 #include <common/utils.h>
+#include <loader/freemem.h>
+#include <loader/runtime.h>
 #include <exploit_config.h>
 #include <svnversion.h>
-
-#include <loader/globals.c>
-#include <loader/p5_stubs.c>
 
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
 #define DISABLE_KERNEL_DUMP
 #endif
 
 #define FIRST_LOG "Loader running\n"
-
-int preload_freemem_bruteforce(int blockid, void *p);
 
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
@@ -45,53 +42,6 @@ static void resetHomeSettings()
 }
 #endif
 
-
-#ifdef GAME_PRELOAD_FREEMEM
-static void PreloadFreeMem()
-{
-	unsigned i;
-
-	int blockids[] = GAME_PRELOAD_FREEMEM;
-
-	for(i = 0; i < sizeof(blockids) / sizeof(int); i++) {
-		int ret = sceKernelFreePartitionMemory(*(SceUID *)blockids[i]);
-		if (ret < 0)
-			dbg_printf("--> ERROR 0x%08X FREEING PARTITON MEMORY ID 0x%08X\n", ret, *(SceUID *)blockids[i]);
-	}
-}
-#endif
-
-#ifdef DELETE_UNKNOWN_FPL
-static void FreeFpl()
-{
-	SceUID uid;
-
-	dbg_printf("loader.c: FreeFpl\n");
-
-	for (uid =  0x03000000; uid < 0xE0000000; uid++)
-        	if (sceKernelDeleteFpl(uid) >= 0) {
-			dbg_printf("Succesfully Deleted FPL ID 0x%08X\n", uid);
-			return;
-        	}
-}
-#endif
-
-#ifdef FORCE_CLOSE_FILES_IN_LOADER
-static void CloseFiles()
-{
-	SceUID fd;
-	int ret;
-
-	dbg_printf("memory.c:CloseFiles\n");
-
-	for (fd = 0; fd < 8; fd++) {
-		ret = sceIoClose(fd);
-		if (ret != SCE_KERNEL_ERROR_BADF)
-			dbg_printf("tried closing file %d, result 0x%08X\n", fd, ret);
-	}
-}
-#endif
-
 static void (* run_eloader)();
 
 // Loads HBL to memory
@@ -106,23 +56,6 @@ static void load_hbl(SceUID hbl_file)
 	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
 
 	// Allocate memory for HBL
-#ifdef GAME_PRELOAD_FREEMEM
-	PreloadFreeMem();
-#endif
-#ifdef GAME_PRELOAD_FREEMEM_BRUTEFORCE_INIT
-	preload_freemem_bruteforce(GAME_PRELOAD_FREEMEM_BRUTEFORCE_INIT,
-		(void *)GAME_PRELOAD_FREEMEM_BRUTEFORCE_ADDR);
-#endif
-#ifdef FPL_EARLY_LOAD_ADDR_LIST
-	//early memory cleanup to be able to load HBL at a convenient place
-	dbg_printf("loader.c: PreloadFreeFPL\n");
-
-	int uids[] = FPL_EARLY_LOAD_ADDR_LIST;
-
-	for(i = 0; i < sizeof(uids) / sizeof(int); i++)
-		if (sceKernelDeleteFpl(*(SceUID *)uids[i]) < 0)
-			dbg_printf("--> ERROR 0x%08X Deleting FPL ID 0x%08X\n", ret, *(SceUID *)uids[i]);
-#endif
 #ifdef DONT_ALLOC_HBL_MEM
 	run_eloader = (void *)HBL_LOAD_ADDR;
 #else
@@ -134,7 +67,7 @@ static void load_hbl(SceUID hbl_file)
 	}
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
 #endif
-
+	dbg_printf("Loading HBL...\n");
 	// Load HBL to allocated memory
 	ret = sceIoRead(hbl_file, (void *)run_eloader, file_size);
 	if (ret < 0) {
@@ -146,9 +79,6 @@ static void load_hbl(SceUID hbl_file)
 
 	dbg_printf("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
-	dbg_printf("Resolving HBL stubs\n");
-	resolve_hbl_stubs();
-
 	// Commit changes to RAM
 #ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
 	sceKernelDcacheWritebackRange(run_eloader, file_size);
@@ -157,7 +87,6 @@ static void load_hbl(SceUID hbl_file)
 #endif
 #ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
 	sceKernelIcacheInvalidateRange(run_eloader, file_size);
-	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
 #elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
 	sceKernelIcacheInvalidateAll();
 #endif
@@ -174,7 +103,8 @@ static void get_kmem_dump()
 #endif
 
 #if defined(DEBUG) || defined(FORCE_FIRST_LOG)
-static void dbg_init()
+//reset the contents of the debug file;
+static void log_init()
 {
 	SceUID fd = sceIoOpen(DBG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC, 0777);
 
@@ -185,20 +115,248 @@ static void dbg_init()
 }
 #endif
 
+#ifdef DEBUG
+static void dbg_init()
+{
+	tStubEntry *entry;
+	int *hbl_stubs = (void *)(HBL_STUBS_ADDR | 0x40000000);
+	int i, j;
+
+	for (i = 0; i < HBL_STUBS_NUM; i++)
+		hbl_stubs[i * 2] = BREAK_OPCODE(0);
+
+	i = 0;
+	for (entry = (tStubEntry *)0x08800000;
+		(int)entry < 0x0A000000;
+		entry = (tStubEntry *)((int)entry + 4)) {
+
+		while (elf_check_stub_entry(entry)) {
+			if (!strcmp(entry->lib_name, "IoFileMgrForUser"))
+				for (j = 0; j < entry->stub_size; j++) {
+					switch (((int *)entry->nid_p)[j]) {
+						case 0x109F50BC:
+							memcpy((void *)((int)sceIoOpen | 0x40000000), entry->jump_p + j * 8, 8);
+							i++;
+							break;
+						case 0x810C4BC3:
+							memcpy((void *)((int)sceIoClose | 0x40000000), entry->jump_p + j * 8, 8);
+							i++;
+							break;
+						case 0x42EC03AC:
+							memcpy((void *)((int)sceIoWrite | 0x40000000), entry->jump_p + j * 8, 8);
+							i++;
+							break;
+					}
+					if (i >= 3)
+						return;
+				}
+
+			entry++;
+		}
+	}
+}
+#endif
+
+#ifdef HOOK_CHDIR_AND_FRIENDS
+static int test_sceIoChdir()
+{
+#ifndef CHDIR_CRASH
+	SceUID fd;
+
+	sceIoChdir(HBL_ROOT);
+
+	fd = sceIoOpen(HBL_BIN, PSP_O_RDONLY, 0777);
+	if (fd > 0) {
+		sceIoClose(fd);
+
+		return 1;
+	}
+#endif
+	return 0;
+}
+#endif
+
+#ifndef VITA
+// "cache" for the firmware version
+// 0 means unknown
+
+// cache for the psp model
+// 0 means unknown
+// 1 is PSPGO
+
+
+// New method by neur0n to get the firmware version from the
+// module_sdk_version export of sceKernelLibrary
+// http://wololo.net/talk/viewtopic.php?f=4&t=128
+static void get_module_sdk_version()
+{
+	int i, cnt;
+
+	SceLibraryEntryTable *tbl = *(SceLibraryEntryTable **)
+		(findstr("sceKernelLibrary", (void *)0x08800300, 0x00001000) + 32);
+
+	cnt = tbl->vstubcount + tbl->stubcount;
+
+	// dbg_printf("cnt is 0x%08X \n", cnt);
+
+	for (i = 0; ((int *)tbl->entrytable)[i] != 0x11B97506; i++)
+		if (i >= cnt) {
+			dbg_printf("Warning: Cannot find module_sdk_version\n");
+			return;
+		}
+
+	globals->module_sdk_version = *((int **)tbl->entrytable)[i + cnt];
+
+	dbg_printf("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
+}
+
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+static void detect_psp_go()
+{
+	// This call will always fail, but with a different error code depending on the model
+	// Check for "No such device" error
+	globals->psp_go = sceIoOpen("ef0:/", 1, 0777) == SCE_KERNEL_ERROR_NODEV;
+}
+
+static void detect_syscall()
+{
+	int i;
+	short syscalls_known_fw[] = SYSCALLS_KNOWN_FW;
+	short syscalls_known_go_fw[] = SYSCALLS_KNOWN_GO_FW;
+
+	short *fw_array;
+	int fw_array_size;
+
+	if (globals->psp_go) {
+		fw_array = syscalls_known_go_fw;
+		fw_array_size = sizeof(syscalls_known_go_fw) / sizeof(short);
+	} else {
+		fw_array = syscalls_known_fw;
+		fw_array_size = sizeof(syscalls_known_fw) / sizeof(short);
+	}
+
+	for (i = 0; i < fw_array_size; i++) {
+		if (fw_array[i] == globals->module_sdk_version) {
+			globals->syscalls_known = 1;
+			break;
+		}
+	}
+}
+#endif
+#endif
+
+static void hook_init()
+{
+#ifdef VITA
+	int i, j;
+
+	for (i = 0; i < MAX_OPEN_DIR_VITA; i++)
+		for (j = 0; j < 2; j++)
+ 			globals->dirFix[i][j] = -1;
+#endif
+#ifdef HOOK_CHDIR_AND_FRIENDS
+        globals->chdir_ok = test_sceIoChdir();
+#endif
+	globals->memSema = sceKernelCreateSema("hblmemsema", 0, 1, 1, 0);
+	globals->thSema = sceKernelCreateSema("hblthSema", 0, 1, 1, 0);
+	globals->cbSema = sceKernelCreateSema("hblcbsema", 0, 1, 1, 0);
+	globals->audioSema = sceKernelCreateSema("hblaudiosema", 0, 1, 1, 0);
+	globals->ioSema = sceKernelCreateSema("hbliosema", 0, 1, 1, 0);
+}
+
+int start_thread()
+{
+	SceUID hbl_file;
+
+	// Free memory
+	scr_puts("Freeing memory\n");
+	free_game_memory();
+
+#ifdef LOAD_MODULES_FOR_SYSCALLS
+	scr_puts("Building NIDs table with utilities\n");
+	load_utils();
+	p2_add_stubs();
+#ifdef DISABLE_UNLOAD_UTILITY_MODULES
+	UnloadModules();
+#else
+	unload_utils();
+#endif
+#endif
+
+	scr_puts("Building NIDs table with savedata utility\n");
+	p5_add_stubs();
+
+	scr_puts("Resolving HBL stubs\n");
+	resolve_hbl_stubs();
+
+	scr_puts("Initializing hook\n");
+	hook_init();
+
+#ifdef RESET_HOME_LANG
+	// Reset language and button assignment for the HOME screen to system defaults
+	resetHomeSettings();
+#endif
+
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	if (globals->psp_go) {
+		scr_puts("PSP Go Detected\n");
+#ifndef DISABLE_KERNEL_DUMP
+		// If PSPGo on 6.20+, do a kmem dump
+		if (globals->module_sdk_version >= 0x06020010)
+			get_kmem_dump();
+#endif
+	}
+#endif
+
+	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
+	if (hbl_file < 0) {
+		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
+		sceKernelExitGame();
+		return hbl_file;
+	}
+
+	dbg_printf("Loading HBL\n");
+	load_hbl(hbl_file);
+
+	scr_puts("Running eLoader\n");
+	run_eloader();
+
+	return 0;
+}
+
 // Entry point
 void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
-	SceUID hbl_file;
-	int num_nids;
+	SceUID thid;
 
-#if defined(DEBUG) || defined(FORCE_FIRST_LOG)
-	//reset the contents of the debug file;
+#ifdef DEBUG
 	dbg_init();
 #endif
 
-	//init global variables
-	init_globals();
+        memset(globals, 0, sizeof(tGlobals));
+	p2_add_stubs();
+	resolve_hbl_stubs();
+#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
+	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
+#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
+	sceKernelIcacheInvalidateAll();
+#endif
+
+#if defined(DEBUG) || defined(FORCE_FIRST_LOG)
+	log_init();
+#endif
+	
+#ifndef VITA
+	// Intialize firmware and model
+	get_module_sdk_version();
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+	detect_psp_go();
+
+	// Select syscall estimation method
+	detect_syscall();
+#endif
+#endif
 
 	scr_init();
 	scr_puts("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl\n");
@@ -216,46 +374,21 @@ void _start()
 	PRE_LOADER_EXEC
 #endif
 
-#ifdef RESET_HOME_LANG
-	// Reset language and button assignment for the HOME screen to system defaults
-	resetHomeSettings();
-#endif
+	preload_free_game_memory();
 
-#ifdef FORCE_CLOSE_FILES_IN_LOADER
-	CloseFiles();
-#endif
+	// Create and start eloader thread
+	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0xF0000000, NULL);
 
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	if (globals->psp_go) {
-		scr_puts("PSP Go Detected\n");
-#ifndef DISABLE_KERNEL_DUMP
-		// If PSPGo on 6.20+, do a kmem dump
-		if (globals->module_sdk_version >= 0x06020010)
-			get_kmem_dump();
-#endif
-	}
-#endif
-
-	// Build NID table
-	scr_puts("Building NIDs table with game\n");
-	num_nids = p2_add_stubs();
-	scr_puts("Building NIDs table with savedata utility\n");
-	num_nids += p5_add_stubs();
-	dbg_printf("NUM NIDS: %d\n", num_nids);
-
-	if(num_nids <= 0) {
-		scr_puts("No Nids ???\n");
+	if (thid < 0) {
+		//scr_printf("Error starting HBL thread 0x%08X\n", thid);
+		dbg_printf("Error starting HBL thread 0x%08X\n", thid);
 		sceKernelExitGame();
-	}
+	} else
+		sceKernelStartThread(thid, 0, NULL);
 
-	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
-	if (hbl_file < 0) {
-		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
-		sceKernelExitGame();
-	}
+	sceKernelExitDeleteThread(0);
 
-	dbg_printf("Loading HBL\n");
-	load_hbl(hbl_file);
-	dbg_printf("Running eLoader\n");
-	run_eloader();
+	// Never executed (hopefully)
+	while(1)
+		sceKernelDelayThread(0xFFFFFFFF);
 }

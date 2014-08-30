@@ -20,6 +20,7 @@ typedef unsigned char byte;
 // Code
 //
 // MIPS opcodes
+#define BREAK_OPCODE(n) (0x0000000D | (n) << 6)
 #define JR_RA_OPCODE 0x03E00008
 #define NOP_OPCODE 0x00000000
 

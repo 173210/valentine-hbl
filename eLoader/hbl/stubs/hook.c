@@ -3,6 +3,7 @@
 #include <common/debug.h>
 #include <common/globals.h>
 #include <common/malloc.h>
+#include <common/memory.h>
 #include <common/path.h>
 #include <common/sdk.h>
 #include <common/utils.h>
@@ -11,7 +12,6 @@
 #include <hbl/stubs/resolve.h>
 #include <hbl/utils/settings.h>
 #include <hbl/utils/md5.h>
-#include <hbl/utils/memory.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>
 
@@ -25,13 +25,10 @@
 
 #ifdef VITA
 #define HOOK_AUDIOFUNCTIONS
-#define MAX_OPEN_DIR_VITA 10
 
 static int dirLen;
-static int dirFix[MAX_OPEN_DIR_VITA][2];
 #endif
 
-static int chdir_ok;
 static char *mod_chdir; //cwd of the currently running module
 static int cur_cpufreq = 0; //current cpu frequency
 static int cur_busfreq = 0; //current bus frequency
@@ -45,35 +42,11 @@ static unsigned osAllocNum = 0;
 static SceKernelCallbackFunction cbfuncs[MAX_CALLBACKS];
 static int cbids[MAX_CALLBACKS];
 static int cbcount = 0;
-static SceUID memSema;
-static SceUID thSema;
-static SceUID cbSema;
-static SceUID audioSema;
-static SceUID ioSema;
 static int audio_th[8];
 static int cur_ch_id = -1;
 
 void (* net_term_func[5])();
 int net_term_num = 0;
-
-void init_hook()
-{
-#ifdef VITA
-	int i, j;
-
-	for (i = 0; i < MAX_OPEN_DIR_VITA; i++)
-		for (j = 0; j < 2; j++)
- 			dirFix[i][j] = -1;
-#endif
-#ifdef HOOK_CHDIR_AND_FRIENDS
-        chdir_ok = test_sceIoChdir();
-#endif
-	memSema = sceKernelCreateSema("hblmemsema", 0, 1, 1, 0);
-	thSema = sceKernelCreateSema("hblthSema", 0, 1, 1, 0);
-	cbSema = sceKernelCreateSema("hblcbsema", 0, 1, 1, 0);
-	audioSema = sceKernelCreateSema("hblaudiosema", 0, 1, 1, 0);
-	ioSema = sceKernelCreateSema("hbliosema", 0, 1, 1, 0);
-}
 
 //Checks if the homebrew should return to xmb on exit
 // yes if user specified it in the cfg file AND it is not the menu
@@ -118,7 +91,7 @@ int _hook_sceKernelExitThread(int status)
 
 	dbg_printf("Enter hookExitThread : %08X\n", thid);
 
-	WAIT_SEMA(thSema, 1, 0);
+	WAIT_SEMA(globals->thSema, 1, 0);
 
 	for (i = 0; i < num_run_th; i++) {
 		if (running_th[i] == thid) {
@@ -154,14 +127,14 @@ int _hook_sceKernelExitThread(int status)
 	// Ditlew
 	for (i = 0; i < 8; i++)
 	{
-		WAIT_SEMA(audioSema, 1, 0);
+		WAIT_SEMA(globals->audioSema, 1, 0);
 		if (audio_th[i] == thid)
 			_hook_sceAudioChRelease(i);
-		sceKernelSignalSema(audioSema, 1);
+		sceKernelSignalSema(globals->audioSema, 1);
 	}
 #endif
 
-	sceKernelSignalSema(thSema, 1);
+	sceKernelSignalSema(globals->thSema, 1);
 
 	dbg_printf("Exit hookExitThread\n");
 
@@ -185,7 +158,7 @@ int _hook_sceKernelExitDeleteThread(int status)
     
 	dbg_printf("Enter hookExitDeleteThread : %08X\n", thid);
 
-	WAIT_SEMA(thSema, 1, 0);
+	WAIT_SEMA(globals->thSema, 1, 0);
 
 	for (i = 0; i < num_run_th; i++) {
 		if (running_th[i] == thid) {
@@ -207,10 +180,10 @@ int _hook_sceKernelExitDeleteThread(int status)
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
 	for (i = 0; i < 8; i++) {
-		WAIT_SEMA(audioSema, 1, 0);
+		WAIT_SEMA(globals->audioSema, 1, 0);
 		if (audio_th[i] == thid)
 			_hook_sceAudioChRelease(i);
-		sceKernelSignalSema(audioSema, 1);
+		sceKernelSignalSema(globals->audioSema, 1);
 	}
 #endif
 
@@ -234,7 +207,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 	}
 #endif
 
-	sceKernelSignalSema(thSema, 1);
+	sceKernelSignalSema(globals->thSema, 1);
 	return sceKernelExitDeleteThread(status);
 }
 
@@ -264,7 +237,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     /*************************************************************************/
     /* Add to pending list                                                   */
     /*************************************************************************/
-    WAIT_SEMA(thSema, 1, 0);
+    WAIT_SEMA(globals->thSema, 1, 0);
     if (num_pend_th < SIZE_THREAD_TRACKING_ARRAY)
     {
       dbg_printf("Set array\n");
@@ -274,7 +247,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
       dbg_printf("Pending threads: %d\n", num_pend_th);
     }
 
-    sceKernelSignalSema(thSema, 1);
+    sceKernelSignalSema(globals->thSema, 1);
     return(lreturn);
 
 }
@@ -292,7 +265,7 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 
 	dbg_printf("Enter hookRunThread: %08X\n", thid);
 
-	WAIT_SEMA(thSema, 1, 0);
+	WAIT_SEMA(globals->thSema, 1, 0);
 
 	dbg_printf("Number of pending threads: %08X\n", num_pend_th);
 
@@ -324,7 +297,7 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 		}
 	}
 
-	sceKernelSignalSema(thSema, 1);
+	sceKernelSignalSema(globals->thSema, 1);
 
 
 	dbg_printf("Exit hookRunThread: %08X\n", thid);
@@ -342,15 +315,15 @@ void threads_cleanup()
         int lthisthread = sceKernelGetThreadId();
     u32 i;
     dbg_printf("Threads cleanup\n");
-    WAIT_SEMA(thSema, 1, 0);
+    WAIT_SEMA(globals->thSema, 1, 0);
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
     dbg_printf("cleaning audio threads\n");
 	for (i=0;i<8;i++)
 	{
-		//WAIT_SEMA(audioSema, 1, 0);
+		//WAIT_SEMA(globals->audioSema, 1, 0);
 		_hook_sceAudioChRelease(i);
-		//sceKernelSignalSema(audioSema, 1);
+		//sceKernelSignalSema(globals->audioSema, 1);
 	}
 #endif
 
@@ -412,7 +385,7 @@ void threads_cleanup()
     }
 #endif
 
-    sceKernelSignalSema(thSema, 1);
+    sceKernelSignalSema(globals->thSema, 1);
     dbg_printf("Threads cleanup Done\n");
 }
 
@@ -489,7 +462,7 @@ char * relative_to_absolute(const char * file)
 //useful ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
 {
-        if (chdir_ok || path_is_absolute(file))
+        if (globals->chdir_ok || path_is_absolute(file))
         return sceIoOpen(file, flags, mode);
 
     char * buf = relative_to_absolute(file);
@@ -505,7 +478,7 @@ SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 	SceUID ret;
 	unsigned i;
 
-	WAIT_SEMA(ioSema, 1, 0);
+	WAIT_SEMA(globals->ioSema, 1, 0);
 	ret = _hook_sceIoOpenForChDirFailure(file, flags, mode);
 
 	// Add to tracked files array if files was opened successfully
@@ -529,7 +502,7 @@ SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 		}
 	}
 
-	sceKernelSignalSema(ioSema, 1);
+	sceKernelSignalSema(globals->ioSema, 1);
 	//dbg_printf("_hook_sceIoOpen(%s, %d, %d) = 0x%08X\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
 	return ret;
 }
@@ -540,7 +513,7 @@ int _hook_sceIoClose(SceUID fd)
 	SceUID ret;
 	unsigned i;
     
-	WAIT_SEMA(ioSema, 1, 0);
+	WAIT_SEMA(globals->ioSema, 1, 0);
 	ret = sceIoClose(fd);
 
 	// Remove from tracked files array if closing was successfull
@@ -557,7 +530,7 @@ int _hook_sceIoClose(SceUID fd)
 		}
 	}
 
-	sceKernelSignalSema(ioSema, 1);
+	sceKernelSignalSema(globals->ioSema, 1);
 	//dbg_printf("_hook_sceIoClose(0x%08X) = 0x%08X\n", (u32)fd, (u32)result);
 	return ret;
 }
@@ -570,7 +543,7 @@ void files_cleanup()
 
 	dbg_printf("Files Cleanup\n");
     
-	WAIT_SEMA(ioSema, 1, 0);
+	WAIT_SEMA(globals->ioSema, 1, 0);
 	for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
 	{
 		if (openFiles[i] != 0)
@@ -582,7 +555,7 @@ void files_cleanup()
 	}
 
 	numOpenFiles = 0;
-	sceKernelSignalSema(ioSema, 1);
+	sceKernelSignalSema(globals->ioSema, 1);
 	dbg_printf("Files Cleanup Done\n");
 }
 
@@ -613,11 +586,11 @@ void ram_cleanup()
 
 	dbg_printf("Ram Cleanup\n");
 
-	WAIT_SEMA(memSema, 1, 0);
+	WAIT_SEMA(globals->memSema, 1, 0);
 	for (i = 0; i < osAllocNum; i++)
 		sceKernelFreePartitionMemory(osAllocs[i]);
 	osAllocNum = 0;
-	sceKernelSignalSema(memSema, 1);
+	sceKernelSignalSema(globals->memSema, 1);
 
 	dbg_printf("Ram Cleanup Done\n");
 }
@@ -678,7 +651,7 @@ void  _hook_sceKernelExitGame()
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
         dbg_printf("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
-    WAIT_SEMA(memSema, 1, 0);
+    WAIT_SEMA(globals->memSema, 1, 0);
 
 	// Try to allocate the requested memory. If the allocation fails due to an insufficient
 	// amount of free memory try again with 10kB less until the allocation succeeds.
@@ -725,7 +698,7 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
             dbg_printf("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
         }
     }
-    sceKernelSignalSema(memSema, 1);
+    sceKernelSignalSema(globals->memSema, 1);
     return uid;
 }
 
@@ -735,7 +708,7 @@ int _hook_sceKernelFreePartitionMemory(SceUID blockid)
 	unsigned i;
 	int found = 0;
 
-	WAIT_SEMA(memSema, 1, 0);
+	WAIT_SEMA(globals->memSema, 1, 0);
 	ret = sceKernelFreePartitionMemory(blockid);
 
 	/*************************************************************************/
@@ -752,7 +725,7 @@ int _hook_sceKernelFreePartitionMemory(SceUID blockid)
 	if (found)
 		osAllocNum--;
 
-	sceKernelSignalSema(memSema, 1);
+	sceKernelSignalSema(globals->memSema, 1);
 
 	return ret;
 
@@ -769,14 +742,14 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 
     dbg_printf("Enter createcallback: %s\n", (u32)name);
 
-    WAIT_SEMA(cbSema, 1, 0);
+    WAIT_SEMA(globals->cbSema, 1, 0);
     if (cbcount < MAX_CALLBACKS)
     {
         cbids[cbcount] = lrc;
         cbfuncs[cbcount] = func;
         cbcount ++;
     }
-    sceKernelSignalSema(cbSema, 1);
+    sceKernelSignalSema(globals->cbSema, 1);
 
     dbg_printf("Exit createcallback: %s ID: %08X\n", (u32) name, lrc);
 
@@ -792,7 +765,7 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
 
     dbg_printf("Enter registerexitCB: %08X\n", cbid);
 
-    WAIT_SEMA(cbSema, 1, 0);
+    WAIT_SEMA(globals->cbSema, 1, 0);
     for (i = 0; i < cbcount; i++)
     {
         if (cbids[i] == cbid)
@@ -802,7 +775,7 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
             break;
         }
     }
-    sceKernelSignalSema(cbSema, 1);
+    sceKernelSignalSema(globals->cbSema, 1);
 
     dbg_printf("Exit registerexitCB: %08X\n",cbid);
 
@@ -895,9 +868,9 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 		}
 		else
 		{
-			WAIT_SEMA(audioSema, 1, 0);
+			WAIT_SEMA(globals->audioSema, 1, 0);
 			audio_th[lreturn] = sceKernelGetThreadId();
-			sceKernelSignalSema(audioSema, 1);
+			sceKernelSignalSema(globals->audioSema, 1);
 		}
 	}
 #endif
@@ -961,9 +934,9 @@ int _hook_sceAudioChRelease(int channel)
 #ifdef MONITOR_AUDIO_THREADS
 	if (lreturn >= 0)
 	{
-        		WAIT_SEMA(audioSema, 1, 0);
+        		WAIT_SEMA(globals->audioSema, 1, 0);
 		audio_th[channel] = 0;
-		sceKernelSignalSema(audioSema, 1);
+		sceKernelSignalSema(globals->audioSema, 1);
 	}
 #endif
 	return lreturn;
@@ -980,23 +953,6 @@ int _hook_sceAudioSRCChRelease()
     int result = _hook_sceAudioChRelease(cur_ch_id);
     cur_ch_id--;
     return result;
-}
-
-int test_sceIoChdir()
-{
-#ifndef CHDIR_CRASH
-	SceUID fd;
-
-	sceIoChdir(HBL_ROOT);
-
-	fd = sceIoOpen(HBL_BIN, PSP_O_RDONLY, 0777);
-	if (fd > 0) {
-		sceIoClose(fd);
-
-		return 1;
-	}
-#endif
-	return 0;
 }
 
 //hook this ONLY if test_sceIoChdir() fails!
@@ -1038,13 +994,13 @@ SceUID sceIoDopen_Vita(const char *dirname)
 		{
 			int i = 0;
 
-			while (i < dirLen && dirFix[i][0] >= 0)
+			while (i < dirLen && globals->dirFix[i][0] >= 0)
 				++i;
 
 			if (i < MAX_OPEN_DIR_VITA)
 			{
-				dirFix[i][0] = id;
-				dirFix[i][1] = 2;
+				globals->dirFix[i][0] = id;
+				globals->dirFix[i][1] = 2;
 
 				if (i == dirLen)
 					dirLen++;
@@ -1063,31 +1019,31 @@ int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 {
     	dbg_printf("sceIoDread_Vita start\n");
 	int i = 0, errCode = 1;
-	while (i < dirLen && id != dirFix[i][0])
+	while (i < dirLen && id != globals->dirFix[i][0])
 		++i;
 
 
-	if (id == dirFix[i][0])
+	if (id == globals->dirFix[i][0])
 	{
         memset(dir, 0, sizeof(SceIoDirent));
-		if (dirFix[i][1] == 1)
+		if (globals->dirFix[i][1] == 1)
 		{
 			strcpy(dir->d_name,"..");
 			dir->d_stat.st_attr |= FIO_SO_IFDIR;
 			dir->d_stat.st_mode |= FIO_S_IFDIR;
 		}
-		else if (dirFix[i][1] == 2)
+		else if (globals->dirFix[i][1] == 2)
 		{
 			strcpy(dir->d_name,".");
 			dir->d_stat.st_attr |= FIO_SO_IFDIR;
 			dir->d_stat.st_mode |= FIO_S_IFDIR;
 		}
-		dirFix[i][1]--;
+		globals->dirFix[i][1]--;
 
-		if (dirFix[i][1] == 0)
+		if (globals->dirFix[i][1] == 0)
 		{
-			dirFix[i][0] = -1;
-			dirFix[i][1] = -1;
+			globals->dirFix[i][0] = -1;
+			globals->dirFix[i][1] = -1;
 		}
 	}
 	else
@@ -1103,14 +1059,14 @@ int sceIoDclose_Vita(SceUID id)
 {
     	dbg_printf("sceIoDclose_Vita start\n");
 	int i = 0;
-	while (i < dirLen && id != dirFix[i][0] )
+	while (i < dirLen && id != globals->dirFix[i][0] )
 		++i;
 
 
-	if (i < dirLen && id == dirFix[i][0])
+	if (i < dirLen && id == globals->dirFix[i][0])
 	{
-			dirFix[i][0] = -1;
-			dirFix[i][1] = -1;
+			globals->dirFix[i][0] = -1;
+			globals->dirFix[i][1] = -1;
 	}
 
 	dbg_printf("sceIoDclose_Vita Done\n");
@@ -1643,7 +1599,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
     switch (nid) {
 #ifdef HOOK_CHDIR_AND_FRIENDS
         case 0x55F4717D: //	sceIoChdir (only if it failed)
-            if (chdir_ok)
+            if (globals->chdir_ok)
                 break;
             dbg_printf(" Chdir trick sceIoChdir\n");
             hook_call = MAKE_JUMP(_hook_sceIoChdir);
@@ -1651,7 +1607,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 /*
         case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
-            if (chdir_ok)
+            if (globals->chdir_ok)
                 break;
             dbg_printf(" Chdir trick sceIoOpen\n");
             hook_call = MAKE_JUMP(_hook_sceIoOpen);
@@ -1659,7 +1615,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 */
 
         case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-            if (chdir_ok)
+            if (globals->chdir_ok)
                 break;
             dbg_printf(" Chdir trick sceIoDopen\n");
             hook_call = MAKE_JUMP(_hook_sceIoDopen);

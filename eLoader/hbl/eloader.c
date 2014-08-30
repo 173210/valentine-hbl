@@ -1,4 +1,3 @@
-#include <common/stubs/runtime.h>
 #include <common/stubs/syscall.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
@@ -10,7 +9,6 @@
 #include <common/utils.h>
 #include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
-#include <hbl/utils/memory.h>
 #include <hbl/utils/settings.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>
@@ -177,38 +175,13 @@ int callback_thread()
 }
 
 // HBL main thread
-int start_thread() //SceSize args, void *argp)
+void _start() __attribute__ ((section (".text.start")));
+void _start()
 {
 	SceUID fd;
 	int exit = 0;
 	int init_free;
 	int thid;
-    
-	// Free memory
-	scr_puts("Freeing memory\n");
-	free_game_memory();
-
-#ifdef LOAD_MODULES_FOR_SYSCALLS
-	scr_puts("Building NIDs table with utilities\n");
-	load_utils();
-	p2_add_stubs();
-#ifdef DISABLE_UNLOAD_UTILITY_MODULES
-	UnloadModules();
-#else
-	unload_utils();
-#endif
-
-	scr_puts("Resolving HBL stubs\n");
-	resolve_hbl_stubs();
-#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
-#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
-	sceKernelIcacheInvalidateAll();
-#endif
-#endif
-
-	scr_puts("Initializing hook\n");
-	init_hook();
 
 	scr_puts("Creating callback thread\n");
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
@@ -268,33 +241,6 @@ int start_thread() //SceSize args, void *argp)
 	}
 
 	sceKernelExitGame();
-
-	return 0;
-}
-
-// Entry point
-void _start() __attribute__ ((section (".text.start")));
-void _start()
-{
-	SceUID thid;
-
-	scr_init();
-	scr_puts("Starting HBL\n");
-	// Create and start eloader thread
-	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0xF0000000, NULL);
-
-	if(thid >= 0)
-		thid = sceKernelStartThread(thid, 0, NULL);
-	else {
-		scr_printf("Error starting HBL thread 0x%08X\n", thid);
-		sceKernelExitGame();
-	}
-
-	sceKernelExitDeleteThread(0);
-
-	// Never executed (hopefully)
-	while(1)
-		sceKernelDelayThread(0xFFFFFFFF);
 }
 
 // Big thanks to people who share information !!!

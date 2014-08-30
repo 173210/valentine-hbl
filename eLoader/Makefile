@@ -12,7 +12,7 @@ AS	= psp-as
 
 INCDIR	= -I $(shell psp-config --pspsdk-path)/include -I include -I $(FOLDER_PATH) -I .
 
-CFLAGS	= $(INCDIR) -Os -Wall -Werror -G1 -fno-pic -mno-abicalls -fomit-frame-pointer
+CFLAGS	= $(INCDIR) -Os -Wall -Werror -G1 -fno-pic -mno-abicalls -fomit-frame-pointer -fno-strict-aliasing
 ifdef VITA
 CFLAGS += -D VITA=$(VITA)
 endif
@@ -28,9 +28,9 @@ endif
 LDFLAGS = -O1 -G0 --no-keep-memory
 
 
-OBJS_COMMON = common/stubs/runtime.o common/stubs/tables.o \
+OBJS_COMMON = sdk.o common/stubs/tables.o \
 	common/utils/fnt.o common/utils/scr.o common/utils/string.o \
-	common/config.o common/malloc.o common/utils.o
+	common/malloc.o common/memory.o common/utils.o
 ifndef VITA
 OBJS_COMMON += common/stubs/syscall.o
 endif
@@ -39,12 +39,12 @@ ifdef DEBUG
 OBJS_COMMON += common/debug.o
 endif
 
-OBJS_HBL = hbl/sdk.o hbl/eloader.o \
+OBJS_HBL = hbl/eloader.o \
 	hbl/modmgr/elf.o hbl/modmgr/modmgr.o hbl/modmgr/reloc.o \
 	hbl/stubs/hook.o hbl/stubs/resolve.o \
-	hbl/utils/md5.o hbl/utils/memory.o hbl/utils/settings.o
+	hbl/utils/md5.o hbl/utils/settings.o
 
-OBJS_LOADER = loader/sdk.o loader/loader.o loader/bruteforce.o
+OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
 
 %.BIN: %.elf
 	psp-objcopy -S -O binary --set-section-flags .bss=load,contents $< $@
@@ -55,10 +55,7 @@ HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
 H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(FOLDER_PATH)/linker_loader.x
 	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_loader.x $(OBJS_COMMON) $(OBJS_LOADER) -o $@
 
-hbl/sdk.o: $(FOLDER_PATH)/sdk_hbl.S
-	$(AS) $< -o $@
-
-loader/sdk.o: $(FOLDER_PATH)/sdk_loader.S
+sdk.o: $(FOLDER_PATH)/sdk.S
 	$(AS) $< -o $@
 
 hbl/modmgr/modmgr.o: svnversion.h

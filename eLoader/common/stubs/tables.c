@@ -99,7 +99,7 @@ int add_stub(const tStubEntry *stub)
 				dbg_printf(" LIBRARY TABLE COUNTER: 0x%08X\n",
 					globals->lib_num);
 				dbg_printf(" LIBRARY TABLES TOO SMALL\n");
-				sceKernelExitGame();
+				return num;
 			}
 #endif
 			lib_index = globals->lib_num;

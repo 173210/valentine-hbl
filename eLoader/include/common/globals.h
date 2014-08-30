@@ -18,6 +18,8 @@
 #define STATIC_ASSERT(e) \
 	enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
 
+#define MAX_OPEN_DIR_VITA 10
+
 // Max libraries to consider
 #define MAX_LIBRARIES 64
 
@@ -26,7 +28,15 @@
 
 typedef struct
 {
-#ifndef VITA
+	int chdir_ok; //1 if sceIoChdir is correctly estimated, 0 otherwise
+	SceUID memSema; 		
+ 	SceUID thSema; 		
+ 	SceUID cbSema; 		
+ 	SceUID audioSema; 		
+ 	SceUID ioSema;
+#ifdef VITA
+	int dirFix[MAX_OPEN_DIR_VITA][2];
+#else
 	// firmware and model
 	int module_sdk_version;
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION

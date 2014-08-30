@@ -3,13 +3,13 @@
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
+#include <common/memory.h>
 #include <common/path.h>
 #include <common/sdk.h>
 #include <hbl/modmgr/elf.h>
 #include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
 #include <hbl/stubs/resolve.h>
-#include <hbl/utils/memory.h>
 #include <hbl/utils/settings.h>
 #include <exploit_config.h>
 #include <svnversion.h>
