@@ -31,13 +31,13 @@ void *memcpy(void *dst, const void *src, size_t n)
 //    character we were looking for
 char *strchr(const char *s, int c)
 {
-	while (*s) {
-		if (*s == c)
-			return (char *)s;
+	while (*s != c) {
+		if (!*s)
+			return NULL;
 		s++;
 	}
 
-	return NULL;
+	return (char *)s;
 }
 
 // Compares s1 with s2, returns 0 if both equal
