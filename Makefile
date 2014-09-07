@@ -12,7 +12,7 @@ AS	= psp-as
 
 INCDIR	= -I $(shell psp-config --pspsdk-path)/include -I include -I $(FOLDER_PATH) -I .
 
-CFLAGS	= $(INCDIR) -Os -Wall -Werror -G1 -fno-pic -mno-abicalls -fomit-frame-pointer -fno-strict-aliasing
+CFLAGS	= $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
 ifdef VITA
 CFLAGS += -D VITA=$(VITA)
 endif
@@ -47,7 +47,7 @@ OBJS_HBL = hbl/eloader.o \
 OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
 
 %.BIN: %.elf
-	psp-objcopy -S -O binary --set-section-flags .bss=load,contents $< $@
+	psp-objcopy -S -O binary $< $@
 
 HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
 	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_hbl.x $(OBJS_COMMON) $(OBJS_HBL) -o $@

@@ -9,8 +9,8 @@
 
 static int (* vram)[LINE_SIZE] = (void *)0x04000000;
 
-int cur_x;
-int cur_y;
+int cur_x = 0;
+int cur_y = 0;
 
 void scr_init()
 {
