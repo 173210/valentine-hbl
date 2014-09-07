@@ -2,7 +2,6 @@
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
-#include <common/malloc.h>
 #include <common/memory.h>
 #include <common/path.h>
 #include <common/sdk.h>
@@ -20,6 +19,7 @@
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
 
+#define PATH_MAX 260
 #define SIZE_THREAD_TRACKING_ARRAY 32
 #define MAX_CALLBACKS 32
 
@@ -29,7 +29,7 @@
 static int dirLen;
 #endif
 
-static char *mod_chdir; //cwd of the currently running module
+static char mod_chdir[PATH_MAX] = HBL_ROOT; //cwd of the currently running module
 static int cur_cpufreq = 0; //current cpu frequency
 static int cur_busfreq = 0; //current bus frequency
 static SceUID running_th[SIZE_THREAD_TRACKING_ARRAY];
@@ -393,83 +393,90 @@ void threads_cleanup()
 // File I/O manager Hooks
 //
 // returns 1 if a string is an absolute file path, 0 otherwise
-int path_is_absolute(const char * file)
+static int path_is_absolute(const char *path)
 {
-    unsigned i;
-    for (i = 0; i < strlen(file) && i < 9; ++i)
-        if(file[i] == ':')
-            return 1;
+	if (path != NULL)
+		while (*path != '/' && *path != '\0') {
+			if (*path == ':')
+				return 1;
+			path++;
+		}
 
-    return 0;
+	return 0;
 }
 
 // converts a relative path to an absolute one based on cwd
-// it is the responsibility of the caller to
-// 1 - ensure that the passed path is actually relative
-// 2 - delete the returned char *
-char * relative_to_absolute(const char * file)
+// returns the length of resolved_path
+static int realpath(const char *path, char *resolved_path)
 {
-    int i;
-    int len;
+	const char *src;
+	int i = 0;
 
-        if (!mod_chdir)
-    {
-        char * buf = malloc_hbl(strlen(file) + 1);
-        strcpy(buf, file);
-        return buf;
-    }
-#ifdef VITA
-    else if (!strcmp(".", file))
-    {
-        char * buf = malloc_hbl(strlen(mod_chdir) + 1);
-        strcpy(buf, mod_chdir);
-        return buf;
-    }
-    else if (!strcmp("..", file))
-    {
-		len = strlen(mod_chdir);
-		for (i = len; i > 0; i--)
-			if (mod_chdir[i] == '/') {
-				if (mod_chdir[i - 1] != ':') {
-					mod_chdir[i] = '\0';
-					len = i;
+	if (path == NULL || resolved_path == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	if (!path_is_absolute(path))
+		for (src = mod_chdir; *src; src++) {
+			resolved_path[i] = *src;
+			i++;
+		}
+
+	while (i < PATH_MAX) {
+		if (path[0] == '/') {
+			if (path[1] == '/') {
+				path++;
+				continue;
+			} else if (path[1] == '.') {
+				if (path[2] == '\0')
+					path += 2;
+				else if (path[2] == '/') {
+					path += 2;
+					continue;
+				} else if (path[2] == '.' && (path[3] == '/' || path[3] == '\0')) {
+					if (resolved_path[i - 1] == ':')
+						return SCE_KERNEL_ERROR_NOFILE;
+					else
+						while (resolved_path[i] != '/')
+							i--;
+					path += 3;
+					continue;
 				}
-				break;
 			}
+		}
 
-        char * buf = malloc_hbl(len + 1);
-        strcpy(buf, mod_chdir);
-        return buf;
-    }
-#endif
+		resolved_path[i] = *path;
+		i++;
+		if (!*path)
+			return i;
+		path++;
+	}
 
-    len = strlen(mod_chdir);
-
-    char * buf = malloc_hbl( len +  1 +  strlen(file) + 1);
-
-    strcpy(buf, mod_chdir);
-    if(buf[len-1] !='/') {
-        buf[len] = '/';
-        len++;
-    }
-
-    strcpy(buf + len, file);
-
-    return buf;
+	return SCE_KERNEL_ERROR_NAMETOOLONG;
 }
 
 
 //useful ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
 {
-        if (globals->chdir_ok || path_is_absolute(file))
-        return sceIoOpen(file, flags, mode);
+	char resolved_path[PATH_MAX];
+	int ret;
 
-    char * buf = relative_to_absolute(file);
-    dbg_printf("sceIoOpen override: %s become %s\n", (u32)file, (u32)buf);
-    SceUID ret = sceIoOpen(buf, flags, mode);
-    _free(buf);
-    return ret;
+	if (file == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	if (globals->chdir_ok
+#ifndef VITA
+		|| path_is_absolute(file)
+#endif
+	)
+		return sceIoOpen(file, flags, mode);
+
+	ret = realpath(file, resolved_path);
+	if (ret < 0)
+		return ret;
+	dbg_printf("sceIoOpen override: %s become %s\n", file, resolved_path);
+
+	return sceIoOpen(resolved_path, flags, mode);
 }
 
 
@@ -958,22 +965,27 @@ int _hook_sceAudioSRCChRelease()
 //hook this ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoDopen(const char *dirname)
 {
-    if (path_is_absolute(dirname))
-        return
-#ifdef VITA
-            sceIoDopen_Vita(dirname);
-#else
-            sceIoDopen(dirname);
+	char resolved_path[PATH_MAX];
+	int ret;
+
+	if (dirname == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+#ifndef VITA
+	if (path_is_absolute(dirname))
+		return sceIoDopen(dirname);
 #endif
 
-    char * buf = relative_to_absolute(dirname);
+	ret = realpath(dirname, resolved_path);
+	if (ret < 0)
+		return SCE_KERNEL_ERROR_NAMETOOLONG;
+
+	return
 #ifdef VITA
-    SceUID ret = sceIoDopen_Vita(buf);
+		sceIoDopen_Vita(resolved_path);
 #else
-    SceUID ret = sceIoDopen(buf);
+		sceIoDopen(resolved_path);
 #endif
-    _free(buf);
-    return ret;
 }
 
 
@@ -1078,34 +1090,26 @@ int sceIoDclose_Vita(SceUID id)
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)
 {
+	char resolved_path[PATH_MAX];
+	int ret;
+
 	dbg_printf("_hook_sceIoChdir start\n");
+
+	ret = realpath(dirname, resolved_path);
+	if (ret < 0)
+		return ret;
+	else if (ret >= PATH_MAX)
+		return SCE_KERNEL_ERROR_NAMETOOLONG;
+
         // save chDir into global variable
-    if (path_is_absolute(dirname))
-    {
-        if (mod_chdir)
-        {
-            _free(mod_chdir);
-            mod_chdir = 0;
-        }
-        mod_chdir = relative_to_absolute(dirname);
-    }
-    else
-    {
-        char * result = relative_to_absolute(dirname);
-         if (mod_chdir)
-        {
-            _free(mod_chdir);
-        }
-        mod_chdir = result;
-    }
+	strcpy(mod_chdir, resolved_path);
+	if (mod_chdir[ret - 1] != '/') {
+		mod_chdir[ret] = '/';
+		mod_chdir[ret + 1] = '\0';
+	}
 
-    if (!mod_chdir)
-    {
-        return -1;
-    }
-	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", (u32) dirname, (u32) mod_chdir);
-
-    return 0;
+	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", dirname, mod_chdir);
+	return 0;
 }
 
 
