@@ -7,7 +7,6 @@
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
-#include <common/malloc.h>
 #include <common/memory.h>
 #include <common/path.h>
 #include <common/sdk.h>

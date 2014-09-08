@@ -3,7 +3,6 @@
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
-#include <common/malloc.h>
 #include <common/path.h>
 #include <common/sdk.h>
 #include <common/utils.h>
@@ -115,7 +114,6 @@ static void cleanup(u32 num_lib)
 
         threads_cleanup();
 	ram_cleanup();
-	free_allmalloc_hbls();
 
 	unload_modules();
 

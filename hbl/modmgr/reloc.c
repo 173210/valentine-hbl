@@ -3,7 +3,6 @@
 #include <common/debug.h>
 #include <hbl/modmgr/elf.h>
 #include <hbl/eloader.h>
-#include <common/malloc.h>
 #include <exploit_config.h>
 
 // Relocates based on a MIPS relocation type

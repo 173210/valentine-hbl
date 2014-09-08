@@ -4,7 +4,6 @@
 #include <common/utils/string.h>
 #include <hbl/modmgr/elf.h>
 #include <common/debug.h>
-#include <common/malloc.h>
 #include <common/utils.h>
 #include <common/globals.h>
 #include <exploit_config.h>

@@ -5,7 +5,6 @@
 
 #include <common/stubs/tables.h>
 #include <common/sdk.h>
-#include <common/malloc.h>
 #include <exploit_config.h>
 
 #define ASSERT_CONCAT_(a, b) a##b
@@ -49,8 +48,6 @@ typedef struct
 	tNIDResolver nid_table[NID_TABLE_SIZE];
 	int lib_num;
 	tSceLibrary lib_table[MAX_LIBRARIES];
-	//malloc.c
-	SceUID blockids[MAX_ALLOCS]; /* Blocks */
 } tGlobals;
 
 #define HBL_STUBS_ADDR 0x10000
