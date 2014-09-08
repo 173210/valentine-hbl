@@ -52,7 +52,7 @@ static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
 
 // Resolves imports in ELF's program section already loaded in memory
 // Returns number of resolves
-unsigned int resolve_imports(tStubEntry* pstub_entry, unsigned int stubs_size)
+unsigned int resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_size)
 {
 	int i, j, nid_index;
 	int *cur_nid;

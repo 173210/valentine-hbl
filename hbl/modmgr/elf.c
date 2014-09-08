@@ -47,7 +47,7 @@ static void *elf_malloc(SceSize size, void *addr)
 		return NULL;
 	}
 
-	dbg_printf("OK\n");
+	dbg_puts("OK\n");
 
 	return sceKernelGetBlockHeadAddr(blockid);
 }
@@ -64,7 +64,6 @@ int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr)
 	size_t size, read;
 	int excess;
 	int i;
-	void *buf;
 
 	if (hdr == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
@@ -74,16 +73,17 @@ int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr)
 		dbg_printf("Reading program section %d of %d\n", i, hdr->e_phnum);
 
 		// Read the program header
-		if (sceIoLseek(fd, off + hdr->e_phoff + sizeof(Elf32_Phdr) * i, PSP_SEEK_SET) < 0)
+		if (sceIoLseek(fd, off + hdr->e_phoff + i * sizeof(Elf32_Phdr), PSP_SEEK_SET) < 0)
 			continue;
 		if (sceIoRead(fd, &phdr, sizeof(Elf32_Phdr)) < 0)
 			continue;
 
-		buf = elf_malloc(phdr.p_memsz, phdr.p_vaddr);
 		// Loads program segment at virtual address
 		if (sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET) < 0)
 			continue;
-		read = sceIoRead(fd, buf, phdr.p_filesz);
+		if (elf_malloc(phdr.p_memsz, phdr.p_vaddr) == NULL)
+			continue;
+		read = sceIoRead(fd, phdr.p_vaddr, phdr.p_filesz);
 		if (read < 0)
 			continue;
 
@@ -137,9 +137,10 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 	log_modinfo(modinfo);
 #endif
 
-	*addr = elf_malloc(phdr.p_memsz, *addr);
+	if (elf_malloc(phdr.p_memsz, *addr) == NULL)
+		return SCE_KERNEL_ERROR_NO_MEMORY;
 
-	// Loads program segment at fixed address
+	// Loads program segment
 	ret = sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET);
 	if (ret < 0)
 		return ret;
@@ -158,7 +159,7 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 
 	dbg_printf("Relocated entries: %d\n", ret);
 	if (!ret)
-		dbg_printf("WARNING: no entries to relocate on a relocatable ELF\n");
+		dbg_puts("WARNING: no entries to relocate on a relocatable ELF\n");
 
 	// Return size of total size copied in memory
 	return phdr.p_memsz;
@@ -169,32 +170,42 @@ static int elf_get_shdr(
 	SceUID fd, SceOff off, const Elf32_Ehdr* hdr, const char *name,
 	Elf32_Shdr *shdr)
 {
-	Elf32_Shdr shdr_names;
-	const size_t name_max_len = 22;
-	char buf[name_max_len]; // Should be enough to hold the name
-	int i, ret;
-	size_t name_len = strlen(name);
+	SceOff shoff;
+	SceOff strtab_off = 0;
 
-	if (name_len + 1 > name_max_len) {
+	char buf[22]; // Should be enough to hold the name
+	int i, ret;
+	size_t name_size;
+
+	if (hdr == NULL || name == NULL || shdr == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	name_size = strlen(name) + 1;
+	if (name_size > sizeof(buf)) {
 		// Section name too long
 		dbg_printf("Section name to find is too long (strlen = %d, max = %d)\n",
-			name_len, name_max_len);
-		name_len = name_max_len;
+			name_size, sizeof(buf));
+		name_size = sizeof(buf);
 	}
 
-	// Seek to the section name table
-	ret = sceIoLseek(fd, off + hdr->e_shoff + hdr->e_shstrndx * sizeof(Elf32_Shdr), PSP_SEEK_SET);
+	shoff = off + hdr->e_shoff;
+
+	// Seek to the string table
+	ret = sceIoLseek(fd, shoff + hdr->e_shstrndx * sizeof(Elf32_Shdr) + offsetof(Elf32_Shdr, sh_offset), PSP_SEEK_SET);
 	if (ret < 0)
 		return ret;
-	ret = sceIoRead(fd, &shdr_names, sizeof(Elf32_Shdr));
+	ret = sceIoRead(fd, &strtab_off, sizeof(int));
 	if (ret < 0)
 		return ret;
+
+	strtab_off += off;
 
 	// Read section names and compare them
 	for (i = 0; i < hdr->e_shnum; i++)
 	{
 		// Get name index from current section header
-		ret = sceIoLseek(fd, off + hdr->e_shoff + i * sizeof(Elf32_Shdr), PSP_SEEK_SET);
+		ret = sceIoLseek(fd, shoff, PSP_SEEK_SET);
+		shoff += sizeof(Elf32_Shdr);
 		if (ret < 0)
 			continue;
 		ret = sceIoRead(fd, shdr, sizeof(Elf32_Shdr));
@@ -202,29 +213,35 @@ static int elf_get_shdr(
 			continue;
 
 		// Seek to the name entry in the name table
-		ret = sceIoLseek(fd, off + shdr_names.sh_offset + shdr->sh_name, PSP_SEEK_SET);
-		if (ret < 0)
-			continue;
-		// Read name in (is the section name length stored anywhere?)
-		ret = sceIoRead(fd, buf, name_len);
+		ret = sceIoLseek(fd, strtab_off + shdr->sh_name, PSP_SEEK_SET);
 		if (ret < 0)
 			continue;
 
-		if (!strncmp(buf, name, name_len))
+		// Read name in (is the section name length stored anywhere?)
+		ret = sceIoRead(fd, buf, name_size);
+		if (ret < 0)
+			continue;
+
+		if (!strncmp(buf, name, name_size)) {
+			dbg_printf("Found section index %d\n", i);
 			return 0;
+		}
 	}
 
 	// Section not found
-	dbg_printf("ERROR: Section could not be found!\n");
-	return -1;
+	dbg_printf("ERROR: Section %s could not be found!\n", name);
+	return SCE_KERNEL_ERROR_ERROR;
 }
 
-// Returns address and size (size) of ".lib.stub" section (imports)
+// Returns pointer and size of ".lib.stub" section (imports)
 tStubEntry *elf_find_imports(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, size_t *size)
 {
 	Elf32_Shdr shdr;
-	int ret = elf_get_shdr(fd, off, hdr, ".lib.stub", &shdr);
-	if (ret < 0)
+
+	if (hdr == NULL || size == NULL)
+		return NULL;
+
+	if (elf_get_shdr(fd, off, hdr, ".lib.stub", &shdr))
 		return NULL;
 
 	*size = shdr.sh_size;
@@ -238,10 +255,12 @@ int elf_get_gp(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, void **buf)
 	Elf32_Shdr shdr;
 	int ret;
 
+	if (hdr == NULL || buf == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
 	ret = elf_get_shdr(fd, off, hdr, ".rodata.sceModuleInfo", &shdr);
 	if (ret < 0) {
 		// Module info not found in sections
-		dbg_printf("ERROR: section rodata.sceModuleInfo not found\n");
 		return ret;
 	}
 

@@ -129,10 +129,10 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 {
 	_sceModuleInfo modinfo;
 	Elf32_Ehdr ehdr;
-	tStubEntry* stubs;
+	const tStubEntry *stubs;
 	SceUID modid = mod_loaded_num;
 	size_t mod_size, stubs_size;
-	int i;
+	int i, ret;
 
 	dbg_printf("\n\n->Entering load_module...\n");
 
@@ -185,9 +185,13 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 
 			// Locate ELF's .lib.stubs section
 			stubs = elf_find_imports(fd, off, &ehdr, &stubs_size);
+			if (stubs == NULL)
+				return SCE_KERNEL_ERROR_ERROR;
 
 			mod_table[modid].text_entry = (u32 *)ehdr.e_entry;
-			elf_get_gp(fd, off, &ehdr, &mod_table[modid].gp);
+			ret = elf_get_gp(fd, off, &ehdr, &mod_table[modid].gp);
+			if (ret < 0)
+				return ret;
 
 			break;
 
@@ -509,6 +513,9 @@ static UtilModInfo *get_util_mod_info(const char *lib)
 
 	unsigned i, j;
 
+	if (lib == NULL)
+		return NULL;
+
 	i = j = 0;
 	do {
 		while (libs[j].libname[i] != lib[i]) {
@@ -544,12 +551,15 @@ static SceLibraryEntryTable *find_exports(const char *module, const char *lib)
 }
 
 // Loads and registers exports from an utility module
-SceLibraryEntryTable *load_export_util(const char* lib)
+SceLibraryEntryTable *load_export_util(const char *lib)
 {
 	SceLibraryEntryTable *exports;
 	UtilModInfo *util_mod;
 	int *p;
 	int ret, nid;
+
+	if (lib == NULL)
+		return NULL;
 
 	util_mod = get_util_mod_info(lib);
 	if (util_mod == NULL)

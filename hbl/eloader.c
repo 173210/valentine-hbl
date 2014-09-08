@@ -179,6 +179,7 @@ void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
 	SceUID fd;
+	char path[260];
 	int exit = 0;
 	int init_free;
 	int thid;
@@ -222,15 +223,16 @@ void _start()
 		ramcheck(init_free);
 		if (!strcmp("quit", hb_fname) || hbl_exit_cb_called)
 			break;
+		strcpy(path, hb_fname);
 		init_free = sceKernelTotalFreeMemSize();
 
 		//re-Load default config
 		loadGlobalConfig();
 		dbg_printf("Config Loaded OK\n");
-		dbg_printf("Eboot is: %s\n", hb_fname);
+		dbg_printf("Eboot is: %s\n", path);
 
 		//run homebrew
-		run_eboot(sceIoOpen(hb_fname, PSP_O_RDONLY, 777), hb_fname);
+		run_eboot(sceIoOpen(path, PSP_O_RDONLY, 777), path);
 		dbg_printf("Eboot Started OK\n");
 		wait_for_eboot_end();
 
