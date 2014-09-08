@@ -21,26 +21,20 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/*
+ * Copyright (c) 2010-2014 valentine-hbl
+ *
+ * This code has been ported to valentine-hbl
+ */
+
 #ifndef MD5_H
 #define MD5_H
+
+#include <common/sdk.h>
 
 /* WARNING :
  * This implementation is using 32 bits long values for sizes
  */
-typedef unsigned int md5_size;
-
-/* MD5 context */
-struct md5_ctx {
-	struct {
-		unsigned int A, B, C, D; /* registers */
-	} regs;
-	unsigned char *buf;
-	md5_size size;
-	md5_size bits;
-};
-
-/* Size of the MD5 buffer */
-#define MD5_BUFFER 1024
 
 /* Basic md5 functions */
 #define F(x,y,z) ((x & y) | (~x & z))
@@ -56,9 +50,9 @@ struct md5_ctx {
 #define HH(a,b,c,d,x,s,t) (a = b + ROTATE_LEFT((a + H(b,c,d) + x + t), s))
 #define II(a,b,c,d,x,s,t) (a = b + ROTATE_LEFT((a + I(b,c,d) + x + t), s))
 
-unsigned char *md5 (unsigned char *, md5_size, unsigned char *);
-void md5_init (struct md5_ctx *);
-void md5_update (struct md5_ctx *context);
-void md5_final (unsigned char *digest, struct md5_ctx *context);
+int _hook_sceKernelUtilsMd5Digest(u8 *data, u32 size, u8 *digest);
+int _hook_sceKernelUtilsMd5BlockInit(SceKernelUtilsMd5Context *ctx);
+int _hook_sceKernelUtilsMd5BlockUpdate(SceKernelUtilsMd5Context *ctx, u8 *data, u32 size);
+int _hook_sceKernelUtilsMd5BlockResult(SceKernelUtilsMd5Context *ctx, u8 *digest);
 
 #endif /* MD5_H */

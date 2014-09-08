@@ -41,8 +41,8 @@ endif
 
 OBJS_HBL = hbl/eloader.o \
 	hbl/modmgr/elf.o hbl/modmgr/modmgr.o hbl/modmgr/reloc.o \
-	hbl/stubs/hook.o hbl/stubs/resolve.o \
-	hbl/utils/md5.o hbl/utils/settings.o
+	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o \
+	hbl/utils/settings.o
 
 OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
 

@@ -8,9 +8,9 @@
 #include <common/utils.h>
 #include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
+#include <hbl/stubs/md5.h>
 #include <hbl/stubs/resolve.h>
 #include <hbl/utils/settings.h>
-#include <hbl/utils/md5.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>
 
@@ -1244,17 +1244,6 @@ void _hook_sceKernelDcacheWritebackInvalidateAll (void)
 // ###############
 // UtilsForUser
 // ###############
-
-int _hook_sceKernelUtilsMd5Digest  (u8  *data, u32  size, u8  *digest)
-{
-    if (md5(data,size, digest))
-    {
-		return 1;
-    }
-	return -1;
-}
-
-
 #ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
 {
@@ -1685,6 +1674,18 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
 	    case 0xC8186A58:  //sceKernelUtilsMd5Digest  (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);
+            break;
+
+	    case 0x9E5C5086:  //sceKernelUtilsMd5BlockInit  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5BlockInit);
+            break;
+
+	    case 0x61E1E525:  //sceKernelUtilsMd5BlockUpdate  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5BlockUpdate);
+            break;
+
+	    case 0xB8D24E78:  //sceKernelUtilsMd5BlockResult  (avoid syscall estimation)
+            hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5BlockResult);
             break;
 
 	    case 0x3FC9AE6A:  //sceKernelDevkitVersion   (avoid syscall estimation)
