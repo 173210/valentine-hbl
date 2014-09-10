@@ -44,22 +44,23 @@ static void resetHomeSettings()
 static void (* run_eloader)();
 
 // Loads HBL to memory
-static void load_hbl(SceUID hbl_file)
+static void load_hbl()
 {
-	long file_size;
+	SceUID hbl_file;
 	int ret;
 
-	// Get HBL size
-	file_size = sceIoLseek(hbl_file, 0, PSP_SEEK_END);
-
-	sceIoLseek(hbl_file, 0, PSP_SEEK_SET);
+	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
+	if (hbl_file < 0) {
+		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
+		sceKernelExitGame();
+	}
 
 	// Allocate memory for HBL
 #ifdef DONT_ALLOC_HBL_MEM
 	run_eloader = (void *)HBL_LOAD_ADDR;
 #else
 	SceUID HBL_block = sceKernelAllocPartitionMemory(
-		2, "Valentine", PSP_SMEM_Addr, file_size, (void *)HBL_LOAD_ADDR);
+		2, "Valentine", PSP_SMEM_Addr, HBL_SIZE, (void *)HBL_LOAD_ADDR);
 	if(HBL_block < 0) {
 		scr_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
 		sceKernelExitGame();
@@ -68,7 +69,7 @@ static void load_hbl(SceUID hbl_file)
 #endif
 	dbg_printf("Loading HBL...\n");
 	// Load HBL to allocated memory
-	ret = sceIoRead(hbl_file, (void *)run_eloader, file_size);
+	ret = sceIoRead(hbl_file, (void *)run_eloader, HBL_SIZE);
 	if (ret < 0) {
 		scr_printf(" ERROR READING HBL 0x%08X\n", ret);
 		sceKernelExitGame();
@@ -80,12 +81,12 @@ static void load_hbl(SceUID hbl_file)
 
 	// Commit changes to RAM
 #ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
-	sceKernelDcacheWritebackRange(run_eloader, file_size);
+	sceKernelDcacheWritebackRange(run_eloader, ret);
 #else
 	sceKernelDcacheWritebackAll();
 #endif
 #ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange(run_eloader, file_size);
+	sceKernelIcacheInvalidateRange(run_eloader, ret);
 #elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
 	sceKernelIcacheInvalidateAll();
 #endif
@@ -265,8 +266,6 @@ static void hook_init()
 
 int start_thread()
 {
-	SceUID hbl_file;
-
 	// Free memory
 	scr_puts("Freeing memory\n");
 	free_game_memory();
@@ -307,15 +306,8 @@ int start_thread()
 	}
 #endif
 
-	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
-	if (hbl_file < 0) {
-		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
-		sceKernelExitGame();
-		return hbl_file;
-	}
-
 	dbg_printf("Loading HBL\n");
-	load_hbl(hbl_file);
+	load_hbl();
 
 	scr_puts("Running eLoader\n");
 	run_eloader();

@@ -58,6 +58,9 @@ H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(FOLDER_PATH)/linker_loader.x
 sdk.o: $(FOLDER_PATH)/sdk.S
 	$(AS) $< -o $@
 
+loader/loader.o: loader/loader.c HBL.elf
+	$(CC) $(CFLAGS) -D HBL_SIZE=$(lastword $(shell psp-size -A HBL.elf)) -c -o $@ $<
+
 hbl/modmgr/modmgr.o: svnversion.h
 loader/loader.o: svnversion.h
 
