@@ -3,6 +3,7 @@
 
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
+#include <common/utils/cache.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
 #include <common/debug.h>
@@ -85,11 +86,7 @@ static void load_hbl()
 #else
 	sceKernelDcacheWritebackAll();
 #endif
-#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange(run_eloader, ret);
-#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
-	sceKernelIcacheInvalidateAll();
-#endif
+	hblIcacheFillRange(run_eloader, (void *)run_eloader + ret);
 }
 
 #ifndef DISABLE_KERNEL_DUMP
@@ -124,6 +121,7 @@ static void dbg_init()
 
 	for (i = 0; i < HBL_STUBS_NUM; i++)
 		hbl_stubs[i * 2] = BREAK_OPCODE(0);
+	hblIcacheFillRange((void *)HBL_STUBS_ADDR, (void *)HBL_STUBS_ADDR + HBL_STUBS_NUM * 8);
 
 	i = 0;
 	for (entry = (tStubEntry *)0x08800000;
@@ -154,6 +152,10 @@ static void dbg_init()
 			entry++;
 		}
 	}
+
+	hblIcacheFillRange(sceIoOpen, (void *)sceIoOpen + 8);
+	hblIcacheFillRange(sceIoClose, (void *)sceIoClose + 8);
+	hblIcacheFillRange(sceIoWrite, (void *)sceIoWrite + 8);
 }
 #endif
 
@@ -323,18 +325,14 @@ void _start()
 
 #ifdef DEBUG
 	dbg_init();
+	log_init();
 #endif
 
         memset(globals, 0, sizeof(tGlobals));
 	p2_add_stubs();
 	resolve_hbl_stubs();
-#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
-#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
-	sceKernelIcacheInvalidateAll();
-#endif
 
-#if defined(DEBUG) || defined(FORCE_FIRST_LOG)
+#if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();
 #endif
 	

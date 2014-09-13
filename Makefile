@@ -29,7 +29,7 @@ LDFLAGS = -O1 -G0 --no-keep-memory
 
 
 OBJS_COMMON = sdk.o common/stubs/tables.o \
-	common/utils/fnt.o common/utils/scr.o common/utils/string.o \
+	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
 	common/memory.o common/utils.o
 ifndef VITA
 OBJS_COMMON += common/stubs/syscall.o

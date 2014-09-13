@@ -1,4 +1,5 @@
 #include <common/stubs/syscall.h>
+#include <common/utils/cache.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
 #include <common/debug.h>
@@ -241,11 +242,7 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 #else
 	sceKernelDcacheWritebackAll();
 #endif
-#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange(addr, mod_size);
-#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
-	sceKernelIcacheInvalidateAll();
-#endif
+	hblIcacheFillRange(addr, addr + mod_size);
 
 	return modid;
 }

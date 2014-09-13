@@ -1,4 +1,5 @@
 #include <common/stubs/syscall.h>
+#include <common/utils/cache.h>
 #include <common/utils/scr.h>
 #include <common/sdk.h>
 #include <common/debug.h>
@@ -314,10 +315,6 @@ void resolve_hbl_stubs()
 
 	dbg_printf(" ****STUBS SEARCHED\n");
 
-#ifdef HOOK_sceKernelIcacheInvalidateAll_WITH_sceKernelIcacheInvalidateRange
-	sceKernelIcacheInvalidateRange((void *)HBL_STUBS_ADDR, HBL_STUBS_NUM * 8);
-#elif !defined(HOOK_sceKernelIcacheInvalidateAll_WITH_dummy)
-	sceKernelIcacheInvalidateAll();
-#endif
+	hblIcacheFillRange((void *)HBL_STUBS_ADDR, (void *)HBL_STUBS_ADDR + HBL_STUBS_NUM * 8);
 }
 
