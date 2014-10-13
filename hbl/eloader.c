@@ -57,14 +57,22 @@ static void run_eboot(SceUID fd, const char *path)
 
 	if (mod_id < 0) {
 		dbg_printf("ERROR 0x%08X loading main module\n", mod_id);
+#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
+		sceKernelExitGameWithStatus(mod_id);
+#else
 		sceKernelExitGame();
+#endif
 	}
 
 	mod_id = start_module(mod_id);
 
 	if (mod_id < 0) {
 		dbg_printf("ERROR 0x%08X starting main module\n", mod_id);
+#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
+		sceKernelExitGameWithStatus(mod_id);
+#else
 		sceKernelExitGame();
+#endif
 	}
 }
 
@@ -240,7 +248,11 @@ void _start()
 			break;
 	}
 
+#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
+	sceKernelExitGameWithStatus(0);
+#else
 	sceKernelExitGame();
+#endif
 }
 
 // Big thanks to people who share information !!!

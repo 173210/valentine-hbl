@@ -371,7 +371,11 @@ void _start()
 	if (thid < 0) {
 		//scr_printf("Error starting HBL thread 0x%08X\n", thid);
 		dbg_printf("Error starting HBL thread 0x%08X\n", thid);
+#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
+		sceKernelExitGameWitStatus(thid);
+#else
 		sceKernelExitGame();
+#endif
 	} else
 		sceKernelStartThread(thid, 0, NULL);
 

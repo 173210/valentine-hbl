@@ -87,7 +87,7 @@ typedef struct {
 } SceLwMutexWorkarea;
 
 int sceKernelDeleteLwMutex(SceLwMutexWorkarea *workarea);
-
+int sceKernelExitGameWithStatus(int status);
 SceUID sceKernelGetModuleIdByAddress(u32 address);
 
 #endif
