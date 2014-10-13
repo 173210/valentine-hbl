@@ -348,25 +348,54 @@ int find_module_by_path(const char *path)
 
 static int load_util(int module)
 {
+#ifdef UTILITY_AV_AVCODEC_PATH
+	SceUID ret;
+#endif
+
 	dbg_printf("Loading 0x%08X\n", module);
 
-#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
-#ifdef USE_NET_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_DONT_USE_sceUtilityLoadModule
+#ifdef UTILITY_USE_sceUtilityLoadNetModule
 	if (module <= PSP_MODULE_NET_SSL)
 		return sceUtilityLoadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
 	else
 #endif
-#ifdef USE_USB_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadUsbModule
 	if (module == PSP_MODULE_USB_PSPCM)
 		return sceUtilityLoadUsbModule(PSP_USB_MODULE_PSPCM);
 	else if (module <= PSP_MODULE_USB_GPS)
 		return sceUtilityLoadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
 	else
 #endif
-#ifdef USE_AV_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadAvModule
 	if (module <= PSP_MODULE_AV_G729)
 		return sceUtilityLoadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
 	else
+#else
+#ifdef UTILITY_AV_AVCODEC_PATH
+	if (module == PSP_MODULE_AV_AVCODEC) {
+		ret = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
+		return ret < 0 ? ret : sceKernelStartModule(ret, 0, NULL, NULL, NULL);
+	} else
+#endif
+#ifdef UTILITY_AV_SASCORE_PATH
+	if (module == PSP_MODULE_AV_SASCORE) {
+		ret = sceKernelLoadModule(UTILITY_AV_SASCORE_PATH, 0, NULL);
+		return ret < 0 ? ret : sceKernelStartModule(ret, 0, NULL, NULL, NULL);
+	} else
+#endif
+#ifdef UTILITY_AV_ATRAC3PLUS_PATH
+	if (module == PSP_MODULE_AV_ATRAC3PLUS) {
+		ret = sceKernelLoadModule(UTILITY_AV_ATRAC3PLUS_PATH, 0, NULL);
+		return ret < 0 ? ret : sceKernelStartModule(ret, 0, NULL, NULL, NULL);
+	} else
+#endif
+#ifdef UTILITY_AV_MPEGBASE_PATH
+	if (module == PSP_MODULE_AV_MPEGBASE) {
+		ret = sceKernelLoadModule(UTILITY_AV_MPEGBASE_PATH, 0, NULL);
+		return ret < 0 ? ret : sceKernelStartModule(ret, 0, NULL, NULL, NULL);
+	} else
+#endif
 #endif
 		return SCE_KERNEL_ERROR_ERROR;
 #else
@@ -377,27 +406,37 @@ static int load_util(int module)
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
 static int unload_util(int module)
 {
+#ifdef UTILITY_UNLOAD_MODULE_FILE
+	int ret;
+#endif
 	dbg_printf("Unloading 0x%08X\n", module);
 
-#ifdef USE_EACH_UTILITY_MODULE_UNLOAD_FUNCTION
-#ifdef USE_NET_MODULE_UNLOAD_FUNCTION
+#ifdef UTILITY_DONT_USE_sceUtilityUnloadModule
+#ifdef UTILITY_USE_sceUtilityUnloadNetModule
 	if (module <= PSP_MODULE_NET_SSL)
 		return sceUtilityUnloadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
 	else
 #endif
-#ifdef USE_USB_MODULE_UNLOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityUnloadUsbModule
 	if (module == PSP_MODULE_USB_PSPCM)
 		return sceUtilityUnloadUsbModule(PSP_USB_MODULE_PSPCM);
 	else if (module <= PSP_MODULE_USB_GPS)
 		return sceUtilityUnloadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
 	else
 #endif
-#ifdef USE_AV_MODULE_UNLOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityUnloadAvModule
 	if (module <= PSP_MODULE_AV_G729)
 		return sceUtilityUnloadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
 	else
 #endif
+#ifdef UTILITY_UNLOAD_MODULE_FILE
+	{
+		ret = sceKernelStopModule(module, 0, NULL, NULL, NULL);
+		return ret ? ret : sceKernelUnloadModule(module);
+	}
+#else
 		return SCE_KERNEL_ERROR_ERROR;
+#endif
 #else
 	return sceUtilityUnloadModule(module);
 #endif
@@ -407,17 +446,31 @@ static int unload_util(int module)
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
 static int add_util_table(int module)
 {
-	int index;
+	int idx;
 
 	// Check if max utilities allowed is reached
 	if (mod_utils_num >= MAX_MODULES)
 		return -1;
 
-	index = mod_utils_num;
-	mod_utils[index] = module;
+	idx = mod_utils_num;
+	mod_utils[idx] = module;
 	mod_utils_num++;
 
-	return index;
+	return idx;
+}
+
+static int rm_util_table(int module)
+{
+	int idx;
+
+	for (idx = 0; idx < mod_utils_num; idx++)
+		if (mod_utils[idx] == module) {
+			mod_utils_num--;
+			mod_utils[idx] = mod_utils[mod_utils_num];
+			return 0;
+		}
+
+	return -1;
 }
 #endif
 
@@ -429,19 +482,11 @@ void unload_modules()
 	//unload utility modules
 	int i, ret;
 	for (i = mod_utils_num - 1; i >= 0; i--) {
-		//PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
-		//PSP_MODULE_AV_MP3		-> On 6.20 OFW, libmp3 has a bug when unload it.
-		if (mod_utils[i] && mod_utils[i] != PSP_MODULE_AV_AVCODEC
-#ifndef VITA
-			&& (mod_utils[i] != PSP_MODULE_AV_MP3 || globals->module_sdk_version > 0x06020010)
-#endif
-		) {
-			dbg_printf("UNLoad utility module id  0x%08X\n", mod_utils[i]);
-			ret = unload_util(mod_utils[i]);
-			if (ret)
-				scr_printf("WARNING! error unloading module 0x%X: 0x%08X\n",
-					mod_utils[i], ret);
-		}
+		dbg_printf("UNLoad utility module id  0x%08X\n", mod_utils[i]);
+		ret = unload_util(mod_utils[i]);
+		if (ret)
+			scr_printf("WARNING! error unloading module 0x%X: 0x%08X\n",
+				mod_utils[i], ret);
 	}
 #endif
 	mod_loaded_num = 0;
@@ -567,19 +612,19 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 		//force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
 	if (util_mod->id > PSP_MODULE_AV_AVCODEC && util_mod->id <= PSP_MODULE_AV_G729) {
 		dbg_printf("Force-Loading AVCODEC\n");
-#ifdef USE_AV_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadAvModule
 		sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
-#elif !defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
+#elif !defined(UTILITY_DONT_USE_sceUtilityLoadModule)
 		sceUtilityLoadModule(PSP_MODULE_AV_AVCODEC);
 #endif
 	} else if(util_mod->id == PSP_MODULE_NET_HTTP) {
 		dbg_printf("Force-Loading HTTP\n");
-#ifdef USE_NET_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadNetModule
 		sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEURI);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEHTTP);
-#elif !defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
+#elif !defined(UTILITY_DONT_USE_sceUtilityLoadModule)
 		sceUtilityLoadModule(PSP_MODULE_NET_COMMON);
 		sceUtilityLoadModule(PSP_MODULE_NET_INET);
 		sceUtilityLoadModule(PSP_MODULE_NET_PARSEURI);
@@ -588,11 +633,31 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 	}
 
 	ret = load_util(util_mod->id);
-	if (!ret && ret != 0x80111102)
+	if (ret < 0 && ret != 0x80111102)
 		return NULL;
 
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
-	add_util_table(util_mod->id);
+#ifdef UTILITY_UNLOAD_MODULE_FILE
+	if (!ret)
+		ret = util_mod->id;
+#endif
+	switch (util_mod->id) {
+#ifndef DEACTIVATE_SYSCALL_ESTIMATION
+		case PSP_MODULE_AV_AVCODEC: // -> cast syscall of sceAudiocodec and sceVideocodec
+			break;
+#endif
+#ifndef VITA
+		case PSP_MODULE_AV_MP3: // -> On 6.20 OFW, libmp3 has a bug when unload it.
+			if (globals->module_sdk_version <= 0x06020010)
+				break;
+#endif
+		default:
+#ifdef UTILITY_UNLOAD_MODULE_FILE
+			add_util_table(ret);
+#else
+			add_util_table(util_mod->id);
+#endif
+	}
 #endif
 
 	// Get module exports
@@ -600,7 +665,13 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 	if (exports == NULL) {
 		dbg_printf("->ERROR: could not find module exports for %s\n", util_mod->name);
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
+#ifdef UTILITY_UNLOAD_MODULE_FILE
+		unload_util(ret);
+		rm_util_table(ret);
+#else
 		unload_util(util_mod->id);
+		rm_util_table(ret);
+#endif
 #endif
 		return NULL;
 	}

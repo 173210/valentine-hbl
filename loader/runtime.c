@@ -12,7 +12,7 @@
 #include <exploit_config.h>
 #include <loader.h>
 
-#ifndef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+#ifndef UTILITY_DONT_USE_sceUtilityLoadModule
 static const int modules[] = {
 #if VITA < 310 || !defined(AVOID_NET_UTILITY)
 	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
@@ -30,33 +30,63 @@ static const int modules[] = {
 	// PSP_MODULE_AV_AVCODEC <-- removed to cast syscall of sceAudiocodec and sceVideocodec
 #endif
 
+#ifdef UTILITY_AV_AVCODEC_PATH
+static SceUID avcodec_modid;
+#endif
+#ifdef UTILITY_AV_SASCORE_PATH
+static SceUID sascore_modid;
+#endif
+#ifdef UTILITY_AV_ATRAC3PLUS_PATH
+static SceUID atrac3plus_modid;
+#endif
+#ifdef UTILITY_AV_MPEGBASE_PATH
+static SceUID mpegbase_modid;
+#endif
+
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils()
 {
 	int ret;
-#ifdef USE_EACH_UTILITY_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_DONT_USE_sceUtilityLoadModule
 	int module;
 
-#ifdef USE_NET_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadNetModule
 	for (module = 1; module <= 7; module++) {
 		ret = sceUtilityLoadNetModule(module);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Loading net module 0x%08X\n", ret, module);
 	}
 #endif
-#ifdef USE_USB_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadUsbModule
 	for (module = 1; module <= 5; module++) {
 		ret = sceUtilityLoadUsbModule(module);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Loading usb module 0x%08X\n", ret, module);
 	}
 #endif
-#ifdef USE_AV_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadAvModule
 	for (module = 1; module <= 7; module++) {
 		ret = sceUtilityLoadAvModule(module);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Loading av module 0x%08X\n", ret, module);
 	}
+#else
+#ifdef UTILITY_AV_AVCODEC_PATH
+	avcodec_modid = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
+	sceKernelStartModule(avcodec_modid, 0, NULL, NULL, NULL);
+#endif
+#ifdef UTILITY_AV_SASCORE_PATH
+	sascore_modid = sceKernelLoadModule(UTILITY_AV_SASCORE_PATH, 0, NULL);
+	sceKernelStartModule(sascore_modid, 0, NULL, NULL, NULL);
+#endif
+#ifdef UTILITY_AV_ATRAC3PLUS_PATH
+	atrac3plus_modid = sceKernelLoadModule(UTILITY_AV_ATRAC3PLUS_PATH, 0, NULL);
+	sceKernelStartModule(atrac3plus_modid, 0, NULL, NULL, NULL);
+#endif
+#ifdef UTILITY_AV_MPEGBASE_PATH
+	mpegbase_modid = sceKernelLoadModule(UTILITY_AV_MPEGBASE_PATH, 0, NULL);
+	sceKernelStartModule(mpegbase_modid, 0, NULL, NULL, NULL);
+#endif
 #endif
 #else
 	unsigned i;
@@ -74,24 +104,24 @@ void load_utils()
 void unload_utils()
 {
 	int ret;
-#if defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
+#if defined(UTILITY_DONT_USE_sceUtilityLoadModule)
 	int module;
 
-#ifdef USE_NET_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadNetModule
 	for (module = 7; module >= 1; module--) {
 		ret = sceUtilityUnloadNetModule(module);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Unloading net module 0x%08X\n", ret, module);
 	}
 #endif
-#ifdef USE_USB_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadUsbModule
 	for (module = 5; module >= 1; module--) {
 		ret = sceUtilityUnloadUsbModule(module);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Unloading usb module 0x%08X\n", ret, module);
 	}
 #endif
-#ifdef USE_AV_MODULE_LOAD_FUNCTION
+#ifdef UTILITY_USE_sceUtilityLoadAvModule
 	for (module = 7; module >= 5; module--) {
 		ret = sceUtilityUnloadAvModule(module);
 		if (ret < 0)
@@ -108,6 +138,23 @@ void unload_utils()
 
 		module--;
 	}
+#else
+#ifdef UTILITY_AV_AVCODEC_PATH
+	sceKernelStopModule(avcodec_modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(avcodec_modid);
+#endif
+#ifdef UTILITY_AV_SASCORE_PATH
+	sceKernelStopModule(sascore_modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(sascore_modid);
+#endif
+#ifdef UTILITY_AV_ATRAC3PLUS_PATH
+	sceKernelStopModule(atrac3plus_modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(atrac3plus_modid);
+#endif
+#ifdef UTILITY_AV_MPEGBASE_PATH
+	sceKernelStopModule(mpegbase_modid, 0, NULL, NULL, NULL);
+	sceKernelUnloadModule(mpegbase_modid);
+#endif
 #endif
 #else
 	int i;
