@@ -1,6 +1,9 @@
 #include <common/stubs/syscall.h>
 #include <common/utils/cache.h>
 #include <common/utils/scr.h>
+#if VITA >= 330
+#include <common/utils/string.h>
+#endif
 #include <common/sdk.h>
 #include <common/debug.h>
 #include <common/globals.h>
@@ -226,10 +229,10 @@ static void p5_close_savedata()
 	}
 }
 
-static int p5_find_add_stubs(const char *libname, void *p, size_t size)
+static int p5_find_add_stubs(const char *modname, void *p, size_t size)
 {
 	int num = 0;
-	tStubEntry *pentry = *(tStubEntry **)(findstr(libname, p, size) + 40);
+	tStubEntry *pentry = *(tStubEntry **)(findstr(modname, p, size) + 40);
 
 	// While it's a valid stub header
 	while (elf_check_stub_entry(pentry)) {
@@ -243,6 +246,42 @@ static int p5_find_add_stubs(const char *libname, void *p, size_t size)
 	return num;
 }
 
+#if VITA >= 330
+static int p5_find_add_stubs_sceIoOpen(const char *modname, void *p, size_t size)
+{
+	const char *lib_name = "IoFileMgrForUser";
+	const int nid_sceIoOpen = 0x109F50BC;
+	tStubEntry *pentry;
+	int lib_index;
+	int num = 0;
+	int call;
+	int i;
+
+	lib_index = get_lib_index(lib_name);
+	if (lib_index < 0)
+		return p5_find_add_stubs(modname, p, size);
+
+	pentry = *(tStubEntry **)(findstr(modname, p, size) + 40);
+	// While it's a valid stub header
+	while (elf_check_stub_entry(pentry)) {
+		if (!strcmp(pentry->lib_name, "IoFileMgrForUser"))
+			for (i = 0; i < pentry->stub_size; i++)
+				if (((int *)pentry->nid_p)[i] == nid_sceIoOpen) {
+					call = ((int *)pentry->jump_p)[i * 2];
+					add_nid(nid_sceIoOpen, call, lib_index);
+				}
+
+		if (pentry->import_flags == 0x11 || !pentry->import_flags)
+			num += add_stub(pentry);
+
+		// Next entry
+		pentry++;
+	}
+	
+	return num;
+}
+#endif
+
 int p5_add_stubs()
 {
 	int num;
@@ -253,7 +292,11 @@ int p5_add_stubs()
 
 	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
 
+#if VITA >= 330
+	num = p5_find_add_stubs_sceIoOpen("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
+#else
 	num = p5_find_add_stubs("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
+#endif
 
 	p5_close_savedata();
 
