@@ -63,17 +63,14 @@ static int load_hbl()
 #else
 	SceUID HBL_block = sceKernelAllocPartitionMemory(
 		2, "Valentine", PSP_SMEM_Addr, HBL_SIZE, (void *)HBL_LOAD_ADDR);
-	if(HBL_block < 0) {
+	if(HBL_block < 0)
 		scr_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
-		sceIoClose(hbl_file);
-		return HBL_block;
-	}
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
 #endif
 	dbg_printf("Loading HBL...\n");
 	// Load HBL to allocated memory
 	ret = sceIoRead(hbl_file, (void *)run_eloader, HBL_SIZE);
-	if (ret < 0) {
+	if (ret <= 0) {
 		scr_printf(" ERROR READING HBL 0x%08X\n", ret);
 		sceIoClose(hbl_file);
 		sceKernelFreePartitionMemory(HBL_block);
