@@ -45,7 +45,7 @@ static void resetHomeSettings()
 static void (* run_eloader)();
 
 // Loads HBL to memory
-static void load_hbl()
+static int load_hbl()
 {
 	SceUID hbl_file;
 	int ret;
@@ -53,7 +53,8 @@ static void load_hbl()
 	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
 	if (hbl_file < 0) {
 		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
-		sceKernelExitGame();
+		sceIoClose(hbl_file);
+		return hbl_file;
 	}
 
 	// Allocate memory for HBL
@@ -64,7 +65,8 @@ static void load_hbl()
 		2, "Valentine", PSP_SMEM_Addr, HBL_SIZE, (void *)HBL_LOAD_ADDR);
 	if(HBL_block < 0) {
 		scr_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
-		sceKernelExitGame();
+		sceIoClose(hbl_file);
+		return HBL_block;
 	}
 	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
 #endif
@@ -73,7 +75,9 @@ static void load_hbl()
 	ret = sceIoRead(hbl_file, (void *)run_eloader, HBL_SIZE);
 	if (ret < 0) {
 		scr_printf(" ERROR READING HBL 0x%08X\n", ret);
-		sceKernelExitGame();
+		sceIoClose(hbl_file);
+		sceKernelFreePartitionMemory(HBL_block);
+		return ret;
 	}
 
 	sceIoClose(hbl_file);
@@ -87,6 +91,8 @@ static void load_hbl()
 	sceKernelDcacheWritebackAll();
 #endif
 	hblIcacheFillRange(run_eloader, (void *)run_eloader + ret);
+
+	return 0;
 }
 
 #ifndef DISABLE_KERNEL_DUMP
@@ -309,7 +315,12 @@ int start_thread()
 #endif
 
 	dbg_printf("Loading HBL\n");
-	load_hbl();
+	if (load_hbl())
+#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
+		return sceKernelExitGameWithStatus(-1);
+#else
+		sceKernelExitGame();
+#endif
 
 	scr_puts("Running eLoader\n");
 	run_eloader();
@@ -372,7 +383,7 @@ void _start()
 		//scr_printf("Error starting HBL thread 0x%08X\n", thid);
 		dbg_printf("Error starting HBL thread 0x%08X\n", thid);
 #ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
-		sceKernelExitGameWitStatus(thid);
+		sceKernelExitGameWithStatus(thid);
 #else
 		sceKernelExitGame();
 #endif

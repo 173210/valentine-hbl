@@ -569,7 +569,7 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 		dbg_printf("Force-Loading AVCODEC\n");
 #ifdef USE_AV_MODULE_LOAD_FUNCTION
 		sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
-#else
+#elif !defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
 		sceUtilityLoadModule(PSP_MODULE_AV_AVCODEC);
 #endif
 	} else if(util_mod->id == PSP_MODULE_NET_HTTP) {
@@ -579,7 +579,7 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 		sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEURI);
 		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEHTTP);
-#else
+#elif !defined(USE_EACH_UTILITY_MODULE_LOAD_FUNCTION)
 		sceUtilityLoadModule(PSP_MODULE_NET_COMMON);
 		sceUtilityLoadModule(PSP_MODULE_NET_INET);
 		sceUtilityLoadModule(PSP_MODULE_NET_PARSEURI);

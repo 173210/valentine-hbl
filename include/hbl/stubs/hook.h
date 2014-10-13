@@ -44,7 +44,6 @@ int test_sceIoChdir();
 void threads_cleanup();
 void ram_cleanup();
 void files_cleanup();
-void subinterrupthandler_cleanup();
 
 /* Declarations */
 //files imported by Patapon but can't find proper .h file

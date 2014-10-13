@@ -32,6 +32,27 @@ int kill_thread(SceUID thid)
     return ret;
 }
 
+// Release all subinterrupt handler
+#ifdef SUB_INTR_HANDLER_CLEANUP
+void subinterrupthandler_cleanup()
+{
+    dbg_printf("Subinterrupthandler Cleanup\n");
+	int i, j;
+
+	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
+	{
+		for (j = 0; j <= 30; j++) // 30 is the highest value of enum PspSubInterrupts
+		{
+			if (sceKernelReleaseSubIntrHandler(i, j) > -1)
+			{
+				dbg_printf("Subinterrupt handler released for %d, %d\n", i, j);
+			}
+		}
+	}
+    dbg_printf("Subinterrupthandler Cleanup Done\n");
+}
+#endif
+
 void UnloadModules()
 {
 #ifdef KILL_MODULE_MEMSET
