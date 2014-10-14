@@ -314,7 +314,7 @@ static int p5_find_add_stubs_sceIoOpen(const char *modname, void *p, size_t size
 		if (!strcmp(pentry->lib_name, "IoFileMgrForUser"))
 			for (i = 0; i < pentry->stub_size; i++)
 				if (((int *)pentry->nid_p)[i] == nid_sceIoOpen) {
-					call = ((int *)pentry->jump_p)[i * 2 + 1];
+					call = MAKE_CALL(pentry->jump_p + i * 8);
 					add_nid(nid_sceIoOpen, call, lib_index);
 				}
 
@@ -337,24 +337,24 @@ int p5_add_stubs()
 	sceKernelVolatileMemUnlock(0);
 #endif
 
-	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
-
-#if VITA >= 330
-	num = p5_find_add_stubs_sceIoOpen("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
-#else
-	num = p5_find_add_stubs("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
-#endif
-
-	p5_close_savedata();
-
 	p5_open_savedata(PSP_UTILITY_SAVEDATA_SAVE);
 
-	num += p5_find_add_stubs("scePaf_Module", (void *)0x084C0000, 0x00010000);
+	num = p5_find_add_stubs("scePaf_Module", (void *)0x084C0000, 0x00010000);
 	num += p5_find_add_stubs("sceVshCommonUtil_Module", (void *)0x08760000, 0x00010000);
 	num += p5_find_add_stubs("sceDialogmain_Module", (void *)0x08770000, 0x00010000);
 
 	p5_close_savedata();
 	scr_init();
+
+	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
+
+#if VITA >= 330
+	num += p5_find_add_stubs_sceIoOpen("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
+#else
+	num += p5_find_add_stubs("sceVshSDAuto_Module", (void *)0x08410000, 0x00010000);
+
+	p5_close_savedata();
+#endif
 
 	return num;
 }
@@ -365,7 +365,7 @@ void resolve_hbl_stubs()
 	unsigned u;
 	int i, ret;
 	int *stub, *nid;
-	int syscall;
+	int call;
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	const char *lib_name;
 #endif
@@ -387,18 +387,24 @@ void resolve_hbl_stubs()
 			if (ret < 0) {
 #ifdef DEACTIVATE_SYSCALL_ESTIMATION
 				dbg_printf("HBL Function missing, this can lead to trouble\n");
-				syscall = NOP_OPCODE;
+				*stub++ = JR_RA_OPCODE;
+				*stub++ = NOP_OPCODE;
 #else
 				syscall = MAKE_SYSCALL(estimate_syscall(
 					lib_name, *nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
 #endif
 			} else {
 				dbg_printf("-Found in NID table, using real call\n");
-				syscall = globals->nid_table[ret].call;
+				call = globals->nid_table[ret].call;
+				if (call & 0x0C000000) {
+					*stub++ = call;
+					*stub++ = NOP_OPCODE;
+				} else {
+					*stub++ = JR_RA_OPCODE;
+					*stub++ = call;
+				}
 			}
 
-			*stub++ = JR_RA_OPCODE;
-			*stub++ = syscall;
 			nid++;
 		}
 	}
