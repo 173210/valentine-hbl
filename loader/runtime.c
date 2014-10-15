@@ -314,7 +314,7 @@ static int p5_find_add_stubs_sceIoOpen(const char *modname, void *p, size_t size
 		if (!strcmp(pentry->lib_name, "IoFileMgrForUser"))
 			for (i = 0; i < pentry->stub_size; i++)
 				if (((int *)pentry->nid_p)[i] == nid_sceIoOpen) {
-					call = MAKE_CALL(pentry->jump_p + i * 8);
+					call = MAKE_JUMP(pentry->jump_p + i * 8);
 					add_nid(nid_sceIoOpen, call, lib_index);
 				}
 
