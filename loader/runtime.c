@@ -7,7 +7,6 @@
 #include <common/utils.h>
 #include <loader/runtime.h>
 #include <exploit_config.h>
-#include <loader.h>
 
 #ifndef UTILITY_DONT_USE_sceUtilityLoadModule
 static const int modules[] = {
@@ -319,7 +318,7 @@ int p5_add_stubs()
 // Autoresolves HBL stubs
 void resolve_hbl_stubs()
 {
-	unsigned u;
+	const tStubEntry *ent;
 	int i, ret;
 	int *stub, *nid;
 	int call;
@@ -327,14 +326,15 @@ void resolve_hbl_stubs()
 	const char *lib_name;
 #endif
 
-	for (u = 0; u < sizeof(hbl_stub_entires) / sizeof(tStubEntry); u++) {
+	for (ent = libStubTop; ent != libStubBtm; ent++) {
+		dbg_printf("0x%08X, %d\n", (int)ent, ent->stub_size);
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
-		lib_name = hbl_stub_entires[u].lib_name;
+		lib_name = ent->lib_name;
 #endif
-		stub = (int *)((int)hbl_stub_entires[u].jump_p | 0x40000000);
-		nid = (int *)hbl_stub_entires[u].nid_p;
+		stub = (int *)((int)ent->jump_p | 0x40000000);
+		nid = (int *)ent->nid_p;
 
-		for (i = 0; i < hbl_stub_entires[u].stub_size; i++) {
+		for (i = 0; i < ent->stub_size; i++) {
 			dbg_printf("-Resolving import 0x%08X: 0x%08X\n",
 				(int)stub, *nid);
 

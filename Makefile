@@ -28,7 +28,7 @@ endif
 LDFLAGS = -O1 -G0
 
 
-OBJS_COMMON = sdk.o common/stubs/tables.o \
+OBJS_COMMON = common/sdk.o common/stubs/tables.o \
 	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
 	common/memory.o common/utils.o
 ifndef VITA
@@ -57,8 +57,8 @@ HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(LDADDR) hbl.ld
 H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(LDADDR) loader.ld
 	$(LD) $(LDFLAGS) -T $(LDADDR) -T loader.ld $(OBJS_COMMON) $(OBJS_LOADER) -o $@
 
-sdk.o: $(FOLDER_PATH)/sdk.S
-	$(AS) $< -o $@
+common/sdk.o: $(FOLDER_PATH)/sdk.S
+	$(CC) $(INCDIR) -c -o $@ $<
 
 loader/loader.o: loader/loader.c HBL.elf
 	$(CC) $(CFLAGS) -D HBL_SIZE=$(lastword $(shell psp-size -A HBL.elf)) -c -o $@ $<

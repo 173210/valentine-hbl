@@ -2,6 +2,9 @@
 
 #define MAX_RUNTIME_STUB_HEADERS 64
 
+extern const tStubEntry libStubTop[];
+extern const tStubEntry libStubBtm[];
+
 // If we want to load additional modules in advance to use their syscalls
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils();
