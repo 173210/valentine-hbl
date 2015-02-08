@@ -5,7 +5,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-	. = 0x08D20000;
+	. = loader;
 	.text.start : {
 		*(.text.start)
 	}
@@ -22,5 +22,3 @@ SECTIONS
 		*(.bss)
 	}
 }
-
-

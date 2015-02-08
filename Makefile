@@ -46,14 +46,16 @@ OBJS_HBL = hbl/eloader.o \
 
 OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
 
+LDADDR = $(FOLDER_PATH)/addr.ld
+
 %.BIN: %.elf
 	psp-objcopy -S -O binary $< $@
 
-HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(FOLDER_PATH)/linker_hbl.x
-	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_hbl.x $(OBJS_COMMON) $(OBJS_HBL) -o $@
+HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(LDADDR) hbl.ld
+	$(LD) $(LDFLAGS) -T $(LDADDR) -T hbl.ld $(OBJS_COMMON) $(OBJS_HBL) -o $@
 
-H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(FOLDER_PATH)/linker_loader.x
-	$(LD) $(LDFLAGS) -T $(FOLDER_PATH)/linker_loader.x $(OBJS_COMMON) $(OBJS_LOADER) -o $@
+H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(LDADDR) loader.ld
+	$(LD) $(LDFLAGS) -T $(LDADDR) -T loader.ld $(OBJS_COMMON) $(OBJS_LOADER) -o $@
 
 sdk.o: $(FOLDER_PATH)/sdk.S
 	$(AS) $< -o $@
