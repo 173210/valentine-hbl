@@ -25,7 +25,7 @@ ifdef DEBUG
 CFLAGS += -D DEBUG
 endif
 
-LDFLAGS = -O1 -G0 --no-keep-memory
+LDFLAGS = -O1 -G0
 
 
 OBJS_COMMON = sdk.o common/stubs/tables.o \
