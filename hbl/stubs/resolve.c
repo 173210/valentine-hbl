@@ -1,15 +1,14 @@
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/string.h>
-#include <common/sdk.h>
 #include <common/debug.h>
-#include <hbl/eloader.h>
-//#include "scratchpad.h"
-#include <hbl/modmgr/elf.h>
-#include <hbl/stubs/hook.h>
-#include <hbl/modmgr/modmgr.h>
-#include <hbl/stubs/resolve.h>
 #include <common/globals.h>
+#include <common/sdk.h>
+#include <hbl/modmgr/elf.h>
+#include <hbl/modmgr/modmgr.h>
+#include <hbl/stubs/hook.h>
+#include <hbl/stubs/resolve.h>
+#include <hbl/eloader.h>
 #include <exploit_config.h>
 
 // Subsitutes the right instruction

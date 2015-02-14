@@ -3,69 +3,22 @@
 #include <common/debug.h>
 #include <common/utils.h>
 #include <hbl/modmgr/elf.h>
-#include <hbl/modmgr/reloc.h>
-#include <hbl/stubs/hook.h>
 #include <hbl/eloader.h>
-
-#ifdef DEBUG
-static void log_modinfo(SceModuleInfo *modinfo)
-{
-	dbg_printf("\n->Module information:\n"
-		"Module name: %s\n"
-		"Module version: %d.%d\n"
-		"Module attributes: 0x%08X\n"
-		"Entry top: 0x%08X\n"
-		"Stubs top: 0x%08X\n"
-		"Stubs end: 0x%08X\n"
-		"GP value: 0x%08X\n",
-		modinfo->modname,
-		modinfo->modversion[0], modinfo->modversion[1],
-		modinfo->modattribute,
-		(int)modinfo->ent_top,
-		(int)modinfo->stub_top,
-		(int)modinfo->stub_end,
-		(int)modinfo->gp_value);
-}
-#endif
-
-//utility
-// Allocates memory for homebrew so it doesn't overwrite itself
-//This function is inly used in elf.c. Let's move it to malloc.c ONLY if other files start to need it
-static void *elf_malloc(SceSize size, void *addr)
-{
-	SceUID blockid;
-
-	dbg_printf("-->ALLOCATING MEMORY @ 0x%08X size 0x%08X... ",
-		(int)addr, size);
-
-	//hook is used to monitor ram usage and free it on exit
-	blockid = _hook_sceKernelAllocPartitionMemory(
-		2, "ELFMemory", addr == NULL ? PSP_SMEM_Low : PSP_SMEM_Addr, size, addr);
-
-	if (blockid < 0) {
-		dbg_printf("FAILED: 0x%08X\n", blockid);
-		return NULL;
-	}
-
-	dbg_puts("OK\n");
-
-	return sceKernelGetBlockHeadAddr(blockid);
-}
-
 
 /*****************/
 /* ELF FUNCTIONS */
 /*****************/
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
-int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr)
+int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr,
+	void *(* malloc)(const char *name, SceSize, void *))
 {
 	Elf32_Phdr phdr;
 	size_t size, read;
 	int excess;
 	int i;
 
-	if (hdr == NULL)
+	if (hdr == NULL || malloc == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	size = 0;
@@ -81,7 +34,7 @@ int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr)
 		// Loads program segment at virtual address
 		if (sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET) < 0)
 			continue;
-		if (elf_malloc(phdr.p_memsz, phdr.p_vaddr) == NULL)
+		if (malloc("ELF", phdr.p_memsz, phdr.p_vaddr) == NULL)
 			continue;
 		read = sceIoRead(fd, phdr.p_vaddr, phdr.p_filesz);
 		if (read < 0)
@@ -96,73 +49,6 @@ int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr)
 	}
 
 	return size;
-}
-
-// Loads relocatable executable in memory using fixed address
-// Loads address of first stub header in stub
-// Returns total size copied in memory
-int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modinfo, void **addr)
-{
-	Elf32_Phdr phdr;
-	int excess, ret;
-
-	//dbg_printf("prx_load_program -> Offset: 0x%08X\n", off);
-
-	if (hdr == NULL || addr == NULL)
-		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-
-	// Read the program header
-	ret = sceIoLseek(fd, off + hdr->e_phoff, PSP_SEEK_SET);
-	if (ret < 0)
-		return ret;
-	ret = sceIoRead(fd, &phdr, sizeof(Elf32_Phdr));
-	if (ret < 0)
-		return ret;
-    
-	// Check if kernel mode
-	if ((int)phdr.p_paddr & 0x80000000)
-		return SCE_KERNEL_ERROR_UNSUPPORTED_PRX_TYPE;
-
-	dbg_printf("Module info @ 0x%08X offset\n", off + (int)phdr.p_paddr);
-
-	// Read module info from PRX
-	ret = sceIoLseek(fd, off + (int)phdr.p_paddr, PSP_SEEK_SET);
-	if (ret < 0)
-		return ret;
-	ret = sceIoRead(fd, modinfo, sizeof(_sceModuleInfo));
-	if (ret < 0)
-		return ret;
-
-#ifdef DEBUG
-	log_modinfo(modinfo);
-#endif
-
-	if (elf_malloc(phdr.p_memsz, *addr) == NULL)
-		return SCE_KERNEL_ERROR_NO_MEMORY;
-
-	// Loads program segment
-	ret = sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET);
-	if (ret < 0)
-		return ret;
-	ret = sceIoRead(fd, *addr, phdr.p_filesz);
-	if (ret < 0)
-		return ret;
-
-	excess = phdr.p_memsz - ret;
-	if (excess > 0)
-		memset(*addr + ret + 1, 0, excess);
-
-	dbg_printf("Before reloc -> Offset: 0x%08X\n", off);
-
-	//Relocate all sections that need to
-	ret = reloc(fd, off, hdr, *addr);
-
-	dbg_printf("Relocated entries: %d\n", ret);
-	if (!ret)
-		dbg_puts("WARNING: no entries to relocate on a relocatable ELF\n");
-
-	// Return size of total size copied in memory
-	return phdr.p_memsz;
 }
 
 // Get index of section if you know the section name

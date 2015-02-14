@@ -2,7 +2,6 @@
 // settings.c : Settings variables read from file
 //
 
-#include <hbl/utils/settings.h>
 #include <common/stubs/syscall.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
@@ -10,6 +9,7 @@
 #include <common/globals.h>
 #include <common/path.h>
 #include <common/utils.h>
+#include <hbl/settings.h>
 #include <exploit_config.h>
 
 //default values

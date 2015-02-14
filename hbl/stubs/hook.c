@@ -10,8 +10,8 @@
 #include <hbl/stubs/hook.h>
 #include <hbl/stubs/md5.h>
 #include <hbl/stubs/resolve.h>
-#include <hbl/utils/settings.h>
 #include <hbl/eloader.h>
+#include <hbl/settings.h>
 #include <exploit_config.h>
 
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!

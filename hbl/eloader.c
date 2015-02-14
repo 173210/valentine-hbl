@@ -8,9 +8,11 @@
 #include <common/utils.h>
 #include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
-#include <hbl/utils/settings.h>
 #include <hbl/eloader.h>
+#include <hbl/settings.h>
 #include <exploit_config.h>
+
+PSP_MODULE_INFO("HBL", PSP_MODULE_USER, 0, 0);
 
 static int hbl_exit_cb_called = 0;
 int hook_exit_cb_called = 0;
@@ -181,8 +183,7 @@ int callback_thread()
 }
 
 // HBL main thread
-void _start() __attribute__ ((section (".text.start")));
-void _start()
+int module_start()
 {
 	SceUID fd;
 	char path[260];
@@ -253,6 +254,8 @@ void _start()
 #else
 	sceKernelExitGame();
 #endif
+
+	return 0;
 }
 
 // Big thanks to people who share information !!!

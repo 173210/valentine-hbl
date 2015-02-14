@@ -316,7 +316,7 @@ int p5_add_stubs()
 }
 
 // Autoresolves HBL stubs
-void resolve_hbl_stubs()
+int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 {
 	const tStubEntry *ent;
 	int i, ret;
@@ -326,8 +326,10 @@ void resolve_hbl_stubs()
 	const char *lib_name;
 #endif
 
-	for (ent = libStubTop; ent != libStubBtm; ent++) {
-		dbg_printf("0x%08X, %d\n", (int)ent, ent->stub_size);
+	if (top == NULL || end == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	for (ent = top; ent != end; ent++) {
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 		lib_name = ent->lib_name;
 #endif
@@ -369,5 +371,7 @@ void resolve_hbl_stubs()
 	dbg_printf(" ****STUBS SEARCHED\n");
 
 	hblIcacheFillRange((void *)HBL_STUBS_ADDR, (void *)HBL_STUBS_ADDR + HBL_STUBS_NUM * 8);
+
+	return 0;
 }
 

@@ -5,7 +5,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-	. = loader;
+	. = __executable_start;
 	.text.start : {
 		*(.text.start)
 	}
@@ -16,18 +16,15 @@ SECTIONS
 		*(.rodata)
 	}
 	.lib.stub.top : {
-		libStubTop = .;
 		*(.lib.stub.top)
 	}
 	.lib.stub : {
+		libStubTop = .;
 		*(.lib.stub)
+		libStubBtm = .;
 	}
 	.lib.stub.btm : {
-		libStubBtm = .;
 		*(.lib.stub.btm)
-	}
-	.rodata.sceResident : {
-		*(.rodata.sceResident)
 	}
 	.rodata.sceNid : {
 		KEEP (*(.rodata.sceNid))
@@ -38,10 +35,15 @@ SECTIONS
 	.bss : {
 		*(.bss)
 	}
-
-	. = 0x10000;
-	.sceStub.text (NOLOAD) : {
+	.sceStub.text : {
 		*(.sceStub.text)
 		*(SORT(.sceStub.text.*))
+	}
+
+	.rodata.sceModuleInfo (NOLOAD) : {
+		*(.rodata.sceModuleInfo)
+	}
+	.rodata.sceResident (NOLOAD) : {
+		*(.rodata.sceResident)
 	}
 }

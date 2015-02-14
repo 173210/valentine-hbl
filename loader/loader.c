@@ -10,10 +10,12 @@
 #include <common/globals.h>
 #include <common/memory.h>
 #include <common/path.h>
+#include <common/prx.h>
 #include <common/sdk.h>
 #include <common/utils.h>
 #include <loader/freemem.h>
 #include <loader/runtime.h>
+#include <hbl/eloader.h>
 #include <exploit_config.h>
 #include <svnversion.h>
 
@@ -22,6 +24,8 @@
 #endif
 
 #define FIRST_LOG "Loader running\n"
+
+PSP_MODULE_INFO("LOADER", PSP_MODULE_USER, 0, 0);
 
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
@@ -44,40 +48,84 @@ static void resetHomeSettings()
 
 static void (* run_eloader)();
 
+static void *hblMalloc(const char *name, SceSize size, void *p)
+{
+	SceUID blockid;
+
+	dbg_printf("%s: size: %d, p: 0x%08X\n", __func__, size, (int)p);
+
+	if (name == NULL)
+		return NULL;
+
+	if (p == NULL) {
+		blockid = sceKernelAllocPartitionMemory(2, name,
+			PSP_SMEM_Low, size + (1 << 16), NULL);
+		if (blockid < 0) {
+			dbg_printf("FAILED: 0x%08X\n", blockid);
+			return NULL;
+		}
+
+		p = sceKernelGetBlockHeadAddr(blockid);
+		if ((int)p & ((1 << 16) - 1))
+			p = (void *)(((int)p & ~((1 << 16) - 1)) + (1 << 16));
+
+		if ((int)p + size >= PRX_LOAD_ADDRESS) {
+			blockid = sceKernelAllocPartitionMemory(2, name,
+				PSP_SMEM_High, size + (1 << 16), NULL);
+			if (blockid < 0) {
+				dbg_printf("FAILED: 0x%08X\n", blockid);
+				return NULL;
+			}
+
+			if ((int)p & ((1 << 16) - 1))
+				p = (void *)(((int)p & ~((1 << 16) - 1)) + (1 << 16));
+		}
+	} else {
+		blockid = sceKernelAllocPartitionMemory(2, name,
+			PSP_SMEM_Addr, size, p);
+		if (blockid < 0) {
+			dbg_printf("FAILED: 0x%08X\n", blockid);
+			return NULL;
+		}
+	}
+
+	return p;
+}
+
 // Loads HBL to memory
 static int load_hbl()
 {
-	SceUID hbl_file;
+	_sceModuleInfo modinfo;
+	Elf32_Ehdr ehdr;
+	SceUID fd;
+	void *p = NULL;
 	int ret;
 
-	hbl_file = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
-	if (hbl_file < 0) {
-		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", hbl_file);
-		sceIoClose(hbl_file);
-		return hbl_file;
+	fd = sceIoOpen(HBL_PATH, PSP_O_RDONLY, 0777);
+	if (fd < 0) {
+		scr_printf(" FAILED TO LOAD HBL 0x%08X\n", fd);
+		sceIoClose(fd);
+		return fd;
 	}
 
-	// Allocate memory for HBL
-#ifdef DONT_ALLOC_HBL_MEM
-	run_eloader = (void *)HBL_LOAD_ADDR;
-#else
-	SceUID HBL_block = sceKernelAllocPartitionMemory(
-		2, "Valentine", PSP_SMEM_Addr, HBL_SIZE, (void *)HBL_LOAD_ADDR);
-	if(HBL_block < 0)
-		scr_printf(" ERROR ALLOCATING HBL MEMORY 0x%08X\n", HBL_block);
-	run_eloader = sceKernelGetBlockHeadAddr(HBL_block);
-#endif
 	dbg_printf("Loading HBL...\n");
-	// Load HBL to allocated memory
-	ret = sceIoRead(hbl_file, (void *)run_eloader, HBL_SIZE);
+	dbg_printf(" Reading ELF header...\n");
+	sceIoRead(fd, &ehdr, sizeof(ehdr));
+
+	dbg_printf(" Loading PRX...\n");
+	ret = prx_load(fd, 0, &ehdr, &modinfo, &p, hblMalloc);
 	if (ret <= 0) {
 		scr_printf(" ERROR READING HBL 0x%08X\n", ret);
-		sceIoClose(hbl_file);
-		sceKernelFreePartitionMemory(HBL_block);
+		sceIoClose(fd);
 		return ret;
 	}
 
-	sceIoClose(hbl_file);
+	sceIoClose(fd);
+
+	dbg_printf(" Resolving Stubs...\n");
+	resolve_hbl_stubs((void *)(modinfo.stub_top + (int)p), (void *)(modinfo.stub_end + (int)p));
+
+	run_eloader = (void *)((int)ehdr.e_entry + (int)p);
 
 	dbg_printf("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
@@ -87,7 +135,7 @@ static int load_hbl()
 #else
 	sceKernelDcacheWritebackAll();
 #endif
-	hblIcacheFillRange(run_eloader, (void *)run_eloader + ret);
+	hblIcacheFillRange(run_eloader, (void *)((int)run_eloader + ret));
 
 	return 0;
 }
@@ -170,7 +218,7 @@ static int test_sceIoChdir()
 
 	sceIoChdir(HBL_ROOT);
 
-	fd = sceIoOpen(HBL_BIN, PSP_O_RDONLY, 0777);
+	fd = sceIoOpen(HBL_PRX, PSP_O_RDONLY, 0777);
 	if (fd > 0) {
 		sceIoClose(fd);
 
@@ -289,9 +337,6 @@ int start_thread()
 	scr_puts("Building NIDs table with savedata utility\n");
 	p5_add_stubs();
 
-	scr_puts("Resolving HBL stubs\n");
-	resolve_hbl_stubs();
-
 	scr_puts("Initializing hook\n");
 	hook_init();
 
@@ -338,7 +383,7 @@ void _start()
 
         memset(globals, 0, sizeof(tGlobals));
 	p2_add_stubs();
-	resolve_hbl_stubs();
+	resolve_hbl_stubs(libStubTop, libStubBtm);
 
 #if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();

@@ -6,12 +6,13 @@
 #include <common/globals.h>
 #include <common/memory.h>
 #include <common/path.h>
+#include <common/prx.h>
 #include <common/sdk.h>
 #include <hbl/modmgr/elf.h>
 #include <hbl/modmgr/modmgr.h>
 #include <hbl/stubs/hook.h>
 #include <hbl/stubs/resolve.h>
-#include <hbl/utils/settings.h>
+#include <hbl/settings.h>
 #include <exploit_config.h>
 #include <svnversion.h>
 
@@ -125,6 +126,38 @@ static void log_mod_entry(HBLModInfo modinfo)
 }
 #endif
 
+static void *modmgrMalloc(const char *name, SceSize size, void *p)
+{
+	SceUID blockid;
+
+	dbg_printf("%s: size: %d, p: 0x%08X\n", __func__, size, (int)p);
+
+	if (name == NULL)
+		return NULL;
+
+	if (p == NULL) {
+		blockid = _hook_sceKernelAllocPartitionMemory(2, name,
+			PSP_SMEM_Low, size + (1 << 16), NULL);
+		if (blockid < 0) {
+			dbg_printf("FAILED: 0x%08X\n", blockid);
+			return NULL;
+		}
+
+		p = sceKernelGetBlockHeadAddr(blockid);
+		if ((int)p & ((1 << 16) - 1))
+			p = (void *)(((int)p & ~((1 << 16) - 1)) + (1 << 16));
+	} else {
+		blockid = _hook_sceKernelAllocPartitionMemory(2, name,
+			PSP_SMEM_Addr, size, p);
+		if (blockid < 0) {
+			dbg_printf("FAILED: 0x%08X\n", blockid);
+			return NULL;
+		}
+	}
+
+	return p;
+}
+
 // Loads a module to memory
 SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 {
@@ -180,7 +213,7 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 				return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
 
 			// Load ELF program section into memory
-			mod_size = elf_load(fd, off, &ehdr);
+			mod_size = elf_load(fd, off, &ehdr, modmgrMalloc);
 			if (mod_size < 0)
 				return mod_size;
 
@@ -203,7 +236,7 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 			dbg_printf("load_module -> Offset: 0x%08X\n", off);
 
 			// Load PRX program section
-			mod_size = prx_load(fd, off, &ehdr, &modinfo, &addr);
+			mod_size = prx_load(fd, off, &ehdr, &modinfo, &addr, modmgrMalloc);
 			if (mod_size < 0)
 				return mod_size;
 

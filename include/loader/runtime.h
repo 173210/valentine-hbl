@@ -18,7 +18,7 @@ int elf_check_stub_entry(tStubEntry *pentry);
 
 int p2_add_stubs();
 int p5_add_stubs();
-void resolve_hbl_stubs();
+int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end);
 
 #define PSP_MODULE_NET_UPNP             0x0107
 #define PSP_MODULE_NET_GAMEUPDATE       0x0108

@@ -1,70 +1,29 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
-all: HBL.BIN H.BIN
+all: H.BIN HBL.prx
+
+CC = psp-gcc
 
 # use a different FOLDER to make for different exploits
 # Exploit-specific files go in the subfolders, see targets hbl and loader below
-FOLDER_PATH = exploits/$(FOLDER)
-
-LD	= psp-ld
-CC	= psp-gcc
-AS	= psp-as
-
-INCDIR	= -I $(shell psp-config --pspsdk-path)/include -I include -I $(FOLDER_PATH) -I .
-
-CFLAGS	= $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
+FLAGS = FOLDER=$(FOLDER)
 ifdef VITA
-CFLAGS += -D VITA=$(VITA)
+FLAGS += VITA=$(VITA)
 endif
 
 ifdef NID_DEBUG
-DEBUG = 1
-CFLAGS += -D NID_DEBUG
-endif
-ifdef DEBUG
-CFLAGS += -D DEBUG
-endif
-
-LDFLAGS = -O1 -G0
-
-
-OBJS_COMMON = common/sdk.o common/stubs/tables.o \
-	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
-	common/memory.o common/utils.o
-ifndef VITA
-OBJS_COMMON += common/stubs/syscall.o
+FLAGS += NID_DEBUG=$(NID_DEBUG)
 endif
 
 ifdef DEBUG
-OBJS_COMMON += common/debug.o
+CFLAGS += DEBUG=$(DEBUG)
 endif
 
-OBJS_HBL = hbl/eloader.o \
-	hbl/modmgr/elf.o hbl/modmgr/modmgr.o hbl/modmgr/reloc.o \
-	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o \
-	hbl/utils/settings.o
+H.BIN: svnversion.h libpspuser/libpspuser.a
+	make -f Makefile_h $(FLAGS)
 
-OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
-
-LDADDR = $(FOLDER_PATH)/addr.ld
-
-%.BIN: %.elf
-	psp-objcopy -S -O binary $< $@
-
-HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) $(LDADDR) hbl.ld
-	$(LD) $(LDFLAGS) -T $(LDADDR) -T hbl.ld $(OBJS_COMMON) $(OBJS_HBL) -o $@
-
-H.elf: $(OBJS_COMMON) $(OBJS_LOADER) $(LDADDR) loader.ld
-	$(LD) $(LDFLAGS) -T $(LDADDR) -T loader.ld $(OBJS_COMMON) $(OBJS_LOADER) -o $@
-
-common/sdk.o: $(FOLDER_PATH)/sdk.S
-	$(CC) $(INCDIR) -c -o $@ $<
-
-loader/loader.o: loader/loader.c HBL.elf
-	$(CC) $(CFLAGS) -D HBL_SIZE=$(lastword $(shell psp-size -A HBL.elf)) -c -o $@ $<
-
-hbl/modmgr/modmgr.o: svnversion.h
-loader/loader.o: svnversion.h
+HBL.prx: svnversion.h libpspuser/libpspuser.a
+	make -f Makefile_hbl $(FLAGS)
 
 #svn version in code
 svnversion.h:
@@ -75,5 +34,11 @@ svnversion.h:
 	-@echo "#endif" >> svnversion.h
 	-SubWCRev . svnversion.txt svnversion.h
 
+libpspuser/libpspuser.a:
+	make -C libpspuser -f Makefile
+
 clean:
-	rm -Rf $(OBJS_COMMON) common/stubs/syscall.o common/debug.o $(OBJS_HBL) $(OBJS_LOADER) svnversion.h HBL.elf H.elf HBL.BIN H.BIN
+	rm -f svnversion.h
+	make -C libpspuser -f Makefile clean
+	make -f Makefile_h clean
+	make -f Makefile_hbl clean
