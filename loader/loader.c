@@ -167,12 +167,7 @@ static void log_init()
 static void dbg_init()
 {
 	tStubEntry *entry;
-	int *hbl_stubs = (void *)(HBL_STUBS_ADDR | 0x40000000);
 	int i, j;
-
-	for (i = 0; i < HBL_STUBS_NUM; i++)
-		hbl_stubs[i * 2] = BREAK_OPCODE(0);
-	hblIcacheFillRange((void *)HBL_STUBS_ADDR, (void *)HBL_STUBS_ADDR + HBL_STUBS_NUM * 8);
 
 	i = 0;
 	for (entry = (tStubEntry *)0x08800000;

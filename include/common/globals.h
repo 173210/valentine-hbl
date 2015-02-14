@@ -50,13 +50,11 @@ typedef struct
 	tSceLibrary lib_table[MAX_LIBRARIES];
 } tGlobals;
 
-#define HBL_STUBS_ADDR 0x10000
 #define GLOBALS_ADDR 0x10200
 #define globals ((tGlobals *)GLOBALS_ADDR)
 
 //This should fail with a weird error at compile time if globals is too big
 STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
-STATIC_ASSERT(HBL_STUBS_ADDR + HBL_STUBS_NUM * 2 * sizeof(int) <= GLOBALS_ADDR);
 
 #endif
 
