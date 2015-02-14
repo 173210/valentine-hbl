@@ -314,7 +314,7 @@ SceUID start_module(SceUID modid)
 	log_mod_entry(mod_table[modid]);
 #endif
 
-	SET_GP(mod_table[modid].gp);
+	__asm__("lw $gp, %0" :: "m" (mod_table[modid].gp));
 
 	// Attempt at launching the module without thread creation (crashes on sceSystemMemoryManager ?)
 	/*

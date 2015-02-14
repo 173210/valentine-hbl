@@ -1252,12 +1252,12 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUS
 
 	dbg_printf("_hook_sceKernelStartModule\n");
 
-	GET_GP(gp);
+	__asm__("sw $gp, %0" : "=m" (gp));
 
 	ret = start_module(modid);
 	dbg_printf("start_module returned 0x%08X\n", ret);
 
-	SET_GP(gp);
+	__asm__("lw $gp, %0" :: "m" (gp));
 
 	return ret;
 }
