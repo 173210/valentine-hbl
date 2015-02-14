@@ -1222,7 +1222,6 @@ void _hook_sceKernelDcacheWritebackInvalidateAll (void)
 // ###############
 // UtilsForUser
 // ###############
-#ifdef LOAD_MODULE
 SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelLMOption * UNUSED(option))
 {
 	dbg_printf("_hook_sceKernelLoadModule\n");
@@ -1261,7 +1260,6 @@ int	_hook_sceKernelStartModule(SceUID modid, SceSize UNUSED(argsize), void *UNUS
 
 	return ret;
 }
-#endif
 
 #ifdef HOOK_UTILITY
 
@@ -1494,26 +1492,16 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
                 hook_call = MAKE_JUMP(_hook_sceAudioChReserve);
             break;
 
-#ifdef LOAD_MODULE
         case 0x4C25EA72: //kuKernelLoadModule --> CFW specific function? Anyways the call should fail
-		case 0x977DE386: // sceKernelLoadModule
-			dbg_printf(" loadmodule trick ");
-#ifdef HOOK_sceKernelLoadModule_WITH_error
-            hook_call = MAKE_JUMP(_hook_generic_error);
-#else
-#ifdef HOOK_sceKernelLoadModule
-			hook_call = MAKE_JUMP(_hook_sceKernelLoadModule);
-#else
-			hook_call = MAKE_JUMP(sceKernelLoadModule);
-#endif
-#endif
-			break;
+	case 0x977DE386: // sceKernelLoadModule
+		dbg_printf(" loadmodule trick ");
+		hook_call = MAKE_JUMP(_hook_sceKernelLoadModule);
+		break;
 
-		case 0x50F0C1EC: // sceKernelStartModule
-			dbg_printf(" loadmodule trick ");
-			hook_call = MAKE_JUMP(_hook_sceKernelStartModule);
-			break;
-#endif
+	case 0x50F0C1EC: // sceKernelStartModule
+		dbg_printf(" loadmodule trick ");
+		hook_call = MAKE_JUMP(_hook_sceKernelStartModule);
+		break;
 
 
 #ifdef HOOK_UTILITY
