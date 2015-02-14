@@ -21,6 +21,8 @@ int strcmp(const char *s1, const char *s2);
 // Compares only "count" chars from strings
 int strncmp(const char *s1, const char *s2, size_t n);
 
+int strcasecmp(const char *s1, const char *s2);
+
 // Copies string src into dest
 char *strcpy(char *dst, const char *src);
 

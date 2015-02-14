@@ -369,8 +369,8 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 	}
 
 	dbg_printf(" ****STUBS SEARCHED\n");
-
-	hblIcacheFillRange((void *)HBL_STUBS_ADDR, (void *)HBL_STUBS_ADDR + HBL_STUBS_NUM * 8);
+	end--;
+	hblIcacheFillRange(top->jump_p, (void *)(*(int *)end->jump_p + end->stub_size));
 
 	return 0;
 }

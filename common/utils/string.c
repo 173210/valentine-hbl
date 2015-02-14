@@ -69,6 +69,27 @@ int strncmp(const char *s1, const char *s2, size_t n)
 	return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
+static int toupper(int c)
+{
+	if (c > 96 && c < 123)
+		c -= 32;
+
+	return c;
+}
+
+int strcasecmp(const char *s1, const char *s2)
+{
+	while(toupper(*s1) == toupper(*s2)) {
+		if(!*s1)
+			return 0;
+
+		s1++;
+		s2++;
+	}
+
+	return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
+
 // Copies string src into dst
 char *strcpy(char *dst, const char *src)
 {

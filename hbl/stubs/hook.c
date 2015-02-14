@@ -393,6 +393,7 @@ void threads_cleanup()
 // File I/O manager Hooks
 //
 // returns 1 if a string is an absolute file path, 0 otherwise
+#if defined(HOOK_CHDIR_AND_FRIENDS) || defined(VITA)
 static int path_is_absolute(const char *path)
 {
 	if (path != NULL)
@@ -454,91 +455,364 @@ static int realpath(const char *path, char *resolved_path)
 	return SCE_KERNEL_ERROR_NAMETOOLONG;
 }
 
-
-//useful ONLY if test_sceIoChdir() fails!
-SceUID _hook_sceIoOpenForChDirFailure(const char *file, int flags, SceMode mode)
+//hook this ONLY if test_sceIoChdir() fails!
+SceUID _hook_sceIoDopen(const char *dirname)
 {
 	char resolved_path[PATH_MAX];
 	int ret;
 
-	if (file == NULL)
+	if (dirname == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-	if (globals->chdir_ok
-#ifndef VITA
-		|| path_is_absolute(file)
+	if (!path_is_absolute(dirname)) {
+		ret = realpath(dirname, resolved_path);
+		if (ret < 0)
+			return ret;
+		dirname = resolved_path;
+	}
+	return
+#ifdef VITA
+		sceIoDopen_Vita(resolved_path);
+#else
+		sceIoDopen(resolved_path);
 #endif
-	)
-		return sceIoOpen(file, flags, mode);
-
-	ret = realpath(file, resolved_path);
-	if (ret < 0)
-		return ret;
-	dbg_printf("sceIoOpen override: %s become %s\n", file, resolved_path);
-
-	return sceIoOpen(resolved_path, flags, mode);
 }
 
 
-SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
+#ifdef VITA
+// Adds Vita's missing "." / ".." entries
+
+SceUID sceIoDopen_Vita(const char *dirname)
+{
+    	dbg_printf("sceIoDopen_Vita start\n");
+    SceUID id = sceIoDopen(dirname);
+
+	if (id >= 0)
+	{
+		int dirname_len = strlen(dirname);
+
+		// If directory isn't "ms0:" or "ms0:/", add "." & ".." entries
+		if (dirname[dirname_len - 1] != ':' && dirname[dirname_len - 2] != ':')
+		{
+			int i = 0;
+
+			while (i < dirLen && globals->dirFix[i][0] >= 0)
+				++i;
+
+			if (i < MAX_OPEN_DIR_VITA)
+			{
+				globals->dirFix[i][0] = id;
+				globals->dirFix[i][1] = 2;
+
+				if (i == dirLen)
+					dirLen++;
+			}
+		}
+
+	}
+
+
+	dbg_printf("sceIoDopen_Vita Done\n");
+    return id;
+}
+
+
+int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
+{
+    	dbg_printf("sceIoDread_Vita start\n");
+	int i = 0, errCode = 1;
+	while (i < dirLen && id != globals->dirFix[i][0])
+		++i;
+
+
+	if (id == globals->dirFix[i][0])
+	{
+        memset(dir, 0, sizeof(SceIoDirent));
+		if (globals->dirFix[i][1] == 1)
+		{
+			strcpy(dir->d_name,"..");
+			dir->d_stat.st_attr |= FIO_SO_IFDIR;
+			dir->d_stat.st_mode |= FIO_S_IFDIR;
+		}
+		else if (globals->dirFix[i][1] == 2)
+		{
+			strcpy(dir->d_name,".");
+			dir->d_stat.st_attr |= FIO_SO_IFDIR;
+			dir->d_stat.st_mode |= FIO_S_IFDIR;
+		}
+		globals->dirFix[i][1]--;
+
+		if (globals->dirFix[i][1] == 0)
+		{
+			globals->dirFix[i][0] = -1;
+			globals->dirFix[i][1] = -1;
+		}
+	}
+	else
+	{
+		errCode = sceIoDread(id, dir);
+	}
+
+	dbg_printf("sceIoDread_Vita Done\n");
+	return errCode;
+}
+
+int sceIoDclose_Vita(SceUID id)
+{
+    	dbg_printf("sceIoDclose_Vita start\n");
+	int i = 0;
+	while (i < dirLen && id != globals->dirFix[i][0] )
+		++i;
+
+
+	if (i < dirLen && id == globals->dirFix[i][0])
+	{
+			globals->dirFix[i][0] = -1;
+			globals->dirFix[i][1] = -1;
+	}
+
+	dbg_printf("sceIoDclose_Vita Done\n");
+	return sceIoDclose(id);
+}
+#endif
+static int _hook_sceIoMkdir(const char *dir, SceMode mode)
+{
+	int ret;
+	char resolved[PATH_MAX];
+
+#ifndef VITA
+	if (!path_is_absolute(dir)) {
+#endif
+		ret = realpath(dir, resolved);
+		if (ret < 0)
+			return ret;
+		dir = resolved;
+#ifndef VITA
+	}
+#else
+	if (!strcasecmp("ms0:/PSP/GAME", resolved)) {
+		resolved[5] = 'Q';
+
+		ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+		if (ret)
+			return ret;
+
+		ret = sceIoMkdir(resolved, mode);
+
+		while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
+
+		return ret;
+	}
+#endif
+
+	return sceIoMkdir(dir, mode);
+}
+
+static int _hook_sceIoRename(const char *oldname, const char *newname)
+{
+	char oldResolved[PATH_MAX];
+	char newResolved[PATH_MAX];
+	int oldLen, ret, i;
+
+#ifndef VITA
+	if (!path_is_absolute(oldname)) {
+#endif
+			oldLen = realpath(oldname, oldResolved);
+			if (oldLen < 0)
+				return oldLen;
+			oldname = oldResolved;
+#ifdef VITA
+			if (oldLen < PATH_MAX
+				&& !strcasecmp(oldResolved + oldLen -  8, "BOOT.PBP")
+				&& (oldResolved[oldLen - 9] == 'E'
+					|| oldResolved[oldLen - 9] == 'e'
+					|| oldResolved[oldLen - 9] == 'P'
+					|| oldResolved[oldLen - 9] == 'p')) {
+				oldResolved[oldLen] = '.';
+				oldResolved[oldLen + 1] = 0;
+			}
+#else
+		}
+	}
+#endif
+#ifdef VITA
+	for (i = 0; i < PATH_MAX - 1; i++) {
+		if (!newname[i]) {
+			if (!strcasecmp(newResolved + i -  8, "BOOT.PBP")
+				&& (newResolved[i - 9] == 'E'
+					|| newResolved[i - 9] == 'e'
+					|| newResolved[i - 9] == 'P'
+					|| newResolved[i - 9] == 'p')) {
+				newResolved[i] = '.';
+				newResolved[i + 1] = 0;
+				newname = newResolved;
+			}
+			break;
+		}
+		newResolved[i] = newname[i];
+	}
+
+	if (!strcasecmp("ms0:/PSP/GAME", oldResolved)) {
+		oldResolved[5] = 'Q';
+
+		ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+		if (ret)
+			return ret;
+
+		ret = sceIoRename(oldResolved, newname);
+
+		while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
+
+		return ret;
+	} else if (!strcasecmp(oldResolved, "ms0:/PSP")) {
+		oldResolved[oldLen] = '.';
+		oldResolved[oldLen + 1] = 0;
+	}
+#endif
+
+	return sceIoRename(oldname, newname);
+}
+
+static int _hook_sceIoRemove(const char *file)
+{
+	int ret;
+	char resolved[PATH_MAX];
+
+#ifndef VITA
+	if (!path_is_absolute(file)) {
+#endif
+		ret = realpath(file, resolved);
+		if (ret < 0)
+			return ret;
+		file = resolved;
+#ifndef VITA
+	}
+#else
+	if (ret < PATH_MAX
+		&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
+		&& (resolved[ret - 9] == 'E'
+			|| resolved[ret - 9] == 'e'
+			|| resolved[ret - 9] == 'P'
+			|| resolved[ret - 9] == 'p')) {
+		resolved[ret] = '.';
+		resolved[ret + 1] = 0;
+	}
+
+	if (!strcasecmp("ms0:/PSP/GAME", file)) {
+		resolved[5] = 'Q';
+
+		ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+		if (ret)
+			return ret;
+
+		ret = sceIoRemove(resolved);
+
+		while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
+
+		return ret;
+	}
+#endif
+	return sceIoRemove(file);
+}
+
+
+//hook this ONLY if test_sceIoChdir() fails!
+int _hook_sceIoChdir(const char *dirname)
+{
+	char resolved_path[PATH_MAX];
+	int ret;
+
+	dbg_printf("_hook_sceIoChdir start\n");
+
+	ret = realpath(dirname, resolved_path);
+	if (ret < 0)
+		return ret;
+	else if (ret >= PATH_MAX)
+		return SCE_KERNEL_ERROR_NAMETOOLONG;
+
+        // save chDir into global variable
+	strcpy(mod_chdir, resolved_path);
+	if (mod_chdir[ret - 1] != '/') {
+		mod_chdir[ret] = '/';
+		mod_chdir[ret + 1] = '\0';
+	}
+
+	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", dirname, mod_chdir);
+	return 0;
+}
+#endif
+
+static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 {
 	SceUID ret;
+	char resolved[PATH_MAX];
 	unsigned i;
-
-	WAIT_SEMA(globals->ioSema, 1, 0);
-	ret = _hook_sceIoOpenForChDirFailure(file, flags, mode);
-
-	// Add to tracked files array if files was opened successfully
-	if (ret > -1)
+#if defined(_CHDIR_AND_FRIENDS) || defined(VITA)
+#ifndef VITA
+	if (!globals->chdir_ok && !path_is_absolute(file))
+#endif
 	{
+		ret = realpath(file, resolved);
+		if (ret < 0)
+			return ret;
+#ifdef VITA
+		if (ret < PATH_MAX && mode & PSP_O_WRONLY
+			&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
+			&& (resolved[ret - 9] == 'E'
+				|| resolved[ret - 9] == 'e'
+				|| resolved[ret - 9] == 'P'
+				|| resolved[ret - 9] == 'p')) {
+			resolved[ret] = '.';
+			resolved[ret + 1] = 0;
+		}
+#endif
+		dbg_printf("sceIoOpen override: %s become %s\n", file, resolved);
+		file = resolved;
+	}
+#endif
+	ret = sceIoOpen(file, flags, mode);
+
+	if (ret >= 0) {
+		WAIT_SEMA(globals->ioSema, 1, 0);
+
 		if (numOpenFiles < sizeof(openFiles) / sizeof(SceUID) - 1)
-		{
 			for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
-			{
-				if (openFiles[i] == 0)
-				{
+				if (openFiles[i] == 0) {
 					openFiles[i] = ret;
 					numOpenFiles++;
 					break;
 				}
-			}
-		}
 		else
-		{
 			dbg_printf("WARNING: file list full, cannot add newly opened file\n");
-		}
+
+		sceKernelSignalSema(globals->ioSema, 1);
 	}
 
-	sceKernelSignalSema(globals->ioSema, 1);
-	//dbg_printf("_hook_sceIoOpen(%s, %d, %d) = 0x%08X\n", (u32)file, (u32)flags, (u32)mode, (u32)result);
 	return ret;
 }
 
 
-int _hook_sceIoClose(SceUID fd)
+static int _hook_sceIoClose(SceUID fd)
 {
 	SceUID ret;
 	unsigned i;
     
-	WAIT_SEMA(globals->ioSema, 1, 0);
 	ret = sceIoClose(fd);
 
-	// Remove from tracked files array if closing was successfull
-	if (ret > -1)
-	{
-		for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
-		{
-			if (openFiles[i] == fd)
-			{
+	if (!ret) {
+		WAIT_SEMA(globals->ioSema, 1, 0);
+
+		for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++) {
+			if (openFiles[i] == fd) {
 				openFiles[i] = 0;
 				numOpenFiles--;
 				break;
 			}
 		}
+
+		sceKernelSignalSema(globals->ioSema, 1);
 	}
 
-	sceKernelSignalSema(globals->ioSema, 1);
-	//dbg_printf("_hook_sceIoClose(0x%08X) = 0x%08X\n", (u32)fd, (u32)result);
 	return ret;
 }
 
@@ -939,157 +1213,6 @@ int _hook_sceAudioSRCChRelease()
     cur_ch_id--;
     return result;
 }
-
-//hook this ONLY if test_sceIoChdir() fails!
-SceUID _hook_sceIoDopen(const char *dirname)
-{
-	char resolved_path[PATH_MAX];
-	int ret;
-
-	if (dirname == NULL)
-		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-
-#ifndef VITA
-	if (path_is_absolute(dirname))
-		return sceIoDopen(dirname);
-#endif
-
-	ret = realpath(dirname, resolved_path);
-	if (ret < 0)
-		return SCE_KERNEL_ERROR_NAMETOOLONG;
-
-	return
-#ifdef VITA
-		sceIoDopen_Vita(resolved_path);
-#else
-		sceIoDopen(resolved_path);
-#endif
-}
-
-
-#ifdef VITA
-// Adds Vita's missing "." / ".." entries
-
-SceUID sceIoDopen_Vita(const char *dirname)
-{
-    	dbg_printf("sceIoDopen_Vita start\n");
-    SceUID id = sceIoDopen(dirname);
-
-	if (id >= 0)
-	{
-		int dirname_len = strlen(dirname);
-
-		// If directory isn't "ms0:" or "ms0:/", add "." & ".." entries
-		if (dirname[dirname_len - 1] != ':' && dirname[dirname_len - 2] != ':')
-		{
-			int i = 0;
-
-			while (i < dirLen && globals->dirFix[i][0] >= 0)
-				++i;
-
-			if (i < MAX_OPEN_DIR_VITA)
-			{
-				globals->dirFix[i][0] = id;
-				globals->dirFix[i][1] = 2;
-
-				if (i == dirLen)
-					dirLen++;
-			}
-		}
-
-	}
-
-
-	dbg_printf("sceIoDopen_Vita Done\n");
-    return id;
-}
-
-
-int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
-{
-    	dbg_printf("sceIoDread_Vita start\n");
-	int i = 0, errCode = 1;
-	while (i < dirLen && id != globals->dirFix[i][0])
-		++i;
-
-
-	if (id == globals->dirFix[i][0])
-	{
-        memset(dir, 0, sizeof(SceIoDirent));
-		if (globals->dirFix[i][1] == 1)
-		{
-			strcpy(dir->d_name,"..");
-			dir->d_stat.st_attr |= FIO_SO_IFDIR;
-			dir->d_stat.st_mode |= FIO_S_IFDIR;
-		}
-		else if (globals->dirFix[i][1] == 2)
-		{
-			strcpy(dir->d_name,".");
-			dir->d_stat.st_attr |= FIO_SO_IFDIR;
-			dir->d_stat.st_mode |= FIO_S_IFDIR;
-		}
-		globals->dirFix[i][1]--;
-
-		if (globals->dirFix[i][1] == 0)
-		{
-			globals->dirFix[i][0] = -1;
-			globals->dirFix[i][1] = -1;
-		}
-	}
-	else
-	{
-		errCode = sceIoDread(id, dir);
-	}
-
-	dbg_printf("sceIoDread_Vita Done\n");
-	return errCode;
-}
-
-int sceIoDclose_Vita(SceUID id)
-{
-    	dbg_printf("sceIoDclose_Vita start\n");
-	int i = 0;
-	while (i < dirLen && id != globals->dirFix[i][0] )
-		++i;
-
-
-	if (i < dirLen && id == globals->dirFix[i][0])
-	{
-			globals->dirFix[i][0] = -1;
-			globals->dirFix[i][1] = -1;
-	}
-
-	dbg_printf("sceIoDclose_Vita Done\n");
-	return sceIoDclose(id);
-}
-#endif
-
-
-//hook this ONLY if test_sceIoChdir() fails!
-int _hook_sceIoChdir(const char *dirname)
-{
-	char resolved_path[PATH_MAX];
-	int ret;
-
-	dbg_printf("_hook_sceIoChdir start\n");
-
-	ret = realpath(dirname, resolved_path);
-	if (ret < 0)
-		return ret;
-	else if (ret >= PATH_MAX)
-		return SCE_KERNEL_ERROR_NAMETOOLONG;
-
-        // save chDir into global variable
-	strcpy(mod_chdir, resolved_path);
-	if (mod_chdir[ret - 1] != '/') {
-		mod_chdir[ret] = '/';
-		mod_chdir[ret + 1] = '\0';
-	}
-
-	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", dirname, mod_chdir);
-	return 0;
-}
-
 
 // see http://forums.ps2dev.org/viewtopic.php?p=52329
 int _hook_scePowerGetCpuClockFrequencyInt()
@@ -1555,48 +1678,43 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 	if (globals->syscalls_known)
 		return 0;
 #endif
-    switch (nid) {
-#ifdef HOOK_CHDIR_AND_FRIENDS
-        case 0x55F4717D: //	sceIoChdir (only if it failed)
-            if (globals->chdir_ok)
-                break;
-            dbg_printf(" Chdir trick sceIoChdir\n");
-            hook_call = MAKE_JUMP(_hook_sceIoChdir);
-            break;
-
-/*
-        case 0x109F50BC: //	sceIoOpen (only ifs sceIoChdir failed)
-            if (globals->chdir_ok)
-                break;
-            dbg_printf(" Chdir trick sceIoOpen\n");
-            hook_call = MAKE_JUMP(_hook_sceIoOpen);
-            break;
-*/
-
-        case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-            if (globals->chdir_ok)
-                break;
-            dbg_printf(" Chdir trick sceIoDopen\n");
-            hook_call = MAKE_JUMP(_hook_sceIoDopen);
-            break;
-#elif defined VITA
-        case 0xB29DDF9C: //	sceIoDopen
-            dbg_printf("VITA sceIoDopen\n");
-            hook_call = MAKE_JUMP(sceIoDopen_Vita);
-            break;
+	switch (nid) {
+#if defined(HOOK_CHDIR_AND_FRIENDS) || defined(VITA)
+		case 0x55F4717D: //	sceIoChdir (only if it failed)
+#ifndef VITA
+			if (!globals->chdir_ok)
 #endif
-
+				hook_call = MAKE_JUMP(_hook_sceIoChdir);
+			break;
+		case 0x779103A0:
+#ifndef VITA
+			if (!globals->chdir_ok)
+#endif
+				hook_call = MAKE_JUMP(_hook_sceIoRename);
+			break;
+		case 0xF27A9C51:
+#ifndef VITA
+			if (!globals->chdir_ok)
+#endif
+				hook_call = MAKE_JUMP(_hook_sceIoRemove);
+			break;
+		case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
+#ifndef VITA
+			if (!globals->chdir_ok)
+#endif
+				hook_call = MAKE_JUMP(_hook_sceIoDopen);
+			break;
+#endif
 #ifdef VITA
-        case 0xE3EB004C: //	sceIoDread
-            dbg_printf("VITA sceIoDread\n");
-            hook_call = MAKE_JUMP(sceIoDread_Vita);
-            break;
-        case 0xEB092469: //	sceIoDclose
-            dbg_printf("VITA sceIoDclose\n");
-            hook_call = MAKE_JUMP(sceIoDclose_Vita);
-            break;
+		case 0xE3EB004C: //	sceIoDread
+			dbg_printf("VITA sceIoDread\n");
+			hook_call = MAKE_JUMP(sceIoDread_Vita);
+			break;
+		case 0xEB092469: //	sceIoDclose
+			dbg_printf("VITA sceIoDclose\n");
+			hook_call = MAKE_JUMP(sceIoDclose_Vita);
+			break;
 #endif
-
 #ifdef HOOK_sceDisplayGetFrameBuf
 		case 0xEEDA2E54://sceDisplayGetFrameBuf
 			hook_call = MAKE_JUMP(_hook_sceDisplayGetFrameBuf);
@@ -1630,13 +1748,17 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 	{
 
 // Overrides to avoid syscall estimates, those are not necessary but reduce estimate failures and improve compatibility for now
-        case 0x06A70004: //	sceIoMkdir
-            if (override_sceIoMkdir == GENERIC_SUCCESS)
-            {
-                dbg_printf(" sceIoMkdir goes to void because of settings ");
-                hook_call = MAKE_JUMP(_hook_generic_ok);
-            }
-            break;
+		case 0x06A70004: //	sceIoMkdir
+			if (override_sceIoMkdir == GENERIC_SUCCESS)
+				hook_call = MAKE_JUMP(_hook_generic_ok);
+#ifdef HOOK_CHDIR_AND_FRIENDS
+			else if (!globals->chdir_ok)
+				hook_call = MAKE_JUMP(_hook_sceIoMkdir);
+#elif defined(VITA)
+			else
+				hook_call = MAKE_JUMP(_hook_sceIoMkdir);
+#endif
+				break;
 
 	    case 0xC8186A58:  //sceKernelUtilsMd5Digest  (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);
