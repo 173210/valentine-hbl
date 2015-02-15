@@ -15,7 +15,6 @@
 #include <common/utils.h>
 #include <loader/freemem.h>
 #include <loader/runtime.h>
-#include <hbl/stubs/hook.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>
 #include <svnversion.h>
@@ -196,7 +195,6 @@ static void dbg_init()
 }
 #endif
 
-#ifdef HOOK_CHDIR_AND_FRIENDS
 static int test_sceIoChdir()
 {
 #ifndef CHDIR_CRASH
@@ -213,9 +211,7 @@ static int test_sceIoChdir()
 #endif
 	return 0;
 }
-#endif
 
-#ifndef VITA
 // "cache" for the firmware version
 // 0 means unknown
 
@@ -248,20 +244,38 @@ static void get_module_sdk_version()
 
 	dbg_printf("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
 }
-#endif
+
+static int detectEmu()
+{
+	SceUID fd;
+	SceIoDirent dir;
+	int ret;
+
+	fd = sceIoDopen(HBL_ROOT);
+	if (fd < 0) {
+		globals->isEmu = 0;
+		return fd;
+	}
+
+	memset(&dir, 0, sizeof(dir));
+	ret = sceIoDread(fd, &dir);
+
+	globals->isEmu = (ret < 0 || dir.d_name[0] != '.' || dir.d_name[2]);
+
+	return sceIoDclose(fd);
+}
 
 static void hook_init()
 {
-#ifdef VITA
-	int i, j;
+	int i;
 
-	for (i = 0; i < MAX_OPEN_DIR_VITA; i++)
-		for (j = 0; j < 2; j++)
- 			globals->dirFix[i][j] = -1;
-#endif
-#ifdef HOOK_CHDIR_AND_FRIENDS
-        globals->chdir_ok = test_sceIoChdir();
-#endif
+	if (globals->isEmu)
+		for (i = 0; i < MAX_OPEN_DIR_VITA; i++) {
+				globals->dirFix[i][0] = -1;
+				globals->dirFix[i][1] = -1;
+		}
+
+	globals->chdir_ok = test_sceIoChdir();
 	globals->memSema = sceKernelCreateSema("hblmemsema", 0, 1, 1, 0);
 	globals->thSema = sceKernelCreateSema("hblthSema", 0, 1, 1, 0);
 	globals->cbSema = sceKernelCreateSema("hblcbsema", 0, 1, 1, 0);
@@ -322,18 +336,19 @@ void _start()
 	log_init();
 #endif
 
-        memset(globals, 0, sizeof(tGlobals));
+	globals->isEmu = 1;
+	globals->nid_num = 0;
+	globals->lib_num = 0;
 	p2_add_stubs();
 	resolve_hbl_stubs(libStubTop, libStubBtm);
 
 #if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();
 #endif
-	
-#ifndef VITA
+
 	// Intialize firmware and model
 	get_module_sdk_version();
-#endif
+	detectEmu();
 
 	scr_init();
 	scr_puts("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl\n");

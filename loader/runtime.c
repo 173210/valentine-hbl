@@ -9,17 +9,17 @@
 #include <exploit_config.h>
 
 #ifndef UTILITY_DONT_USE_sceUtilityLoadModule
-static const int modules[] = {
-#if VITA < 310 || !defined(AVOID_NET_UTILITY)
+static const int nonEmuModules[] = {
+#ifndef AVOID_NET_UTILITY
 	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
 	PSP_MODULE_NET_PARSEURI, PSP_MODULE_NET_PARSEHTTP, PSP_MODULE_NET_HTTP,
 	PSP_MODULE_NET_SSL, PSP_MODULE_NET_UPNP, PSP_MODULE_NET_GAMEUPDATE,
 #endif
-#ifndef VITA
-	PSP_MODULE_IRDA,
-#endif
+	PSP_MODULE_IRDA
+};
+static const int modules[] = {
 	PSP_MODULE_USB_PSPCM, PSP_MODULE_USB_MIC, PSP_MODULE_USB_CAM, PSP_MODULE_USB_GPS,
-	PSP_MODULE_AV_SASCORE, PSP_MODULE_AV_ATRAC3PLUS, PSP_MODULE_AV_MPEGBASE, PSP_MODULE_AV_MP3,
+	PSP_MODULE_AV_SASCORE, PSP_MODULE_AV_ATRAC3PLUS, PSP_MODULE_AV_MPEGBASE,
 	PSP_MODULE_AV_VAUDIO, PSP_MODULE_AV_AAC, PSP_MODULE_AV_G729, PSP_MODULE_AV_MP4,
 	PSP_MODULE_NP_COMMON, PSP_MODULE_NP_SERVICE, PSP_MODULE_NP_MATCHING2, PSP_MODULE_NP_DRM
 };
@@ -88,11 +88,23 @@ void load_utils()
 	unsigned i;
 
 	// Load modules in order
+	if (!globals->isEmu)
+		for(i = 0; i < sizeof(nonEmuModules) / sizeof(int); i++) {
+			ret = sceUtilityLoadModule(nonEmuModules[i]);
+			if (ret < 0)
+				dbg_printf("...Error 0x%08X Loading 0x%08X\n",
+					ret, nonEmuModules[i]);
+		}
+
 	for(i = 0; i < sizeof(modules) / sizeof(int); i++) {
 		ret = sceUtilityLoadModule(modules[i]);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Loading 0x%08X\n", ret, modules[i]);
 	}
+
+	ret = sceUtilityLoadModule(PSP_MODULE_AV_MP3);
+	if (ret < 0)
+		dbg_printf("...Error 0x%08X Loading 0x%08X\n", ret, PSP_MODULE_AV_MP3);
 #endif
 }
 #endif
@@ -123,10 +135,10 @@ void unload_utils()
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Unloading av module 0x%08X\n", ret, module);
 	}
-#ifndef VITA
+
 	if (globals->module_sdk_version <= 0x06020010)
 		module--; // Skip PSP_AV_MODULE_MP3
-#endif
+
 	while (module >= 1) {
 		ret = sceUtilityUnloadAvModule(module);
 		if (ret < 0)
@@ -156,15 +168,25 @@ void unload_utils()
 	int i;
 
 	//Unload modules in reverse order
+	if (globals->module_sdk_version > 0x06020010) {
+		ret = sceUtilityUnloadModule(PSP_MODULE_AV_MP3);
+		if (ret < 0)
+			dbg_printf("...Error 0x%08X Unloading 0x%08X\n", ret, PSP_MODULE_AV_MP3);
+	}
+
 	for(i = sizeof(modules) / sizeof(int) - 1; i >= 0; i--) {
-#ifndef VITA
-		if(modules[i] == PSP_MODULE_AV_MP3 && globals->module_sdk_version <= 0x06020010)
-			continue;
-#endif
 		ret = sceUtilityUnloadModule(modules[i]);
 		if (ret < 0)
 			dbg_printf("...Error 0x%08X Unloading 0x%08X\n", ret, modules[i]);
 	}
+
+	if (!globals->isEmu)
+		for(i = sizeof(nonEmuModules) / sizeof(int) - 1; i >= 0; i--) {
+			ret = sceUtilityUnloadModule(nonEmuModules[i]);
+			if (ret < 0)
+				dbg_printf("...Error 0x%08X Unloading 0x%08X\n",
+					ret, nonEmuModules[i]);
+		}
 #endif
 }
 #endif

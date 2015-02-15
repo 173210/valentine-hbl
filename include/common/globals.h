@@ -33,12 +33,10 @@ typedef struct
  	SceUID cbSema; 		
  	SceUID audioSema; 		
  	SceUID ioSema;
-#ifdef VITA
 	int dirFix[MAX_OPEN_DIR_VITA][2];
-#else
 	// firmware and model
+	int isEmu;
 	int module_sdk_version;
-#endif
 	int nid_num;
 	tNIDResolver nid_table[NID_TABLE_SIZE];
 	int lib_num;

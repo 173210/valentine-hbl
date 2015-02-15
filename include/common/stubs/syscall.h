@@ -4,10 +4,6 @@
 #include <common/sdk.h>
 #include <exploit_config.h>
 
-#ifdef VITA
-#define DEACTIVATE_SYSCALL_ESTIMATION
-#endif
-
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT "libs"
 #define LIB_EXT ".nid"

@@ -23,12 +23,7 @@
 #define SIZE_THREAD_TRACKING_ARRAY 32
 #define MAX_CALLBACKS 32
 
-#ifdef VITA
-#define HOOK_AUDIOFUNCTIONS
-
 static int dirLen;
-#endif
-
 static char mod_chdir[PATH_MAX] = HBL_ROOT; //cwd of the currently running module
 static int cur_cpufreq = 0; //current cpu frequency
 static int cur_busfreq = 0; //current bus frequency
@@ -386,7 +381,6 @@ void threads_cleanup()
 // File I/O manager Hooks
 //
 // returns 1 if a string is an absolute file path, 0 otherwise
-#if defined(HOOK_CHDIR_AND_FRIENDS) || defined(VITA)
 static int path_is_absolute(const char *path)
 {
 	if (path != NULL)
@@ -465,16 +459,12 @@ SceUID _hook_sceIoDopen(const char *dirname)
 			return ret;
 		dirname = resolved_path;
 	}
-	return
-#ifdef VITA
-		sceIoDopen_Vita(resolved_path);
-#else
+	return globals->isEmu ?
+		sceIoDopen_Vita(resolved_path) :
 		sceIoDopen(resolved_path);
-#endif
 }
 
 
-#ifdef VITA
 // Adds Vita's missing "." / ".." entries
 
 SceUID sceIoDopen_Vita(const char *dirname)
@@ -569,36 +559,32 @@ int sceIoDclose_Vita(SceUID id)
 	dbg_printf("sceIoDclose_Vita Done\n");
 	return sceIoDclose(id);
 }
-#endif
+
 static int _hook_sceIoMkdir(const char *dir, SceMode mode)
 {
 	int ret;
 	char resolved[PATH_MAX];
 
-#ifndef VITA
-	if (!path_is_absolute(dir)) {
-#endif
+	if (globals->isEmu || !path_is_absolute(dir)) {
 		ret = realpath(dir, resolved);
 		if (ret < 0)
 			return ret;
 		dir = resolved;
-#ifndef VITA
-	}
-#else
-	if (!strcasecmp("ms0:/PSP/GAME", resolved)) {
-		resolved[5] = 'Q';
 
-		ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
-		if (ret)
+		if (globals->isEmu &&!strcasecmp("ms0:/PSP/GAME", resolved)) {
+			resolved[5] = 'Q';
+
+			ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+			if (ret)
+				return ret;
+
+			ret = sceIoMkdir(resolved, mode);
+
+			while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
+
 			return ret;
-
-		ret = sceIoMkdir(resolved, mode);
-
-		while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
-
-		return ret;
+		}
 	}
-#endif
 
 	return sceIoMkdir(dir, mode);
 }
@@ -606,65 +592,60 @@ static int _hook_sceIoMkdir(const char *dir, SceMode mode)
 static int _hook_sceIoRename(const char *oldname, const char *newname)
 {
 	char oldResolved[PATH_MAX];
-	int oldLen;
+	char newResolved[PATH_MAX];
+	int oldLen, i, ret;
 
-#ifndef VITA
-	if (!path_is_absolute(oldname)) {
-#endif
+	if (globals->isEmu || !path_is_absolute(oldname)) {
 		oldLen = realpath(oldname, oldResolved);
 		if (oldLen < 0)
 			return oldLen;
 		oldname = oldResolved;
-#ifdef VITA
-		if (oldLen < PATH_MAX
-			&& !strcasecmp(oldResolved + oldLen -  8, "BOOT.PBP")
-			&& (oldResolved[oldLen - 9] == 'E'
-				|| oldResolved[oldLen - 9] == 'e'
-				|| oldResolved[oldLen - 9] == 'P'
-				|| oldResolved[oldLen - 9] == 'p')) {
-			oldResolved[oldLen] = '.';
-			oldResolved[oldLen + 1] = 0;
-		}
-#else
-	}
-#endif
-#ifdef VITA
-	char newResolved[PATH_MAX];
-	int i, ret;
 
-	for (i = 0; i < PATH_MAX - 1; i++) {
-		if (!newname[i]) {
-			if (!strcasecmp(newResolved + i -  8, "BOOT.PBP")
-				&& (newResolved[i - 9] == 'E'
-					|| newResolved[i - 9] == 'e'
-					|| newResolved[i - 9] == 'P'
-					|| newResolved[i - 9] == 'p')) {
-				newResolved[i] = '.';
-				newResolved[i + 1] = 0;
-				newname = newResolved;
+		if (globals->isEmu) {
+			if (oldLen < PATH_MAX
+				&& !strcasecmp(oldResolved + oldLen -  8, "BOOT.PBP")
+				&& (oldResolved[oldLen - 9] == 'E'
+					|| oldResolved[oldLen - 9] == 'e'
+					|| oldResolved[oldLen - 9] == 'P'
+					|| oldResolved[oldLen - 9] == 'p')) {
+				oldResolved[oldLen] = '.';
+				oldResolved[oldLen + 1] = 0;
 			}
-			break;
+
+			for (i = 0; i < PATH_MAX - 1; i++) {
+				if (!newname[i]) {
+					if (!strcasecmp(newResolved + i -  8, "BOOT.PBP")
+						&& (newResolved[i - 9] == 'E'
+							|| newResolved[i - 9] == 'e'
+							|| newResolved[i - 9] == 'P'
+							|| newResolved[i - 9] == 'p')) {
+						newResolved[i] = '.';
+						newResolved[i + 1] = 0;
+						newname = newResolved;
+					}
+					break;
+				}
+				newResolved[i] = newname[i];
+			}
+
+			if (!strcasecmp("ms0:/PSP/GAME", oldResolved)) {
+				oldResolved[5] = 'Q';
+
+				ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+				if (ret)
+					return ret;
+
+				ret = sceIoRename(oldResolved, newname);
+
+				while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
+
+				return ret;
+			} else if (!strcasecmp(oldResolved, "ms0:/PSP")) {
+				oldResolved[oldLen] = '.';
+				oldResolved[oldLen + 1] = 0;
+			}
 		}
-		newResolved[i] = newname[i];
 	}
-
-	if (!strcasecmp("ms0:/PSP/GAME", oldResolved)) {
-		oldResolved[5] = 'Q';
-
-		ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
-		if (ret)
-			return ret;
-
-		ret = sceIoRename(oldResolved, newname);
-
-		while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
-
-		return ret;
-	} else if (!strcasecmp(oldResolved, "ms0:/PSP")) {
-		oldResolved[oldLen] = '.';
-		oldResolved[oldLen + 1] = 0;
-	}
-#endif
 
 	return sceIoRename(oldname, newname);
 }
@@ -674,40 +655,38 @@ static int _hook_sceIoRemove(const char *file)
 	int ret;
 	char resolved[PATH_MAX];
 
-#ifndef VITA
-	if (!path_is_absolute(file)) {
-#endif
+	if (globals->isEmu || !path_is_absolute(file)) {
 		ret = realpath(file, resolved);
 		if (ret < 0)
 			return ret;
 		file = resolved;
-#ifndef VITA
+
+		if (globals->isEmu) {
+			if (ret < PATH_MAX
+				&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
+				&& (resolved[ret - 9] == 'E'
+					|| resolved[ret - 9] == 'e'
+					|| resolved[ret - 9] == 'P'
+					|| resolved[ret - 9] == 'p')) {
+				resolved[ret] = '.';
+				resolved[ret + 1] = 0;
+			}
+
+			if (!strcasecmp("ms0:/PSP/GAME", file)) {
+				resolved[5] = 'Q';
+
+				ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+				if (ret)
+					return ret;
+
+				ret = sceIoRemove(resolved);
+
+				while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
+
+				return ret;
+			}
+		}
 	}
-#else
-	if (ret < PATH_MAX
-		&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
-		&& (resolved[ret - 9] == 'E'
-			|| resolved[ret - 9] == 'e'
-			|| resolved[ret - 9] == 'P'
-			|| resolved[ret - 9] == 'p')) {
-		resolved[ret] = '.';
-		resolved[ret + 1] = 0;
-	}
-
-	if (!strcasecmp("ms0:/PSP/GAME", file)) {
-		resolved[5] = 'Q';
-
-		ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
-		if (ret)
-			return ret;
-
-		ret = sceIoRemove(resolved);
-
-		while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
-
-		return ret;
-	}
-#endif
 	return sceIoRemove(file);
 }
 
@@ -736,24 +715,20 @@ int _hook_sceIoChdir(const char *dirname)
 	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", dirname, mod_chdir);
 	return 0;
 }
-#endif
 
 static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 {
 	SceUID ret;
 	unsigned i;
-#if defined(_CHDIR_AND_FRIENDS) || defined(VITA)
 	char resolved[PATH_MAX];
 
-#ifndef VITA
-	if (!globals->chdir_ok && !path_is_absolute(file))
-#endif
-	{
+	if (globals->isEmu || (!globals->chdir_ok && !path_is_absolute(file))) {
 		ret = realpath(file, resolved);
 		if (ret < 0)
 			return ret;
-#ifdef VITA
-		if (ret < PATH_MAX && mode & PSP_O_WRONLY
+
+		if (globals->isEmu && ret < PATH_MAX
+			&& mode & PSP_O_WRONLY
 			&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
 			&& (resolved[ret - 9] == 'E'
 				|| resolved[ret - 9] == 'e'
@@ -762,11 +737,11 @@ static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 			resolved[ret] = '.';
 			resolved[ret + 1] = 0;
 		}
-#endif
+
 		dbg_printf("sceIoOpen override: %s become %s\n", file, resolved);
 		file = resolved;
 	}
-#endif
+
 	ret = sceIoOpen(file, flags, mode);
 
 	if (ret >= 0) {
@@ -1266,11 +1241,7 @@ int _hook_scePowerGetBatteryLifePercent()
 // http://forums.ps2dev.org/viewtopic.php?p=43495
 int _hook_sceKernelDevkitVersion()
 {
-#ifdef VITA
-	return 0x06060010;
-#else
 	return globals->module_sdk_version;
-#endif
 }
 
 #ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740
@@ -1671,42 +1642,30 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
         return hook_call;
 
 	switch (nid) {
-#if defined(HOOK_CHDIR_AND_FRIENDS) || defined(VITA)
 		case 0x55F4717D: //	sceIoChdir (only if it failed)
-#ifndef VITA
-			if (!globals->chdir_ok)
-#endif
+			if (globals->isEmu || !globals->chdir_ok)
 				hook_call = MAKE_JUMP(_hook_sceIoChdir);
 			break;
 		case 0x779103A0:
-#ifndef VITA
-			if (!globals->chdir_ok)
-#endif
+			if (globals->isEmu || !globals->chdir_ok)
 				hook_call = MAKE_JUMP(_hook_sceIoRename);
 			break;
 		case 0xF27A9C51:
-#ifndef VITA
-			if (!globals->chdir_ok)
-#endif
+			if (globals->isEmu || !globals->chdir_ok)
 				hook_call = MAKE_JUMP(_hook_sceIoRemove);
 			break;
 		case 0xB29DDF9C: //	sceIoDopen (only if sceIoChdir failed)
-#ifndef VITA
-			if (!globals->chdir_ok)
-#endif
+			if (globals->isEmu || !globals->chdir_ok)
 				hook_call = MAKE_JUMP(_hook_sceIoDopen);
 			break;
-#endif
-#ifdef VITA
 		case 0xE3EB004C: //	sceIoDread
-			dbg_printf("VITA sceIoDread\n");
-			hook_call = MAKE_JUMP(sceIoDread_Vita);
+			if (globals->isEmu)
+				hook_call = MAKE_JUMP(sceIoDread_Vita);
 			break;
 		case 0xEB092469: //	sceIoDclose
-			dbg_printf("VITA sceIoDclose\n");
-			hook_call = MAKE_JUMP(sceIoDclose_Vita);
+			if (globals->isEmu)
+				hook_call = MAKE_JUMP(sceIoDclose_Vita);
 			break;
-#endif
 #ifdef HOOK_sceDisplayGetFrameBuf
 		case 0xEEDA2E54://sceDisplayGetFrameBuf
 			hook_call = MAKE_JUMP(_hook_sceDisplayGetFrameBuf);
@@ -1743,14 +1702,9 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 		case 0x06A70004: //	sceIoMkdir
 			if (override_sceIoMkdir == GENERIC_SUCCESS)
 				hook_call = MAKE_JUMP(_hook_generic_ok);
-#ifdef HOOK_CHDIR_AND_FRIENDS
-			else if (!globals->chdir_ok)
+			else if (globals->isEmu || !globals->chdir_ok)
 				hook_call = MAKE_JUMP(_hook_sceIoMkdir);
-#elif defined(VITA)
-			else
-				hook_call = MAKE_JUMP(_hook_sceIoMkdir);
-#endif
-				break;
+			break;
 
 	    case 0xC8186A58:  //sceKernelUtilsMd5Digest  (avoid syscall estimation)
             hook_call = MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);

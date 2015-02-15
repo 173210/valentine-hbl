@@ -7,9 +7,6 @@ CC = psp-gcc
 # use a different FOLDER to make for different exploits
 # Exploit-specific files go in the subfolders, see targets hbl and loader below
 FLAGS = FOLDER=$(FOLDER)
-ifdef VITA
-FLAGS += VITA=$(VITA)
-endif
 
 ifdef NID_DEBUG
 FLAGS += NID_DEBUG=$(NID_DEBUG)

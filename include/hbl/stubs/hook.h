@@ -29,9 +29,6 @@
 //Comment the following line to avoid overriding scePower*
 #define HOOK_POWERFUNCTIONS
 
-//Comment the following line to avoid overriding sceIo* (happens only if sceIoChdir fails)
-#define HOOK_CHDIR_AND_FRIENDS
-
 // Comment to avoid overriding sceUtility functions
 #define HOOK_UTILITY
 

@@ -679,11 +679,9 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 		case PSP_MODULE_AV_AVCODEC: // -> cast syscall of sceAudiocodec and sceVideocodec
 			break;
 #endif
-#ifndef VITA
 		case PSP_MODULE_AV_MP3: // -> On 6.20 OFW, libmp3 has a bug when unload it.
 			if (globals->module_sdk_version <= 0x06020010)
 				break;
-#endif
 		default:
 #ifdef UTILITY_UNLOAD_MODULE_FILE
 			add_util_table(ret);

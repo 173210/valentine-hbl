@@ -12,9 +12,6 @@ AS	= psp-as
 INCDIR	= -I$(PSPSDK)/include -Iinclude -I$(FOLDER_PATH) -I.
 
 CFLAGS	= $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
-ifdef VITA
-CFLAGS += -DVITA=$(VITA)
-endif
 
 ifdef NID_DEBUG
 DEBUG = 1
@@ -30,13 +27,10 @@ LIBDIR = -L$(PSPSDK)/lib
 
 LIBS = libpspuser/libpspuser.a -lpspaudio -lpspdisplay -lpsputility
 
-OBJS = common/memory.o common/prx.o common/stubs/tables.o common/utils.o \
+OBJS = common/stubs/syscall.o common/stubs/tables.o \
 	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
+	common/memory.o common/prx.o common/utils.o \
 	loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
-
-ifndef VITA
-OBJS += common/stubs/syscall.o
-endif
 ifdef DEBUG
 OBJS += common/debug.o
 endif
