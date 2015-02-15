@@ -423,31 +423,33 @@ static int realpath(const char *path, char *resolved_path)
 		}
 
 	while (i < PATH_MAX) {
-		if (path[0] == '/') {
-			if (path[1] == '/') {
+		if (resolved_path[i - 1] == '/') {
+			if (path[0] == '/') {
 				path++;
 				continue;
-			} else if (path[1] == '.') {
-				if (path[2] == '\0')
-					path += 2;
-				else if (path[2] == '/') {
-					path += 2;
+			} else if (path[0] == '.') {
+				if (!path[1])
+					path++;
+				else if (path[1] == '/') {
+					path++;
 					continue;
-				} else if (path[2] == '.' && (path[3] == '/' || path[3] == '\0')) {
+				} else if (path[1] == '.' && (path[2] == '/' || !path[3])) {
 					if (resolved_path[i - 1] == ':')
 						return SCE_KERNEL_ERROR_NOFILE;
-					else
+					else {
+						i -= 2;
 						while (resolved_path[i] != '/')
 							i--;
-					path += 3;
+					}
+					path += 2;
 					continue;
 				}
 			}
 		}
 
-		resolved_path[i] = *path;
+		resolved_path[i] = path[0];
 		i++;
-		if (!*path)
+		if (!path[0])
 			return i;
 		path++;
 	}
