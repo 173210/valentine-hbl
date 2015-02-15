@@ -21,11 +21,6 @@ return_to_xmb_on_exit=0
 # Comment out for performance
 force_exit_buttons=0x00000009
 
-# syscalls_known
-# For Devs only: this is to force the variable syscalls_known to 0, in order to simulate the "syscall estimation"
-# on a psp that should normally have perfect syscalls
-# syscalls_known=0
-
 ###############
 # override_*
 ###############

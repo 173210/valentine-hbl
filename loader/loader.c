@@ -140,16 +140,6 @@ static int load_hbl()
 	return 0;
 }
 
-#ifndef DISABLE_KERNEL_DUMP
-// Dumps kmem
-static void get_kmem_dump()
-{
-	SceUID fd = sceIoOpen(KDUMP_PATH, PSP_O_CREAT | PSP_O_WRONLY, 0777);
-	sceIoWrite(fd, (void*)0x08000000, 0x400000);
-	sceIoClose(fd);
-}
-#endif
-
 #if defined(DEBUG) || defined(FORCE_FIRST_LOG)
 //reset the contents of the debug file;
 static void log_init()
@@ -257,40 +247,6 @@ static void get_module_sdk_version()
 
 	dbg_printf("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
 }
-
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-static void detect_psp_go()
-{
-	// This call will always fail, but with a different error code depending on the model
-	// Check for "No such device" error
-	globals->psp_go = sceIoOpen("ef0:/", 1, 0777) == SCE_KERNEL_ERROR_NODEV;
-}
-
-static void detect_syscall()
-{
-	int i;
-	short syscalls_known_fw[] = SYSCALLS_KNOWN_FW;
-	short syscalls_known_go_fw[] = SYSCALLS_KNOWN_GO_FW;
-
-	short *fw_array;
-	int fw_array_size;
-
-	if (globals->psp_go) {
-		fw_array = syscalls_known_go_fw;
-		fw_array_size = sizeof(syscalls_known_go_fw) / sizeof(short);
-	} else {
-		fw_array = syscalls_known_fw;
-		fw_array_size = sizeof(syscalls_known_fw) / sizeof(short);
-	}
-
-	for (i = 0; i < fw_array_size; i++) {
-		if (fw_array[i] == globals->module_sdk_version) {
-			globals->syscalls_known = 1;
-			break;
-		}
-	}
-}
-#endif
 #endif
 
 static void hook_init()
@@ -340,17 +296,6 @@ int start_thread()
 	resetHomeSettings();
 #endif
 
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	if (globals->psp_go) {
-		scr_puts("PSP Go Detected\n");
-#ifndef DISABLE_KERNEL_DUMP
-		// If PSPGo on 6.20+, do a kmem dump
-		if (globals->module_sdk_version >= 0x06020010)
-			get_kmem_dump();
-#endif
-	}
-#endif
-
 	dbg_printf("Loading HBL\n");
 	if (load_hbl())
 #ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
@@ -387,12 +332,6 @@ void _start()
 #ifndef VITA
 	// Intialize firmware and model
 	get_module_sdk_version();
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	detect_psp_go();
-
-	// Select syscall estimation method
-	detect_syscall();
-#endif
 #endif
 
 	scr_init();

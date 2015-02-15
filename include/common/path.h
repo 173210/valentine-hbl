@@ -19,7 +19,6 @@
 #endif
 #define ELF_PATH HBL_ROOT "GAME/EBOOT.ELF"
 #define HBL_PATH HBL_ROOT HBL_PRX
-#define KDUMP_PATH "ef0:/KMEM.BIN" // Always dump to the internal flash
 #define HBL_CONFIG "HBLCONF.TXT"
 
 #endif

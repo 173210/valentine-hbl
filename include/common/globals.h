@@ -38,11 +38,6 @@ typedef struct
 #else
 	// firmware and model
 	int module_sdk_version;
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	int psp_go;
-	//tables.c
-	int syscalls_known;
-#endif
 #endif
 	int nid_num;
 	tNIDResolver nid_table[NID_TABLE_SIZE];

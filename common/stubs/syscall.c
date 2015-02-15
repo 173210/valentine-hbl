@@ -77,48 +77,6 @@ SceUID open_nids_file(const char *lib)
 	return ret;
 }
 
-
-/*
- * Checks if a syscall looks normal compared to other libraries boundaries.
- * returns 1 if ok, 0 if not
- */
-static int check_syscall(int call, int low, int high)
-{
-	if (call <= low) {
-        	dbg_printf("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be higher than 0x%08X, but we got 0x%08X\n",
-			low, call);
-		return 0;
-	} else if (call >= high) {
-		dbg_printf("--ERROR: SYSCALL OUT OF LIB'S RANGE, should be lower than 0x%08X, but we got 0x%08X\n",
-			high, call);
-		return 0;
-	} else
-		return 1;
-}
-
-static int find_first_free_syscall(int lib, int start)
-{
-	int syscall = start;
-	int low = 0, high = 0;
-	int index;
-
-	if (!get_syscall_boundaries(lib, &low,  &high)) {
-		dbg_printf("--ERROR GETTING SYSCALL BOUNDARIES\n");
-		return 0;
-	}
-
-	while ((index = get_call_index(MAKE_SYSCALL(syscall))) >= 0) {
-		dbg_printf("--ESTIMATED SYSCALL 0x%08X ALREADY EXISTS AT INDEX %d\n", syscall, index);
-		syscall--;
-		if (!check_syscall(syscall, low, high)) {
-			syscall = high - 1;
-			//Risk of infinite loop here ?
-		}
-	}
-
-	return syscall;
-}
-
 // Estimate a syscall from library's closest known syscall
 static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUID fd)
 {
@@ -167,26 +125,12 @@ static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUI
 	return est_call;
 }
 
-// Estimate a syscall from library's lowest known syscall
-static int estimate_syscall_lowest(int lib_index, int nid_index)
-{
-	int est_call;
-
-	dbg_printf("=> FROM LOWEST\n");
-
-	est_call = globals->lib_table[lib_index].lowest_syscall + nid_index - globals->lib_table[lib_index].lowest_index;
-	if (nid_index < globals->lib_table[lib_index].lowest_index)
-		est_call += globals->lib_table[lib_index].num_lib_exports + globals->lib_table[lib_index].gap;
-
-	return est_call;
-}
-
 // Estimate a syscall
 // Pass reference NID and distance from desidered function in the export table
 // Return syscall number
 // Syscall accuracy (%) = (exports known from library / total exports from library) x 100
 // m0skit0's implementation
-int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
+int estimate_syscall(const char *lib, int nid)
 {
 	SceUID fd;
 	int lib_index, nid_index, est_call;
@@ -214,28 +158,9 @@ int estimate_syscall(const char *lib, int nid, HBLEstimateMethod method)
 	}
 	dbg_printf("NID index in file: %d\n", nid_index);
 
-	switch (method)
-	{
-		case FROM_CLOSEST:
-			est_call = estimate_syscall_closest(lib_index, nid_index, nid, fd);
-			break;
-
-		case FROM_LOWEST:
-			est_call = estimate_syscall_lowest(lib_index, nid_index);
-			break;
-
-		default:
-			dbg_printf("Unknown estimation method %d\n", method);
-			est_call = 0;
-			break;
-	}
+	est_call = estimate_syscall_closest(lib_index, nid_index, nid, fd);
 
 	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", est_call);
-
-	// Check if estimated syscall already exists (should be very rare)
-	// This is not needed if the syscalls are known to be there
-	if (!globals->syscalls_known)
-		est_call = find_first_free_syscall(lib_index, est_call);
 
 	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
 

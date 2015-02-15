@@ -611,31 +611,32 @@ static int _hook_sceIoMkdir(const char *dir, SceMode mode)
 static int _hook_sceIoRename(const char *oldname, const char *newname)
 {
 	char oldResolved[PATH_MAX];
-	char newResolved[PATH_MAX];
-	int oldLen, ret, i;
+	int oldLen;
 
 #ifndef VITA
 	if (!path_is_absolute(oldname)) {
 #endif
-			oldLen = realpath(oldname, oldResolved);
-			if (oldLen < 0)
-				return oldLen;
-			oldname = oldResolved;
+		oldLen = realpath(oldname, oldResolved);
+		if (oldLen < 0)
+			return oldLen;
+		oldname = oldResolved;
 #ifdef VITA
-			if (oldLen < PATH_MAX
-				&& !strcasecmp(oldResolved + oldLen -  8, "BOOT.PBP")
-				&& (oldResolved[oldLen - 9] == 'E'
-					|| oldResolved[oldLen - 9] == 'e'
-					|| oldResolved[oldLen - 9] == 'P'
-					|| oldResolved[oldLen - 9] == 'p')) {
-				oldResolved[oldLen] = '.';
-				oldResolved[oldLen + 1] = 0;
-			}
-#else
+		if (oldLen < PATH_MAX
+			&& !strcasecmp(oldResolved + oldLen -  8, "BOOT.PBP")
+			&& (oldResolved[oldLen - 9] == 'E'
+				|| oldResolved[oldLen - 9] == 'e'
+				|| oldResolved[oldLen - 9] == 'P'
+				|| oldResolved[oldLen - 9] == 'p')) {
+			oldResolved[oldLen] = '.';
+			oldResolved[oldLen + 1] = 0;
 		}
+#else
 	}
 #endif
 #ifdef VITA
+	char newResolved[PATH_MAX];
+	int i, ret;
+
 	for (i = 0; i < PATH_MAX - 1; i++) {
 		if (!newname[i]) {
 			if (!strcasecmp(newResolved + i -  8, "BOOT.PBP")
@@ -745,9 +746,10 @@ int _hook_sceIoChdir(const char *dirname)
 static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 {
 	SceUID ret;
-	char resolved[PATH_MAX];
 	unsigned i;
 #if defined(_CHDIR_AND_FRIENDS) || defined(VITA)
+	char resolved[PATH_MAX];
+
 #ifndef VITA
 	if (!globals->chdir_ok && !path_is_absolute(file))
 #endif
@@ -855,9 +857,8 @@ static void audio_term()
 	// sceAudioSRCChRelease
 #ifdef HOOK_AUDIOFUNCTIONS
 	_hook_sceAudioSRCChRelease();
-#elif defined(DEACTIVATE_SYSCALL_ESTIMATION)
-	if (globals->syscalls_known)
-		sceAudioSRCChRelease();
+#else
+	sceAudioSRCChRelease();
 #endif
 }
 
@@ -1673,11 +1674,7 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 
     if (hook_call)
         return hook_call;
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	// Overrides below this point don't need to be done if we have perfect syscall estimation
-	if (globals->syscalls_known)
-		return 0;
-#endif
+
 	switch (nid) {
 #if defined(HOOK_CHDIR_AND_FRIENDS) || defined(VITA)
 		case 0x55F4717D: //	sceIoChdir (only if it failed)

@@ -15,7 +15,7 @@ static void log_lib(const tSceLibrary *lib)
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	dbg_printf("--Total library exports: %d\n"
 		"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
-		"--Lowest index in file: %d\n"
+		"--Lowest index in file: %d\n",
 		lib->num_lib_exports,
 		lib->lowest_nid, lib->lowest_syscall,
 		lib->lowest_index);
@@ -149,7 +149,7 @@ int add_stub(const tStubEntry *stub)
 				add_nid(nid, get_good_call(cur_call), lib_index);
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
 				// Check lowest syscall
-				syscall_num = GET_SYSCALL_NUMBER(globals->nid_table[nid_index].call);
+				syscall_num = GET_SYSCALL_NUMBER(globals->nid_table[num].call);
 #endif
 #endif
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
@@ -221,14 +221,14 @@ int get_higher_known_nid(int index, int nid)
     	int i;
 	int higher;
 
-	for(i = 0; globals->nid_table[i].lib_index != index &&
+	for(i = 0; globals->nid_table[i].lib != index &&
 		globals->nid_table[i].nid <= nid; i++)
 		if (i >= NID_TABLE_SIZE)
 			return -1;
 	higher = i;
 
 	while (i < NID_TABLE_SIZE) {
-		if (globals->nid_table[i].lib_index == index &&
+		if (globals->nid_table[i].lib == index &&
 			globals->nid_table[i].nid > nid &&
 			globals->nid_table[i].nid < globals->nid_table[higher].nid)
 
@@ -246,14 +246,14 @@ int get_lower_known_nid(int index, int nid)
     	int i;
 	int lower;
 
-	for(i = 0; globals->nid_table[i].lib_index != index &&
+	for(i = 0; globals->nid_table[i].lib != index &&
 		globals->nid_table[i].nid >= nid; i++)
 		if (i >= NID_TABLE_SIZE)
 			return -1;
 	lower = i;
 
 	while (i < NID_TABLE_SIZE) {
-		if (globals->nid_table[i].lib_index == index &&
+		if (globals->nid_table[i].lib == index &&
 			globals->nid_table[i].nid > nid &&
 			globals->nid_table[i].nid > globals->nid_table[lower].nid)
 

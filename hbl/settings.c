@@ -244,12 +244,6 @@ void configGetProcessingOptions()
         {
             force_exit_buttons = configAddrParse(lval);
         }
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-        else if (strcmp(lstr,"syscalls_known")==0)
-        {
-            syscalls_known = configIntParse(lval);
-        }
-#endif
         else if (strcmp(lstr,"hb_folder")==0)
         {
             //note: hb_folder is initialized in loadGlobalConfig

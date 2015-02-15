@@ -349,8 +349,7 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 				*stub++ = JR_RA_OPCODE;
 				*stub++ = NOP_OPCODE;
 #else
-				syscall = MAKE_SYSCALL(estimate_syscall(
-					lib_name, *nid, globals->syscalls_known ? FROM_LOWEST : FROM_CLOSEST));
+				call = MAKE_SYSCALL(estimate_syscall(lib_name, *nid));
 #endif
 			} else {
 				dbg_printf("-Found in NID table, using real call\n");
