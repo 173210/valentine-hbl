@@ -44,11 +44,12 @@ void files_cleanup();
 //files imported by Patapon but can't find proper .h file
 int scePower_EBD177D6(int pllfreq, int cpufreq, int busfreq);
 int scePower_469989AD(int pllfreq, int cpufreq, int busfreq);
-int	ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
+int ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *status, SceKernelSMOption *option);
+int sceDmacMemcpy(void *dst, const void *src, size_t n);
 
 
 u32 setup_hook(u32 nid, u32 existing_real_call);
-u32 setup_default_nid(u32 nid);
+u32 setup_default_nid();
 void exit_everything_but_me();
 
 /* HOOKS */

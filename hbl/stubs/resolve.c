@@ -103,22 +103,18 @@ unsigned int resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_s
 			if (hook_call != 0)
 				real_call = hook_call;
 
-			NID_DBG_PRINTF("Real call before estimation: 0x%08X\n", real_call);
+			NID_DBG_PRINTF("Real call before finalization: 0x%08X\n", real_call);
 
 			/* If NID not found in game imports */
 			/* generic error/ok if syscall estimation is not available */
 			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
 			if (real_call == 0)
-			{
-#ifdef DEACTIVATE_SYSCALL_ESTIMATION
-                real_call = setup_default_nid(*cur_nid);
-#else
-				real_call = MAKE_SYSCALL(estimate_syscall(
-					(char *)pstub_entry->lib_name, *cur_nid));
-#endif
-			}
+				real_call = globals->isEmu ?
+					setup_default_nid(*cur_nid) :
+					MAKE_SYSCALL(estimate_syscall(
+						(char *)pstub_entry->lib_name, *cur_nid));
 
-			NID_DBG_PRINTF("Real call after estimation: 0x%08X\n", real_call);
+			NID_DBG_PRINTF("Real call after finalization: 0x%08X\n", real_call);
 
 			/* If it's an instruction, resolve it */
 			/* 0xC -> syscall 0 */
