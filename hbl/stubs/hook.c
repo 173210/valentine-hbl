@@ -48,13 +48,6 @@ static int cur_ch_id = -1;
 void (* net_term_func[5])();
 int net_term_num = 0;
 
-//Checks if the homebrew should return to xmb on exit
-// yes if user specified it in the cfg file AND it is not the menu
-static int force_return_to_xmb()
-{
-	return return_to_xmb_on_exit && find_module_by_path(MENU_PATH) < 0;
-}
-
 #ifdef FORCE_HARDCODED_VRAM_SIZE
 // Hardcode edram size if the function is not available
 u32 _hook_sceGeEdramGetSize() {
@@ -1597,24 +1590,24 @@ u32 setup_hook(u32 nid, u32 UNUSED(existing_real_call))
 			break;
 
         case 0x05572A5F: // sceKernelExitGame
-            if (!force_return_to_xmb())
+            if (!return_to_xmb_on_exit)
                 hook_call = MAKE_JUMP(_hook_sceKernelExitGame);
             break;
         case 0xE81CAF8F: //	sceKernelCreateCallback
-            if (!force_return_to_xmb())
+            if (!return_to_xmb_on_exit)
                 hook_call = MAKE_JUMP(_hook_sceKernelCreateCallback);
             break;
         case 0x4AC57943: //	sceKernelRegisterExitCallback
-            if (!force_return_to_xmb())
+            if (!return_to_xmb_on_exit)
                 hook_call = MAKE_JUMP(_hook_sceKernelRegisterExitCallback);
             break;
 //Audio monitors
         case 0x6FC46853: //	sceAudioChRelease
-			if (!force_return_to_xmb())
+			if (!return_to_xmb_on_exit)
                 hook_call = MAKE_JUMP(_hook_sceAudioChRelease);
             break;
         case 0x5EC81C55: //	sceAudioChReserve
-            if (!force_return_to_xmb())
+            if (!return_to_xmb_on_exit)
                 hook_call = MAKE_JUMP(_hook_sceAudioChReserve);
             break;
 

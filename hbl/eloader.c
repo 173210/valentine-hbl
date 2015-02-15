@@ -201,20 +201,6 @@ int module_start()
 		dbg_printf("Failed Callback Thread Creation\n  thid=%08X\n", thid);
 		scr_puts("- Failed Callback Thread Creation\n");
 	}
-
-	scr_puts("Loading EBOOT\n");
-
-	//Run the hardcoded eboot if it exists...
-	fd = sceIoOpen(EBOOT_PATH, PSP_O_RDONLY, 777);
-	if (fd > 0) {
-		exit = 1;
-		return_to_xmb_on_exit = 1;
-		run_eboot(fd, EBOOT_PATH);
-		//we wait infinitely here, or until exit callback is called
-		while(!hbl_exit_cb_called)
-			sceKernelDelayThread(65536);
-	}
-
 	//...otherwise launch the menu
 	while (!exit) {
 		init_free = sceKernelTotalFreeMemSize();
@@ -223,7 +209,13 @@ int module_start()
 		loadGlobalConfig();
 
 		//run menu
-		run_eboot(sceIoOpen(MENU_PATH, PSP_O_RDONLY, 777), MENU_PATH);
+		fd = sceIoOpen(EBOOT_PATH, PSP_O_RDONLY, 777);
+		if (fd < 0) {
+			dbg_printf("Failed Opening EBOOT.PBP: 0x%08X\n", fd);
+			scr_printf("Failed Opening EBOOT.PBP: 0x%08X\n", fd);
+			break;
+		}
+		run_eboot(fd, EBOOT_PATH);
 		wait_for_eboot_end();
 
 		cleanup(globals->lib_num);

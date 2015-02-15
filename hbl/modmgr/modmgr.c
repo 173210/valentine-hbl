@@ -331,7 +331,7 @@ SceUID start_module(SceUID modid)
 	}
 
 	arglen = strlen(mod_table[modid].path) + 1;
-	if (strcmp(mod_table[modid].path, MENU_PATH))
+	if (strcmp(mod_table[modid].path, EBOOT_PATH))
 		argp = mod_table[modid].path;
 	else {
 		/* menu code thanks to Noobz & Fanjita
