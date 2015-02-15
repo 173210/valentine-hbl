@@ -15,6 +15,7 @@
 #include <common/utils.h>
 #include <loader/freemem.h>
 #include <loader/runtime.h>
+#include <hbl/stubs/hook.h>
 #include <hbl/eloader.h>
 #include <exploit_config.h>
 #include <svnversion.h>
@@ -206,7 +207,7 @@ static int test_sceIoChdir()
 	fd = sceIoOpen(HBL_PRX, PSP_O_RDONLY, 0777);
 	if (fd > 0) {
 		sceIoClose(fd);
-
+		dbg_printf("sceIoChdir failed!\n");
 		return 1;
 	}
 #endif

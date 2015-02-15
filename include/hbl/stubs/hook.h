@@ -39,8 +39,6 @@ extern void (* net_term_func[])();
 extern int net_term_num;
 
 //Own functions
-void init_hook();
-int test_sceIoChdir();
 void threads_cleanup();
 void ram_cleanup();
 void files_cleanup();
