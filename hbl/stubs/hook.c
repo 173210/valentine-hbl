@@ -852,7 +852,9 @@ void exit_everything_but_me()
 {
 	net_term();
 	audio_term();
+#ifdef SUB_INTR_HANDLER_CLEANUP
 	subinterrupthandler_cleanup();
+#endif
     threads_cleanup();
     ram_cleanup();
 	files_cleanup();
