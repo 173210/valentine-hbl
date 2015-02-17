@@ -258,7 +258,6 @@ static int detectEmu()
 	if (ret < 0)
 		dbg_printf("%s: Reading " HBL_ROOT " failed: 0x%08X\n",
 			__func__, ret);
-	dbg_puts(dir.d_name);
 
 	globals->isEmu = (ret < 0 || dir.d_name[0] != '.' || dir.d_name[2]);
 
