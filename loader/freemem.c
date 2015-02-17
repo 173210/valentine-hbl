@@ -8,7 +8,6 @@
 #ifdef SUSPEND_THEN_DELETE_THREADS
 void SuspendAllThreads()
 {
-    dbg_printf("memory.c:SuspendAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 	SceUID thuids[] = TH_ADDR_LIST;
@@ -72,7 +71,6 @@ void SuicideAllThreads(void)
 #ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)
 {
-    dbg_printf("memory.c:DeleteAllThreads\n");
 	u32 i;
 	u32 thaddrs[] = TH_ADDR_LIST;
 
@@ -87,7 +85,6 @@ void DeleteAllThreads(void)
 #ifdef ALARM_ADDR_LIST
 void CancelAllAlarms(void)
 {
-    dbg_printf("memory.c:CancelAllAlarms\n");
 	u32 i;
 	u32 alarmaddrs[] = ALARM_ADDR_LIST;
 
@@ -106,7 +103,6 @@ void CancelAllAlarms(void)
 #ifdef LWMUTEX_ADDR_LIST
 void DeleteAllLwMutexes(void)
 {
-    dbg_printf("memory.c:DeleteAllLwMutexes\n");
 	u32 i;
 	u32 lwmutexaddrs[] = LWMUTEX_ADDR_LIST;
 
@@ -124,7 +120,6 @@ void DeleteAllLwMutexes(void)
 #ifdef EV_ADDR_LIST
 void DeleteAllEventFlags(void)
 {
-    dbg_printf("memory.c:DeleteAllEventFlags\n");
 	u32 i;
 	u32 evaddrs[] = EV_ADDR_LIST;
 
@@ -144,12 +139,8 @@ void DeleteAllEventFlags(void)
 void DeleteAllSemaphores(void)
 {
 #ifndef HOOK_sceKernelDeleteSema_WITH_dummy
-    dbg_printf("memory.c:DeleteAllSemaphores\n");
 	u32 i;
 	u32 semaaddrs[] = SEMA_ADDR_LIST;
-
-	/* sgx semaphores */
-
 
 	/* lets destroy these now */
 	for (i = 0; i < (sizeof(semaaddrs)/sizeof(u32)); i++)
@@ -177,8 +168,6 @@ void FreeMem()
 {
 	unsigned i;
 
-	dbg_printf("memory.c:FreeMem\n");
-
     SceUID memids[] = GAME_FREEMEM_ADDR;
 
     for(i = 0; i < sizeof(memids)/sizeof(u32); i++)
@@ -196,7 +185,6 @@ void FreeMem()
 #ifdef VPL_ADDR_LIST
 void FreeVpl()
 {
-    dbg_printf("memory.c:FreeVpl\n");
     u32 i;
     SceUID memids[] = VPL_ADDR_LIST;
 
@@ -214,7 +202,6 @@ void FreeVpl()
 #ifdef FPL_ADDR_LIST
 void FreeFpl()
 {
-    dbg_printf("memory.c:FreeFpl\n");
     u32 i;
     SceUID memids[] = FPL_ADDR_LIST;
 
@@ -233,7 +220,6 @@ void FreeFpl()
 // open by the exploitet game
 void CloseFiles()
 {
-    dbg_printf("memory.c:CloseFiles\n");
 	SceUID result;
 	int i;
 
@@ -257,15 +243,16 @@ void ReleaseAudioCh()
 
 void preload_free_game_memory()
 {
-	dbg_printf(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ",
+	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
 		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
 
 #ifdef GAME_FREEMEM_ADDR
+	dbg_printf("%s: Freeing partiton memory\n", __func__);
 	FreeMem();
 #endif
 
 #ifdef GAME_FREEMEM_BRUTEFORCE_INIT
-	dbg_printf("Freeing memory with brute force...\n");
+	dbg_printf("%s: Freeing memory with brute force\n", __func__);
 	freemem_bruteforce(GAME_FREEMEM_BRUTEFORCE_INIT,
 		(void *)GAME_FREEMEM_BRUTEFORCE_ADDR);
 #endif
@@ -274,53 +261,54 @@ void preload_free_game_memory()
 	subinterrupthandler_cleanup();
 #endif
 
-#ifdef DEBUG
-	dbg_printf(" FREE MEM AFTER CLEANING: %d (max: %d)\n ",
-		 sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
-#endif
+	dbg_printf("%s: After cleaning: %d (max: %d)\n", __func__,
+		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
 }
 
 void free_game_memory()
 {
-#ifdef DEBUG
-    int is_free;
-    int max_free;
-	is_free = sceKernelTotalFreeMemSize();
-    max_free = sceKernelMaxFreeMemSize();
-	dbg_printf(" FREE MEM BEFORE CLEANING: %d (max: %d)\n ", is_free, max_free);
-#endif
+	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
+		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
 
 #ifdef SUSPEND_THEN_DELETE_THREADS
+	dbg_printf("%s: Suspending all threads\n", __func__);
 	SuspendAllThreads();
 #else
 #ifdef TH_ADDR_LIST
+	dbg_printf("%s: Deleting all threads\n", __func__);
 	DeleteAllThreads();
 #endif
 #endif
 
 #ifdef ALARM_ADDR_LIST
+	dbg_printf("%s: Canceling all alarms\n", __func__);
 	CancelAllAlarms();
 #endif
 
 #ifdef LWMUTEX_ADDR_LIST
+	dbg_printf("%s: Deleting all LwMutexes\n", __func__);
 	DeleteAllLwMutexes();
 #endif
 
 #ifdef EV_ADDR_LIST
+	dbg_printf("%s: Deleting all eventFlags\n", __func__);
 	DeleteAllEventFlags();
 #endif
 
 #ifdef SEMA_ADDR_LIST
+	dbg_printf("%s: Deleting all semaphores\n", __func__);
 	DeleteAllSemaphores();
 #endif
 
 
 #ifdef VPL_ADDR_LIST
-    FreeVpl();
+	dbg_printf("%s: Freeing VPL\n", __func__);
+	FreeVpl();
 #endif
 
 #ifdef FPL_ADDR_LIST
-    FreeFpl();
+	dbg_printf("%s: Freeing FPL\n", __func__);
+	FreeFpl();
 #endif
 
 
@@ -328,6 +316,7 @@ void free_game_memory()
 unload_memset_flag = 1;
 #endif
 
+	dbg_printf("%s: Unloading modules\n", __func__);
 #ifndef LOAD_MODULES_FOR_SYSCALLS
 	unload_utils();
 #endif
@@ -341,15 +330,14 @@ unload_memset_flag = 1;
 	UnloadModules();
 #endif
 
+	dbg_printf("%s: Closing files\n", __func__);
 	CloseFiles();
 
+	dbg_printf("%s: Releasing audio channels\n", __func__);
 	ReleaseAudioCh();
 
-#ifdef DEBUG
-	is_free = sceKernelTotalFreeMemSize();
-    max_free = sceKernelMaxFreeMemSize();
-	dbg_printf(" FREE MEM AFTER CLEANING: %d (max: %d)\n ", is_free, max_free);
-#endif
+	dbg_printf("%s: After cleaning: %d (max: %d)\n", __func__,
+		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
 
 	return;
 }
