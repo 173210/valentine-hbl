@@ -13,12 +13,13 @@ static void log_lib(const tSceLibrary *lib)
 {
 	dbg_printf("\n-->Library name: %s\n", lib->name);
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	dbg_printf("--Total library exports: %d\n"
-		"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
-		"--Lowest index in file: %d\n",
-		lib->num_lib_exports,
-		lib->lowest_nid, lib->lowest_syscall,
-		lib->lowest_index);
+	if (!globals->isEmu)
+		dbg_printf("--Total library exports: %d\n"
+			"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
+			"--Lowest index in file: %d\n",
+			lib->num_lib_exports,
+			lib->lowest_nid, lib->lowest_syscall,
+			lib->lowest_index);
 #endif
 }
 #endif
@@ -107,12 +108,14 @@ int add_stub(const tStubEntry *stub)
 			strcpy(globals->lib_table[lib_index].name, stub->lib_name);
 
 #ifndef DEACTIVATE_SYSCALL_ESTIMATION
-			// Initialize lowest syscall on library table
-			globals->lib_table[lib_index].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
-			globals->lib_table[lib_index].lowest_nid = *cur_nid;
+			if (!globals->isEmu) {
+				// Initialize lowest syscall on library table
+				globals->lib_table[lib_index].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
+				globals->lib_table[lib_index].lowest_nid = *cur_nid;
 
-			// Initialize highest syscall on library table
-			globals->lib_table[lib_index].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
+				// Initialize highest syscall on library table
+				globals->lib_table[lib_index].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
+			}
 
 			NID_DBG_PRINTF("Current lowest nid/syscall: 0x%08X/0x%08X\n",
 				globals->lib_table[lib_index].lowest_syscall, globals->lib_table[lib_index].lowest_nid);
