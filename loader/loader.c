@@ -19,10 +19,6 @@
 #include <exploit_config.h>
 #include <svnversion.h>
 
-#ifdef DEACTIVATE_SYSCALL_ESTIMATION
-#define DISABLE_KERNEL_DUMP
-#endif
-
 #define FIRST_LOG "Loader running\n"
 
 PSP_MODULE_INFO("LOADER", PSP_MODULE_USER, 0, 0);
@@ -251,12 +247,18 @@ static int detectEmu()
 
 	fd = sceIoDopen(HBL_ROOT);
 	if (fd < 0) {
+		dbg_printf("%s: Opening " HBL_ROOT " failed: 0x%08X\n",
+			__func__, fd);
 		globals->isEmu = 0;
 		return fd;
 	}
 
 	memset(&dir, 0, sizeof(dir));
 	ret = sceIoDread(fd, &dir);
+	if (ret < 0)
+		dbg_printf("%s: Reading " HBL_ROOT " failed: 0x%08X\n",
+			__func__, ret);
+	dbg_puts(dir.d_name);
 
 	globals->isEmu = (ret < 0 || dir.d_name[0] != '.' || dir.d_name[2]);
 

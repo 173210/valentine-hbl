@@ -674,19 +674,15 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 	if (!ret)
 		ret = util_mod->id;
 #endif
-	switch (util_mod->id) {
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-		case PSP_MODULE_AV_AVCODEC: // -> cast syscall of sceAudiocodec and sceVideocodec
-			break;
-#endif
-		case PSP_MODULE_AV_MP3: // -> On 6.20 OFW, libmp3 has a bug when unload it.
-			if (globals->module_sdk_version <= 0x06020010)
-				break;
-		default:
+	// PSP_MODULE_AV_AVCODEC -> cast syscall of sceAudiocodec and sceVideocodec
+	// PSP_MODULE_AV_MP3 -> On 6.20 OFW, libmp3 has a bug when unload it.
+	if ((util_mod->id != PSP_MODULE_AV_AVCODEC || globals->isEmu)
+		&& (util_mod->id != PSP_MODULE_AV_MP3
+			|| globals->module_sdk_version > 0x06020010)) {
 #ifdef UTILITY_UNLOAD_MODULE_FILE
-			add_util_table(ret);
+		add_util_table(ret);
 #else
-			add_util_table(util_mod->id);
+		add_util_table(util_mod->id);
 #endif
 	}
 #endif

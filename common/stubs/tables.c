@@ -12,7 +12,6 @@
 static void log_lib(const tSceLibrary *lib)
 {
 	dbg_printf("\n-->Library name: %s\n", lib->name);
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	if (!globals->isEmu)
 		dbg_printf("--Total library exports: %d\n"
 			"--Lowest NID/SYSCALL:  0x%08X/0x%08X\n"
@@ -20,7 +19,6 @@ static void log_lib(const tSceLibrary *lib)
 			lib->num_lib_exports,
 			lib->lowest_nid, lib->lowest_syscall,
 			lib->lowest_index);
-#endif
 }
 #endif
 
@@ -71,9 +69,7 @@ int add_stub(const tStubEntry *stub)
 	int *cur_call;
 	int i, nid_index, lib_index, good_call, nid;
 	int num = 0;
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 	int syscall_num;
-#endif
 
 	NID_DBG_PRINTF("-->Processing library: %s\n", stub->lib_name);
 
@@ -107,7 +103,6 @@ int add_stub(const tStubEntry *stub)
 
 			strcpy(globals->lib_table[lib_index].name, stub->lib_name);
 
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 			if (!globals->isEmu) {
 				// Initialize lowest syscall on library table
 				globals->lib_table[lib_index].lowest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
@@ -115,11 +110,11 @@ int add_stub(const tStubEntry *stub)
 
 				// Initialize highest syscall on library table
 				globals->lib_table[lib_index].highest_syscall = GET_SYSCALL_NUMBER(get_good_call(cur_call));
-			}
 
-			NID_DBG_PRINTF("Current lowest nid/syscall: 0x%08X/0x%08X\n",
-				globals->lib_table[lib_index].lowest_syscall, globals->lib_table[lib_index].lowest_nid);
-#endif
+				NID_DBG_PRINTF("Current lowest nid/syscall: 0x%08X/0x%08X\n",
+					globals->lib_table[lib_index].lowest_syscall,
+					globals->lib_table[lib_index].lowest_nid);
+			}
 
 			// New library
 			globals->lib_num++;
@@ -144,32 +139,33 @@ int add_stub(const tStubEntry *stub)
 					// Fill NID table
 #ifdef XMB_LAUNCHER
 				good_call = get_good_call(cur_call);
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 				// Check lowest syscall
-				syscall_num = GET_SYSCALL_NUMBER(good_call);
-#endif
+				if (!globals->isEmu) {
+					syscall_num = GET_SYSCALL_NUMBER(good_call);
 #else
 				add_nid(nid, get_good_call(cur_call), lib_index);
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 				// Check lowest syscall
-				syscall_num = GET_SYSCALL_NUMBER(globals->nid_table[num].call);
+				if (!globals->isEmu) {
+					syscall_num = GET_SYSCALL_NUMBER(globals->nid_table[num].call);
 #endif
-#endif
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-				NID_DBG_PRINTF("  --> with syscall 0x%08X\n", syscall_num);
+					NID_DBG_PRINTF("  --> with syscall 0x%08X\n",
+						syscall_num);
 
-				if (syscall_num < globals->lib_table[lib_index].lowest_syscall) {
-					globals->lib_table[lib_index].lowest_syscall = syscall_num;
-					globals->lib_table[lib_index].lowest_nid = nid; // globals->nid_table[i].nid;
-					NID_DBG_PRINTF("New lowest syscall/nid: 0x%08X/0x%08X\n",
-						globals->lib_table[lib_index].lowest_syscall, globals->lib_table[lib_index].lowest_nid);
-				}
+					if (syscall_num < globals->lib_table[lib_index].lowest_syscall) {
+						globals->lib_table[lib_index].lowest_syscall = syscall_num;
+						globals->lib_table[lib_index].lowest_nid = nid; // globals->nid_table[i].nid;
+						NID_DBG_PRINTF("New lowest syscall/nid: 0x%08X/0x%08X\n",
+							globals->lib_table[lib_index].lowest_syscall,
+							globals->lib_table[lib_index].lowest_nid);
+					}
 
-				if (syscall_num > globals->lib_table[lib_index].highest_syscall) {
-					globals->lib_table[lib_index].highest_syscall = syscall_num;
-					NID_DBG_PRINTF("New highest syscall/nid: 0x%08X/0x%08X\n", globals->lib_table[lib_index].highest_syscall, nid);
+					if (syscall_num > globals->lib_table[lib_index].highest_syscall) {
+						globals->lib_table[lib_index].highest_syscall = syscall_num;
+						NID_DBG_PRINTF("New highest syscall/nid: 0x%08X/0x%08X\n",
+							globals->lib_table[lib_index].highest_syscall,
+							nid);
+					}
 				}
-#endif
 				num++;
 			}
 			cur_nid++;
@@ -217,7 +213,6 @@ int get_nid_index(int nid)
 	return -1;
 }
 
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
 // Return index in nid_table for closest higher known NID
 int get_higher_known_nid(int index, int nid)
 {
@@ -303,5 +298,4 @@ int get_syscall_boundaries(int lib_index, int *low, int *high)
 
 	return *low && *high;
 }
-#endif
 

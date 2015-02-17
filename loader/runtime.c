@@ -384,17 +384,11 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 	int i, ret;
 	int *stub, *nid;
 	int call;
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-	const char *lib_name;
-#endif
 
 	if (top == NULL || end == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	for (ent = top; ent != end; ent++) {
-#ifndef DEACTIVATE_SYSCALL_ESTIMATION
-		lib_name = ent->lib_name;
-#endif
 		stub = (int *)((int)ent->jump_p | 0x40000000);
 		nid = (int *)ent->nid_p;
 
@@ -406,13 +400,11 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 			ret = get_nid_index(*nid);
 
 			if (ret < 0) {
-				*stub++ = JR_RA_OPCODE;
-#ifdef DEACTIVATE_SYSCALL_ESTIMATION
 				dbg_printf("HBL Function missing, this can lead to trouble\n");
-				*stub++ = NOP_OPCODE;
-#else
-				*stub++ = estimate_syscall(lib_name, *nid);
-#endif
+				*stub++ = JR_RA_OPCODE;
+				*stub++ = globals->isEmu ?
+					NOP_OPCODE :
+					estimate_syscall(ent->lib_name, *nid);
 			} else {
 				dbg_printf("-Found in NID table, using real call\n");
 				call = globals->nid_table[ret].call;
