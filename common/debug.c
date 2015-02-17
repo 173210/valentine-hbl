@@ -5,16 +5,33 @@
 #include <common/utils.h>
 #include <exploit_config.h>
 
-#ifdef DEBUG
 void dbg_puts(const char *s)
 {
-	SceUID fd = sceIoOpen(DBG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
-	size_t len = strlen(s);
+	SceUID fd;
+	size_t len;
+	int ret;
 
-	sceIoWrite(PSPLINK_OUT, s, len);
+	len = strlen(s);
 
-	sceIoWrite(fd, s, len);
-	sceIoClose(fd);
+	ret = sceIoWrite(PSPLINK_OUT, s, len);
+	if (ret != len)
+		dbg_printf("%s: stdout writing failed 0x%08X\n",
+			__func__, ret);
+
+	fd = sceIoOpen(DBG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
+	if (fd < 0)
+		dbg_printf("%s: " DBG_PATH " opening failed 0x%08X\n",
+			__func__, fd);
+	else {
+		ret = sceIoWrite(fd, s, len);
+		if (ret != len)
+			dbg_printf("%s: " DBG_PATH " writing failed 0x%08X\n",
+				__func__, ret);
+		ret = sceIoClose(fd);
+		if (ret)
+			dbg_printf("%s: " DBG_PATH " closing failed 0x%08X\n",
+				__func__, ret);
+	}
 }
 
 // DBG_PRINTF implementation
@@ -44,17 +61,21 @@ static int dbg_itoa(unsigned val, char *buf, int base, int w)
 	return i;
 }
 
-void dbg_printf(const char *fmt, ...)
+void dbg_vprintf(const char *fmt, va_list va)
 {
 	SceUID fd;
-	va_list va;
+	const char dbgOpenError[] = "dbg_vprintf: " DBG_PATH "opening failed\n";
+	const char dbgCloseError[] = "dbg_vprintf: " DBG_PATH "closing failed\n";
+	const char dbgWriteError[] = "\ndbg_vprintf: " DBG_PATH "writing failed\n";
+	const char stdWriteError[] = "\ndbg_vprintf: stdout writing failed\n";
 	const char *p;
 	char buf[11];
 	char c, w;
-	int i, val;
+	int i, ret, val;
 
-	va_start(va, fmt);
 	fd = sceIoOpen(DBG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
+	if (fd < 0)
+		sceIoWrite(PSPLINK_OUT, dbgOpenError, sizeof(dbgOpenError) - 1);
 
 	while ((c = *fmt) != '\0') {
 		if (c != '%') {
@@ -101,12 +122,24 @@ void dbg_printf(const char *fmt, ...)
 			}
 		}
 
-		sceIoWrite(PSPLINK_OUT, p, i);
-		sceIoWrite(fd, p, i);
+		ret = sceIoWrite(PSPLINK_OUT, p, i);
+		if (ret != i)
+			sceIoWrite(fd, stdWriteError, sizeof(stdWriteError) - 1);
+		ret = sceIoWrite(fd, p, i);
+		if (ret != i)
+			sceIoWrite(PSPLINK_OUT, dbgWriteError, sizeof(dbgWriteError) - 1);
 	}
 
-	va_end(va);
-	sceIoClose(fd);
+	ret = sceIoClose(fd);
+	if (ret)
+		sceIoWrite(PSPLINK_OUT, dbgCloseError, sizeof(dbgCloseError) - 1);
 }
-#endif
 
+void dbg_printf(const char *fmt, ...)
+{
+	va_list va;
+
+	va_start(va, fmt);
+	dbg_vprintf(fmt, va);
+	va_end(va);
+}

@@ -22,17 +22,38 @@ int num_pend_th = 0;
 int num_run_th = 0;
 int num_exit_th = 0;
 
-// HBL entry point
-// Needs path to ELF or EBOOT
-static void run_eboot(SceUID fd, const char *path)
+static void cleanup(u32 num_lib)
 {
+	threads_cleanup();
+	ram_cleanup();
+
+	unload_modules();
+
+	//cleanup globals
+	globals->lib_num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
+	hook_exit_cb_called = 0;
+	hook_exit_cb = NULL;
+}
+
+static int run_eboot(const char *path)
+{
+	SceUID fd, mod_id;
 	SceOff off;
-	SceUID mod_id;
 	char cfg_path[256];
+	int ret;
 
 	scr_init();
 
-	dbg_printf("EBOOT path: %s\n", (u32)path);
+	if (path == NULL)
+		ret = SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+
+	dbg_printf("EBOOT path: %s\n", path);
+
+	fd = sceIoOpen(path, PSP_O_RDONLY, 777);
+	if (fd < 0) {
+		scr_printf("%s opening failed: 0x%08X\n", path, fd);
+		return fd;
+	}
 
 	//Load Game config overrides
 	_sprintf(cfg_path, "%s" HBL_CONFIG, path);
@@ -41,7 +62,7 @@ static void run_eboot(SceUID fd, const char *path)
 	// Extracts ELF from PBP
 	eboot_get_elf_off(fd, &off);
 
-	dbg_printf("Loading module\n");
+	dbg_printf("%s: Loading module\n", __func__);
 
 	//clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
 	//if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
@@ -54,28 +75,29 @@ static void run_eboot(SceUID fd, const char *path)
 
 	mod_id = load_module(fd, path, (void *)PRX_LOAD_ADDRESS, off);
 
-	// No need for ELF file anymore
-	sceIoClose(fd);
-
-	if (mod_id < 0) {
-		dbg_printf("ERROR 0x%08X loading main module\n", mod_id);
-#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
-		sceKernelExitGameWithStatus(mod_id);
-#else
-		sceKernelExitGame();
-#endif
+	dbg_printf("%s: Closing %s", __func__, path);
+	ret = sceIoClose(fd);
+	if (ret < 0) {
+		dbg_printf("%s: Closing %s failed 0x%08X\n",
+			__func__, path, ret);
+		return ret;
 	}
 
-	mod_id = start_module(mod_id);
-
 	if (mod_id < 0) {
-		dbg_printf("ERROR 0x%08X starting main module\n", mod_id);
-#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
-		sceKernelExitGameWithStatus(mod_id);
-#else
-		sceKernelExitGame();
-#endif
+		scr_printf("ERROR 0x%08X loading main module\n", mod_id);
+		return mod_id;
 	}
+
+	ret = start_module(mod_id);
+	if (ret < 0) {
+		scr_printf("ERROR 0x%08X starting main module\n", mod_id);
+		cleanup(globals->lib_num);
+		return ret;
+	}
+
+	dbg_printf("%s: Success\n", __func__);
+
+	return 0;
 }
 
 static void wait_for_eboot_end()
@@ -117,20 +139,6 @@ static void wait_for_eboot_end()
 
 	scr_init();
 	dbg_printf("Threads are dead\n");
-}
-
-static void cleanup(u32 num_lib)
-{
-
-        threads_cleanup();
-	ram_cleanup();
-
-	unload_modules();
-
-	//cleanup globals
-	globals->lib_num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
-	hook_exit_cb_called = 0;
-	hook_exit_cb = NULL;
 }
 
 static void ramcheck(int expected_free_ram) {
@@ -185,7 +193,6 @@ int callback_thread()
 // HBL main thread
 int module_start()
 {
-	SceUID fd;
 	char path[260];
 	int exit = 0;
 	int init_free;
@@ -194,28 +201,24 @@ int module_start()
 	scr_puts("Creating callback thread\n");
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
 	if(thid > -1) {
-		dbg_printf("Callback Thread Created\n  thid=%08X\n", thid);
+		dbg_printf("Callback thread created\n  thid=%08X\n", thid);
 		sceKernelStartThread(thid, 0, 0);
 	}
 	else {
-		dbg_printf("Failed Callback Thread Creation\n  thid=%08X\n", thid);
-		scr_puts("- Failed Callback Thread Creation\n");
+		scr_printf("- Failed callback thread creation: 0x%08X\n", thid);
 	}
 	//...otherwise launch the menu
 	while (!exit) {
 		init_free = sceKernelTotalFreeMemSize();
 
-		//Load default config
+		scr_puts("Loading global configurations");
 		loadGlobalConfig();
 
-		//run menu
-		fd = sceIoOpen(EBOOT_PATH, PSP_O_RDONLY, 777);
-		if (fd < 0) {
-			dbg_printf("Failed Opening EBOOT.PBP: 0x%08X\n", fd);
-			scr_printf("Failed Opening EBOOT.PBP: 0x%08X\n", fd);
+		scr_puts("Running " EBOOT_PATH);
+		if (run_eboot(EBOOT_PATH)) {
+			ramcheck(init_free);
 			break;
 		}
-		run_eboot(fd, EBOOT_PATH);
 		wait_for_eboot_end();
 
 		cleanup(globals->lib_num);
@@ -225,14 +228,15 @@ int module_start()
 		strcpy(path, hb_fname);
 		init_free = sceKernelTotalFreeMemSize();
 
-		//re-Load default config
+		scr_puts("Loading global configurations");
 		loadGlobalConfig();
-		dbg_printf("Config Loaded OK\n");
-		dbg_printf("Eboot is: %s\n", path);
 
 		//run homebrew
-		run_eboot(sceIoOpen(path, PSP_O_RDONLY, 777), path);
-		dbg_printf("Eboot Started OK\n");
+		scr_printf("Running %s", path);
+		if (run_eboot(path)) {
+			ramcheck(init_free);
+			continue;
+		}
 		wait_for_eboot_end();
 
 		cleanup(globals->lib_num);
@@ -241,6 +245,7 @@ int module_start()
 			break;
 	}
 
+	scr_puts("Exiting\n");
 #ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
 	sceKernelExitGameWithStatus(0);
 #else

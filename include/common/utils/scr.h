@@ -3,11 +3,8 @@
 
 void scr_init();
 
-void scr_putc_col(int c, int col);
-void scr_putc(int c);
-
 void scr_puts_col(const char *s, int col);
-void scr_puts(const char *s);
+#define scr_puts(s) scr_puts_col(s, 0x00FFFFFF)
 
 void scr_printf(const char *fmt, ...);
 

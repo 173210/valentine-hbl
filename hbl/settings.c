@@ -260,9 +260,8 @@ void configGetProcessingOptions()
 // Load default config
 void loadGlobalConfig()
 {
-
-    //load Config file
-    loadConfig(HBL_ROOT HBL_CONFIG);
+	loadConfig(HBL_ROOT HBL_CONFIG);
+	dbg_printf("%s: Success\n", __func__);
 }
 
 void closeConfig() {

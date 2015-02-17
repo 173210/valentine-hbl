@@ -1,6 +1,7 @@
 #include <common/utils/fnt.h>
 #include <common/utils/scr.h>
 #include <common/utils/string.h>
+#include <common/debug.h>
 #include <common/sdk.h>
 
 #define	LINE_SIZE 512
@@ -23,7 +24,7 @@ void scr_init()
 	cur_x = cur_y = 0;
 }
 
-void scr_putc_col(int c, int col)
+static void scr_putc_col(int c, int col)
 {
 	int fnt_x, fnt_y;
 
@@ -60,23 +61,22 @@ void scr_putc_col(int c, int col)
 	}
 }
 
-void scr_putc(int c)
+static void scr_putc(int c)
 {
 	scr_putc_col(c, 0x00FFFFFF);
 }
 
 void scr_puts_col(const char *s, int col)
 {
+	if (s == NULL) {
+		dbg_printf("%s: NULL pointer\n", __func__);
+		return;
+	}
+
+	dbg_puts(s);
+
 	while (*s) {
 		scr_putc_col(*s, col);
-		s++;
-	}
-}
-
-void scr_puts(const char *s)
-{
-	while (*s) {
-		scr_putc(*s);
 		s++;
 	}
 }
@@ -85,7 +85,13 @@ void scr_printf(const char *fmt, ...)
 {
 	va_list va;
 
+	if (fmt == NULL) {
+		dbg_printf("%s: NULL pointer\n", __func__);
+		return;
+	}
+
 	va_start(va, fmt);
+	dbg_vprintf(fmt, va);
 	_vfprintf(scr_putc, fmt, va);
 	va_end(va);
 }

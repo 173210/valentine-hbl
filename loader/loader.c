@@ -241,8 +241,6 @@ static void get_module_sdk_version()
 		}
 
 	globals->module_sdk_version = *((int **)tbl->entrytable)[i + cnt];
-
-	dbg_printf("Detected firmware version is 0x%08X\n", globals->module_sdk_version);
 }
 
 static int detectEmu()
@@ -311,7 +309,7 @@ int start_thread()
 	resetHomeSettings();
 #endif
 
-	dbg_printf("Loading HBL\n");
+	scr_puts("Loading HBL\n");
 	if (load_hbl())
 #ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
 		return sceKernelExitGameWithStatus(-1);
@@ -319,7 +317,7 @@ int start_thread()
 		sceKernelExitGame();
 #endif
 
-	scr_puts("Running eLoader\n");
+	scr_puts("Running HBL\n");
 	run_eloader();
 
 	return 0;
@@ -330,6 +328,7 @@ void _start() __attribute__ ((section (".text.start")));
 void _start()
 {
 	SceUID thid;
+	int ret;
 
 #ifdef DEBUG
 	dbg_init();
@@ -345,10 +344,6 @@ void _start()
 #if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();
 #endif
-
-	// Intialize firmware and model
-	get_module_sdk_version();
-	detectEmu();
 
 	scr_init();
 	scr_puts("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl\n");
@@ -366,23 +361,37 @@ void _start()
 	PRE_LOADER_EXEC
 #endif
 
+	// Intialize firmware and model
+	get_module_sdk_version();
+	detectEmu();
+	scr_printf("Firmware version: 0x%08X", globals->module_sdk_version);
+	if (globals->isEmu)
+		scr_puts(" (emulator)");
+
+	scr_printf("\nFreeing game memory\n");
 	preload_free_game_memory();
 
 	// Create and start eloader thread
+	scr_printf("Starting HBL thread\n");
 	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0xF0000000, NULL);
 
 	if (thid < 0) {
-		//scr_printf("Error starting HBL thread 0x%08X\n", thid);
-		dbg_printf("Error starting HBL thread 0x%08X\n", thid);
+		scr_printf("Error creating HBL thread: 0x%08X\n", thid);
 #ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
 		sceKernelExitGameWithStatus(thid);
 #else
 		sceKernelExitGame();
 #endif
-	} else
-		sceKernelStartThread(thid, 0, NULL);
+	} else {
+		ret = sceKernelStartThread(thid, 0, NULL);
+		if (ret)
+			scr_printf("Error starting HBL thread: 0x%08X", ret);
+	}
 
-	sceKernelExitDeleteThread(0);
+	ret = sceKernelExitDeleteThread(0);
+	if (ret)
+		dbg_printf("%s: deleting current thread failed: 0x%08X\n",
+			__func__, ret);
 
 	// Never executed (hopefully)
 	while(1)
