@@ -37,8 +37,6 @@ typedef unsigned char byte;
 
 // Macro to get the syscall number
 #define GET_SYSCALL_NUMBER(sys) ((u32)(sys) >> 6)
-// Macro to form syscal instruction
-#define MAKE_SYSCALL(n) (0x03ffffff & (((u32)(n) << 6) | 0x0000000c))
 
 //
 // Memory

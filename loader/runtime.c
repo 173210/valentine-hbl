@@ -411,7 +411,7 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 				dbg_printf("HBL Function missing, this can lead to trouble\n");
 				*stub++ = NOP_OPCODE;
 #else
-				*stub++ = MAKE_SYSCALL(estimate_syscall(lib_name, *nid));
+				*stub++ = estimate_syscall(lib_name, *nid);
 #endif
 			} else {
 				dbg_printf("-Found in NID table, using real call\n");

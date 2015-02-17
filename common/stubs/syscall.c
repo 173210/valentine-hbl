@@ -122,12 +122,13 @@ static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUI
 		est_call = GET_SYSCALL_NUMBER(globals->nid_table[lower_nid_index].call)
 				+ nid_index - lower_file_index;
 
-	return est_call;
+	// Get syscall instruction
+	return 0x03FFFFFF & ((est_call << 6) | 0x0000000C);
 }
 
 // Estimate a syscall
 // Pass reference NID and distance from desidered function in the export table
-// Return syscall number
+// Return syscall instruction
 // Syscall accuracy (%) = (exports known from library / total exports from library) x 100
 // m0skit0's implementation
 int estimate_syscall(const char *lib, int nid)
@@ -168,7 +169,7 @@ int estimate_syscall(const char *lib, int nid)
 
 	sceIoClose(fd);
 
-	add_nid(nid, MAKE_SYSCALL(est_call), lib_index);
+	add_nid(nid, est_call, lib_index);
 
 	dbg_printf("Estimation done\n");
 

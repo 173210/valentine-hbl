@@ -109,10 +109,8 @@ unsigned int resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_s
 			/* generic error/ok if syscall estimation is not available */
 			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
 			if (real_call == 0)
-				real_call = globals->isEmu ?
-					setup_default_nid(*cur_nid) :
-					MAKE_SYSCALL(estimate_syscall(
-						(char *)pstub_entry->lib_name, *cur_nid));
+				real_call = globals->isEmu ? setup_default_nid(*cur_nid) :
+					estimate_syscall((char *)pstub_entry->lib_name, *cur_nid);
 
 			NID_DBG_PRINTF("Real call after finalization: 0x%08X\n", real_call);
 
