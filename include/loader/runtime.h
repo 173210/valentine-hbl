@@ -14,7 +14,7 @@ void unload_utils();
 #endif
 
 // Returns !=0 if stub entry is valid, 0 if it's not
-int elf_check_stub_entry(tStubEntry *pentry);
+int elf_check_stub_entry(const tStubEntry *pentry);
 
 int p2_add_stubs();
 int p5_add_stubs();

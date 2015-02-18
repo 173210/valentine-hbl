@@ -232,7 +232,7 @@ void unload_utils()
 #endif
 
 // Returns !=0 if stub entry is valid, 0 if it's not
-int elf_check_stub_entry(tStubEntry *pentry)
+int elf_check_stub_entry(const tStubEntry *pentry)
 {
 
 	return valid_umem_pointer(pentry->lib_name) &&
@@ -244,20 +244,31 @@ int elf_check_stub_entry(tStubEntry *pentry)
 
 int p2_add_stubs()
 {
-	tStubEntry *pentry;
+	const tStubEntry *pentry;
 	int num = 0;
 
 	for (pentry = (tStubEntry *)0x08800000;
-		(int)pentry < 0x0A000000;
+		pentry != libStubTop;
 		pentry = (tStubEntry *)((int)pentry + 4)) {
 
-		// While it's a valid stub header
 		while (elf_check_stub_entry(pentry)) {
 			if (*(char *)pentry->lib_name &&
 				(pentry->import_flags == 0x11 || !pentry->import_flags))
 				num += add_stub(pentry);
 
-			// Next entry
+			pentry++;
+		}
+	}
+
+	for (pentry = libStubBtm;
+		(int)pentry < 0x0A000000;
+		pentry = (tStubEntry *)((int)pentry + 4)) {
+
+		while (elf_check_stub_entry(pentry)) {
+			if (*(char *)pentry->lib_name &&
+				(pentry->import_flags == 0x11 || !pentry->import_flags))
+				num += add_stub(pentry);
+
 			pentry++;
 		}
 	}

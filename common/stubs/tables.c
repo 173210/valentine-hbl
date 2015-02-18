@@ -78,8 +78,8 @@ int add_stub(const tStubEntry *stub)
 	good_call = get_good_call(cur_call);
 
 	// Only process if syscall and if the import is already resolved
-	if (!(good_call & J_OPCODE) &&
-		(GET_SYSCALL_NUMBER(good_call) != SYSCALL_IMPORT_NOT_RESOLVED_YET)) {
+	if ((good_call & 0xFC00003F) == SYSCALL_OPCODE
+		&& GET_SYSCALL_NUMBER(good_call) != SYSCALL_IMPORT_NOT_RESOLVED_YET) {
 
 		// Get current NID
 		cur_nid = stub->nid_p;
