@@ -87,8 +87,17 @@ void CancelAllAlarms(void)
 {
 	u32 i;
 	u32 alarmaddrs[] = ALARM_ADDR_LIST;
+#ifdef ALARM_HANDLERS_LIST
+	u32 alarmhandlers[] = ALARM_HANDLERS_LIST;
 
-
+	for (i = 0; i < sizeof(alarmhandlers) / sizeof(u32); i++) {
+		// Write to uncached memory
+		((u32 *)(alarmhandlers[i] | 0x40000000))[0] = JR_ASM(REG_RA);
+		((u32 *)(alarmhandlers[i] | 0x40000000))[1] = LUI_ASM(REG_V0, 0);
+		// Fill instruction cache
+		__asm__("cache 0x14, 0(%0)" : "=r"(alarmhandlers[i]));
+	}
+#endif
 	for (i = 0; i < (sizeof(alarmaddrs)/sizeof(u32)); i++)
 	{
 		int ret = sceKernelCancelAlarm(*(SceUID*)(alarmaddrs[i]));
