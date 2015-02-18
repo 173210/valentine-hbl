@@ -25,10 +25,10 @@ static void log_lib(const tSceLibrary *lib)
 // Return real instruction that makes the system call (jump or syscall)
 static int get_good_call(const void *buf)
 {
-	// Dirty hack here :P but works
-	if(*(const int *)buf & SYSCALL_MASK_IMPORT)
-		buf += 4;
-	return *(const int *)buf;
+	int ret;
+
+	ret = ((int *)buf)[0];
+	return ret & J_OPCODE ? ret : ((int *)buf)[1];
 }
 
 // Adds NID entry to nid_table
@@ -78,7 +78,7 @@ int add_stub(const tStubEntry *stub)
 	good_call = get_good_call(cur_call);
 
 	// Only process if syscall and if the import is already resolved
-	if (!(good_call & SYSCALL_MASK_RESOLVE) &&
+	if (!(good_call & J_OPCODE) &&
 		(GET_SYSCALL_NUMBER(good_call) != SYSCALL_IMPORT_NOT_RESOLVED_YET)) {
 
 		// Get current NID

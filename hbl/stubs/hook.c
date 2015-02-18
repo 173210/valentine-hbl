@@ -1528,81 +1528,81 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 {
 	switch (nid) {
 		case 0x237DBD4F:
-			return MAKE_JUMP(_hook_sceKernelAllocPartitionMemory);
+			return J_ASM(_hook_sceKernelAllocPartitionMemory);
 		case 0xB6D61D02:
-			return MAKE_JUMP(_hook_sceKernelFreePartitionMemory);
+			return J_ASM(_hook_sceKernelFreePartitionMemory);
 		case 0x446D8DE6:
-			return MAKE_JUMP(_hook_sceKernelCreateThread);
+			return J_ASM(_hook_sceKernelCreateThread);
 		case 0xF475845D:
-			return MAKE_JUMP(_hook_sceKernelStartThread);
+			return J_ASM(_hook_sceKernelStartThread);
  		case 0xAA73C935:
-			return MAKE_JUMP(_hook_sceKernelExitThread);
+			return J_ASM(_hook_sceKernelExitThread);
  		case 0x809CE29B:
-			return MAKE_JUMP(_hook_sceKernelExitDeleteThread);
+			return J_ASM(_hook_sceKernelExitDeleteThread);
 		case 0x4C25EA72: //kuKernelLoadModule
 		case 0x977DE386: // sceKernelLoadModule
-			return MAKE_JUMP(_hook_sceKernelLoadModule);
+			return J_ASM(_hook_sceKernelLoadModule);
 		case 0x50F0C1EC:
-			return MAKE_JUMP(_hook_sceKernelStartModule);
+			return J_ASM(_hook_sceKernelStartModule);
 		case 0xC629AF26:
-			return MAKE_JUMP(_hook_sceUtilityLoadAvModule);
+			return J_ASM(_hook_sceUtilityLoadAvModule);
 		case 0x0D5BC6D2:
 			dbg_printf(" Hook sceUtilityLoadUsbModule\n");
-			return MAKE_JUMP(_hook_generic_error);
+			return J_ASM(_hook_generic_error);
 		case 0x1579a159:
-			return MAKE_JUMP(_hook_sceUtilityLoadNetModule);
+			return J_ASM(_hook_sceUtilityLoadNetModule);
 		case 0x2A2B3DE0:
-			return MAKE_JUMP(_hook_sceUtilityLoadModule);
+			return J_ASM(_hook_sceUtilityLoadModule);
 		case 0xF7D8D092: //sceUtilityUnloadAvModule
 		case 0xF64910F0: //sceUtilityUnloadUsbModule
 		case 0x64d50c56: //sceUtilityUnloadNetModule
 		case 0xE49BFE92: // sceUtilityUnloadModule
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 	}
 
 	if (return_to_xmb_on_exit) {
 		switch (nid) {
 			case 0x05572A5F:
-				return MAKE_JUMP(_hook_sceKernelExitGame);
+				return J_ASM(_hook_sceKernelExitGame);
 			case 0xE81CAF8F:
-				return MAKE_JUMP(_hook_sceKernelCreateCallback);
+				return J_ASM(_hook_sceKernelCreateCallback);
 			case 0x4AC57943:
-				return MAKE_JUMP(_hook_sceKernelRegisterExitCallback);
+				return J_ASM(_hook_sceKernelRegisterExitCallback);
 			case 0x6FC46853:
-				return MAKE_JUMP(_hook_sceAudioChRelease);
+				return J_ASM(_hook_sceAudioChRelease);
 			case 0x5EC81C55:
-				return MAKE_JUMP(_hook_sceAudioChReserve);
+				return J_ASM(_hook_sceAudioChReserve);
 		}
 	}
 
 	if (existing_real_call) {
 		switch (nid) {
 			case 0x109F50BC:
-				return MAKE_JUMP(_hook_sceIoOpen);
+				return J_ASM(_hook_sceIoOpen);
 			case 0x810C4BC3:
-				return MAKE_JUMP(_hook_sceIoClose);
+				return J_ASM(_hook_sceIoClose);
 		}
 
 		if (globals->isEmu || !globals->chdir_ok) {
 			switch (nid) {
 				case 0x55F4717D:
-					return MAKE_JUMP(_hook_sceIoChdir);
+					return J_ASM(_hook_sceIoChdir);
 				case 0x06A70004:
-					return MAKE_JUMP(_hook_sceIoMkdir);
+					return J_ASM(_hook_sceIoMkdir);
 				case 0x779103A0:
-					return MAKE_JUMP(_hook_sceIoRename);
+					return J_ASM(_hook_sceIoRename);
 				case 0xF27A9C51:
-					return MAKE_JUMP(_hook_sceIoRemove);
+					return J_ASM(_hook_sceIoRemove);
 				case 0xB29DDF9C:
-					return MAKE_JUMP(_hook_sceIoDopen);
+					return J_ASM(_hook_sceIoDopen);
 			}
 
 			if (globals->isEmu)
 				switch (nid) {
 					case 0xE3EB004C:
-						return MAKE_JUMP(sceIoDread_Vita);
+						return J_ASM(sceIoDread_Vita);
 					case 0xEB092469:
-						return MAKE_JUMP(sceIoDclose_Vita);
+						return J_ASM(sceIoDclose_Vita);
 				}
 		}
 
@@ -1612,14 +1612,14 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 	switch (nid) {
 #ifdef HOOK_sceDisplayGetFrameBuf
 		case 0xEEDA2E54:
-			return MAKE_JUMP(_hook_sceDisplayGetFrameBuf);
+			return J_ASM(_hook_sceDisplayGetFrameBuf);
 		case 0x289D82FE:
 			if (get_nid_index(0xEEDA2E54))
-				return MAKE_JUMP(_hook_sceDisplaySetFrameBuf);
+				return J_ASM(_hook_sceDisplaySetFrameBuf);
 #endif
 #ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
 		case 0x82826F70:
-			return MAKE_JUMP(_hook_sceKernelSleepThreadCB);
+			return J_ASM(_hook_sceKernelSleepThreadCB);
 #endif
 		/*
 		* Overrides to avoid syscall estimates.
@@ -1627,82 +1627,82 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		*/
 		case 0x06A70004: //	sceIoMkdir
 			if (override_sceIoMkdir == GENERIC_SUCCESS)
-				return MAKE_JUMP(_hook_generic_ok);
+				return J_ASM(_hook_generic_ok);
 			break;
 		case 0xC8186A58:
-			return MAKE_JUMP(_hook_sceKernelUtilsMd5Digest);
+			return J_ASM(_hook_sceKernelUtilsMd5Digest);
 		case 0x9E5C5086:
-			return MAKE_JUMP(_hook_sceKernelUtilsMd5BlockInit);
+			return J_ASM(_hook_sceKernelUtilsMd5BlockInit);
 		case 0x61E1E525:
-			return MAKE_JUMP(_hook_sceKernelUtilsMd5BlockUpdate);
+			return J_ASM(_hook_sceKernelUtilsMd5BlockUpdate);
 		case 0xB8D24E78:
-			return MAKE_JUMP(_hook_sceKernelUtilsMd5BlockResult);
+			return J_ASM(_hook_sceKernelUtilsMd5BlockResult);
 		case 0x3FC9AE6A:
-			return MAKE_JUMP(_hook_sceKernelDevkitVersion);
+			return J_ASM(_hook_sceKernelDevkitVersion);
 		case 0xA291F107:
-			return MAKE_JUMP(sceKernelMaxFreeMemSize);
+			return J_ASM(sceKernelMaxFreeMemSize);
 		case 0xC41C2853:
-			return MAKE_JUMP(_hook_sceRtcGetTickResolution);
+			return J_ASM(_hook_sceRtcGetTickResolution);
 #ifdef HOOK_sceRtcGetCurrentTick
 		case 0x3F7AD767:
-			return MAKE_JUMP(_hook_sceRtcGetCurrentTick);
+			return J_ASM(_hook_sceRtcGetCurrentTick);
 #endif
 		case 0x7ED29E40:
-			return MAKE_JUMP(_hook_sceRtcSetTick);
+			return J_ASM(_hook_sceRtcSetTick);
 		case 0x6FF40ACC:
-			return MAKE_JUMP(_hook_sceRtcGetTick);
+			return J_ASM(_hook_sceRtcGetTick);
 		case 0x57726BC1: //	sceRtcGetDayOfWeek
-			return MAKE_JUMP(_hook_generic_ok); //always monday in my world
+			return J_ASM(_hook_generic_ok); //always monday in my world
 		case 0x34885E0D:
-			return MAKE_JUMP(_hook_sceRtcConvertUtcToLocalTime);
+			return J_ASM(_hook_sceRtcConvertUtcToLocalTime);
 		case 0x68963324:
-			return MAKE_JUMP(_hook_sceIoLseek32);
+			return J_ASM(_hook_sceIoLseek32);
 #ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
 		//This will be slow and should not be active for high performance programs...
 		case 0x3A622550:
-			return MAKE_JUMP(sceCtrlReadBufferPositive);
+			return J_ASM(sceCtrlReadBufferPositive);
 #endif
 		case 0x737486F2:
-			return MAKE_JUMP(_hook_scePowerSetClockFrequency);
+			return J_ASM(_hook_scePowerSetClockFrequency);
 		case 0x383F7BCC: // sceKernelTerminateDeleteThread
-			return MAKE_JUMP(kill_thread);
+			return J_ASM(kill_thread);
 #ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740
 		case 0xD675EBB8:
-			return MAKE_JUMP(_hook_sceKernelSelfStopUnloadModule);
+			return J_ASM(_hook_sceKernelSelfStopUnloadModule);
 #endif
 #ifdef HOOK_sceKernelTrySendMsgPipe_WITH_sceKernelSendMsgPipe
 		case 0x884C9F90:
-			return MAKE_JUMP(_hook_sceKernelTrySendMsgPipe);
+			return J_ASM(_hook_sceKernelTrySendMsgPipe);
 #endif
 #ifdef HOOK_sceKernelTryReceiveMsgPipe_WITH_sceKernelReceiveMsgPipe
 		case 0xDF52098F:
-			return MAKE_JUMP(_hook_sceKernelTryReceiveMsgPipe);
+			return J_ASM(_hook_sceKernelTryReceiveMsgPipe);
 #endif
 #ifdef HOOK_sceKernelReceiveMsgPipe_WITH_sceKernelTryReceiveMsgPipe
 		case 0x74829B76:
-			return MAKE_JUMP(_hook_sceKernelReceiveMsgPipe);
+			return J_ASM(_hook_sceKernelReceiveMsgPipe);
 #endif
 		case 0xD97F94D8: // sceDmacTryMemcpy
 			if (get_nid_index(0x617F3FE6))
-				return MAKE_JUMP(sceDmacMemcpy);
+				return J_ASM(sceDmacMemcpy);
 			else
-				return MAKE_JUMP(memcpy);
+				return J_ASM(memcpy);
 		case 0x94AA61EE:
-			return MAKE_JUMP(_hook_sceKernelGetThreadCurrentPriority);
+			return J_ASM(_hook_sceKernelGetThreadCurrentPriority);
 		case 0x24331850: // kuKernelGetModel
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 #ifdef HOOK_POWERFUNCTIONS
 		case 0xFEE03A2F: //scePowerGetCpuClockFrequency
 		case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt
-			return MAKE_JUMP(_hook_scePowerGetCpuClockFrequencyInt);
+			return J_ASM(_hook_scePowerGetCpuClockFrequencyInt);
 		case 0x478FE6F5:// scePowerGetBusClockFrequency
 		case 0xBD681969: //scePowerGetBusClockFrequencyInt
-			return MAKE_JUMP(_hook_scePowerGetBusClockFrequency);
+			return J_ASM(_hook_scePowerGetBusClockFrequency);
 		case 0x8EFB3FA2:
-			return MAKE_JUMP(_hook_scePowerGetBatteryLifeTime);
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_scePowerGetBatteryLifeTime);
+			return J_ASM(_hook_generic_ok);
 		case 0x2085D15D:
-			return MAKE_JUMP(_hook_scePowerGetBatteryLifePercent);
+			return J_ASM(_hook_scePowerGetBatteryLifePercent);
 		case 0x28E12023: // scePowerBatteryTemp (0 degree)
 		case 0xB4432BC8: // scePowerGetBatteryChargingStatus
 		case 0x0AFD0D8B: // scePowerIsBatteryExists
@@ -1713,113 +1713,113 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0xD6D016EF: // scePowerLock
 		case 0xEFD3C963: // scePowerTick
 		case 0xCA3D34C1: // scePowerUnlock
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 #endif
 #ifdef FORCE_HARDCODED_VRAM_SIZE
 		case 0x1F6752AD:
-			return MAKE_JUMP(_hook_sceGeEdramGetSize);
+			return J_ASM(_hook_sceGeEdramGetSize);
 #endif
 #ifdef HOOK_AUDIOFUNCTIONS
 		case 0x38553111:
-			return MAKE_JUMP(_hook_sceAudioSRCChReserve);
+			return J_ASM(_hook_sceAudioSRCChReserve);
 		case 0x5C37C0AE:
-			return MAKE_JUMP(_hook_sceAudioSRCChRelease);
+			return J_ASM(_hook_sceAudioSRCChRelease);
 		case 0xE0727056:
-			return MAKE_JUMP(_hook_sceAudioSRCOutputBlocking);
+			return J_ASM(_hook_sceAudioSRCOutputBlocking);
 #endif
 #ifdef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
 		case 0x136CAF51:
-			return MAKE_JUMP(_hook_sceAudioOutputBlocking);
+			return J_ASM(_hook_sceAudioOutputBlocking);
 #endif
 #ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
 		case 0x13F592BC:
-			return MAKE_JUMP(_hook_sceAudioOutputPannedBlocking);
+			return J_ASM(_hook_sceAudioOutputPannedBlocking);
 #endif
 #ifdef HOOK_sceAudioGetChannelRestLength_WITH_dummy
 		case 0xb011922f:
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 #endif
 #ifdef HOOK_sceAudioGetChannelRestLen_WITH_dummy
 		case 0xE9D97901:
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 #endif
 #ifdef HOOK_sceAudioGetChannelRestLen_WITH_sceAudioGetChannelRestLength
 		case 0xE9D97901:
-			return MAKE_JUMP(sceAudioGetChannelRestLength);
+			return J_ASM(sceAudioGetChannelRestLength);
 #endif
 #ifdef HOOK_sceAudioOutput_WITH_sceAudioOutputBlocking
 		case 0x8C1009B2:
 #ifndef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
-			return MAKE_JUMP(sceAudioOutputBlocking);
+			return J_ASM(sceAudioOutputBlocking);
 #else
-			return MAKE_JUMP(_hook_sceAudioOutputBlocking);
+			return J_ASM(_hook_sceAudioOutputBlocking);
 #endif
 #endif
 #ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackAll
 		case 0xB435DEC5:
-			return MAKE_JUMP(sceKernelDcacheWritebackAll);
+			return J_ASM(sceKernelDcacheWritebackAll);
 #endif
 #ifdef HOOK_sceKernelSendMsgPipe_WITH_sceKernelTrySendMsgPipe
 		case 0x876DBFAD:
-			return MAKE_JUMP(sceKernelTrySendMsgPipe);
+			return J_ASM(sceKernelTrySendMsgPipe);
 #endif
 #ifdef HOOK_sceKernelGetThreadId
 		case 0x293B45B8:
-			return MAKE_JUMP(_hook_sceKernelGetThreadId);
+			return J_ASM(_hook_sceKernelGetThreadId);
 #endif
 #ifdef HOOK_sceAudioOutput2GetRestSample_WITH_sceAudioGetChannelRestLength
 		case 0x647CEF33:
-			return MAKE_JUMP(_hook_sceAudioOutput2GetRestSample);
+			return J_ASM(_hook_sceAudioOutput2GetRestSample);
 #endif
 #ifdef HOOK_mersenne_twister_rdm
 		case 0xE860E75E:
-			return MAKE_JUMP(_hook_sceKernelUtilsMt19937Init);
+			return J_ASM(_hook_sceKernelUtilsMt19937Init);
 		case 0x06FB8A63:
-			return MAKE_JUMP(_hook_sceKernelUtilsMt19937UInt);
+			return J_ASM(_hook_sceKernelUtilsMt19937UInt);
 #endif
 #ifdef HOOK_sceDisplayWaitVblankStartCB_WITH_sceDisplayWaitVblankStart
 		case 0x46F186C3:
-			return MAKE_JUMP(sceDisplayWaitVblankStart);
+			return J_ASM(sceDisplayWaitVblankStart);
 #endif
 #ifdef HOOK_sceKernelDcacheWritebackRange_WITH_sceKernelDcacheWritebackAll
 		case 0x3EE30821:
-			return MAKE_JUMP(sceKernelDcacheWritebackAll);
+			return J_ASM(sceKernelDcacheWritebackAll);
 #endif
 #ifdef HOOK_sceKernelDcacheWritebackInvalidateRange_WITH_sceKernelDcacheWritebackInvalidateAll
 		case 0x34B9FA9E:
-			return MAKE_JUMP(sceKernelDcacheWritebackInvalidateAll);
+			return J_ASM(sceKernelDcacheWritebackInvalidateAll);
 #endif
 #ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
 		case 0x79D1C3FA:
-			return MAKE_JUMP(_hook_sceKernelDcacheWritebackAll);
+			return J_ASM(_hook_sceKernelDcacheWritebackAll);
 #endif
 #ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackInvalidateRange
 		case 0xB435DEC5:
-			return MAKE_JUMP(_hook_sceKernelDcacheWritebackInvalidateAll);
+			return J_ASM(_hook_sceKernelDcacheWritebackInvalidateAll);
 #endif
 #ifdef HOOK_sceAudioOutputPanned_WITH_sceAudioOutputPannedBlocking
 		case 0xE2D56B2D:
-			return MAKE_JUMP(sceAudioOutputPannedBlocking);
+			return J_ASM(sceAudioOutputPannedBlocking);
 #endif
 #ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
 		case 0x616403BA:
-			return MAKE_JUMP(sceKernelTerminateDeleteThread);
+			return J_ASM(sceKernelTerminateDeleteThread);
 #endif
 #ifdef HOOK_sceKernelTotalFreeMemSize
 		case 0xF919F628:
-			return MAKE_JUMP(_hook_sceKernelTotalFreeMemSize);
+			return J_ASM(_hook_sceKernelTotalFreeMemSize);
 #endif
 #ifdef HOOK_sceDisplayGetVcount_WITH_dummy
 		case 0x9C6EAAD7:
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 #endif
 #ifdef HOOK_Osk
 		case 0xF6269B82: // sceUtilityOskInitStart
-			return MAKE_JUMP(_hook_sceUtilityOskInitStart);
+			return J_ASM(_hook_sceUtilityOskInitStart);
 		case 0x3DFAEBA9: // sceUtilityOskShutdownStart
 		case 0x4B85C861: // sceUtilityOskUpdate
 		case 0xF3F76017: // sceUtilityOskGetStatus
-			return MAKE_JUMP(_hook_generic_ok);
+			return J_ASM(_hook_generic_ok);
 #endif
 	}
 
@@ -1834,5 +1834,5 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 **/
 u32 setup_default_nid()
 {
-	return MAKE_JUMP(_hook_generic_error);
+	return J_ASM(_hook_generic_error);
 }

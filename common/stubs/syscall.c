@@ -123,7 +123,7 @@ static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUI
 				+ nid_index - lower_file_index;
 
 	// Get syscall instruction
-	return 0x03FFFFFF & ((est_call << 6) | 0x0000000C);
+	return SYSCALL_ASM(est_call);
 }
 
 // Estimate a syscall

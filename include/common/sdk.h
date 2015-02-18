@@ -16,24 +16,28 @@
 // Typedefs
 typedef unsigned char byte;
 
-//
-// Code
-//
-// MIPS opcodes
-#define BREAK_OPCODE(n) (0x0000000D | (n) << 6)
-#define JR_RA_OPCODE 0x03E00008
-#define NOP_OPCODE 0x00000000
+/*
+ * Code
+ */
+#define REG_ZR (0)
+#define REG_A0 (4)
+#define REG_RA (31)
 
-// To distinguish between SYSCALL and JUMP stubs
-#define SYSCALL_MASK_IMPORT 0x01000000
-#define SYSCALL_MASK_RESOLVE 0xFFF00000
+#define J_OPCODE (0x08000000)
+#define JR_OPCODE (0x00000008)
+#define LUI_OPCODE (0x3C000000)
+#define SLL_OPCODE (0x00000000)
+#define SYSCALL_OPCODE (0x0000000C)
+
+#define J_ASM(t) (J_OPCODE | (u32)(t) >> 2)
+#define JR_ASM(r) (JR_OPCODE | (u8)(r) << 21)
+#define LUI_ASM(r, n) (LUI_OPCODE | (u8)(r) << 16 | (u16)(n))
+#define SLL_ASM(d, t, s) (SLL_OPCODE | (u8)(t) << 16 | (u8)(d) << 11 | (u8)(s) << 6)
+#define SYSCALL_ASM(c) (SYSCALL_OPCODE | (u32)(c) << 6)
+#define NOP_ASM SLL_ASM(REG_ZR, REG_ZR, 0)
 
 // This marks libraries that are not yet linked
 #define SYSCALL_IMPORT_NOT_RESOLVED_YET 0x15
-
-// Macros to construct call and jump instructions
-#define MAKE_CALL(f) (0x0c000000 | (((u32)(f) >> 2)  & 0x03ffffff))
-#define MAKE_JUMP(f) (0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff))
 
 // Macro to get the syscall number
 #define GET_SYSCALL_NUMBER(sys) ((u32)(sys) >> 6)

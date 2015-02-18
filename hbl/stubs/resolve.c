@@ -14,18 +14,13 @@
 // Subsitutes the right instruction
 void resolve_call(int *call_to_resolve, u32 call_resolved)
 {
-	// SYSCALL
-	if(!(call_resolved & SYSCALL_MASK_RESOLVE))
-	{
-		*call_to_resolve = JR_RA_OPCODE;
-		*(++call_to_resolve) = call_resolved;
-	}
-
-	// JUMP
-	else
-	{
+	if (call_resolved & J_OPCODE) {
 		*call_to_resolve = call_resolved;
-		*(++call_to_resolve) = NOP_OPCODE;
+		*(++call_to_resolve) = NOP_ASM;
+	} else {
+		// SYSCALL
+		*call_to_resolve = JR_ASM(REG_RA);
+		*(++call_to_resolve) = call_resolved;
 	}
 }
 
@@ -42,7 +37,7 @@ static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
 			if( pnids[i] == nid){
 				dbg_printf("NID FOUND in %s: 0x%08X Function: 0x%08X\n",
 					pexports->libname, pnids[i], pfunctions[i]);
-				return MAKE_JUMP(pfunctions[i]);
+				return J_ASM(pfunctions[i]);
 			}
 		}
 	}

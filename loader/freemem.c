@@ -51,7 +51,7 @@ void SuicideAllThreads(void)
 
 	// Write syscall instruction to memory and empty the memory
 	*address =  syscall;
-	*((unsigned int*)0x09A00004) = 0x34840000; // xori $a0, $a0, 0 ($a0 = 0)
+	*((unsigned int*)0x09A00004) = LUI_ASM(REG_A0, 0);
 
 	// Zero memory from top to bottom
 	for (i = (unsigned int)address - 1; i >= 0x08804000; i--)

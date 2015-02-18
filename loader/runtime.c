@@ -401,18 +401,18 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 
 			if (ret < 0) {
 				dbg_printf("HBL Function missing, this can lead to trouble\n");
-				*stub++ = JR_RA_OPCODE;
+				*stub++ = JR_ASM(REG_RA);
 				*stub++ = globals->isEmu ?
-					NOP_OPCODE :
+					NOP_ASM :
 					estimate_syscall(ent->lib_name, *nid);
 			} else {
 				dbg_printf("-Found in NID table, using real call\n");
 				call = globals->nid_table[ret].call;
 				if (call & 0x0C000000) {
 					*stub++ = call;
-					*stub++ = NOP_OPCODE;
+					*stub++ = NOP_ASM;
 				} else {
-					*stub++ = JR_RA_OPCODE;
+					*stub++ = JR_ASM(REG_RA);
 					*stub++ = call;
 				}
 			}
