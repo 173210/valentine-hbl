@@ -78,22 +78,22 @@ void load_utils()
 	}
 #else
 #ifdef UTILITY_AV_AVCODEC_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_AVCODEC_PATH, __func__);
+	dbg_puts("%s: Loading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
 	avcodec_modid = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
 	sceKernelStartModule(avcodec_modid, 0, NULL, NULL, NULL);
 #endif
 #ifdef UTILITY_AV_SASCORE_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_SASCORE_PATH, __func__);
+	dbg_puts("%s: Loading " UTILITY_AV_SASCORE_PATH "\n", __func__);
 	sascore_modid = sceKernelLoadModule(UTILITY_AV_SASCORE_PATH, 0, NULL);
 	sceKernelStartModule(sascore_modid, 0, NULL, NULL, NULL);
 #endif
 #ifdef UTILITY_AV_ATRAC3PLUS_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_ATRAC3PLUS_PATH, __func__);
+	dbg_puts("%s: Loading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
 	atrac3plus_modid = sceKernelLoadModule(UTILITY_AV_ATRAC3PLUS_PATH, 0, NULL);
 	sceKernelStartModule(atrac3plus_modid, 0, NULL, NULL, NULL);
 #endif
 #ifdef UTILITY_AV_MPEGBASE_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_MPEGBASE_PATH, __func__);
+	dbg_puts("%s: Loading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
 	mpegbase_modid = sceKernelLoadModule(UTILITY_AV_MPEGBASE_PATH, 0, NULL);
 	sceKernelStartModule(mpegbase_modid, 0, NULL, NULL, NULL);
 #endif
@@ -104,7 +104,7 @@ void load_utils()
 	// Load modules in order
 	if (!globals->isEmu)
 		for(i = 0; i < sizeof(nonEmuModules) / sizeof(int); i++) {
-			dbg_printf("%s: Loading module 0x%08X",
+			dbg_printf("%s: Loading module 0x%08X\n",
 				__func__, nonEmuModules[i]);
 			ret = sceUtilityLoadModule(nonEmuModules[i]);
 			if (ret < 0)
@@ -113,14 +113,14 @@ void load_utils()
 		}
 
 	for(i = 0; i < sizeof(modules) / sizeof(int); i++) {
-		dbg_printf("%s: Loading module 0x%08X", __func__, modules[i]);
+		dbg_printf("%s: Loading module 0x%08X\n", __func__, modules[i]);
 		ret = sceUtilityLoadModule(modules[i]);
 		if (ret < 0)
 			dbg_printf("%s: Loading 0x%08X failed 0x%08X\n",
 				__func__, modules[i], ret);
 	}
 
-	dbg_printf("Loading module 0x%08X", PSP_MODULE_AV_MP3);
+	dbg_printf("Loading module 0x%08X\n", PSP_MODULE_AV_MP3);
 	ret = sceUtilityLoadModule(PSP_MODULE_AV_MP3);
 	if (ret < 0)
 		dbg_printf("%s: Loading 0x%08X failed 0x%08X\n",
@@ -176,22 +176,22 @@ void unload_utils()
 	}
 #else
 #ifdef UTILITY_AV_AVCODEC_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_AVCODEC_PATH, __func__);
+	dbg_printf("%s: Unloading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
 	sceKernelStopModule(avcodec_modid, 0, NULL, NULL, NULL);
 	sceKernelUnloadModule(avcodec_modid);
 #endif
 #ifdef UTILITY_AV_SASCORE_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_SASCORE_PATH, __func__);
+	dbg_printf("%s: Unloading " UTILITY_AV_SASCORE_PATH "\n", __func__);
 	sceKernelStopModule(sascore_modid, 0, NULL, NULL, NULL);
 	sceKernelUnloadModule(sascore_modid);
 #endif
 #ifdef UTILITY_AV_ATRAC3PLUS_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_ATRAC3PLUS_PATH, __func__);
+	dbg_printf("%s: Unloading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
 	sceKernelStopModule(atrac3plus_modid, 0, NULL, NULL, NULL);
 	sceKernelUnloadModule(atrac3plus_modid);
 #endif
 #ifdef UTILITY_AV_MPEGBASE_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_MPEGBASE_PATH, __func__);
+	dbg_printf("%s: Unloading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
 	sceKernelStopModule(mpegbase_modid, 0, NULL, NULL, NULL);
 	sceKernelUnloadModule(mpegbase_modid);
 #endif
@@ -201,7 +201,7 @@ void unload_utils()
 
 	//Unload modules in reverse order
 	if (globals->module_sdk_version > 0x06020010) {
-		dbg_printf("%s: Unloading module 0x%08X",
+		dbg_printf("%s: Unloading module 0x%08X\n",
 			__func__, PSP_MODULE_AV_MP3);
 		ret = sceUtilityUnloadModule(PSP_MODULE_AV_MP3);
 		if (ret < 0)
@@ -210,7 +210,7 @@ void unload_utils()
 	}
 
 	for(i = sizeof(modules) / sizeof(int) - 1; i >= 0; i--) {
-		dbg_printf("%s: Unloading module 0x%08X",
+		dbg_printf("%s: Unloading module 0x%08X\n",
 			__func__, modules[i]);
 		ret = sceUtilityUnloadModule(modules[i]);
 		if (ret < 0)
@@ -220,7 +220,7 @@ void unload_utils()
 
 	if (!globals->isEmu)
 		for(i = sizeof(nonEmuModules) / sizeof(int) - 1; i >= 0; i--) {
-			dbg_printf("%s: Unloading module 0x%08X",
+			dbg_printf("%s: Unloading module 0x%08X\n",
 				__func__, nonEmuModules[i]);
 			ret = sceUtilityUnloadModule(nonEmuModules[i]);
 			if (ret < 0)
