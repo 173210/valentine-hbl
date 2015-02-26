@@ -3,6 +3,11 @@
 
 #include <common/sdk.h>
 
+#define P2_PTR ((void*)0x08800000)
+#define P2_SIZE (25165824)
+
+#define EDRAM_SIZE (2097152)
+
 // Fixed loading address for relocatables
 #define PRX_LOAD_ADDRESS 0x08900000
 

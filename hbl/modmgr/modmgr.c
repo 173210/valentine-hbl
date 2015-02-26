@@ -387,24 +387,22 @@ static int load_util(int module)
 
 	dbg_printf("Loading 0x%08X\n", module);
 
-#ifdef UTILITY_DONT_USE_sceUtilityLoadModule
-#ifdef UTILITY_USE_sceUtilityLoadNetModule
-	if (module <= PSP_MODULE_NET_SSL)
+	if (isImported(sceUtilityLoadModule))
+		return sceUtilityLoadModule(module);
+
+	else if (module <= PSP_MODULE_NET_SSL && isImported(sceUtilityLoadNetModule))
 		return sceUtilityLoadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
-	else
-#endif
-#ifdef UTILITY_USE_sceUtilityLoadUsbModule
-	if (module == PSP_MODULE_USB_PSPCM)
+
+	else if (module == PSP_MODULE_USB_PSPCM && isImported(sceUtilityLoadUsbModule))
 		return sceUtilityLoadUsbModule(PSP_USB_MODULE_PSPCM);
-	else if (module <= PSP_MODULE_USB_GPS)
+
+	else if (module <= PSP_MODULE_USB_GPS && isImported(sceUtilityLoadUsbModule))
 		return sceUtilityLoadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
-	else
-#endif
-#ifdef UTILITY_USE_sceUtilityLoadAvModule
-	if (module <= PSP_MODULE_AV_G729)
+
+	else if (module <= PSP_MODULE_AV_G729 && isImported(sceUtilityLoadAvModule))
 		return sceUtilityLoadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
+
 	else
-#else
 #ifdef UTILITY_AV_AVCODEC_PATH
 	if (module == PSP_MODULE_AV_AVCODEC) {
 		ret = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
@@ -429,11 +427,7 @@ static int load_util(int module)
 		return ret < 0 ? ret : sceKernelStartModule(ret, 0, NULL, NULL, NULL);
 	} else
 #endif
-#endif
 		return SCE_KERNEL_ERROR_ERROR;
-#else
-	return sceUtilityLoadModule(module);
-#endif
 }
 
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
@@ -444,24 +438,17 @@ static int unload_util(int module)
 #endif
 	dbg_printf("Unloading 0x%08X\n", module);
 
-#ifdef UTILITY_DONT_USE_sceUtilityUnloadModule
-#ifdef UTILITY_USE_sceUtilityUnloadNetModule
-	if (module <= PSP_MODULE_NET_SSL)
+	if (isImported(sceUtilityUnloadModule))
+		return sceUtilityUnloadModule(module);
+	else if (module <= PSP_MODULE_NET_SSL && isImported(sceUtilityUnloadNetModule))
 		return sceUtilityUnloadNetModule(module + PSP_NET_MODULE_COMMON - PSP_MODULE_NET_COMMON);
-	else
-#endif
-#ifdef UTILITY_USE_sceUtilityUnloadUsbModule
-	if (module == PSP_MODULE_USB_PSPCM)
+	else if (module == PSP_MODULE_USB_PSPCM && isImported(sceUtilityUnloadUsbModule))
 		return sceUtilityUnloadUsbModule(PSP_USB_MODULE_PSPCM);
-	else if (module <= PSP_MODULE_USB_GPS)
+	else if (module <= PSP_MODULE_USB_GPS && isImported(sceUtilityUnloadUsbModule))
 		return sceUtilityUnloadUsbModule(module + PSP_USB_MODULE_MIC - PSP_MODULE_USB_MIC);
-	else
-#endif
-#ifdef UTILITY_USE_sceUtilityUnloadAvModule
-	if (module <= PSP_MODULE_AV_G729)
+	else if (module <= PSP_MODULE_AV_G729 && isImported(sceUtilityUnloadAvModule))
 		return sceUtilityUnloadAvModule(module + PSP_MODULE_AV_AVCODEC - PSP_AV_MODULE_AVCODEC);
 	else
-#endif
 #ifdef UTILITY_UNLOAD_MODULE_FILE
 	{
 		ret = sceKernelStopModule(module, 0, NULL, NULL, NULL);
@@ -469,9 +456,6 @@ static int unload_util(int module)
 	}
 #else
 		return SCE_KERNEL_ERROR_ERROR;
-#endif
-#else
-	return sceUtilityUnloadModule(module);
 #endif
 }
 #endif
@@ -645,24 +629,23 @@ SceLibraryEntryTable *load_export_util(const char *lib)
 		//force load PSP_MODULE_AV_AVCODEC if we request a specific audio module
 	if (util_mod->id > PSP_MODULE_AV_AVCODEC && util_mod->id <= PSP_MODULE_AV_G729) {
 		dbg_printf("Force-Loading AVCODEC\n");
-#ifdef UTILITY_USE_sceUtilityLoadAvModule
-		sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
-#elif !defined(UTILITY_DONT_USE_sceUtilityLoadModule)
-		sceUtilityLoadModule(PSP_MODULE_AV_AVCODEC);
-#endif
+		if (isImported(sceUtilityLoadModule))
+			sceUtilityLoadModule(PSP_MODULE_AV_AVCODEC);
+		else if (isImported(sceUtilityLoadAvModule))
+			sceUtilityLoadAvModule(PSP_AV_MODULE_AVCODEC);
 	} else if(util_mod->id == PSP_MODULE_NET_HTTP) {
 		dbg_printf("Force-Loading HTTP\n");
-#ifdef UTILITY_USE_sceUtilityLoadNetModule
-		sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
-		sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
-		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEURI);
-		sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEHTTP);
-#elif !defined(UTILITY_DONT_USE_sceUtilityLoadModule)
-		sceUtilityLoadModule(PSP_MODULE_NET_COMMON);
-		sceUtilityLoadModule(PSP_MODULE_NET_INET);
-		sceUtilityLoadModule(PSP_MODULE_NET_PARSEURI);
-		sceUtilityLoadModule(PSP_MODULE_NET_PARSEHTTP);
-#endif
+		if (isImported(sceUtilityLoadModule)) {
+			sceUtilityLoadModule(PSP_MODULE_NET_COMMON);
+			sceUtilityLoadModule(PSP_MODULE_NET_INET);
+			sceUtilityLoadModule(PSP_MODULE_NET_PARSEURI);
+			sceUtilityLoadModule(PSP_MODULE_NET_PARSEHTTP);
+		} else if (isImported(sceUtilityLoadNetModule)) {
+			sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
+			sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
+			sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEURI);
+			sceUtilityLoadNetModule(PSP_NET_MODULE_PARSEHTTP);
+		}
 	}
 
 	ret = load_util(util_mod->id);

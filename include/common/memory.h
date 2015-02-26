@@ -8,9 +8,7 @@
 SceSize sceKernelMaxFreeMemSize();
 SceSize sceKernelTotalFreeMemSize();
 int kill_thread(SceUID thid);
-#ifdef SUB_INTR_HANDLER_CLEANUP
 void subinterrupthandler_cleanup();
-#endif
 void UnloadModules();
 #endif
 

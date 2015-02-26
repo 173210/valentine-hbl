@@ -5,69 +5,6 @@
 #include <loader/bruteforce.h>
 #include <exploit_config.h>
 
-#ifdef SUSPEND_THEN_DELETE_THREADS
-void SuspendAllThreads()
-{
-	u32 i;
-	u32 thaddrs[] = TH_ADDR_LIST;
-	SceUID thuids[] = TH_ADDR_LIST;
-
-	// Suspend all threads and remember their UIDs
-	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
-	{
-		thuids[i] = *(SceUID*)(thaddrs[i]);
-		int result = sceKernelSuspendThread(thuids[i]);
-		dbg_printf("Suspending thread 0x%08X, result is 0x%08X\n", thuids[i], result);
-	}
-
-	dbg_printf("All threads suspended\n");
-}
-
-
-void SuicideAllThreads(void)
-{
-	u32 i;
-	u32 thaddrs[] = TH_ADDR_LIST;
-	SceUID thuids[] = TH_ADDR_LIST;
-
-	// Suspend all threads and remember their UIDs
-	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
-	{
-		thuids[i] = *(SceUID*)(thaddrs[i]);
-		int result = sceKernelSuspendThread(thuids[i]);
-		dbg_printf("Suspending thread 0x%08X, result is 0x%08X\n", thuids[i], result);
-	}
-
-	dbg_printf("All threads suspended\n");
-
-	unsigned int* address = (unsigned int*)0x09A00000;
-
-	// Get call for sceKernelExitDeleteThread
-	int nid_index = get_nid_index(0x809CE29B); // sceKernelExitDeleteThread
-	dbg_printf("Index for NID sceKernelExitDeleteThread is: %d\n", nid_index);
-
-	int syscall = globals->nid_table[nid_index].call;
-	dbg_printf("Call for NID sceKernelExitDeleteThread is: 0x%08X 0x%08X\n", GET_SYSCALL_NUMBER(syscall), syscall);
-
-	// Write syscall instruction to memory and empty the memory
-	*address =  syscall;
-	*((unsigned int*)0x09A00004) = LUI_ASM(REG_A0, 0);
-
-	// Zero memory from top to bottom
-	for (i = (unsigned int)address - 1; i >= 0x08804000; i--)
-	  *((char*)i) = 0;
-
-	// Resume threads
-	for (i = 0; i < (sizeof(thaddrs)/sizeof(u32)); i++)
-	{
-		int result = sceKernelResumeThread(thuids[i]);
-		dbg_printf("Resuming thread 0x%08X, result is 0x%08X\n", thuids[i], result);
-	}
-
-	dbg_printf("All threads resumed\n");
-}
-#endif
-
 #ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)
 {
@@ -266,9 +203,7 @@ void preload_free_game_memory()
 		(void *)GAME_FREEMEM_BRUTEFORCE_ADDR);
 #endif
 
-#ifdef SUB_INTR_HANDLER_CLEANUP
 	subinterrupthandler_cleanup();
-#endif
 
 	dbg_printf("%s: After cleaning: %d (max: %d)\n", __func__,
 		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
@@ -278,15 +213,10 @@ void free_game_memory()
 {
 	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
 		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
-
-#ifdef SUSPEND_THEN_DELETE_THREADS
-	dbg_printf("%s: Suspending all threads\n", __func__);
-	SuspendAllThreads();
-#else
+\
 #ifdef TH_ADDR_LIST
 	dbg_printf("%s: Deleting all threads\n", __func__);
 	DeleteAllThreads();
-#endif
 #endif
 
 #ifdef ALARM_ADDR_LIST

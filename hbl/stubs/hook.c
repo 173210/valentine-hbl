@@ -40,15 +40,18 @@ static int cbcount = 0;
 static int audio_th[8];
 static int cur_ch_id = -1;
 
+static void *frame_topaddr[2] = { NULL, NULL };
+static int frame_bufferwidth[2], frame_pixelformat[2];
+
+static unsigned int rdm_seed;
+
 void (* net_term_func[5])();
 int net_term_num = 0;
 
-#ifdef FORCE_HARDCODED_VRAM_SIZE
-// Hardcode edram size if the function is not available
-u32 _hook_sceGeEdramGetSize() {
-    return 0x00200000;
+static unsigned int _hook_sceGeEdramGetSize()
+{
+    return EDRAM_SIZE;
 }
-#endif
 
 //
 // Thread Hooks
@@ -59,8 +62,16 @@ int _hook_sceAudioChRelease(int channel);
 int _hook_sceAudioSRCChRelease();
 int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);
 SceUID sceIoDopen_Vita(const char *dirname);
-u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context* ctx);
 
+static int hblWaitSema(SceUID semaid, int signal, SceUInt *timeout)
+{
+	if (isImported(sceKernelWaitSema))
+		return sceKernelWaitSema(semaid, signal, timeout);
+	else if (isImported(sceKernelWaitSemaCB))
+		return sceKernelWaitSemaCB(semaid, signal, timeout);
+	else
+		return SCE_KERNEL_ERROR_ERROR;
+}
 
 // Thread hooks original code thanks to Noobz & Fanjita, adapted by wololo
 /*****************************************************************************/
@@ -79,7 +90,7 @@ int _hook_sceKernelExitThread(int status)
 
 	dbg_printf("Enter hookExitThread : %08X\n", thid);
 
-	WAIT_SEMA(globals->thSema, 1, 0);
+	hblWaitSema(globals->thSema, 1, 0);
 
 	for (i = 0; i < num_run_th; i++) {
 		if (running_th[i] == thid) {
@@ -115,7 +126,7 @@ int _hook_sceKernelExitThread(int status)
 	// Ditlew
 	for (i = 0; i < 8; i++)
 	{
-		WAIT_SEMA(globals->audioSema, 1, 0);
+		hblWaitSema(globals->audioSema, 1, 0);
 		if (audio_th[i] == thid)
 			_hook_sceAudioChRelease(i);
 		sceKernelSignalSema(globals->audioSema, 1);
@@ -146,7 +157,7 @@ int _hook_sceKernelExitDeleteThread(int status)
     
 	dbg_printf("Enter hookExitDeleteThread : %08X\n", thid);
 
-	WAIT_SEMA(globals->thSema, 1, 0);
+	hblWaitSema(globals->thSema, 1, 0);
 
 	for (i = 0; i < num_run_th; i++) {
 		if (running_th[i] == thid) {
@@ -168,7 +179,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
 	for (i = 0; i < 8; i++) {
-		WAIT_SEMA(globals->audioSema, 1, 0);
+		hblWaitSema(globals->audioSema, 1, 0);
 		if (audio_th[i] == thid)
 			_hook_sceAudioChRelease(i);
 		sceKernelSignalSema(globals->audioSema, 1);
@@ -225,7 +236,7 @@ SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
     /*************************************************************************/
     /* Add to pending list                                                   */
     /*************************************************************************/
-    WAIT_SEMA(globals->thSema, 1, 0);
+    hblWaitSema(globals->thSema, 1, 0);
     if (num_pend_th < SIZE_THREAD_TRACKING_ARRAY)
     {
       dbg_printf("Set array\n");
@@ -253,7 +264,7 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 
 	dbg_printf("Enter hookRunThread: %08X\n", thid);
 
-	WAIT_SEMA(globals->thSema, 1, 0);
+	hblWaitSema(globals->thSema, 1, 0);
 
 	dbg_printf("Number of pending threads: %08X\n", num_pend_th);
 
@@ -303,13 +314,13 @@ void threads_cleanup()
         int lthisthread = sceKernelGetThreadId();
     u32 i;
     dbg_printf("Threads cleanup\n");
-    WAIT_SEMA(globals->thSema, 1, 0);
+    hblWaitSema(globals->thSema, 1, 0);
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
     dbg_printf("cleaning audio threads\n");
 	for (i=0;i<8;i++)
 	{
-		//WAIT_SEMA(globals->audioSema, 1, 0);
+		//hblWaitSema(globals->audioSema, 1, 0);
 		_hook_sceAudioChRelease(i);
 		//sceKernelSignalSema(globals->audioSema, 1);
 	}
@@ -745,7 +756,7 @@ static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 	ret = sceIoOpen(file, flags, mode);
 
 	if (ret >= 0) {
-		WAIT_SEMA(globals->ioSema, 1, 0);
+		hblWaitSema(globals->ioSema, 1, 0);
 
 		if (numOpenFiles < sizeof(openFiles) / sizeof(SceUID) - 1)
 			for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
@@ -772,7 +783,7 @@ static int _hook_sceIoClose(SceUID fd)
 	ret = sceIoClose(fd);
 
 	if (!ret) {
-		WAIT_SEMA(globals->ioSema, 1, 0);
+		hblWaitSema(globals->ioSema, 1, 0);
 
 		for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++) {
 			if (openFiles[i] == fd) {
@@ -796,7 +807,7 @@ void files_cleanup()
 
 	dbg_printf("Files Cleanup\n");
     
-	WAIT_SEMA(globals->ioSema, 1, 0);
+	hblWaitSema(globals->ioSema, 1, 0);
 	for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
 	{
 		if (openFiles[i] != 0)
@@ -838,7 +849,7 @@ void ram_cleanup()
 
 	dbg_printf("Ram Cleanup\n");
 
-	WAIT_SEMA(globals->memSema, 1, 0);
+	hblWaitSema(globals->memSema, 1, 0);
 	for (i = 0; i < osAllocNum; i++)
 		sceKernelFreePartitionMemory(osAllocs[i]);
 	osAllocNum = 0;
@@ -852,9 +863,7 @@ void exit_everything_but_me()
 {
 	net_term();
 	audio_term();
-#ifdef SUB_INTR_HANDLER_CLEANUP
 	subinterrupthandler_cleanup();
-#endif
     threads_cleanup();
     ram_cleanup();
 	files_cleanup();
@@ -883,7 +892,7 @@ void  _hook_sceKernelExitGame()
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
         dbg_printf("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
-    WAIT_SEMA(globals->memSema, 1, 0);
+    hblWaitSema(globals->memSema, 1, 0);
 
 	// Try to allocate the requested memory. If the allocation fails due to an insufficient
 	// amount of free memory try again with 10kB less until the allocation succeeds.
@@ -940,7 +949,7 @@ int _hook_sceKernelFreePartitionMemory(SceUID blockid)
 	unsigned i;
 	int found = 0;
 
-	WAIT_SEMA(globals->memSema, 1, 0);
+	hblWaitSema(globals->memSema, 1, 0);
 	ret = sceKernelFreePartitionMemory(blockid);
 
 	/*************************************************************************/
@@ -974,7 +983,7 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 
     dbg_printf("Enter createcallback: %s\n", (u32)name);
 
-    WAIT_SEMA(globals->cbSema, 1, 0);
+    hblWaitSema(globals->cbSema, 1, 0);
     if (cbcount < MAX_CALLBACKS)
     {
         cbids[cbcount] = lrc;
@@ -997,7 +1006,7 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
 
     dbg_printf("Enter registerexitCB: %08X\n", cbid);
 
-    WAIT_SEMA(globals->cbSema, 1, 0);
+    hblWaitSema(globals->cbSema, 1, 0);
     for (i = 0; i < cbcount; i++)
     {
         if (cbids[i] == cbid)
@@ -1068,14 +1077,12 @@ int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick)
     return 0;
 }
 
-#ifdef HOOK_sceRtcGetCurrentTick
-int _hook_sceRtcGetCurrentTick(u64 * tick)
+int _hook_sceRtcGetCurrentTick(u64 *tick)
 {
-    pspTime time;
-    sceRtcGetCurrentClockLocalTime(&time);
-    return _hook_sceRtcGetTick (&time, tick);
+	pspTime time;
+	sceRtcGetCurrentClockLocalTime(&time);
+	return _hook_sceRtcGetTick(&time, tick);
 }
-#endif
 
 //based on http://forums.ps2dev.org/viewtopic.php?t=12490
 int _hook_sceIoLseek32 (SceUID  fd, int offset, int whence)
@@ -1100,7 +1107,7 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 		}
 		else
 		{
-			WAIT_SEMA(globals->audioSema, 1, 0);
+			hblWaitSema(globals->audioSema, 1, 0);
 			audio_th[lreturn] = sceKernelGetThreadId();
 			sceKernelSignalSema(globals->audioSema, 1);
 		}
@@ -1130,30 +1137,25 @@ int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 
 //         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, wma_output_buffer[wma_output_index]);
 //   //      sceAudioOutputBlocking(audio_channel, PSP_AUDIO_VOLUME_MAX, wma_output_buffer[wma_output_index]);
-int _hook_sceAudioSRCOutputBlocking (int vol,void * buf)
+static int _hook_sceAudioSRCOutputBlocking_with_sceAudioOutputPannedBlocking(int vol, void *buf)
 {
-    #ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
-    return sceAudioOutputBlocking(cur_ch_id,vol, buf);
-#else
-    return sceAudioOutputPannedBlocking(cur_ch_id,vol, vol, buf);
-#endif
+	return sceAudioOutputPannedBlocking(cur_ch_id, vol, vol, buf);
 }
 
-#ifdef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
-//quite straightforward
-int _hook_sceAudioOutputBlocking(int channel,int vol,void * buf)
+static int _hook_sceAudioSRCOutputBlocking_with_sceAudioOutputBlocking(int vol, void *buf)
 {
-    return sceAudioOutputPannedBlocking(channel,vol, vol, buf);
+	return sceAudioOutputBlocking(cur_ch_id, vol, buf);
 }
-#endif
 
-#ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
-//quite straightforward
-int _hook_sceAudioOutputPannedBlocking(int channel, int vol, int UNUSED(vol2), void * buf)
+static int _hook_sceAudioOutputBlocking(int channel, int vol, void *buf)
 {
-    return sceAudioOutputBlocking(channel,vol, buf);
+	return sceAudioOutputPannedBlocking(channel, vol, vol, buf);
 }
-#endif
+
+static int _hook_sceAudioOutputPannedBlocking(int channel, int vol, int UNUSED(vol2), void * buf)
+{
+	return sceAudioOutputBlocking(channel, vol, buf);
+}
 
 
 // Ditlew
@@ -1166,7 +1168,7 @@ int _hook_sceAudioChRelease(int channel)
 #ifdef MONITOR_AUDIO_THREADS
 	if (lreturn >= 0)
 	{
-        		WAIT_SEMA(globals->audioSema, 1, 0);
+        		hblWaitSema(globals->audioSema, 1, 0);
 		audio_th[channel] = 0;
 		sceKernelSignalSema(globals->audioSema, 1);
 	}
@@ -1246,15 +1248,11 @@ int _hook_sceKernelDevkitVersion()
 	return globals->module_sdk_version;
 }
 
-#ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740
-// see http://powermgrprx.googlecode.com/svn-history/r2/trunk/include/pspmodulemgr.h
-int _hook_sceKernelSelfStopUnloadModule  (int exitcode, SceSize  argsize, void *argp)
+static int _hook_sceKernelSelfStopUnloadModule(int exitcode, SceSize  argsize, void *argp)
 {
-    int status;
-    return ModuleMgrForUser_8F2DF740(exitcode, argsize, argp, &status, NULL);
-
+	int status;
+	return ModuleMgrForUser_8F2DF740(exitcode, argsize, argp, &status, NULL);
 }
-#endif
 
 int _hook_sceKernelGetThreadCurrentPriority()
 {
@@ -1262,54 +1260,36 @@ int _hook_sceKernelGetThreadCurrentPriority()
     //TODO : real management of threads --> keep track of their priorities ?
 }
 
-// Sleep is not delay... can we fix this?
-#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
 int _hook_sceKernelSleepThreadCB()
 {
-    while (1)
-        sceKernelDelayThreadCB(1000000);
-    return 1;
-}
-#endif
+	while (1)
+		sceKernelDelayThreadCB(0xFFFFFFFF);
 
-#ifdef HOOK_sceKernelTrySendMsgPipe_WITH_sceKernelSendMsgPipe
-int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
+	return 1;
+}
+
+static int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
 {
     return sceKernelSendMsgPipe(uid, message, size, unk1, unk2, 0);
 }
-#endif
 
-#ifdef HOOK_sceKernelTryReceiveMsgPipe_WITH_sceKernelReceiveMsgPipe
-int _hook_sceKernelTryReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
+static int _hook_sceKernelTryReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
 {
     return sceKernelReceiveMsgPipe(uid, message, size, unk1, unk2, 0);
 }
-#endif
-
-#ifdef HOOK_sceKernelReceiveMsgPipe_WITH_sceKernelTryReceiveMsgPipe
-int _hook_sceKernelReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2, int UNUSED(timeout))
-{
-    return sceKernelTryReceiveMsgPipe(uid, message, size, unk1, unk2);
-}
-#endif
 
 //
 // Cache
 //
-#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
-void _hook_sceKernelDcacheWritebackAll (void)
+static void _hook_sceKernelDcacheWritebackAll ()
 {
-     sceKernelDcacheWritebackRange((void*)0x08800000, 0x17FFFFF);
+	sceKernelDcacheWritebackRange(P2_PTR, P2_SIZE);
 }
-#endif
 
-#ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackInvalidateRange
-void _hook_sceKernelDcacheWritebackInvalidateAll (void)
+static void _hook_sceKernelDcacheWritebackInvalidateAll()
 {
-     sceKernelDcacheWritebackInvalidateRange((void*)0x08800000, 0x17FFFFF);
+	sceKernelDcacheWritebackInvalidateRange(P2_PTR, P2_SIZE);
 }
-#endif
-
 
 // ###############
 // UtilsForUser
@@ -1402,49 +1382,21 @@ int _hook_generic_error()
     return SCE_KERNEL_ERROR_ERROR;
 }
 
-#ifdef HOOK_sceKernelGetThreadId
-int _hook_sceKernelGetThreadId()
+static int _hook_sceAudioOutput2GetRestSample()
 {
-	// Somehow sceKernelGetThreadId isn't imported by the game,
-	// and can be called from HBL but not from a homebrew
-    // This is because HBL accepts both jumps and syscalls, while the nid table for games only accepts syscalls
-    return sceKernelGetThreadId();
-}
-#endif
+	int sum = 0, i, ret;
 
-#ifdef HOOK_sceAudioOutput2GetRestSample_WITH_sceAudioGetChannelRestLength
-//	sceAudioOutput2GetRestSample lame hook (hopefully it's not super necessary)
-int _hook_sceAudioOutput2GetRestSample()
-{
-	int sum = 0, i, res;
-
-	for (i=0;i<PSP_AUDIO_CHANNEL_MAX;++i)
-	{
-		res = sceAudioGetChannelRestLength(i);
-		if (res >=0)	sum+= res;
+	sum = 0;
+	for (i = 0; i < PSP_AUDIO_CHANNEL_MAX; i++) {
+		ret = sceAudioGetChannelRestLength(i);
+		if (ret >= 0)
+			sum += ret;
 	}
 
-
-    return sum;
-}
-#endif
-
-
-#ifdef HOOK_mersenne_twister_rdm
-u32 rdm_seed;
-
-int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, u32 seed)
-{
-	int i;
-	rdm_seed = seed;
-
-    for (i = 0; i < 624; i++)
-        _hook_sceKernelUtilsMt19937UInt(ctx);
-
-	return 0;
+	return sum;
 }
 
-u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context UNUSED(*ctx))
+static unsigned int _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context UNUSED(*ctx))
 {
 	// (Bill's generator)
 	rdm_seed = (((rdm_seed * 214013L + 2531011L) >> 16) & 0xFFFF);
@@ -1452,8 +1404,18 @@ u32 _hook_sceKernelUtilsMt19937UInt(SceKernelUtilsMt19937Context UNUSED(*ctx))
 
 	return rdm_seed;
 }
-#endif
 
+static int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, unsigned int seed)
+{
+	int i;
+
+	rdm_seed = seed;
+
+	for (i = 0; i < 624; i++)
+		_hook_sceKernelUtilsMt19937UInt(ctx);
+
+	return 0;
+}
 
 #ifdef HOOK_sceKernelTotalFreeMemSize
 // return 10 MB
@@ -1473,26 +1435,37 @@ int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo UNUSED(*in
 }
 #endif
 
-#ifdef HOOK_sceDisplayGetFrameBuf
-static void *frame_topaddr[2];
-static int frame_bufferwidth[2], frame_pixelformat[2];
-int _hook_sceDisplaySetFrameBuf(void *topaddr,int bufferwidth, int pixelformat,int sync)
+static int _hook_sceDisplaySetFrameBuf(void *topaddr,int bufferwidth, int pixelformat,int sync)
 {
-	frame_topaddr[ sync ] = topaddr;
-	frame_bufferwidth[ sync ] = bufferwidth;
-	frame_pixelformat[ sync ] = pixelformat;
+	int ret;
 
-	return sceDisplaySetFrameBuf( topaddr, bufferwidth, pixelformat, sync);
+	ret = sceDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync);
+	if (!ret) {
+		frame_topaddr[sync] = topaddr;
+		frame_bufferwidth[sync] = bufferwidth;
+		frame_pixelformat[sync] = pixelformat;
+	}
+
+	return ret;
 }
 
-int _hook_sceDisplayGetFrameBuf(void **topaddr, int *bufferwidth, int *pixelformat, int sync)
+static int _hook_sceDisplayGetFrameBuf(void **topaddr, int *bufferwidth, int *pixelformat, int sync)
 {
-	*topaddr = frame_topaddr[ sync ];
-	*bufferwidth = frame_bufferwidth[ sync ];
-	*pixelformat = frame_pixelformat[ sync ];
+	if (topaddr == NULL || bufferwidth == NULL || pixelformat == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	if (sync != 0 && sync != 1)
+		return SCE_KERNEL_ERROR_ILLEGAL_ARGUMENT;
+
+	if (frame_topaddr[sync] == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+	*topaddr = frame_topaddr[sync];
+	*bufferwidth = frame_bufferwidth[sync];
+	*pixelformat = frame_pixelformat[sync];
+
 	return 0;
 }
-#endif
 
 #ifdef HOOK_Osk
 int _hook_sceUtilityOskInitStart (SceUtilityOskParams *params)
@@ -1558,6 +1531,14 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0x64d50c56: //sceUtilityUnloadNetModule
 		case 0xE49BFE92: // sceUtilityUnloadModule
 			return J_ASM(_hook_generic_ok);
+		case 0x289D82FE:
+			if (get_nid_index(0xEEDA2E54) < 0)
+				return J_ASM(_hook_sceDisplaySetFrameBuf);
+			break;
+		case 0xE860E75E:
+			if (get_nid_index(0x06FB8A63) < 0)
+				return J_ASM(_hook_sceKernelUtilsMt19937Init);
+			break;
 	}
 
 	if (return_to_xmb_on_exit) {
@@ -1610,17 +1591,12 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 	}
 
 	switch (nid) {
-#ifdef HOOK_sceDisplayGetFrameBuf
 		case 0xEEDA2E54:
 			return J_ASM(_hook_sceDisplayGetFrameBuf);
-		case 0x289D82FE:
-			if (get_nid_index(0xEEDA2E54) < 0)
-				return J_ASM(_hook_sceDisplaySetFrameBuf);
-#endif
-#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
 		case 0x82826F70:
-			return J_ASM(_hook_sceKernelSleepThreadCB);
-#endif
+			if(isImported(sceKernelDelayThreadCB))
+				return J_ASM(_hook_sceKernelSleepThreadCB);
+			break;
 		/*
 		* Overrides to avoid syscall estimates.
 		* Those are not necessary but reduce estimate failures and improve compatibility for now
@@ -1643,10 +1619,10 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			return J_ASM(sceKernelMaxFreeMemSize);
 		case 0xC41C2853:
 			return J_ASM(_hook_sceRtcGetTickResolution);
-#ifdef HOOK_sceRtcGetCurrentTick
 		case 0x3F7AD767:
-			return J_ASM(_hook_sceRtcGetCurrentTick);
-#endif
+			if (isImported(sceRtcGetCurrentClockLocalTime))
+				return J_ASM(_hook_sceRtcGetCurrentTick);
+			break;
 		case 0x7ED29E40:
 			return J_ASM(_hook_sceRtcSetTick);
 		case 0x6FF40ACC:
@@ -1657,31 +1633,31 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			return J_ASM(_hook_sceRtcConvertUtcToLocalTime);
 		case 0x68963324:
 			return J_ASM(_hook_sceIoLseek32);
-#ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
 		//This will be slow and should not be active for high performance programs...
 		case 0x3A622550:
-			return J_ASM(sceCtrlReadBufferPositive);
-#endif
+			if (isImported(sceCtrlReadBufferPositive))
+				return J_ASM(sceCtrlReadBufferPositive);
+			break;
 		case 0x737486F2:
 			return J_ASM(_hook_scePowerSetClockFrequency);
 		case 0x383F7BCC: // sceKernelTerminateDeleteThread
 			return J_ASM(kill_thread);
-#ifdef HOOK_sceKernelSelfStopUnloadModule_WITH_ModuleMgrForUser_8F2DF740
 		case 0xD675EBB8:
-			return J_ASM(_hook_sceKernelSelfStopUnloadModule);
-#endif
-#ifdef HOOK_sceKernelTrySendMsgPipe_WITH_sceKernelSendMsgPipe
+			if (isImported(ModuleMgrForUser_8F2DF740))
+				return J_ASM(_hook_sceKernelSelfStopUnloadModule);
+			break;
 		case 0x884C9F90:
-			return J_ASM(_hook_sceKernelTrySendMsgPipe);
-#endif
-#ifdef HOOK_sceKernelTryReceiveMsgPipe_WITH_sceKernelReceiveMsgPipe
+			if (isImported(sceKernelSendMsgPipe))
+				return J_ASM(_hook_sceKernelTrySendMsgPipe);
+			break;
 		case 0xDF52098F:
-			return J_ASM(_hook_sceKernelTryReceiveMsgPipe);
-#endif
-#ifdef HOOK_sceKernelReceiveMsgPipe_WITH_sceKernelTryReceiveMsgPipe
+			if (isImported(sceKernelReceiveMsgPipe))
+				return J_ASM(_hook_sceKernelTryReceiveMsgPipe);
+			break;
 		case 0x74829B76:
-			return J_ASM(_hook_sceKernelReceiveMsgPipe);
-#endif
+			if (isImported(sceKernelTryReceiveMsgPipe))
+				return J_ASM(sceKernelTryReceiveMsgPipe);
+			break;
 		case 0xD97F94D8: // sceDmacTryMemcpy
 			if (get_nid_index(0x617F3FE6) < 0)
 				return J_ASM(memcpy);
@@ -1715,104 +1691,106 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0xCA3D34C1: // scePowerUnlock
 			return J_ASM(_hook_generic_ok);
 #endif
-#ifdef FORCE_HARDCODED_VRAM_SIZE
 		case 0x1F6752AD:
 			return J_ASM(_hook_sceGeEdramGetSize);
-#endif
 #ifdef HOOK_AUDIOFUNCTIONS
 		case 0x38553111:
 			return J_ASM(_hook_sceAudioSRCChReserve);
 		case 0x5C37C0AE:
 			return J_ASM(_hook_sceAudioSRCChRelease);
 		case 0xE0727056:
-			return J_ASM(_hook_sceAudioSRCOutputBlocking);
+			if (isImported(sceAudioOutputPannedBlocking))
+				return J_ASM(_hook_sceAudioSRCOutputBlocking_with_sceAudioOutputPannedBlocking);
+			else if (isImported(sceAudioOutputBlocking))
+				return J_ASM(_hook_sceAudioSRCOutputBlocking_with_sceAudioOutputBlocking);
+			break;
 #endif
-#ifdef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
 		case 0x136CAF51:
-			return J_ASM(_hook_sceAudioOutputBlocking);
-#endif
-#ifdef HOOK_sceAudioOutputPannedBlocking_WITH_sceAudioOutputBlocking
+			if (isImported(sceAudioOutputPannedBlocking))
+				return J_ASM(_hook_sceAudioOutputBlocking);
+			break;
 		case 0x13F592BC:
-			return J_ASM(_hook_sceAudioOutputPannedBlocking);
-#endif
-#ifdef HOOK_sceAudioGetChannelRestLength_WITH_dummy
-		case 0xb011922f:
-			return J_ASM(_hook_generic_ok);
-#endif
-#ifdef HOOK_sceAudioGetChannelRestLen_WITH_dummy
+			if (isImported(sceAudioOutputBlocking))
+				return J_ASM(_hook_sceAudioOutputPannedBlocking);
+			break;
+		case 0xB011922F:
+			dbg_printf("%s: Hook sceAudioGetChannelRestLength\n", __func__);
+			if (isImported(sceAudioGetChannelRestLen))
+				return J_ASM(sceAudioGetChannelRestLen);
+			else
+				return J_ASM(_hook_generic_ok);
 		case 0xE9D97901:
-			return J_ASM(_hook_generic_ok);
-#endif
-#ifdef HOOK_sceAudioGetChannelRestLen_WITH_sceAudioGetChannelRestLength
-		case 0xE9D97901:
-			return J_ASM(sceAudioGetChannelRestLength);
-#endif
-#ifdef HOOK_sceAudioOutput_WITH_sceAudioOutputBlocking
+			dbg_printf("%s: Hook sceAudioGetChannelRestLen\n", __func__);
+			if (isImported(sceAudioGetChannelRestLength))
+				return J_ASM(sceAudioGetChannelRestLength);
+			else
+				return J_ASM(_hook_generic_ok);
 		case 0x8C1009B2:
-#ifndef HOOK_sceAudioOutputBlocking_WITH_sceAudioOutputPannedBlocking
-			return J_ASM(sceAudioOutputBlocking);
-#else
-			return J_ASM(_hook_sceAudioOutputBlocking);
-#endif
-#endif
-#ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackAll
+			if (isImported(sceAudioOutputBlocking))
+				return J_ASM(sceAudioOutputBlocking);
+			else if (isImported(sceAudioOutputPannedBlocking))
+				return J_ASM(_hook_sceAudioOutputBlocking);
+			break;
 		case 0xB435DEC5:
-			return J_ASM(sceKernelDcacheWritebackAll);
-#endif
-#ifdef HOOK_sceKernelSendMsgPipe_WITH_sceKernelTrySendMsgPipe
+			if (isImported(sceKernelDcacheWritebackInvalidateRange))
+				return J_ASM(_hook_sceKernelDcacheWritebackInvalidateAll);
+			else if (isImported(sceKernelDcacheWritebackAll))
+				return J_ASM(sceKernelDcacheWritebackAll);
+			break;
 		case 0x876DBFAD:
-			return J_ASM(sceKernelTrySendMsgPipe);
-#endif
-#ifdef HOOK_sceKernelGetThreadId
-		case 0x293B45B8:
-			return J_ASM(_hook_sceKernelGetThreadId);
-#endif
-#ifdef HOOK_sceAudioOutput2GetRestSample_WITH_sceAudioGetChannelRestLength
+			if (isImported(sceKernelTrySendMsgPipe)) {
+				dbg_printf("%s: Hook sceKernelSendMsgPipe\n", __func__);
+				return J_ASM(sceKernelTrySendMsgPipe);
+			}
+			break;
 		case 0x647CEF33:
-			return J_ASM(_hook_sceAudioOutput2GetRestSample);
-#endif
-#ifdef HOOK_mersenne_twister_rdm
-		case 0xE860E75E:
-			return J_ASM(_hook_sceKernelUtilsMt19937Init);
+			if (isImported(sceAudioGetChannelRestLength))
+				return J_ASM(_hook_sceAudioOutput2GetRestSample);
+			break;
 		case 0x06FB8A63:
 			return J_ASM(_hook_sceKernelUtilsMt19937UInt);
-#endif
-#ifdef HOOK_sceDisplayWaitVblankStartCB_WITH_sceDisplayWaitVblankStart
 		case 0x46F186C3:
-			return J_ASM(sceDisplayWaitVblankStart);
-#endif
-#ifdef HOOK_sceKernelDcacheWritebackRange_WITH_sceKernelDcacheWritebackAll
+			if (isImported(sceDisplayWaitVblankStart)) {
+				dbg_printf("%s: Hook sceDisplayWaitVblankStartCB\n",
+					__func__);
+				return J_ASM(sceDisplayWaitVblankStart);
+			}
+			break;
 		case 0x3EE30821:
-			return J_ASM(sceKernelDcacheWritebackAll);
-#endif
-#ifdef HOOK_sceKernelDcacheWritebackInvalidateRange_WITH_sceKernelDcacheWritebackInvalidateAll
+			if (isImported(sceKernelDcacheWritebackAll)) {
+				dbg_printf("%s: Hook sceKernelDcacheWritebackRange\n",
+					__func__);
+				return J_ASM(sceKernelDcacheWritebackAll);
+			}
+			break;
 		case 0x34B9FA9E:
-			return J_ASM(sceKernelDcacheWritebackInvalidateAll);
-#endif
-#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
+			if (isImported(sceKernelDcacheWritebackInvalidateAll)) {
+				dbg_printf("%s: Hook sceKernelDcacheWritebackInvalidateRange\n",
+					__func__);
+				return J_ASM(sceKernelDcacheWritebackInvalidateAll);
+			}
+			break;
 		case 0x79D1C3FA:
-			return J_ASM(_hook_sceKernelDcacheWritebackAll);
-#endif
-#ifdef HOOK_sceKernelDcacheWritebackInvalidateAll_WITH_sceKernelDcacheWritebackInvalidateRange
-		case 0xB435DEC5:
-			return J_ASM(_hook_sceKernelDcacheWritebackInvalidateAll);
-#endif
-#ifdef HOOK_sceAudioOutputPanned_WITH_sceAudioOutputPannedBlocking
+			if (isImported(sceKernelDcacheWritebackRange))
+				return J_ASM(_hook_sceKernelDcacheWritebackAll);
+			break;
 		case 0xE2D56B2D:
-			return J_ASM(sceAudioOutputPannedBlocking);
-#endif
-#ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
+			if (isImported(sceAudioOutputPannedBlocking)) {
+				dbg_printf("%s: Hook sceAudioOutputPanned\n", __func__);
+				return J_ASM(sceAudioOutputPannedBlocking);
+			}
+			break;
 		case 0x616403BA:
-			return J_ASM(sceKernelTerminateDeleteThread);
-#endif
-#ifdef HOOK_sceKernelTotalFreeMemSize
+			if (isImported(sceKernelTerminateDeleteThread)) {
+				dbg_printf("%s: Hook sceKernelTerminateThread\n", __func__);
+				return J_ASM(sceKernelTerminateDeleteThread);
+			}
+			break;
 		case 0xF919F628:
-			return J_ASM(_hook_sceKernelTotalFreeMemSize);
-#endif
-#ifdef HOOK_sceDisplayGetVcount_WITH_dummy
+			return J_ASM(sceKernelTotalFreeMemSize);
 		case 0x9C6EAAD7:
+			dbg_printf("%s: Hook sceDisplayGetVcount\n", __func__);
 			return J_ASM(_hook_generic_ok);
-#endif
 #ifdef HOOK_Osk
 		case 0xF6269B82: // sceUtilityOskInitStart
 			return J_ASM(_hook_sceUtilityOskInitStart);

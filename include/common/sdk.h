@@ -40,6 +40,8 @@ typedef unsigned char byte;
 // This marks libraries that are not yet linked
 #define SYSCALL_IMPORT_NOT_RESOLVED_YET 0x15
 
+#define isImported(f) (((int *)(f))[1])
+
 // Macro to get the syscall number
 #define GET_SYSCALL_NUMBER(sys) ((u32)(sys) >> 6)
 

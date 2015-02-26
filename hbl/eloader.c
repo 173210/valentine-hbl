@@ -67,11 +67,7 @@ static int run_eboot(const char *path)
 	//clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
 	//if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
 	// I don't think they change based on each psp model
-#ifdef FORCE_HARDCODED_VRAM_SIZE
-	memset(sceGeEdramGetAddr(), 0, 0x00200000);
-#else
-	memset(sceGeEdramGetAddr(), 0, sceGeEdramGetSize());
-#endif
+	memset(sceGeEdramGetAddr(), 0, isImported(sceGeEdramGetSize) ? sceGeEdramGetSize() : EDRAM_SIZE);
 
 	mod_id = load_module(fd, path, (void *)PRX_LOAD_ADDRESS, off);
 
@@ -112,11 +108,11 @@ static void wait_for_eboot_end()
 
 		//Check for force exit to the menu
 		if (force_exit_buttons) {
-#ifdef HOOK_sceCtrlPeekBufferPositive_WITH_sceCtrlReadBufferPositive
-			sceCtrlReadBufferPositive(&pad, 1);
-#else
-			sceCtrlPeekBufferPositive(&pad, 1);
-#endif
+			if (isImported(sceCtrlPeekBufferPositive))
+				sceCtrlPeekBufferPositive(&pad, 1);
+			else if (isImported(sceCtrlReadBufferPositive))
+				sceCtrlReadBufferPositive(&pad, 1);
+
 			if (pad.Buttons == force_exit_buttons)
 				exit_everything_but_me();
 		}
@@ -180,12 +176,12 @@ int callback_thread()
 
 	dbg_printf("Setup HBL Callback:\n  cbid=%08X\n  ret=%08X\n", cbid, ret);
 
-	if (!ret)
-#ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
-		_hook_sceKernelSleepThreadCB();
-#else
-		sceKernelSleepThreadCB();
-#endif
+	if (!ret) {
+		if (isImported(sceKernelSleepThreadCB))
+			sceKernelSleepThreadCB();
+		else if (isImported(sceKernelDelayThreadCB))
+			_hook_sceKernelSleepThreadCB();
+	}
 
 	return ret;
 }

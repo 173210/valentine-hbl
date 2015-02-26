@@ -1,6 +1,7 @@
 #include <common/stubs/syscall.h>
 #include <common/utils/cache.h>
 #include <common/utils/scr.h>
+#include <common/utils/string.h>
 #include <common/sdk.h>
 #include <common/debug.h>
 #include <common/globals.h>
@@ -8,28 +9,20 @@
 #include <loader/runtime.h>
 #include <exploit_config.h>
 
-#ifndef UTILITY_DONT_USE_sceUtilityLoadModule
-static const int nonEmuModules[] = {
-#ifdef AVOID_NET_UTILITY
+static const int netModules[] = {
 	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
 	PSP_MODULE_NET_PARSEURI, PSP_MODULE_NET_PARSEHTTP, PSP_MODULE_NET_HTTP,
-	PSP_MODULE_NET_SSL, PSP_MODULE_NET_UPNP, PSP_MODULE_NET_GAMEUPDATE,
-#endif
-	PSP_MODULE_IRDA
+	PSP_MODULE_NET_SSL, PSP_MODULE_NET_UPNP, PSP_MODULE_NET_GAMEUPDATE
 };
+
 static const int modules[] = {
-#ifndef AVOID_NET_UTILITY
-	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,
-	PSP_MODULE_NET_PARSEURI, PSP_MODULE_NET_PARSEHTTP, PSP_MODULE_NET_HTTP,
-	PSP_MODULE_NET_SSL, PSP_MODULE_NET_UPNP, PSP_MODULE_NET_GAMEUPDATE,
-#endif
+	PSP_MODULE_IRDA,
 	PSP_MODULE_USB_PSPCM, PSP_MODULE_USB_MIC, PSP_MODULE_USB_CAM, PSP_MODULE_USB_GPS,
 	PSP_MODULE_AV_SASCORE, PSP_MODULE_AV_ATRAC3PLUS, PSP_MODULE_AV_MPEGBASE,
 	PSP_MODULE_AV_VAUDIO, PSP_MODULE_AV_AAC, PSP_MODULE_AV_G729, PSP_MODULE_AV_MP4,
 	PSP_MODULE_NP_COMMON, PSP_MODULE_NP_SERVICE, PSP_MODULE_NP_MATCHING2, PSP_MODULE_NP_DRM
-};
 	// PSP_MODULE_AV_AVCODEC <-- removed to cast syscall of sceAudiocodec and sceVideocodec
-#endif
+};
 
 #ifdef UTILITY_AV_AVCODEC_PATH
 static SceUID avcodec_modid;
@@ -44,190 +37,190 @@ static SceUID atrac3plus_modid;
 static SceUID mpegbase_modid;
 #endif
 
+static int sceNetIsImported = 0;
+
 #ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils()
 {
 	int ret;
-#ifdef UTILITY_DONT_USE_sceUtilityLoadModule
 	int module;
-
-#ifdef UTILITY_USE_sceUtilityLoadNetModule
-	for (module = 1; module <= 7; module++) {
-		dbg_printf("%s: Loading net module %d\n", module);
-		ret = sceUtilityLoadNetModule(module);
-		if (ret < 0)
-			dbg_printf("%s: Loading net module %d failed 0x%08X\n",
-				__func__, module, ret);
-	}
-#endif
-#ifdef UTILITY_USE_sceUtilityLoadUsbModule
-	for (module = 1; module <= 5; module++) {
-		dbg_printf("%s: Loading USB module %d\n", module);
-		ret = sceUtilityLoadUsbModule(module);
-		if (ret < 0)
-			dbg_printf("%s: Loading USB module %d failed 0x%08X\n",
-				__func__, module, ret);
-	}
-#endif
-#ifdef UTILITY_USE_sceUtilityLoadAvModule
-	for (module = 1; module <= 7; module++) {
-		dbg_printf("%s: Loading AV module %d\n", module);
-		ret = sceUtilityLoadAvModule(module);
-			dbg_printf("%s: Loading AV module %d failed 0x%08X\n",
-				__func__, module, ret);
-	}
-#else
-#ifdef UTILITY_AV_AVCODEC_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
-	avcodec_modid = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
-	sceKernelStartModule(avcodec_modid, 0, NULL, NULL, NULL);
-#endif
-#ifdef UTILITY_AV_SASCORE_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_SASCORE_PATH "\n", __func__);
-	sascore_modid = sceKernelLoadModule(UTILITY_AV_SASCORE_PATH, 0, NULL);
-	sceKernelStartModule(sascore_modid, 0, NULL, NULL, NULL);
-#endif
-#ifdef UTILITY_AV_ATRAC3PLUS_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
-	atrac3plus_modid = sceKernelLoadModule(UTILITY_AV_ATRAC3PLUS_PATH, 0, NULL);
-	sceKernelStartModule(atrac3plus_modid, 0, NULL, NULL, NULL);
-#endif
-#ifdef UTILITY_AV_MPEGBASE_PATH
-	dbg_puts("%s: Loading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
-	mpegbase_modid = sceKernelLoadModule(UTILITY_AV_MPEGBASE_PATH, 0, NULL);
-	sceKernelStartModule(mpegbase_modid, 0, NULL, NULL, NULL);
-#endif
-#endif
-#else
 	unsigned i;
 
-	// Load modules in order
-	if (!globals->isEmu)
-		for(i = 0; i < sizeof(nonEmuModules) / sizeof(int); i++) {
-			dbg_printf("%s: Loading module 0x%08X\n",
-				__func__, nonEmuModules[i]);
-			ret = sceUtilityLoadModule(nonEmuModules[i]);
+	if (isImported(sceUtilityLoadModule)) {
+		// Load modules in order
+		if (!globals->isEmu || sceNetIsImported)
+			for(i = 0; i < sizeof(netModules) / sizeof(int); i++) {
+				dbg_printf("%s: Loading module 0x%08X\n",
+					__func__, netModules[i]);
+				ret = sceUtilityLoadModule(netModules[i]);
+				if (ret < 0)
+					dbg_printf("%s: Loading 0x%08X failed 0x%08X\n",
+						__func__, netModules[i], ret);
+			}
+
+		for(i = 0; i < sizeof(modules) / sizeof(int); i++) {
+			dbg_printf("%s: Loading module 0x%08X\n", __func__, modules[i]);
+			ret = sceUtilityLoadModule(modules[i]);
 			if (ret < 0)
 				dbg_printf("%s: Loading 0x%08X failed 0x%08X\n",
-					__func__, nonEmuModules[i], ret);
+					__func__, modules[i], ret);
 		}
 
-	for(i = 0; i < sizeof(modules) / sizeof(int); i++) {
-		dbg_printf("%s: Loading module 0x%08X\n", __func__, modules[i]);
-		ret = sceUtilityLoadModule(modules[i]);
+		dbg_printf("Loading module 0x%08X\n", PSP_MODULE_AV_MP3);
+		ret = sceUtilityLoadModule(PSP_MODULE_AV_MP3);
 		if (ret < 0)
 			dbg_printf("%s: Loading 0x%08X failed 0x%08X\n",
-				__func__, modules[i], ret);
-	}
+				__func__, PSP_MODULE_AV_MP3, ret);
+	} else {
+		if (isImported(sceUtilityLoadNetModule))
+			for (module = 1; module <= 7; module++) {
+				dbg_printf("%s: Loading net module %d\n", module);
+				ret = sceUtilityLoadNetModule(module);
+				if (ret < 0)
+					dbg_printf("%s: Loading net module %d failed 0x%08X\n",
+						__func__, module, ret);
+			}
 
-	dbg_printf("Loading module 0x%08X\n", PSP_MODULE_AV_MP3);
-	ret = sceUtilityLoadModule(PSP_MODULE_AV_MP3);
-	if (ret < 0)
-		dbg_printf("%s: Loading 0x%08X failed 0x%08X\n",
-			__func__, PSP_MODULE_AV_MP3, ret);
+		if (isImported(sceUtilityLoadUsbModule))
+			for (module = 1; module <= 5; module++) {
+				dbg_printf("%s: Loading USB module %d\n", module);
+				ret = sceUtilityLoadUsbModule(module);
+				if (ret < 0)
+					dbg_printf("%s: Loading USB module %d failed 0x%08X\n",
+						__func__, module, ret);
+			}
+
+		if (isImported(sceUtilityLoadAvModule))
+			for (module = 1; module <= 7; module++) {
+				dbg_printf("%s: Loading AV module %d\n", module);
+				ret = sceUtilityLoadAvModule(module);
+				dbg_printf("%s: Loading AV module %d failed 0x%08X\n",
+					__func__, module, ret);
+			}
+		else {
+#ifdef UTILITY_AV_AVCODEC_PATH
+			dbg_puts("%s: Loading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
+			avcodec_modid = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
+			sceKernelStartModule(avcodec_modid, 0, NULL, NULL, NULL);
 #endif
+#ifdef UTILITY_AV_SASCORE_PATH
+			dbg_puts("%s: Loading " UTILITY_AV_SASCORE_PATH "\n", __func__);
+			sascore_modid = sceKernelLoadModule(UTILITY_AV_SASCORE_PATH, 0, NULL);
+			sceKernelStartModule(sascore_modid, 0, NULL, NULL, NULL);
+#endif
+#ifdef UTILITY_AV_ATRAC3PLUS_PATH
+			dbg_puts("%s: Loading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
+			atrac3plus_modid = sceKernelLoadModule(UTILITY_AV_ATRAC3PLUS_PATH, 0, NULL);
+			sceKernelStartModule(atrac3plus_modid, 0, NULL, NULL, NULL);
+#endif
+#ifdef UTILITY_AV_MPEGBASE_PATH
+			dbg_puts("%s: Loading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
+			mpegbase_modid = sceKernelLoadModule(UTILITY_AV_MPEGBASE_PATH, 0, NULL);
+			sceKernelStartModule(mpegbase_modid, 0, NULL, NULL, NULL);
+#endif
+		}
+	}
 }
 #endif
 #ifndef DISABLE_UNLOAD_UTILITY_MODULES
 void unload_utils()
 {
-	int ret;
-#if defined(UTILITY_DONT_USE_sceUtilityLoadModule)
 	int module;
-
-#ifdef UTILITY_USE_sceUtilityLoadNetModule
-	for (module = 7; module >= 1; module--) {
-		dbg_printf("%s: Unloading net module %d\n", module);
-		ret = sceUtilityUnloadNetModule(module);
-		if (ret < 0)
-			dbg_printf("%s: Unloading net module %d failed 0x%08X\n",
-				__func__, module, ret);
-	}
-#endif
-#ifdef UTILITY_USE_sceUtilityLoadUsbModule
-	for (module = 5; module >= 1; module--) {
-		dbg_printf("%s: Unloading USB module %d\n", module);
-		ret = sceUtilityUnloadUsbModule(module);
-		if (ret < 0)
-			dbg_printf("%s: Unloading USB module %d failed 0x%08X\n",
-				__func__, module, ret);
-	}
-#endif
-#ifdef UTILITY_USE_sceUtilityLoadAvModule
-	for (module = 7; module >= 5; module--) {
-		dbg_printf("%s: Unloading AV module %d\n", module);
-		ret = sceUtilityUnloadAvModule(module);
-		if (ret < 0)
-			dbg_printf("%s: Unloading AV module %d failed 0x%08X\n",
-				__func__, module, ret);
-	}
-
-	if (globals->module_sdk_version <= 0x06020010)
-		module--; // Skip PSP_AV_MODULE_MP3
-
-	while (module >= 1) {
-		dbg_printf("%s: Unloading AV module %d\n", module);
-		ret = sceUtilityUnloadAvModule(module);
-		if (ret < 0)
-			dbg_printf("%s: Unloading AV module %d failed 0x%08X\n",
-				__func__, module, ret);
-
-		module--;
-	}
-#else
-#ifdef UTILITY_AV_AVCODEC_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
-	sceKernelStopModule(avcodec_modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(avcodec_modid);
-#endif
-#ifdef UTILITY_AV_SASCORE_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_SASCORE_PATH "\n", __func__);
-	sceKernelStopModule(sascore_modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(sascore_modid);
-#endif
-#ifdef UTILITY_AV_ATRAC3PLUS_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
-	sceKernelStopModule(atrac3plus_modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(atrac3plus_modid);
-#endif
-#ifdef UTILITY_AV_MPEGBASE_PATH
-	dbg_printf("%s: Unloading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
-	sceKernelStopModule(mpegbase_modid, 0, NULL, NULL, NULL);
-	sceKernelUnloadModule(mpegbase_modid);
-#endif
-#endif
-#else
+	int ret;
 	int i;
 
-	//Unload modules in reverse order
-	if (globals->module_sdk_version > 0x06020010) {
-		dbg_printf("%s: Unloading module 0x%08X\n",
-			__func__, PSP_MODULE_AV_MP3);
-		ret = sceUtilityUnloadModule(PSP_MODULE_AV_MP3);
-		if (ret < 0)
-			dbg_printf("%s: Unloading 0x%08X failed 0x%08X\n",
-				__func__, PSP_MODULE_AV_MP3, ret);
-	}
-
-	for(i = sizeof(modules) / sizeof(int) - 1; i >= 0; i--) {
-		dbg_printf("%s: Unloading module 0x%08X\n",
-			__func__, modules[i]);
-		ret = sceUtilityUnloadModule(modules[i]);
-		if (ret < 0)
-			dbg_printf("%s: Unloading 0x%08X failed 0x%08X\n",
-				__func__, modules[i], ret);
-	}
-
-	if (!globals->isEmu)
-		for(i = sizeof(nonEmuModules) / sizeof(int) - 1; i >= 0; i--) {
+	if (isImported(sceUtilityUnloadModule)) {
+		//Unload modules in reverse order
+		if (globals->module_sdk_version > 0x06020010) {
 			dbg_printf("%s: Unloading module 0x%08X\n",
-				__func__, nonEmuModules[i]);
-			ret = sceUtilityUnloadModule(nonEmuModules[i]);
+				__func__, PSP_MODULE_AV_MP3);
+			ret = sceUtilityUnloadModule(PSP_MODULE_AV_MP3);
 			if (ret < 0)
 				dbg_printf("%s: Unloading 0x%08X failed 0x%08X\n",
-					__func__, nonEmuModules[i], ret);
+					__func__, PSP_MODULE_AV_MP3, ret);
 		}
+
+		for(i = sizeof(modules) / sizeof(int) - 1; i >= 0; i--) {
+			dbg_printf("%s: Unloading module 0x%08X\n",
+				__func__, modules[i]);
+			ret = sceUtilityUnloadModule(modules[i]);
+			if (ret < 0)
+				dbg_printf("%s: Unloading 0x%08X failed 0x%08X\n",
+					__func__, modules[i], ret);
+		}
+
+		if (!globals->isEmu || sceNetIsImported)
+			for(i = sizeof(netModules) / sizeof(int) - 1; i >= 0; i--) {
+				dbg_printf("%s: Unloading module 0x%08X\n",
+					__func__, netModules[i]);
+				ret = sceUtilityUnloadModule(netModules[i]);
+				if (ret < 0)
+					dbg_printf("%s: Unloading 0x%08X failed 0x%08X\n",
+						__func__, netModules[i], ret);
+			}
+	} else {
+		if (isImported(sceUtilityUnloadNetModule))
+			for (module = 7; module >= 1; module--) {
+				dbg_printf("%s: Unloading net module %d\n", module);
+				ret = sceUtilityUnloadNetModule(module);
+				if (ret < 0)
+					dbg_printf("%s: Unloading net module %d failed 0x%08X\n",
+						__func__, module, ret);
+			}
+
+		if (isImported(sceUtilityUnloadUsbModule))
+			for (module = 5; module >= 1; module--) {
+				dbg_printf("%s: Unloading USB module %d\n", module);
+				ret = sceUtilityUnloadUsbModule(module);
+				if (ret < 0)
+					dbg_printf("%s: Unloading USB module %d failed 0x%08X\n",
+						__func__, module, ret);
+			}
+
+		if (isImported(sceUtilityUnloadAvModule)) {
+			for (module = 7; module >= 5; module--) {
+				dbg_printf("%s: Unloading AV module %d\n", module);
+				ret = sceUtilityUnloadAvModule(module);
+				if (ret < 0)
+					dbg_printf("%s: Unloading AV module %d failed 0x%08X\n",
+						__func__, module, ret);
+			}
+
+			if (globals->module_sdk_version <= 0x06020010)
+				module--; // Skip PSP_AV_MODULE_MP3
+
+			while (module >= 1) {
+				dbg_printf("%s: Unloading AV module %d\n", module);
+				ret = sceUtilityUnloadAvModule(module);
+				if (ret < 0)
+					dbg_printf("%s: Unloading AV module %d failed 0x%08X\n",
+						__func__, module, ret);
+
+				module--;
+			}
+		} else {
+#ifdef UTILITY_AV_AVCODEC_PATH
+			dbg_printf("%s: Unloading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
+			sceKernelStopModule(avcodec_modid, 0, NULL, NULL, NULL);
+			sceKernelUnloadModule(avcodec_modid);
 #endif
+#ifdef UTILITY_AV_SASCORE_PATH
+			dbg_printf("%s: Unloading " UTILITY_AV_SASCORE_PATH "\n", __func__);
+			sceKernelStopModule(sascore_modid, 0, NULL, NULL, NULL);
+			sceKernelUnloadModule(sascore_modid);
+#endif
+#ifdef UTILITY_AV_ATRAC3PLUS_PATH
+			dbg_printf("%s: Unloading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
+			sceKernelStopModule(atrac3plus_modid, 0, NULL, NULL, NULL);
+			sceKernelUnloadModule(atrac3plus_modid);
+#endif
+#ifdef UTILITY_AV_MPEGBASE_PATH
+			dbg_printf("%s: Unloading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
+			sceKernelStopModule(mpegbase_modid, 0, NULL, NULL, NULL);
+			sceKernelUnloadModule(mpegbase_modid);
+#endif
+		}
+	}
 }
 #endif
 
@@ -253,8 +246,12 @@ int p2_add_stubs()
 
 		while (elf_check_stub_entry(pentry)) {
 			if (*(char *)pentry->lib_name &&
-				(pentry->import_flags == 0x11 || !pentry->import_flags))
-				num += add_stub(pentry);
+				(pentry->import_flags == 0x11 || !pentry->import_flags)) {
+				if (strcmp("sceNet", pentry->lib_name))
+					num += add_stub(pentry);
+				else
+					sceNetIsImported = 1;
+			}
 
 			pentry++;
 		}
@@ -266,8 +263,12 @@ int p2_add_stubs()
 
 		while (elf_check_stub_entry(pentry)) {
 			if (*(char *)pentry->lib_name &&
-				(pentry->import_flags == 0x11 || !pentry->import_flags))
-				num += add_stub(pentry);
+				(pentry->import_flags == 0x11 || !pentry->import_flags)) {
+				if (strcmp("sceNet", pentry->lib_name))
+					num += add_stub(pentry);
+				else
+					sceNetIsImported = 1;
+			}
 
 			pentry++;
 		}

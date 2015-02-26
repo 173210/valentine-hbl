@@ -193,7 +193,6 @@ static void dbg_init()
 
 static int test_sceIoChdir()
 {
-#ifndef CHDIR_CRASH
 	SceUID fd;
 
 	sceIoChdir(HBL_ROOT);
@@ -204,7 +203,7 @@ static int test_sceIoChdir()
 		dbg_printf("sceIoChdir failed!\n");
 		return 1;
 	}
-#endif
+
 	return 0;
 }
 

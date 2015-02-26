@@ -7,51 +7,56 @@
 
 int kill_thread(SceUID thid)
 {
-#ifdef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
-    int ret = sceKernelTerminateDeleteThread(thid);
-#else
-    int ret = sceKernelTerminateThread(thid);
-#endif
-    if (ret < 0)
-    {
-        if (ret != (int)0x800201A2) //if thread already dormant, let's assume it's not really an error, we still want to delete it!
-        {
-            dbg_printf("--> ERROR 0x%08X TERMINATING THREAD ID 0x%08X\n", ret, thid);
-            return ret;
-        }
-    }
+	int ret;
 
-#ifndef HOOK_sceKernelTerminateThread_WITH_sceKernelTerminateDeleteThread
-    ret = sceKernelDeleteThread(thid);
-    if (ret < 0)
-    {
-        dbg_printf("--> ERROR 0x%08X DELETING THREAD ID 0x%08X\n", ret, thid);
-    }
-#endif
+	if (isImported(sceKernelTerminateDeleteThread)) {
+		ret = sceKernelTerminateDeleteThread(thid);
+		if (ret)
+			dbg_printf("%s: Killing thread 0x%08X failed 0x%08X\n",
+				__func__, thid, ret);
+		return ret;
+	} else {
+		if (isImported(sceKernelTerminateThread)) {
+			ret = sceKernelTerminateThread(thid);
+			if (ret < 0 && ret != SCE_KERNEL_ERROR_DORMANT) {
+				dbg_printf("%s: Terminating thread 0x%08X failed 0x%08X\n",
+					__func__, thid, ret);
+				return ret;
+			}
+		}
 
-    return ret;
+		if (isImported(sceKernelDeleteThread)) {
+			ret = sceKernelDeleteThread(thid);
+			if (ret < 0)
+				dbg_printf("%s: Deleting thread 0x%08X failed 0x%08X\n",
+					__func__, thid, ret);
+			return ret;
+		}
+
+		return 0;
+	}
 }
 
 // Release all subinterrupt handler
-#ifdef SUB_INTR_HANDLER_CLEANUP
 void subinterrupthandler_cleanup()
 {
-    dbg_printf("Subinterrupthandler Cleanup\n");
 	int i, j;
 
-	for (i = 0; i <= 66; i++) // 66 is the highest value of enum PspInterrupts
-	{
-		for (j = 0; j <= 30; j++) // 30 is the highest value of enum PspSubInterrupts
-		{
-			if (sceKernelReleaseSubIntrHandler(i, j) > -1)
-			{
+	if (!isImported(sceKernelReleaseSubIntrHandler))
+		return;
+
+	dbg_printf("Subinterrupthandler Cleanup\n");
+	// 66 is the highest value of enum PspInterrupts
+	for (i = 0; i <= 66; i++) {
+		// 30 is the highest value of enum PspSubInterrupts
+		for (j = 0; j <= 30; j++) {
+			if (sceKernelReleaseSubIntrHandler(i, j) > -1) {
 				dbg_printf("Subinterrupt handler released for %d, %d\n", i, j);
 			}
 		}
 	}
-    dbg_printf("Subinterrupthandler Cleanup Done\n");
+	dbg_printf("Subinterrupthandler Cleanup Done\n");
 }
-#endif
 
 void UnloadModules()
 {
