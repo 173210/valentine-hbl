@@ -287,7 +287,6 @@ int start_thread()
 	scr_puts("Freeing memory\n");
 	free_game_memory();
 
-#ifdef LOAD_MODULES_FOR_SYSCALLS
 	scr_puts("Building NIDs table with utilities\n");
 	load_utils();
 	p2_add_stubs();
@@ -295,7 +294,6 @@ int start_thread()
 	UnloadModules();
 #else
 	unload_utils();
-#endif
 #endif
 
 	scr_puts("Building NIDs table with savedata utility\n");

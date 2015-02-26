@@ -39,7 +39,6 @@ static SceUID mpegbase_modid;
 
 static int sceNetIsImported = 0;
 
-#ifdef LOAD_MODULES_FOR_SYSCALLS
 void load_utils()
 {
 	int ret;
@@ -121,8 +120,7 @@ void load_utils()
 		}
 	}
 }
-#endif
-#ifndef DISABLE_UNLOAD_UTILITY_MODULES
+
 void unload_utils()
 {
 	int module;
@@ -222,7 +220,6 @@ void unload_utils()
 		}
 	}
 }
-#endif
 
 // Returns !=0 if stub entry is valid, 0 if it's not
 int elf_check_stub_entry(const tStubEntry *pentry)

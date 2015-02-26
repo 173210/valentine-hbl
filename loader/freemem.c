@@ -1,8 +1,9 @@
 #include <common/debug.h>
-#include <common/memory.h>
 #include <common/globals.h>
+#include <common/memory.h>
 #include <common/sdk.h>
 #include <loader/bruteforce.h>
+#include <loader/runtime.h>
 #include <exploit_config.h>
 
 #ifdef TH_ADDR_LIST
