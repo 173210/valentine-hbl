@@ -242,11 +242,10 @@ int module_start()
 	}
 
 	scr_puts("Exiting\n");
-#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
-	sceKernelExitGameWithStatus(0);
-#else
-	sceKernelExitGame();
-#endif
+	if (isImported(sceKernelExitGame))
+		sceKernelExitGame();
+	else if (isImported(sceKernelExitGameWithStatus))
+		sceKernelExitGameWithStatus(0);
 
 	return 0;
 }

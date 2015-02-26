@@ -277,6 +277,8 @@ int p2_add_stubs()
 // Initializes the savedata dialog loop, opens p5
 static void p5_open_savedata(int mode)
 {
+	void (* f)(SceUInt delay);
+
 	SceUtilitySavedataParam dialog = {
 		.base = {
 			.size = sizeof(SceUtilitySavedataParam),
@@ -292,21 +294,34 @@ static void p5_open_savedata(int mode)
 	sceUtilitySavedataInitStart(&dialog);
 
 	// Wait for the dialog to initialize
+	if (isImported(sceDisplayWaitVblankStart))
+		f = (void *)sceDisplayWaitVblankStart;
+	else if (isImported(sceDisplayWaitVblankStartCB))
+		f = (void *)sceDisplayWaitVblankStartCB;
+	else if (isImported(sceKernelDelayThread))
+		f = (void *)sceKernelDelayThread;
+	else
+		return;
+
 	while (sceUtilitySavedataGetStatus() < 2)
-#ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
-		sceKernelDelayThread(256);
-#elif defined(HOOK_sceDisplayWaitVblankStart_WITH_sceDisplayWaitVblankStartCB)
-		sceDisplayWaitVblankStartCB();
-#else
-		sceDisplayWaitVblankStart();
-#endif
+		f(256);
 }
 
 // Runs the savedata dialog loop
 static void p5_close_savedata()
 {
+	void (* f)(SceUInt delay);
 	int status;
 	int last_status = -1;
+
+	if (isImported(sceDisplayWaitVblankStart))
+		f = (void *)sceDisplayWaitVblankStart;
+	else if (isImported(sceDisplayWaitVblankStartCB))
+		f = (void *)sceDisplayWaitVblankStartCB;
+	else if (isImported(sceKernelDelayThread))
+		f = (void *)sceKernelDelayThread;
+	else
+		return;
 
 	dbg_printf("entering savedata dialog loop\n");
 
@@ -333,13 +348,7 @@ static void p5_close_savedata()
 				return;
 		}
 
-#ifdef HOOK_sceDisplayWaitVblankStart_WITH_sceKernelDelayThread
-		sceKernelDelayThread(256);
-#elif defined(HOOK_sceDisplayWaitVblankStart_WITH_sceDisplayWaitVblankStartCB)
-		sceDisplayWaitVblankStartCB();
-#else
-		sceDisplayWaitVblankStart();
-#endif
+		f(256);
 	}
 }
 
@@ -364,9 +373,8 @@ int p5_add_stubs()
 {
 	int num;
 
-#ifndef HOOK_sceKernelVolatileMemUnlock_WITH_dummy
-	sceKernelVolatileMemUnlock(0);
-#endif
+	if (isImported(sceKernelVolatileMemUnlock))
+		sceKernelVolatileMemUnlock(0);
 
 	p5_open_savedata(PSP_UTILITY_SAVEDATA_AUTOLOAD);
 

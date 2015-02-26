@@ -126,11 +126,11 @@ static int load_hbl()
 	dbg_printf("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
 	// Commit changes to RAM
-#ifdef HOOK_sceKernelDcacheWritebackAll_WITH_sceKernelDcacheWritebackRange
-	sceKernelDcacheWritebackRange(run_eloader, ret);
-#else
-	sceKernelDcacheWritebackAll();
-#endif
+	if (isImported(sceKernelDcacheWritebackRange))
+		sceKernelDcacheWritebackRange(run_eloader, ret);
+	else
+		sceKernelDcacheWritebackAll();
+
 	hblIcacheFillRange(run_eloader, (void *)((int)run_eloader + ret));
 
 	return 0;
@@ -308,12 +308,13 @@ int start_thread()
 #endif
 
 	scr_puts("Loading HBL\n");
-	if (load_hbl())
-#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
-		return sceKernelExitGameWithStatus(-1);
-#else
-		sceKernelExitGame();
-#endif
+	if (load_hbl()) {
+		if (isImported(sceKernelExitGame)) {
+			sceKernelExitGame();
+			return 0;
+		} else if (isImported(sceKernelExitGameWithStatus))
+			return sceKernelExitGameWithStatus(-1);
+	}
 
 	scr_puts("Running HBL\n");
 	run_eloader();
@@ -375,11 +376,10 @@ void _start()
 
 	if (thid < 0) {
 		scr_printf("Error creating HBL thread: 0x%08X\n", thid);
-#ifdef HOOK_sceKernelExitGame_WITH_sceKernelExitGameWithStatus
-		sceKernelExitGameWithStatus(thid);
-#else
-		sceKernelExitGame();
-#endif
+		if (isImported(sceKernelExitGameWithStatus))
+			sceKernelExitGameWithStatus(thid);
+		else if (isImported(sceKernelExitGame))
+			sceKernelExitGame();
 	} else {
 		ret = sceKernelStartThread(thid, 0, NULL);
 		if (ret)

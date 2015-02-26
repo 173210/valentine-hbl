@@ -9,6 +9,7 @@
 #include <psptypes.h>
 #include <pspimpose_driver.h>
 #include <pspsuspend.h>
+#include <psppower.h>
 
 #ifndef VAL_SDK_H
 #define VAL_SDK_H

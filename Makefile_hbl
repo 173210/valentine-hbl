@@ -20,7 +20,7 @@ OBJS = common/stubs/syscall.o common/stubs/tables.o \
 	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
 	common/memory.o common/prx.o common/utils.o \
 	hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
-	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o hbl/stubs/sceDmac.o \
+	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o hbl/stubs/imports.o \
 	hbl/exports.o hbl/eloader.o hbl/settings.o
 ifdef DEBUG
 OBJS += common/debug.o

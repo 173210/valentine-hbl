@@ -85,9 +85,11 @@ void DeleteAllEventFlags(void)
 #ifdef SEMA_ADDR_LIST
 void DeleteAllSemaphores(void)
 {
-#ifndef HOOK_sceKernelDeleteSema_WITH_dummy
 	u32 i;
 	u32 semaaddrs[] = SEMA_ADDR_LIST;
+
+	if (!isImported(sceKernelDeleteSema))
+		return;
 
 	/* lets destroy these now */
 	for (i = 0; i < (sizeof(semaaddrs)/sizeof(u32)); i++)
@@ -102,7 +104,6 @@ void DeleteAllSemaphores(void)
 			dbg_printf("--> ERROR 0x%08X DELETING SEMAPHORE 0x%08X\n", ret, *(SceUID*)(semaaddrs[i]));
 		}
 	}
-#endif
 }
 #endif
 

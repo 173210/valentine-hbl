@@ -60,7 +60,6 @@ static unsigned int _hook_sceGeEdramGetSize()
 // Forward declarations (functions used before they are defined lower down the file)
 int _hook_sceAudioChRelease(int channel);
 int _hook_sceAudioSRCChRelease();
-int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq);
 SceUID sceIoDopen_Vita(const char *dirname);
 
 static int hblWaitSema(SceUID semaid, int signal, SceUInt *timeout)
@@ -1189,45 +1188,73 @@ int _hook_sceAudioSRCChRelease()
     return result;
 }
 
-// see http://forums.ps2dev.org/viewtopic.php?p=52329
-int _hook_scePowerGetCpuClockFrequencyInt()
+static int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
 {
-        if (!cur_cpufreq)
-    {
-        //that's a bit dirty :(
-        _hook_scePowerSetClockFrequency(333, 333, 166);
-    }
-    return cur_cpufreq;
+	int ret;
+
+	ret = scePowerSetClockFrequency(pllfreq, cpufreq, busfreq);
+	if (!ret) {
+		cur_cpufreq = cpufreq;
+		cur_busfreq = busfreq;
+	}
+
+	return ret;
 }
 
-int _hook_scePowerGetBusClockFrequency() {
-        if (!cur_busfreq)
-    {
-        //that's a bit dirty :(
-        _hook_scePowerSetClockFrequency(333, 333, 166);
-    }
-    return cur_busfreq;
+static int _hook_scePowerSetClockFrequency_with_scePower_469989AD(int pllfreq, int cpufreq, int busfreq)
+{
+	int ret;
+
+	ret = scePower_469989AD(pllfreq, cpufreq, busfreq);
+	if (!ret) {
+		cur_cpufreq = cpufreq;
+		cur_busfreq = busfreq;
+	}
+
+	return ret;
 }
 
-
-//Alias, see http://forums.ps2dev.org/viewtopic.php?t=11294
-int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
+static int _hook_scePowerSetClockFrequency_with_scePower_EBD177D6(int pllfreq, int cpufreq, int busfreq)
 {
-#if defined(HOOK_scePowerSetClockFrequency_WITH_scePower_EBD177D6)
-    int ret = scePower_EBD177D6(pllfreq, cpufreq, busfreq);
-#elif defined(HOOK_scePowerSetClockFrequency_WITH_scePower_469989AD)
-    int ret = scePower_469989AD(pllfreq, cpufreq, busfreq);
-#else
-    int ret = 0;
-#endif
-    if (ret >= 0)
-    {
-                pllfreq = pllfreq;
-        cpufreq = cpufreq;
-        busfreq = busfreq;
-    }
+	int ret;
 
-    return ret;
+	ret = scePower_EBD177D6(pllfreq, cpufreq, busfreq);
+	if (!ret) {
+		cur_cpufreq = cpufreq;
+		cur_busfreq = busfreq;
+	}
+
+	return ret;
+}
+
+static int _hook_scePowerGetCpuClockFrequency() {
+	if (!cur_cpufreq) {
+		if (isImported(scePowerSetClockFrequency))
+			_hook_scePowerSetClockFrequency(222, 222, 111);
+		else if (isImported(scePower_469989AD))
+			_hook_scePowerSetClockFrequency_with_scePower_469989AD(222, 222, 111);
+		else if (isImported(scePower_EBD177D6))
+			_hook_scePowerSetClockFrequency_with_scePower_EBD177D6(222, 222, 111);
+		else
+			cur_cpufreq = 222;
+	}
+
+	return cur_cpufreq;
+}
+
+static int _hook_scePowerGetBusClockFrequency() {
+	if (!cur_busfreq) {
+		if (isImported(scePowerSetClockFrequency))
+			_hook_scePowerSetClockFrequency(222, 222, 111);
+		else if (isImported(scePower_469989AD))
+			_hook_scePowerSetClockFrequency_with_scePower_469989AD(222, 222, 111);
+		else if (isImported(scePower_EBD177D6))
+			_hook_scePowerSetClockFrequency_with_scePower_EBD177D6(222, 222, 111);
+		else
+			cur_busfreq = 111;
+	}
+
+	return cur_busfreq;
 }
 
 //Dirty
@@ -1417,24 +1444,6 @@ static int _hook_sceKernelUtilsMt19937Init(SceKernelUtilsMt19937Context *ctx, un
 	return 0;
 }
 
-#ifdef HOOK_sceKernelTotalFreeMemSize
-// return 10 MB
-SceSize _hook_sceKernelTotalFreeMemSize()
-{
-	return sceKernelTotalFreeMemSize(); //this is the function we hardcoded in memory.c, not the official one
-}
-#endif
-
-
-#ifdef HOOK_sceKernelReferThreadStatus
-int _hook_sceKernelReferThreadStatus(SceUID thid, SceKernelThreadInfo UNUSED(*info))
-{
-	memset(info+sizeof(SceSize), 0, info->size-sizeof(SceSize));
-
-	return 0;
-}
-#endif
-
 static int _hook_sceDisplaySetFrameBuf(void *topaddr,int bufferwidth, int pixelformat,int sync)
 {
 	int ret;
@@ -1539,6 +1548,19 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			if (get_nid_index(0x06FB8A63) < 0)
 				return J_ASM(_hook_sceKernelUtilsMt19937Init);
 			break;
+		case 0x737486F2:
+			if (!(isImported(scePowerGetCpuClockFrequency)
+				|| isImported(scePowerGetCpuClockFrequencyInt))
+			|| !(isImported(scePowerGetBusClockFrequency)
+				|| isImported(scePowerGetBusClockFrequencyInt))) {
+				if (isImported(scePowerSetClockFrequency))
+					return J_ASM(_hook_scePowerSetClockFrequency);
+				else if (isImported(scePower_469989AD))
+					return J_ASM(_hook_scePowerSetClockFrequency_with_scePower_469989AD);
+				else if (isImported(scePower_EBD177D6))
+					return J_ASM(_hook_scePowerSetClockFrequency_with_scePower_EBD177D6);
+			}
+			break;
 	}
 
 	if (return_to_xmb_on_exit) {
@@ -1638,8 +1660,6 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			if (isImported(sceCtrlReadBufferPositive))
 				return J_ASM(sceCtrlReadBufferPositive);
 			break;
-		case 0x737486F2:
-			return J_ASM(_hook_scePowerSetClockFrequency);
 		case 0x383F7BCC: // sceKernelTerminateDeleteThread
 			return J_ASM(kill_thread);
 		case 0xD675EBB8:
@@ -1668,9 +1688,16 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0x24331850: // kuKernelGetModel
 			return J_ASM(_hook_generic_ok);
 #ifdef HOOK_POWERFUNCTIONS
+		case 0x737486F2:
+			dbg_printf("%s: Hook scePowerSetClockFrequency\n", __func__);
+			if (isImported(scePower_469989AD))
+				return J_ASM(scePower_469989AD);
+			else if (isImported(scePower_EBD177D6))
+				return J_ASM(scePower_EBD177D6);
+			break;
 		case 0xFEE03A2F: //scePowerGetCpuClockFrequency
 		case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt
-			return J_ASM(_hook_scePowerGetCpuClockFrequencyInt);
+			return J_ASM(_hook_scePowerGetCpuClockFrequency);
 		case 0x478FE6F5:// scePowerGetBusClockFrequency
 		case 0xBD681969: //scePowerGetBusClockFrequencyInt
 			return J_ASM(_hook_scePowerGetBusClockFrequency);
