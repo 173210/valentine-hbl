@@ -460,8 +460,8 @@ SceUID _hook_sceIoDopen(const char *dirname)
 		dirname = resolved_path;
 	}
 	return globals->isEmu ?
-		sceIoDopen_Vita(resolved_path) :
-		sceIoDopen(resolved_path);
+		sceIoDopen_Vita(dirname) :
+		sceIoDopen(dirname);
 }
 
 
