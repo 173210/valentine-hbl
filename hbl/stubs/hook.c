@@ -1614,7 +1614,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0xEEDA2E54:
 			return J_ASM(_hook_sceDisplayGetFrameBuf);
 		case 0x289D82FE:
-			if (get_nid_index(0xEEDA2E54))
+			if (get_nid_index(0xEEDA2E54) < 0)
 				return J_ASM(_hook_sceDisplaySetFrameBuf);
 #endif
 #ifdef HOOK_sceKernelSleepThreadCB_WITH_sceKernelDelayThreadCB
@@ -1683,10 +1683,10 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			return J_ASM(_hook_sceKernelReceiveMsgPipe);
 #endif
 		case 0xD97F94D8: // sceDmacTryMemcpy
-			if (get_nid_index(0x617F3FE6))
-				return J_ASM(sceDmacMemcpy);
-			else
+			if (get_nid_index(0x617F3FE6) < 0)
 				return J_ASM(memcpy);
+			else
+				return J_ASM(sceDmacMemcpy);
 		case 0x94AA61EE:
 			return J_ASM(_hook_sceKernelGetThreadCurrentPriority);
 		case 0x24331850: // kuKernelGetModel
