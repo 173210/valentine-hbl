@@ -6,7 +6,7 @@
 #include <common/debug.h>
 #include <common/utils.h>
 #include <common/globals.h>
-#include <exploit_config.h>
+#include <config.h>
 
 #ifdef DEBUG
 static void log_lib(const tSceLibrary *lib)

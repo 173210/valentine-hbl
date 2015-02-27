@@ -16,8 +16,7 @@
 #include <loader/freemem.h>
 #include <loader/runtime.h>
 #include <hbl/eloader.h>
-#include <exploit_config.h>
-#include <svnversion.h>
+#include <config.h>
 
 #define FIRST_LOG "Loader running\n"
 

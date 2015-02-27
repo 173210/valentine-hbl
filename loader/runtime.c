@@ -7,7 +7,7 @@
 #include <common/globals.h>
 #include <common/utils.h>
 #include <loader/runtime.h>
-#include <exploit_config.h>
+#include <config.h>
 
 static const int netModules[] = {
 	PSP_MODULE_NET_COMMON, PSP_MODULE_NET_ADHOC, PSP_MODULE_NET_INET,

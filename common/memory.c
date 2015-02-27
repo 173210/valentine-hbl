@@ -1,6 +1,6 @@
 #include <common/debug.h>
 #include <common/sdk.h>
-#include <exploit_config.h>
+#include <config.h>
 
 #define MODULES_START_ADDRESS 0x08804000
 #define MAX_MODULES_TO_FREE 0x20

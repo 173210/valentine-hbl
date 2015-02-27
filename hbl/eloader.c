@@ -10,7 +10,7 @@
 #include <hbl/stubs/hook.h>
 #include <hbl/eloader.h>
 #include <hbl/settings.h>
-#include <exploit_config.h>
+#include <config.h>
 
 PSP_MODULE_INFO("HBL", PSP_MODULE_USER, 0, 0);
 

@@ -3,7 +3,7 @@
 #include <common/debug.h>
 #include <common/globals.h>
 #include <common/sdk.h>
-#include <exploit_config.h>
+#include <config.h>
 
 // Searches for NID in a NIDS file and returns the index
 static int find_nid_file(SceUID fd, int nid)

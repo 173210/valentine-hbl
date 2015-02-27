@@ -12,7 +12,7 @@
 #include <hbl/stubs/resolve.h>
 #include <hbl/eloader.h>
 #include <hbl/settings.h>
-#include <exploit_config.h>
+#include <config.h>
 
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!
 

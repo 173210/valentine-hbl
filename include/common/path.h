@@ -1,7 +1,7 @@
 #ifndef COMMON_PATH
 #define COMMON_PATH
 
-#include <exploit_config.h>
+#include <config.h>
 
 //
 //Files locations

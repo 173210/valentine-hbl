@@ -1,4 +1,4 @@
-#include <exploit_config.h>
+#include <config.h>
 
 #define MAX_RUNTIME_STUB_HEADERS 64
 

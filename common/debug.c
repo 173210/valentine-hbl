@@ -3,7 +3,7 @@
 #include <common/globals.h>
 #include <common/sdk.h>
 #include <common/utils.h>
-#include <exploit_config.h>
+#include <config.h>
 
 void dbg_puts(const char *s)
 {

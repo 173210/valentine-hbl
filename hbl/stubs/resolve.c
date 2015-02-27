@@ -9,7 +9,7 @@
 #include <hbl/stubs/hook.h>
 #include <hbl/stubs/resolve.h>
 #include <hbl/eloader.h>
-#include <exploit_config.h>
+#include <config.h>
 
 // Subsitutes the right instruction
 void resolve_call(int *call_to_resolve, u32 call_resolved)

@@ -13,8 +13,7 @@
 #include <hbl/stubs/hook.h>
 #include <hbl/stubs/resolve.h>
 #include <hbl/settings.h>
-#include <exploit_config.h>
-#include <svnversion.h>
+#include <config.h>
 
 typedef const struct {
 	int id;

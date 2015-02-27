@@ -2,7 +2,7 @@
 #define ELOADER_SYSCALL
 
 #include <common/sdk.h>
-#include <exploit_config.h>
+#include <config.h>
 
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT "libs"

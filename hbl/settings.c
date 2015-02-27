@@ -10,7 +10,7 @@
 #include <common/path.h>
 #include <common/utils.h>
 #include <hbl/settings.h>
-#include <exploit_config.h>
+#include <config.h>
 
 //default values
 int override_sceIoMkdir = DONT_OVERRIDE;

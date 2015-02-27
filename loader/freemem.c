@@ -4,7 +4,7 @@
 #include <common/sdk.h>
 #include <loader/bruteforce.h>
 #include <loader/runtime.h>
-#include <exploit_config.h>
+#include <config.h>
 
 #ifdef TH_ADDR_LIST
 void DeleteAllThreads(void)

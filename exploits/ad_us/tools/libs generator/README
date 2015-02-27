@@ -1,8 +1,0 @@
-This interesting tool made by arisma @ advancedpsp.tk converts "prxtool -f" output into several .nids files (one for each export). 
-
-HOW TO USE: 
-
-- "prxtool -f whatever.prx 2> foo"
-- "nidsprx foo" should generate .nids files
-
-Big thanks to arisma!

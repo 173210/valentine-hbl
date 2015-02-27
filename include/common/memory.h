@@ -2,7 +2,7 @@
 #define ELOADER_MEM
 
 #include <common/sdk.h>
-#include <exploit_config.h>
+#include <config.h>
 
 /* Overrides of sce functions to avoid syscall estimates */
 SceSize sceKernelMaxFreeMemSize();
