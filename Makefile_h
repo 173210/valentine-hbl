@@ -12,6 +12,7 @@ AS	= psp-as
 INCDIR	= -I$(PSPSDK)/include -Iinclude -I$(FOLDER_PATH) -I.
 
 CFLAGS	= $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
+ASFLAGS = $(INCDIR)
 
 ifdef NID_DEBUG
 DEBUG = 1
@@ -30,18 +31,16 @@ LIBS = libpspuser/libpspuser.a -lpspaudio -lpspdisplay -lpsputility
 OBJS = common/stubs/syscall.o common/stubs/tables.o \
 	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
 	common/memory.o common/prx.o common/utils.o \
-	loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
+	loader/start.o loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
 ifdef DEBUG
 OBJS += common/debug.o
 endif
 
-LDADDR = $(FOLDER_PATH)/addr.ld
-
 %.BIN: %.elf
 	psp-objcopy -S -O binary -R .sceStub.text $< $@
 
-H.elf: $(OBJS) $(LDADDR) loader.ld
-	psp-ld $(LDFLAGS) -T$(LDADDR) -Tloader.ld $(LIBDIR) $(OBJS) $(LIBS) -o $@
+H.elf: $(OBJS) loader.ld
+	psp-ld $(LDFLAGS) -Tloader.ld $(LIBDIR) $(OBJS) $(LIBS) -o $@
 	psp-fixup-imports $@
 
 loader/loader.o: svnversion.h

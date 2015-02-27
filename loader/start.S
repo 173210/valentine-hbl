@@ -1,0 +1,4 @@
+#include <exploit_config.h>
+
+	.global __executable_start
+	__executable_start = LOADER_ADDR
