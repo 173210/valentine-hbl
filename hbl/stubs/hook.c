@@ -50,7 +50,7 @@ int net_term_num = 0;
 
 static unsigned int _hook_sceGeEdramGetSize()
 {
-    return EDRAM_SIZE;
+	return EDRAM_SIZE;
 }
 
 //
@@ -153,7 +153,7 @@ int _hook_sceKernelExitDeleteThread(int status)
 	int found = 0;
 	int thid = sceKernelGetThreadId();
 
-    
+	
 	dbg_printf("Enter hookExitDeleteThread : %08X\n", thid);
 
 	hblWaitSema(globals->thSema, 1, 0);
@@ -216,37 +216,37 @@ int _hook_sceKernelExitDeleteThread(int status)
 /*   Pass on the call                                                        */
 /*   Add the thread to the list of pending threads.                          */
 /*****************************************************************************/
-SceUID _hook_sceKernelCreateThread(const char *name, void * entry,
-        int initPriority, int stackSize, SceUInt attr,
-        SceKernelThreadOptParam *option)
+SceUID _hook_sceKernelCreateThread(const char *name, void *entry,
+	int initPriority, int stackSize, SceUInt attr,
+	SceKernelThreadOptParam *option)
 {
 
-    
+
 	SceUID lreturn = sceKernelCreateThread(name, entry, initPriority, stackSize, attr, option);
 
-    if (lreturn < 0)
-    {
-        return lreturn;
-    }
+	if (lreturn < 0)
+	{
+		return lreturn;
+	}
 
 
-    dbg_printf("API returned %08X\n", lreturn);
+	dbg_printf("API returned %08X\n", lreturn);
 
-    /*************************************************************************/
-    /* Add to pending list                                                   */
-    /*************************************************************************/
-    hblWaitSema(globals->thSema, 1, 0);
-    if (num_pend_th < SIZE_THREAD_TRACKING_ARRAY)
-    {
-      dbg_printf("Set array\n");
-      pending_th[num_pend_th] = lreturn;
-      num_pend_th++;
+	/*************************************************************************/
+	/* Add to pending list                                                   */
+	/*************************************************************************/
+	hblWaitSema(globals->thSema, 1, 0);
+	if (num_pend_th < SIZE_THREAD_TRACKING_ARRAY)
+	{
+		dbg_printf("Set array\n");
+		pending_th[num_pend_th] = lreturn;
+		num_pend_th++;
 
-      dbg_printf("Pending threads: %d\n", num_pend_th);
-    }
+		dbg_printf("Pending threads: %d\n",	num_pend_th);
+	}
 
-    sceKernelSignalSema(globals->thSema, 1);
-    return(lreturn);
+	sceKernelSignalSema(globals->thSema, 1);
+	return(lreturn);
 
 }
 
@@ -310,13 +310,13 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 void threads_cleanup()
 {
 
-        int lthisthread = sceKernelGetThreadId();
-    u32 i;
-    dbg_printf("Threads cleanup\n");
-    hblWaitSema(globals->thSema, 1, 0);
+	int lthisthread = sceKernelGetThreadId();
+	u32 i;
+	dbg_printf("Threads cleanup\n");
+	hblWaitSema(globals->thSema, 1, 0);
 #ifdef MONITOR_AUDIO_THREADS
 	// Ditlew
-    dbg_printf("cleaning audio threads\n");
+	 dbg_printf("cleaning audio threads\n");
 	for (i=0;i<8;i++)
 	{
 		//hblWaitSema(globals->audioSema, 1, 0);
@@ -325,66 +325,66 @@ void threads_cleanup()
 	}
 #endif
 
-    dbg_printf("Running Threads cleanup\n");
-    while (num_run_th > 0)
-    {
-        dbg_printf("%d running threads remain\n", num_run_th);
-        if (running_th[num_run_th - 1] != lthisthread)
-        {
-            dbg_printf("Kill thread ID %08X\n", running_th[num_run_th - 1]);
-            kill_thread(running_th[num_run_th - 1]);
-        }
-        else
-        {
-        dbg_printf("Not killing myself - yet\n");
-        }
-        num_run_th--;
-    }
+	dbg_printf("Running Threads cleanup\n");
+	while (num_run_th > 0)
+	{
+		dbg_printf("%d running threads remain\n", num_run_th);
+		if (running_th[num_run_th - 1] != lthisthread)
+		{
+			dbg_printf("Kill thread ID %08X\n", running_th[num_run_th - 1]);
+			kill_thread(running_th[num_run_th - 1]);
+		}
+		else
+		{
+			dbg_printf("Not killing myself - yet\n");
+		}
+		num_run_th--;
+	}
 
 
-    dbg_printf("Pending Threads cleanup\n");
-    while (num_pend_th > 0)
-    {
-        dbg_printf("%d pending threads remain\n", num_pend_th);
-        /*************************************************************************/
-        /* This test shouldn't really apply to pending threads, but do it        */
-        /* anyway                                                                */
-        /*************************************************************************/
-        if (pending_th[num_pend_th - 1] != lthisthread)
-        {
-            dbg_printf("Kill thread ID %08X\n", pending_th[num_pend_th - 1]);
-            sceKernelDeleteThread(pending_th[num_pend_th - 1]);
-        }
-        else
-        {
-            dbg_printf("Not killing myself - yet\n");
-        }
-        num_pend_th--;
-    }
+	dbg_printf("Pending Threads cleanup\n");
+	while (num_pend_th > 0)
+	{
+		dbg_printf("%d pending threads remain\n", num_pend_th);
+		/*************************************************************************/
+		/* This test shouldn't really apply to pending threads, but do it        */
+		/* anyway                                                                */
+		/*************************************************************************/
+		if (pending_th[num_pend_th - 1] != lthisthread)
+		{
+			dbg_printf("Kill thread ID %08X\n", pending_th[num_pend_th - 1]);
+			sceKernelDeleteThread(pending_th[num_pend_th - 1]);
+		}
+		else
+		{
+			dbg_printf("Not killing myself - yet\n");
+		}
+		num_pend_th--;
+	}
 
 #ifdef DELETE_EXIT_THREADS
-    dbg_printf("Sleeping Threads cleanup\n");
-    /***************************************************************************/
-    /* Delete the threads that exitted but haven't been deleted yet            */
-    /***************************************************************************/
-    while (num_exit_th > 0)
-    {
-        dbg_printf("%d exited threads remain\n", num_exit_th);
-        if (exited_th[num_exit_th - 1] != lthisthread)
-        {
-            dbg_printf("Delete thread ID %08X\n", exited_th[num_exit_th - 1]);
-            sceKernelDeleteThread(exited_th[num_exit_th - 1]);
-        }
-        else
-        {
-            dbg_printf("Not killing myself - yet\n");
-        }
-        num_exit_th--;
-    }
+	 dbg_printf("Sleeping Threads cleanup\n");
+	/***************************************************************************/
+	/* Delete the threads that exitted but haven't been deleted yet            */
+	/***************************************************************************/
+	 while (num_exit_th > 0)
+	 {
+		dbg_printf("%d exited threads remain\n", num_exit_th);
+		if (exited_th[num_exit_th - 1] != lthisthread)
+		{
+			dbg_printf("Delete thread ID %08X\n", exited_th[num_exit_th - 1]);
+			sceKernelDeleteThread(exited_th[num_exit_th - 1]);
+		}
+		else
+		{
+			dbg_printf("Not killing myself - yet\n");
+		}
+		num_exit_th--;
+	 }
 #endif
 
-    sceKernelSignalSema(globals->thSema, 1);
-    dbg_printf("Threads cleanup Done\n");
+	sceKernelSignalSema(globals->thSema, 1);
+	dbg_printf("Threads cleanup Done\n");
 }
 
 //
@@ -479,8 +479,8 @@ SceUID _hook_sceIoDopen(const char *dirname)
 
 SceUID sceIoDopen_Vita(const char *dirname)
 {
-    	dbg_printf("sceIoDopen_Vita start\n");
-    SceUID id = sceIoDopen(dirname);
+	dbg_printf("sceIoDopen_Vita start\n");
+	SceUID id = sceIoDopen(dirname);
 
 	if (id >= 0)
 	{
@@ -508,13 +508,13 @@ SceUID sceIoDopen_Vita(const char *dirname)
 
 
 	dbg_printf("sceIoDopen_Vita Done\n");
-    return id;
+	return id;
 }
 
 
 int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 {
-    	dbg_printf("sceIoDread_Vita start\n");
+	dbg_printf("sceIoDread_Vita start\n");
 	int i = 0, errCode = 1;
 	while (i < dirLen && id != globals->dirFix[i][0])
 		++i;
@@ -522,7 +522,7 @@ int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 
 	if (id == globals->dirFix[i][0])
 	{
-        memset(dir, 0, sizeof(SceIoDirent));
+		memset(dir, 0, sizeof(SceIoDirent));
 		if (globals->dirFix[i][1] == 1)
 		{
 			strcpy(dir->d_name,"..");
@@ -554,7 +554,7 @@ int sceIoDread_Vita(SceUID id, SceIoDirent *dir)
 
 int sceIoDclose_Vita(SceUID id)
 {
-    	dbg_printf("sceIoDclose_Vita start\n");
+	dbg_printf("sceIoDclose_Vita start\n");
 	int i = 0;
 	while (i < dirLen && id != globals->dirFix[i][0] )
 		++i;
@@ -562,8 +562,8 @@ int sceIoDclose_Vita(SceUID id)
 
 	if (i < dirLen && id == globals->dirFix[i][0])
 	{
-			globals->dirFix[i][0] = -1;
-			globals->dirFix[i][1] = -1;
+		globals->dirFix[i][0] = -1;
+		globals->dirFix[i][1] = -1;
 	}
 
 	dbg_printf("sceIoDclose_Vita Done\n");
@@ -715,7 +715,7 @@ int _hook_sceIoChdir(const char *dirname)
 	else if (ret >= PATH_MAX)
 		return SCE_KERNEL_ERROR_NAMETOOLONG;
 
-        // save chDir into global variable
+		// save chDir into global variable
 	strcpy(mod_chdir, resolved_path);
 	if (mod_chdir[ret - 1] != '/') {
 		mod_chdir[ret] = '/';
@@ -778,7 +778,7 @@ static int _hook_sceIoClose(SceUID fd)
 {
 	SceUID ret;
 	unsigned i;
-    
+	
 	ret = sceIoClose(fd);
 
 	if (!ret) {
@@ -805,7 +805,7 @@ void files_cleanup()
 	unsigned i;
 
 	dbg_printf("Files Cleanup\n");
-    
+	
 	hblWaitSema(globals->ioSema, 1, 0);
 	for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
 	{
@@ -844,7 +844,7 @@ static void audio_term()
 
 void ram_cleanup()
 {
-        unsigned i;
+	unsigned i;
 
 	dbg_printf("Ram Cleanup\n");
 
@@ -863,35 +863,35 @@ void exit_everything_but_me()
 	net_term();
 	audio_term();
 	subinterrupthandler_cleanup();
-    threads_cleanup();
-    ram_cleanup();
+	threads_cleanup();
+	ram_cleanup();
 	files_cleanup();
 }
 
 //To return to the menu instead of exiting the game
-void  _hook_sceKernelExitGame()
+void _hook_sceKernelExitGame()
 {
-    /***************************************************************************/
-    /* Call any exit callback first. Or not, it should only be called when     */
+	/***************************************************************************/
+	/* Call any exit callback first. Or not, it should only be called when     */
 	/* quitting through the HOME exit screen.                                  */
-    /***************************************************************************/
+	/***************************************************************************/
 /*
-	    if (!hook_exit_cb_called && hook_exit_cb)
-    {
-        dbg_printf("Call exit CB: %08X\n", hook_exit_cb);
-        hook_exit_cb_called = 1;
-        hook_exit_cb(0,0,NULL);
-    }
+	if (!hook_exit_cb_called && hook_exit_cb)
+	{
+		dbg_printf("Call exit CB: %08X\n", hook_exit_cb);
+		hook_exit_cb_called = 1;
+		hook_exit_cb(0,0,NULL);
+	}
 */
 	dbg_printf("_hook_sceKernelExitGame called\n");
-    exit_everything_but_me();
-    sceKernelExitDeleteThread(0);
+	exit_everything_but_me();
+	sceKernelExitDeleteThread(0);
 }
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
 {
-        dbg_printf("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
-    hblWaitSema(globals->memSema, 1, 0);
+	dbg_printf("call to sceKernelAllocPartitionMemory partitionId: %d, name: %s, type:%d, size:%d, addr:0x%08X\n", partitionid, (u32)name, type, size, (u32)addr);
+	hblWaitSema(globals->memSema, 1, 0);
 
 	// Try to allocate the requested memory. If the allocation fails due to an insufficient
 	// amount of free memory try again with 10kB less until the allocation succeeds.
@@ -916,30 +916,30 @@ SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name,
 			}
 		}
 	}
-    while (uid <= 0);
+	while (uid <= 0);
 
 	dbg_printf("-> final allocation made for %d of %d requested bytes with result 0x%08X\n", size, original_size, uid);
 
 	if (uid > 0)
 	{
-        /***********************************************************************/
-        /* Succeeded OS alloc.  Record the block ID in the tracking list.      */
-        /* (Don't worry if there's no space to record it, we'll just have to   */
-        /* leak it).                                                           */
-        /***********************************************************************/
-        if (osAllocNum < sizeof(osAllocs) / sizeof(SceUID))
-        {
-            osAllocs[osAllocNum] = uid;
-            osAllocNum ++;
-            dbg_printf("Num tracked OS blocks now: %08X\n", osAllocNum);
-        }
-        else
-        {
-            dbg_printf("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
-        }
-    }
-    sceKernelSignalSema(globals->memSema, 1);
-    return uid;
+		/***********************************************************************/
+		/* Succeeded OS alloc.  Record the block ID in the tracking list.      */
+		/* (Don't worry if there's no space to record it, we'll just have to   */
+		/* leak it).                                                           */
+		/***********************************************************************/
+		if (osAllocNum < sizeof(osAllocs) / sizeof(SceUID))
+		{
+			osAllocs[osAllocNum] = uid;
+			osAllocNum ++;
+			dbg_printf("Num tracked OS blocks now: %08X\n", osAllocNum);
+		}
+		else
+		{
+			dbg_printf("!!! EXCEEDED OS ALLOC TRACKING ARRAY\n");
+		}
+	}
+	sceKernelSignalSema(globals->memSema, 1);
+	return uid;
 }
 
 int _hook_sceKernelFreePartitionMemory(SceUID blockid)
@@ -978,22 +978,22 @@ int _hook_sceKernelFreePartitionMemory(SceUID blockid)
 /*****************************************************************************/
 int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction func, void *arg)
 {
-        int lrc = sceKernelCreateCallback(name, func, arg);
+	int lrc = sceKernelCreateCallback(name, func, arg);
 
-    dbg_printf("Enter createcallback: %s\n", (u32)name);
+	dbg_printf("Enter createcallback: %s\n", (u32)name);
 
-    hblWaitSema(globals->cbSema, 1, 0);
-    if (cbcount < MAX_CALLBACKS)
-    {
-        cbids[cbcount] = lrc;
-        cbfuncs[cbcount] = func;
-        cbcount ++;
-    }
-    sceKernelSignalSema(globals->cbSema, 1);
+	hblWaitSema(globals->cbSema, 1, 0);
+	if (cbcount < MAX_CALLBACKS)
+	{
+		cbids[cbcount] = lrc;
+		cbfuncs[cbcount] = func;
+		cbcount ++;
+	}
+	sceKernelSignalSema(globals->cbSema, 1);
 
-    dbg_printf("Exit createcallback: %s ID: %08X\n", (u32) name, lrc);
+	dbg_printf("Exit createcallback: %s ID: %08X\n", (u32) name, lrc);
 
-    return(lrc);
+	return(lrc);
 }
 
 /*****************************************************************************/
@@ -1001,25 +1001,25 @@ int _hook_sceKernelCreateCallback(const char *name, SceKernelCallbackFunction fu
 /*****************************************************************************/
 int _hook_sceKernelRegisterExitCallback(int cbid)
 {
-        int i;
+	int i;
 
-    dbg_printf("Enter registerexitCB: %08X\n", cbid);
+	dbg_printf("Enter registerexitCB: %08X\n", cbid);
 
-    hblWaitSema(globals->cbSema, 1, 0);
-    for (i = 0; i < cbcount; i++)
-    {
-        if (cbids[i] == cbid)
-        {
-            dbg_printf("Found matching CB, func: %08X\n", cbfuncs[i]);
-            hook_exit_cb = cbfuncs[i];
-            break;
-        }
-    }
-    sceKernelSignalSema(globals->cbSema, 1);
+	hblWaitSema(globals->cbSema, 1, 0);
+	for (i = 0; i < cbcount; i++)
+	{
+		if (cbids[i] == cbid)
+		{
+			dbg_printf("Found matching CB, func: %08X\n", cbfuncs[i]);
+			hook_exit_cb = cbfuncs[i];
+			break;
+		}
+	}
+	sceKernelSignalSema(globals->cbSema, 1);
 
-    dbg_printf("Exit registerexitCB: %08X\n",cbid);
+	dbg_printf("Exit registerexitCB: %08X\n",cbid);
 
-    return(0);
+	return(0);
 }
 
 
@@ -1034,46 +1034,46 @@ int _hook_sceKernelRegisterExitCallback(int cbid)
 // based on http://forums.ps2dev.org/viewtopic.php?t=4821
 u32 _hook_sceRtcGetTickResolution()
 {
-    return ONE_SECOND_TICK;
+	return ONE_SECOND_TICK;
 }
 
 
 int _hook_sceRtcSetTick (pspTime  *time, const u64  *t)
 {
 //super approximate, let's hope people call this only for display purposes
-    u32 tick = *t; //get the lower 32 bits
-    time->year = 2097; //I know...
-    tick = tick % (365 * (u32)ONE_DAY_TICK);
-    time->month = tick / (30 * (u32)ONE_DAY_TICK);
-    tick = tick % (30 * (u32)ONE_DAY_TICK);
-    time->day = tick / ONE_DAY_TICK;
-    tick = tick % ONE_DAY_TICK;
-    time->hour = tick / (3600 * (u32)ONE_SECOND_TICK);
-    tick = tick % (3600 * (u32)ONE_SECOND_TICK);
-    time->minutes = tick / (60 * ONE_SECOND_TICK);
-    tick = tick % (60 * ONE_SECOND_TICK);
-    time->seconds = tick / (ONE_SECOND_TICK);
-    tick = tick % (ONE_SECOND_TICK);
-    time->microseconds = tick;
-    return 0;
+	u32 tick = *t; //get the lower 32 bits
+	time->year = 2097; //I know...
+	tick = tick % (365 * (u32)ONE_DAY_TICK);
+	time->month = tick / (30 * (u32)ONE_DAY_TICK);
+	tick = tick % (30 * (u32)ONE_DAY_TICK);
+	time->day = tick / ONE_DAY_TICK;
+	tick = tick % ONE_DAY_TICK;
+	time->hour = tick / (3600 * (u32)ONE_SECOND_TICK);
+	tick = tick % (3600 * (u32)ONE_SECOND_TICK);
+	time->minutes = tick / (60 * ONE_SECOND_TICK);
+	tick = tick % (60 * ONE_SECOND_TICK);
+	time->seconds = tick / (ONE_SECOND_TICK);
+	tick = tick % (ONE_SECOND_TICK);
+	time->microseconds = tick;
+	return 0;
 }
 
 //dirty, assume we're utc
-int _hook_sceRtcConvertUtcToLocalTime  (const u64  *tickUTC, u64  *tickLocal)
+int _hook_sceRtcConvertUtcToLocalTime(const u64 *tickUTC, u64 *tickLocal)
 {
-  *tickLocal = *tickUTC;
-  return 1;
+	*tickLocal = *tickUTC;
+	return 1;
 }
 
-int _hook_sceRtcGetTick  (const pspTime  *time, u64  *tick)
+int _hook_sceRtcGetTick(const pspTime *time, u64 *tick)
 {
-    u64 seconds =
-        (u64) time->day * 24 * 3600
-        + (u64) time->hour * 3600
-        + (u64) time->minutes * 60
-        + (u64) time->seconds;
-    *tick = seconds * 1000000   + (u64) time->microseconds;
-    return 0;
+	u64 seconds	=
+		(u64) time->day * 24 * 3600
+		+ (u64) time->hour * 3600
+		+ (u64) time->minutes * 60
+		+ (u64) time->seconds;
+	*tick = seconds * 1000000 + (u64)time->microseconds;
+	return 0;
 }
 
 int _hook_sceRtcGetCurrentTick(u64 *tick)
@@ -1086,7 +1086,7 @@ int _hook_sceRtcGetCurrentTick(u64 *tick)
 //based on http://forums.ps2dev.org/viewtopic.php?t=12490
 int _hook_sceIoLseek32 (SceUID  fd, int offset, int whence)
 {
-    return sceIoLseek(fd, offset, whence);
+	return sceIoLseek(fd, offset, whence);
 }
 
 
@@ -1097,9 +1097,9 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 	int lreturn = sceAudioChReserve(channel,samplecount,format);
 
 #ifdef MONITOR_AUDIO_THREADS
-    	if (lreturn >= 0)
+	if (lreturn >= 0)
 	{
-	    if (lreturn >= 8)
+		if (lreturn >= 8)
 		{
 			dbg_printf("AudioChReserve return out of range: %08X\n", lreturn);
 			//waitForButtons();
@@ -1122,16 +1122,16 @@ int _hook_sceAudioChReserve(int channel, int samplecount, int format)
 int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 {
 
-    int format = PSP_AUDIO_FORMAT_STEREO;
-    if (channels == 1)
-        format = PSP_AUDIO_FORMAT_MONO;
-    //samplecount needs to be 64 bytes aligned, see http://code.google.com/p/valentine-hbl/issues/detail?id=270
-    int result =  _hook_sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, PSP_AUDIO_SAMPLE_ALIGN(samplecount), format);
-    if (result >=0 && result < 8)
-    {
-                cur_ch_id = result;
-    }
-    return result;
+	int format = PSP_AUDIO_FORMAT_STEREO;
+	if (channels == 1)
+		format = PSP_AUDIO_FORMAT_MONO;
+	//samplecount needs to be 64 bytes aligned, see http://code.google.com/p/valentine-hbl/issues/detail?id=270
+	int result =  _hook_sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, PSP_AUDIO_SAMPLE_ALIGN(samplecount), format);
+	if (result >=0 && result < 8)
+	{
+		cur_ch_id = result;
+	}
+	return result;
 }
 
 //         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, wma_output_buffer[wma_output_index]);
@@ -1167,7 +1167,7 @@ int _hook_sceAudioChRelease(int channel)
 #ifdef MONITOR_AUDIO_THREADS
 	if (lreturn >= 0)
 	{
-        		hblWaitSema(globals->audioSema, 1, 0);
+		hblWaitSema(globals->audioSema, 1, 0);
 		audio_th[channel] = 0;
 		sceKernelSignalSema(globals->audioSema, 1);
 	}
@@ -1178,14 +1178,14 @@ int _hook_sceAudioChRelease(int channel)
 //
 int _hook_sceAudioSRCChRelease()
 {
-        if (cur_ch_id < 0 || cur_ch_id > 7)
-    {
-        dbg_printf("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
-        return SCE_KERNEL_ERROR_ERROR;
-    }
-    int result = _hook_sceAudioChRelease(cur_ch_id);
-    cur_ch_id--;
-    return result;
+		if (cur_ch_id < 0 || cur_ch_id > 7)
+	{
+		dbg_printf("FATAL: cur_ch_id < 0 in _hook_sceAudioSRCChRelease\n");
+		return SCE_KERNEL_ERROR_ERROR;
+	}
+	int result = _hook_sceAudioChRelease(cur_ch_id);
+	cur_ch_id--;
+	return result;
 }
 
 static int _hook_scePowerSetClockFrequency(int pllfreq, int cpufreq, int busfreq)
@@ -1260,13 +1260,13 @@ static int _hook_scePowerGetBusClockFrequency() {
 //Dirty
 int _hook_scePowerGetBatteryLifeTime()
 {
-    return 60;
+	return 60;
 }
 
 //Dirty
 int _hook_scePowerGetBatteryLifePercent()
 {
-    return 50;
+	return 50;
 }
 
 // http://forums.ps2dev.org/viewtopic.php?p=43495
@@ -1275,7 +1275,7 @@ int _hook_sceKernelDevkitVersion()
 	return globals->module_sdk_version;
 }
 
-static int _hook_sceKernelSelfStopUnloadModule(int exitcode, SceSize  argsize, void *argp)
+static int _hook_sceKernelSelfStopUnloadModule(int	exitcode, SceSize	 argsize, void	*argp)
 {
 	int status;
 	return ModuleMgrForUser_8F2DF740(exitcode, argsize, argp, &status, NULL);
@@ -1283,8 +1283,8 @@ static int _hook_sceKernelSelfStopUnloadModule(int exitcode, SceSize  argsize, v
 
 int _hook_sceKernelGetThreadCurrentPriority()
 {
-    return 0x18;
-    //TODO : real management of threads --> keep track of their priorities ?
+	return 0x18;
+	//TODO : real management of threads --> keep track of their priorities ?
 }
 
 int _hook_sceKernelSleepThreadCB()
@@ -1297,12 +1297,12 @@ int _hook_sceKernelSleepThreadCB()
 
 static int _hook_sceKernelTrySendMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
 {
-    return sceKernelSendMsgPipe(uid, message, size, unk1, unk2, 0);
+	return sceKernelSendMsgPipe(uid, message, size, unk1, unk2, 0);
 }
 
 static int _hook_sceKernelTryReceiveMsgPipe(SceUID uid, void * message, unsigned int size, int unk1, void * unk2)
 {
-    return sceKernelReceiveMsgPipe(uid, message, size, unk1, unk2, 0);
+	return sceKernelReceiveMsgPipe(uid, message, size, unk1, unk2, 0);
 }
 
 //
@@ -1337,7 +1337,7 @@ SceUID _hook_sceKernelLoadModule(const char *path, int UNUSED(flags), SceKernelL
 	SceOff offset = 0;
 	dbg_printf("_hook_sceKernelLoadModule offset: 0x%08X\n", offset);
 	SceUID ret = load_module(elf_file, path, NULL, offset);
-    sceIoClose(elf_file);
+	sceIoClose(elf_file);
 	dbg_printf("load_module returned 0x%08X\n", ret);
 
 	return ret;
@@ -1391,7 +1391,7 @@ int _hook_sceUtilityLoadAvModule(int id)
 		|| id == PSP_AV_MODULE_ATRAC3PLUS
 		|| id == PSP_AV_MODULE_MPEGBASE)
 		return 0;
-    return SCE_KERNEL_ERROR_ERROR;
+	return SCE_KERNEL_ERROR_ERROR;
 }
 
 #endif
@@ -1400,13 +1400,13 @@ int _hook_sceUtilityLoadAvModule(int id)
 // Note: in Sony's world, "0" means ok
 int _hook_generic_ok()
 {
-    return 0;
+	return 0;
 }
 
 // A function that return a generic error
 int _hook_generic_error()
 {
-    return SCE_KERNEL_ERROR_ERROR;
+	return SCE_KERNEL_ERROR_ERROR;
 }
 
 static int _hook_sceAudioOutput2GetRestSample()
@@ -1517,9 +1517,9 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			return J_ASM(_hook_sceKernelCreateThread);
 		case 0xF475845D:
 			return J_ASM(_hook_sceKernelStartThread);
- 		case 0xAA73C935:
+		case 0xAA73C935:
 			return J_ASM(_hook_sceKernelExitThread);
- 		case 0x809CE29B:
+		case 0x809CE29B:
 			return J_ASM(_hook_sceKernelExitDeleteThread);
 		case 0x4C25EA72: //kuKernelLoadModule
 		case 0x977DE386: // sceKernelLoadModule
