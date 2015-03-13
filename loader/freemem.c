@@ -192,7 +192,7 @@ void ReleaseAudioCh()
 void preload_free_game_memory()
 {
 	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
-		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
+		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
 
 #ifdef GAME_FREEMEM_ADDR
 	dbg_printf("%s: Freeing partiton memory\n", __func__);
@@ -208,13 +208,13 @@ void preload_free_game_memory()
 	subinterrupthandler_cleanup();
 
 	dbg_printf("%s: After cleaning: %d (max: %d)\n", __func__,
-		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
+		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
 }
 
 void free_game_memory()
 {
 	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
-		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
+		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
 \
 #ifdef TH_ADDR_LIST
 	dbg_printf("%s: Deleting all threads\n", __func__);
@@ -278,7 +278,7 @@ unload_memset_flag = 1;
 	ReleaseAudioCh();
 
 	dbg_printf("%s: After cleaning: %d (max: %d)\n", __func__,
-		sceKernelTotalFreeMemSize(), sceKernelMaxFreeMemSize());
+		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
 
 	return;
 }

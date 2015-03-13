@@ -3,6 +3,7 @@
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
+#include <common/memory.h>
 #include <common/path.h>
 #include <common/sdk.h>
 #include <common/utils.h>
@@ -138,7 +139,7 @@ static void wait_for_eboot_end()
 }
 
 static void ramcheck(int expected_free_ram) {
-	int free_ram = sceKernelTotalFreeMemSize();
+	int free_ram = hblKernelTotalFreeMemSize();
 
 	if (expected_free_ram > free_ram)
 		scr_printf("WARNING! Memory leak: %d -> %d\n",
@@ -205,7 +206,7 @@ int module_start()
 	}
 	//...otherwise launch the menu
 	while (!exit) {
-		init_free = sceKernelTotalFreeMemSize();
+		init_free = hblKernelTotalFreeMemSize();
 
 		scr_puts("Loading global configurations");
 		loadGlobalConfig();
@@ -222,7 +223,7 @@ int module_start()
 		if (!strcmp("quit", hb_fname) || hbl_exit_cb_called)
 			break;
 		strcpy(path, hb_fname);
-		init_free = sceKernelTotalFreeMemSize();
+		init_free = hblKernelTotalFreeMemSize();
 
 		scr_puts("Loading global configurations");
 		loadGlobalConfig();

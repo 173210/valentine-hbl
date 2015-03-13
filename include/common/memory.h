@@ -5,8 +5,8 @@
 #include <config.h>
 
 /* Overrides of sce functions to avoid syscall estimates */
-SceSize sceKernelMaxFreeMemSize();
-SceSize sceKernelTotalFreeMemSize();
+SceSize hblKernelMaxFreeMemSize();
+SceSize hblKernelTotalFreeMemSize();
 int kill_thread(SceUID thid);
 void subinterrupthandler_cleanup();
 void UnloadModules();

@@ -113,12 +113,12 @@ void UnloadModules()
 
 // Those 2 functions are heavy but this avoids 2 extra syscalls that might fail
 // In the future if we can have access to the "real" functions, let's remove this
-SceSize sceKernelMaxFreeMemSize()
+SceSize hblKernelMaxFreeMemSize()
 {
     SceSize size, sizeblock;
     SceUID uid;
 
-    dbg_printf("Call to sceKernelMaxFreeMemSize()\n");
+    dbg_printf("Call to hblKernelMaxFreeMemSize()\n");
     // Init variables
     size = 0;
     sizeblock = 1024 * 1024;
@@ -146,13 +146,13 @@ SceSize sceKernelMaxFreeMemSize()
     return size;
 }
 
-SceSize sceKernelTotalFreeMemSize()
+SceSize hblKernelTotalFreeMemSize()
 {
     SceUID blocks[1024];
     u32 count,i;
     SceSize size, x;
 
-    dbg_printf("Call to sceKernelTotalFreeMemSize()\n");
+    dbg_printf("Call to hblKernelTotalFreeMemSize()\n");
     // Init variables
     size = 0;
     count = 0;
@@ -162,19 +162,19 @@ SceSize sceKernelTotalFreeMemSize()
     {
         if (count >= sizeof(blocks)/sizeof(blocks[0]))
         {
-            dbg_printf("Too many blocks in sceKernelTotalFreeSize, return value will be approximate\n");
+            dbg_printf("Too many blocks in hblKernelTotalFreeSize, return value will be approximate\n");
             return size;
         }
 
         // Find max linear size available
-        x = sceKernelMaxFreeMemSize();
+        x = hblKernelMaxFreeMemSize();
         if (!(x)) break;
 
         // Allocate ram
         blocks[count] = sceKernelAllocPartitionMemory(2, "ValentineFreeMemMalloc", PSP_SMEM_Low, x, NULL);
         if (!(blocks[count]))
         {
-            dbg_printf("Discrepency between sceKernelMaxFreeMemSize and sceKernelTotalFreeSize, return value will be approximate\n");
+            dbg_printf("Discrepency between hblKernelMaxFreeMemSize and hblKernelTotalFreeSize, return value will be approximate\n");
             return size;
         }
 

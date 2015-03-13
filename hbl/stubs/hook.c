@@ -1638,7 +1638,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		case 0x3FC9AE6A:
 			return J_ASM(_hook_sceKernelDevkitVersion);
 		case 0xA291F107:
-			return J_ASM(sceKernelMaxFreeMemSize);
+			return J_ASM(hblKernelMaxFreeMemSize);
 		case 0xC41C2853:
 			return J_ASM(_hook_sceRtcGetTickResolution);
 		case 0x3F7AD767:
@@ -1814,7 +1814,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			}
 			break;
 		case 0xF919F628:
-			return J_ASM(sceKernelTotalFreeMemSize);
+			return J_ASM(hblKernelTotalFreeMemSize);
 		case 0x9C6EAAD7:
 			dbg_printf("%s: Hook sceDisplayGetVcount\n", __func__);
 			return J_ASM(_hook_generic_ok);
