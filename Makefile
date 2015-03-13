@@ -122,4 +122,4 @@ config.h: config.txt
 	-@echo "#endif" >> $@
 
 clean:
-	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H.BIN H.PRX
+	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H.BIN HBL.PRX
