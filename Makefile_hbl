@@ -1,6 +1,6 @@
 TARGET = HBL
 
-INCDIR	= include exploits/$(FOLDER)
+INCDIR	= include
 
 CFLAGS	= -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing
 

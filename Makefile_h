@@ -2,14 +2,10 @@ all: H.BIN
 
 PSPSDK = $(shell psp-config --pspsdk-path)
 
-# use a different FOLDER to make for different exploits
-# Exploit-specific files go in the subfolders, see targets hbl and loader below
-FOLDER_PATH = exploits/$(FOLDER)
-
 CC	= psp-gcc
 AS	= psp-as
 
-INCDIR	= -I$(PSPSDK)/include -Iinclude -I$(FOLDER_PATH) -I.
+INCDIR	= -I$(PSPSDK)/include -Iinclude -I.
 
 CFLAGS	= $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
 ASFLAGS = $(INCDIR)
