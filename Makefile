@@ -1,23 +1,66 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
-all: H.BIN HBL.prx
+all: H.BIN HBL.PRX
 
 CC = psp-gcc
+AS = psp-as
+LD = psp-ld
+FIXUP = psp-fixup-imports
 
-# use a different FOLDER to make for different exploits
-# Exploit-specific files go in the subfolders, see targets hbl and loader below
+PSPSDK = $(shell psp-config --pspsdk-path)
 
+INCDIR = -I$(PSPSDK)/include -Iinclude -I.
+LIBDIR = -L$(PSPSDK)/lib
+
+CFLAGS = $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
+ASFLAGS = $(INCDIR)
+LDFLAGS = -O1 -G0
+
+ifdef NID_DEBUG
+DEBUG = 1
+CFLAGS += -DNID_DEBUG
+endif
 ifdef DEBUG
-FLAGS = DEBUG=$(DEBUG)
-elif defined(NID_DEBUG)
-FLAGS = NID_DEBUG=$(NID_DEBUG)
+CFLAGS += -DDEBUG
 endif
 
-H.BIN: config.h libpspuser/libpspuser.a
-	make -f Makefile_h $(FLAGS)
+OBJS_COMMON = common/stubs/syscall.o common/stubs/tables.o \
+	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
+	common/memory.o common/prx.o common/utils.o
+ifdef DEBUG
+OBJS += common/debug.o
+endif
 
-HBL.prx: config.h libpspuser/libpspuser.a
-	make -f Makefile_hbl $(FLAGS)
+OBJS_LOADER = loader/start.o loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
+
+OBJS_HBL = hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
+	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o hbl/stubs/imports.o \
+	hbl/exports.o hbl/eloader.o hbl/settings.o
+
+LIBS = libpspuser/libpspuser.a -lpspaudio -lpspctrl -lpspdisplay -lpspge -lpsprtc -lpsputility
+
+H.BIN: H.elf
+	psp-objcopy -S -O binary -R .sceStub.text $< $@
+
+H.elf: $(OBJS_COMMON) $(OBJS_LOADER) libpspuser/libpspuser.a loader.ld
+	$(LD) $(LDFLAGS) -Tloader.ld $(LIBDIR) $(OBJS_COMMON) $(OBJS_LOADER) $(LIBS) -o $@
+	$(FIXUP) $@
+
+$(OBJS_LOADER): config.h
+
+HBL.PRX: HBL.elf
+	psp-prxgen $< $@
+
+HBL.elf: $(OBJS_COMMON) $(OBJS_HBL) libpspuser/libpspuser.a $(PSPSDK)/lib/linkfile.prx
+	$(LD) $(LDFLAGS) -q -T$(PSPSDK)/lib/linkfile.prx $(LIBDIR) $(OBJS_COMMON) $(OBJS_HBL) $(LIBS) -o $@
+	$(FIXUP) $@
+
+$(OBJS_HBL): config.h
+
+$(OBJS_COMMON): config.h
+
+%.c: %.exp
+	psp-build-exports -b $< > $@
 
 libpspuser/libpspuser.a:
 	make -C libpspuser -f Makefile
@@ -31,7 +74,7 @@ config.h: config.txt
 	-@echo "#endif" >> $@
 
 clean:
-	rm -f config.h
+	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H.BIN H.PRX
 	make -C libpspuser -f Makefile clean
 	make -f Makefile_h clean
 	make -f Makefile_hbl clean
