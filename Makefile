@@ -22,7 +22,7 @@ PRX_LDSCRIPT = -T$(PSPSDK)/lib/linkfile.prx
 INCDIR = -I$(PSPSDK)/include -Iinclude -I.
 LIBDIR = -L$(PSPSDK)/lib
 
-CFLAGS = $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-strict-aliasing -fno-zero-initialized-in-bss
+CFLAGS = $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-zero-initialized-in-bss
 ASFLAGS = $(INCDIR)
 LDFLAGS = -O1 -G0
 
