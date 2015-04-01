@@ -89,7 +89,6 @@ int add_stub(const tStubEntry *stub)
 
 		if (lib_index < 0) {
 			// New library
-#ifndef XMB_LAUNCHER
 			// Even if the stub appears to be valid, we shouldn't overflow the static arrays
 			if (globals->lib_num >= MAX_LIBRARIES) {
 				dbg_printf(" LIBRARY TABLE COUNTER: 0x%08X\n",
@@ -97,7 +96,7 @@ int add_stub(const tStubEntry *stub)
 				dbg_printf(" LIBRARY TABLES TOO SMALL\n");
 				return num;
 			}
-#endif
+
 			lib_index = globals->lib_num;
 			NID_DBG_PRINTF(" --> New: %d\n", lib_index);
 
@@ -137,17 +136,10 @@ int add_stub(const tStubEntry *stub)
 			nid_index = get_nid_index(nid);
 			if (nid_index < 0) {
 					// Fill NID table
-#ifdef XMB_LAUNCHER
-				good_call = get_good_call(cur_call);
-				// Check lowest syscall
-				if (!globals->isEmu) {
-					syscall_num = GET_SYSCALL_NUMBER(good_call);
-#else
 				add_nid(nid, get_good_call(cur_call), lib_index);
 				// Check lowest syscall
 				if (!globals->isEmu) {
 					syscall_num = GET_SYSCALL_NUMBER(globals->nid_table[num].call);
-#endif
 					NID_DBG_PRINTF("  --> with syscall 0x%08X\n",
 						syscall_num);
 

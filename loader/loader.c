@@ -117,8 +117,10 @@ static int load_hbl()
 
 	sceIoClose(fd);
 
+#ifndef LAUNCHER
 	dbg_printf(" Resolving Stubs...\n");
 	resolve_hbl_stubs((void *)(modinfo.stub_top + (int)p), (void *)(modinfo.stub_end + (int)p));
+#endif
 
 	run_eloader = (void *)((int)ehdr.e_entry + (int)p);
 
@@ -148,7 +150,7 @@ static void log_init()
 }
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(LAUNCHER)
 static void dbg_init()
 {
 	tStubEntry *entry;
@@ -321,24 +323,42 @@ int start_thread()
 	return 0;
 }
 
+static void hblExitGameWithStatus(int status) __attribute__ ((noreturn));
+static void hblExitGameWithStatus(int status)
+{
+	if (isImported(sceKernelExitGameWithStatus))
+		sceKernelExitGameWithStatus(status);
+	else if (isImported(sceKernelExitGame))
+		sceKernelExitGame();
+
+	__builtin_unreachable();
+}
+
 // Entry point
-void _start() __attribute__ ((section (".text.start")));
+#ifdef LAUNCHER
+int module_start()
+#else
+void _start() __attribute__ ((section (".text.start"), noreturn));
 void _start()
+#endif
 {
 	SceUID thid;
 	int ret;
 
 #ifdef DEBUG
+#ifndef LAUNCHER
 	dbg_init();
+#endif
 	log_init();
 #endif
 
+#ifndef LAUNCHER
 	globals->isEmu = 1;
 	globals->nid_num = 0;
 	globals->lib_num = 0;
 	p2_add_stubs();
 	resolve_hbl_stubs(libStubTop, libStubBtm);
-
+#endif
 #if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();
 #endif
@@ -375,16 +395,18 @@ void _start()
 
 	if (thid < 0) {
 		scr_printf("Error creating HBL thread: 0x%08X\n", thid);
-		if (isImported(sceKernelExitGameWithStatus))
-			sceKernelExitGameWithStatus(thid);
-		else if (isImported(sceKernelExitGame))
-			sceKernelExitGame();
-	} else {
-		ret = sceKernelStartThread(thid, 0, NULL);
-		if (ret)
-			scr_printf("Error starting HBL thread: 0x%08X", ret);
+		hblExitGameWithStatus(thid);
 	}
 
+	ret = sceKernelStartThread(thid, 0, NULL);
+	if (ret) {
+		scr_printf("Error starting HBL thread: 0x%08X\n", ret);
+		hblExitGameWithStatus(ret);
+	}
+
+#ifdef LAUNCHER
+	return ret;
+#else
 	ret = sceKernelExitDeleteThread(0);
 	if (ret)
 		dbg_printf("%s: deleting current thread failed: 0x%08X\n",
@@ -393,4 +415,5 @@ void _start()
 	// Never executed (hopefully)
 	while(1)
 		sceKernelDelayThread(0xFFFFFFFF);
+#endif
 }

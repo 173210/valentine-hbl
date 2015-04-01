@@ -236,7 +236,9 @@ int p2_add_stubs()
 {
 	const tStubEntry *pentry;
 	int num = 0;
-
+#ifdef LAUNCHER
+	pentry = (tStubEntry *)0x08800000;
+#else
 	for (pentry = (tStubEntry *)0x08800000;
 		pentry != libStubTop;
 		pentry = (tStubEntry *)((int)pentry + 4)) {
@@ -254,10 +256,9 @@ int p2_add_stubs()
 		}
 	}
 
-	for (pentry = libStubBtm;
-		(int)pentry < 0x0A000000;
-		pentry = (tStubEntry *)((int)pentry + 4)) {
-
+	pentry = libStubBtm;
+#endif
+	while ((int)pentry < 0x0A000000) {
 		while (elf_check_stub_entry(pentry)) {
 			if (*(char *)pentry->lib_name &&
 				(pentry->import_flags == 0x11 || !pentry->import_flags)) {
@@ -269,6 +270,8 @@ int p2_add_stubs()
 
 			pentry++;
 		}
+
+		pentry = (tStubEntry *)((int)pentry + 4);
 	}
 
 	return num;
@@ -394,6 +397,7 @@ int p5_add_stubs()
 	return num;
 }
 
+#ifndef LAUNCHER
 // Autoresolves HBL stubs
 int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 {
@@ -444,4 +448,4 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 
 	return 0;
 }
-
+#endif
