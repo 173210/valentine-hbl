@@ -87,7 +87,7 @@ EBOOT.PBP: PARAM.SFO assets/ICON0.PNG assets/PIC1.PNG H.PRX
 		NULL assets/PIC1.PNG NULL H.PRX NULL
 
 PARAM.SFO:
-	mksfo 'Half Byte Loader'
+	mksfo 'Half Byte Loader' $@
 
 H.BIN: H.elf
 	psp-objcopy -S -O binary -R .sceStub.text $< $@
@@ -159,4 +159,4 @@ endif
 	-@echo "#endif" >> $@
 
 clean:
-	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H.BIN HBL.PRX
+	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H.BIN HBL.PRX H.PRX PARAM.SFO EBOOT.PBP
