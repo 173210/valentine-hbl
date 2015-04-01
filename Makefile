@@ -68,7 +68,10 @@ ifdef DEBUG
 OBJS_COMMON += common/debug.o
 endif
 
-OBJS_LOADER = loader/start.o loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
+OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
+ifdef EXPLOIT
+OBJS_LOADER += loader/start.o
+endif
 
 OBJS_HBL = hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
 	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o \
