@@ -96,19 +96,22 @@ H.BIN: H.elf
 	psp-objcopy -S -O binary -R .sceStub.text $< $@
 
 H.elf: $(OBJS_COMMON) $(OBJS_LOADER)
-	$(LD) -q $(LDFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(LIBS) -o $@
 	$(FIXUP) $@
 
 $(OBJS_LOADER): config.h
 
 HBL.elf: $(OBJS_COMMON) $(OBJS_HBL)
-	$(LD) $(LDFLAGS) -q $(PRX_LDSCRIPT) $(LIBDIR) $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(LIBS) -o $@
+	$(LD) $(LDFLAGS) $(PRX_LDSCRIPT) $(LIBDIR) $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(LIBS) -o $@
 	$(FIXUP) $@
 
 $(OBJS_HBL): config.h
 
-%.PRX: %.elf
+%.PRX: %_strip.elf
 	psp-prxgen $< $@
+
+%_strip.elf: %.elf
+	psp-strip $< -o $@
 
 $(OBJS_DMAC): common/imports/sceDmac.S
 	$(CC) $(ASFLAGS) -DF_$(subst common/imports/,,$*) $< -c -o $@
@@ -162,4 +165,4 @@ endif
 	-@echo "#endif" >> $@
 
 clean:
-	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H.BIN HBL.PRX H.PRX PARAM.SFO EBOOT.PBP
+	rm -f config.h $(OBJS_COMMON) $(OBJS_LOADER) $(OBJS_HBL) H.elf HBL.elf H_strip.elf HBL_strip.elf H.BIN HBL.PRX H.PRX PARAM.SFO EBOOT.PBP
