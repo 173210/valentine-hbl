@@ -23,7 +23,7 @@
 #define MAX_LIBRARIES 64
 
 // Size of NID-to-call table
-#define NID_TABLE_SIZE 512
+#define NID_TABLE_SIZE 1024
 
 typedef struct
 {
@@ -43,11 +43,11 @@ typedef struct
 	tSceLibrary lib_table[MAX_LIBRARIES];
 } tGlobals;
 
-#define GLOBALS_ADDR 0x10200
+#define GLOBALS_ADDR (0x14000 - sizeof(tGlobals))
 #define globals ((tGlobals *)GLOBALS_ADDR)
 
 //This should fail with a weird error at compile time if globals is too big
-STATIC_ASSERT(GLOBALS_ADDR + sizeof(tGlobals) <= 0x14000);
+STATIC_ASSERT(GLOBALS_ADDR >= 0x10000);
 
 #endif
 
