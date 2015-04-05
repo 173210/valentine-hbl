@@ -36,10 +36,13 @@ endif
 
 OBJS_COMMON = \
 	common/stubs/syscall.o common/stubs/tables.o \
-	common/utils/cache.o common/utils/fnt.o common/utils/scr.o common/utils/string.o \
+	common/utils/fnt.o common/utils/scr.o common/utils/string.o \
 	common/memory.o common/prx.o common/utils.o
 ifdef DEBUG
 OBJS_COMMON += common/debug.o
+endif
+ifdef EXPLOIT
+OBJS_COMMON += common/utils/cache.o 
 endif
 
 OBJS_LOADER = loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
