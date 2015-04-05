@@ -195,6 +195,11 @@ int module_start()
 	int init_free;
 	int thid;
 
+#ifdef LAUNCHER
+	dbg_printf("%s: Unloading modules\n", __func__);
+	UnloadModules();
+#endif
+
 	scr_puts("Creating callback thread\n");
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
 	if(thid > -1) {

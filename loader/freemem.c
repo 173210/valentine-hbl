@@ -257,6 +257,7 @@ void free_game_memory()
 unload_memset_flag = 1;
 #endif
 
+#ifndef LAUNCHER
 	dbg_printf("%s: Unloading modules\n", __func__);
 #ifndef LOAD_MODULES_FOR_SYSCALLS
 	unload_utils();
@@ -269,6 +270,7 @@ unload_memset_flag = 1;
 	UnloadModules();
 #else
 	UnloadModules();
+#endif
 #endif
 
 	dbg_printf("%s: Closing files\n", __func__);
