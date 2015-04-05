@@ -397,7 +397,6 @@ int p5_add_stubs()
 	return num;
 }
 
-#ifndef LAUNCHER
 // Autoresolves HBL stubs
 int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 {
@@ -448,4 +447,3 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 
 	return 0;
 }
-#endif

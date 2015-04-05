@@ -117,10 +117,8 @@ static int load_hbl()
 
 	sceIoClose(fd);
 
-#ifndef LAUNCHER
 	dbg_printf(" Resolving Stubs...\n");
 	resolve_hbl_stubs((void *)(modinfo.stub_top + (int)p), (void *)(modinfo.stub_end + (int)p));
-#endif
 
 	run_eloader = (void *)((int)ehdr.e_entry + (int)p);
 
