@@ -100,7 +100,7 @@ ifdef EXPLOIT
 	-@echo "#include <exploits/$(EXPLOIT).h>" >> $@
 else
 	-@echo "#define LAUNCHER" >> $@
-	-@echo "#define HBL_ROOT \"ms0:/HBL\"" >> $@
+	-@echo "#define HBL_ROOT \"ms0:/HBL/\"" >> $@
 endif
 	-@echo "#endif" >> $@
 
