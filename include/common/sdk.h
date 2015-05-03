@@ -14,6 +14,13 @@
 #ifndef VAL_SDK_H
 #define VAL_SDK_H
 
+#define _STROF(str) #str
+#define STROF(str) _STROF(str)
+
+#define MAJOR_VER 0
+#define MINOR_VER 0
+#define VER_STR STROF(MAJOR_VER) "." STROF(MINOR_VER)
+
 // Typedefs
 typedef unsigned char byte;
 

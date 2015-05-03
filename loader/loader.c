@@ -20,7 +20,7 @@
 
 #define FIRST_LOG "Loader running\n"
 
-PSP_MODULE_INFO("LOADER", PSP_MODULE_USER, 0, 0);
+PSP_MODULE_INFO("LOADER", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
 
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
@@ -362,7 +362,7 @@ void _start()
 #endif
 
 	scr_init();
-	scr_puts("Starting HBL R"SVNVERSION" http://code.google.com/p/valentine-hbl\n");
+	scr_puts("Starting HBL " VER_STR " http://code.google.com/p/valentine-hbl\n");
 #ifdef DEBUG
 #ifdef NID_DEBUG
 	scr_puts("DEBUG version (+NIDS)\n");

@@ -99,7 +99,7 @@ typedef struct
 static tMenuApi menu_api = {
 	.api_ver = 1,
 	.credits = "m0skit0,ab5000,wololo,davee,jjs",
-	.ver_name = "Half Byte Loader R"SVNVERSION,
+	.ver_name = "HBL " VER_STR,
 	.bg_fname = NULL
 };
 
