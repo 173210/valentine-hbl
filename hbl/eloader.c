@@ -13,7 +13,7 @@
 #include <hbl/settings.h>
 #include <config.h>
 
-PSP_MODULE_INFO("HBL", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
+HBL_MODULE_INFO("HBL", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
 
 static int hbl_exit_cb_called = 0;
 int hook_exit_cb_called = 0;

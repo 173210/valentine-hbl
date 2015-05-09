@@ -21,6 +21,43 @@
 #define MINOR_VER 0
 #define VER_STR STROF(MAJOR_VER) "." STROF(MINOR_VER)
 
+/* Declare a module.  This must be specified in the source of a library or executable. */
+#define HBL_MODULE_INFO(name, attributes, major_version, minor_version) \
+	__asm__ (                                                       \
+	"    .set push\n"                                               \
+	"    .section .lib.ent.top, \"a\", @progbits\n"                 \
+	"    .align 2\n"                                                \
+	"    .word 0\n"                                                 \
+	"    .global __lib_ent_top\n"                                   \
+	"__lib_ent_top:\n"                                              \
+	"    .section .lib.ent.btm, \"a\", @progbits\n"                 \
+	"    .align 2\n"                                                \
+	"    .global __lib_ent_bottom\n"                                \
+	"__lib_ent_bottom:\n"                                           \
+	"    .word 0\n"                                                 \
+	"    .section .lib.stub.top, \"a\", @progbits\n"                \
+	"    .align 2\n"                                                \
+	"    .word 0\n"                                                 \
+	"    .global __lib_stub_top\n"                                  \
+	"__lib_stub_top:\n"                                             \
+	"    .section .lib.stub.btm, \"a\", @progbits\n"                \
+	"    .align 2\n"                                                \
+	"    .global __lib_stub_bottom\n"                               \
+	"__lib_stub_bottom:\n"                                          \
+	"    .word 0\n"                                                 \
+	"    .set pop\n"                                                \
+	"    .text\n"                                                   \
+	);                                                              \
+	extern char __lib_ent_top[], __lib_ent_bottom[];                \
+	extern char __lib_stub_top[], __lib_stub_bottom[];              \
+	SceModuleInfo module_info                                       \
+		__attribute__((section(".rodata.sceModuleInfo"),        \
+			       aligned(16), unused)) = {                \
+	  attributes, { minor_version, major_version }, name, 0, _gp,   \
+	  __lib_ent_top, __lib_ent_bottom,                              \
+	  __lib_stub_top, __lib_stub_bottom                             \
+	}
+
 // Typedefs
 typedef unsigned char byte;
 

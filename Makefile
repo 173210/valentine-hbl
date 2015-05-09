@@ -11,18 +11,17 @@ all: $(TARGET)
 
 CC = psp-gcc
 AS = psp-as
-LD = psp-ld
 FIXUP = psp-fixup-imports
 
 PSPSDK = $(shell psp-config --pspsdk-path)
 
 PRXEXPORTS = $(PSPSDK)/lib/prxexports.o
-PRX_LDSCRIPT = -T$(PSPSDK)/lib/linkfile.prx
+PRX_LDSCRIPT = -Wl,-T$(PSPSDK)/lib/linkfile.prx
 
 INCDIR = -I$(PSPSDK)/include -Iinclude -I.
 LIBDIR = -L$(PSPSDK)/lib
 
-CFLAGS = $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-zero-initialized-in-bss
+CFLAGS = $(INCDIR) -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fomit-frame-pointer -fno-pic -fno-zero-initialized-in-bss -flto
 ASFLAGS = $(INCDIR)
 
 ifeq ($(EXPLOIT),loader)
@@ -57,9 +56,9 @@ OBJS_HBL = hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
 	hbl/eloader.o hbl/settings.o
 
 ifeq ($(EXPLOIT),loader)
-LOADER_LDSCRIPT = -Tlauncher.ld $(PRX_LDSCRIPT)
+LOADER_LDSCRIPT = -Wl,-Tlauncher.ld $(PRX_LDSCRIPT)
 else
-LOADER_LDSCRIPT = -Tloader.ld
+LOADER_LDSCRIPT = -Wl,-Tloader.ld
 endif
 
 LIBS = -lpspaudio -lpspctrl -lpspdisplay -lpspge -lpsprtc -lpsputility
@@ -77,13 +76,13 @@ H.BIN: H.elf
 	psp-objcopy -S -O binary -R .sceStub.text $< $@
 
 H.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(IMPORTS)
-	$(LD) -q $(LDFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
+	$(CC) $(CFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
 	$(FIXUP) $@
 
 $(OBJS_LOADER): config.h
 
 HBL.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(IMPORTS)
-	$(LD) $(LDFLAGS) -q $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
+	$(CC) $(CFLAGS) $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
 	$(FIXUP) $@
 
 $(OBJS_HBL): config.h

@@ -20,7 +20,7 @@
 
 #define FIRST_LOG "Loader running\n"
 
-PSP_MODULE_INFO("LOADER", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
+HBL_MODULE_INFO("LOADER", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
 
 #ifdef RESET_HOME_LANG
 // Reset language and button assignment for the HOME screen to system defaults
