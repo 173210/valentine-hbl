@@ -1,0 +1,7 @@
+*.o
+*.a
+*.elf
+*.PRX
+*.BIN
+
+config.h
