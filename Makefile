@@ -24,8 +24,10 @@ LIBDIR = -L$(PSPSDK)/lib
 
 CFLAGS = $(INCDIR) -G1 -Os -Wall -Werror -mno-abicalls -fomit-frame-pointer -fno-pic -fno-zero-initialized-in-bss
 ASFLAGS = $(INCDIR)
-LDFLAGS = -O1 -G0
 
+ifeq ($(EXPLOIT),loader)
+CFLAGS += -DLAUNCHER
+endif
 ifdef NID_DEBUG
 DEBUG = 1
 CFLAGS += -DNID_DEBUG
