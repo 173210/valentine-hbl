@@ -13,7 +13,7 @@ LIBDIR := -L$(PSPSDK)/lib
 CFLAGS := $(INCDIR) -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fno-pic -flto
 ASFLAGS := $(INCDIR)
 
-ifeq ($(EXPLOIT),loader)
+ifeq ($(EXPLOIT),launcher)
 CFLAGS += -DLAUNCHER
 endif
 ifdef NID_DEBUG
@@ -31,7 +31,7 @@ OBJS_COMMON := \
 ifdef DEBUG
 OBJS_COMMON += common/debug.o
 endif
-ifneq ($(EXPLOIT),loader)
+ifneq ($(EXPLOIT),launcher)
 OBJS_COMMON += common/utils/cache.o
 endif
 

@@ -1,6 +1,6 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
-ifeq ($(EXPLOIT),loader)
+ifeq ($(EXPLOIT),launcher)
 TARGET := H.PRX
 else
 TARGET := H.BIN
@@ -10,16 +10,16 @@ all: $(TARGET)
 
 include common.mk
 
-ifneq ($(EXPLOIT),loader)
+ifneq ($(EXPLOIT),launcher)
 CFLAGS += -fomit-frame-pointer -fno-zero-initialized-in-bss
 endif
 
 OBJS_LOADER := loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
-ifneq ($(EXPLOIT),loader)
+ifneq ($(EXPLOIT),launcher)
 OBJS_LOADER += loader/start.o
 endif
 
-ifeq ($(EXPLOIT),loader)
+ifeq ($(EXPLOIT),launcher)
 LOADER_LDSCRIPT := -Wl,-Tlauncher.ld $(PRX_LDSCRIPT)
 else
 LOADER_LDSCRIPT := -Wl,-Tloader.ld
