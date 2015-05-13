@@ -1,0 +1,46 @@
+# make  to compile without debug info
+# make DEBUG=1 to compile with debug info
+ifeq ($(EXPLOIT),loader)
+TARGET := H.PRX
+else
+TARGET := H.BIN
+endif
+
+all: $(TARGET)
+
+include common.mk
+
+ifneq ($(EXPLOIT),loader)
+CFLAGS += -fomit-frame-pointer -fno-zero-initialized-in-bss
+endif
+
+OBJS_LOADER := loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
+ifneq ($(EXPLOIT),loader)
+OBJS_LOADER += loader/start.o
+endif
+
+ifeq ($(EXPLOIT),loader)
+LOADER_LDSCRIPT := -Wl,-Tlauncher.ld $(PRX_LDSCRIPT)
+else
+LOADER_LDSCRIPT := -Wl,-Tloader.ld
+endif
+
+EBOOT.PBP: PARAM.SFO assets/ICON0.PNG assets/PIC1.PNG H.PRX
+	pack-pbp EBOOT.PBP PARAM.SFO assets/ICON0.PNG NULL \
+		NULL assets/PIC1.PNG NULL H.PRX NULL
+
+PARAM.SFO:
+	mksfo 'Half Byte Loader' $@
+
+H.BIN: H.elf
+	psp-objcopy -S -O binary -R .sceStub.text $< $@
+
+H.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(IMPORTS)
+	$(CC) $(CFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
+	$(FIXUP) $@
+
+$(OBJS_LOADER): config.h
+
+clean:
+	rm -f config.h $(IMPORTS) $(OBJS_COMMON) $(OBJS_LOADER) H.elf H.BIN H.PRX PARAM.SFO EBOOT.PBP
+	make -C common/imports

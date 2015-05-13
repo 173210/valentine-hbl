@@ -1,0 +1,21 @@
+# make  to compile without debug info
+# make DEBUG=1 to compile with debug info
+all: HBL.PRX
+
+include common.mk
+
+CFLAGS += -fomit-frame-pointer
+
+OBJS_HBL := hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
+	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o \
+	hbl/eloader.o hbl/settings.o
+
+HBL.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(IMPORTS)
+	$(CC) $(CFLAGS) $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
+	$(FIXUP) $@
+
+$(OBJS_HBL): config.h
+
+clean:
+	rm -f config.h $(IMPORTS) $(OBJS_COMMON) $(OBJS_HBL) HBL.elf HBL.PRX
+	make -C common/imports clean
