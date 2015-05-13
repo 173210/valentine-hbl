@@ -1,5 +1,7 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
+EXPLOIT ?= launcher
+
 FLAGS := EXPLOIT=$(EXPLOIT)
 ifdef DEBUG
 FLAGS += DEBUG=1
