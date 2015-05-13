@@ -5,7 +5,6 @@
 
 #include <common/stubs/tables.h>
 #include <common/sdk.h>
-#include <config.h>
 
 #define ASSERT_CONCAT_(a, b) a##b
 #define ASSERT_CONCAT(a, b) ASSERT_CONCAT_(a, b)

@@ -2,7 +2,6 @@
 #define ELOADER_SYSCALL
 
 #include <common/sdk.h>
-#include <config.h>
 
 // Path for NID libraries
 #define LIB_PATH HBL_ROOT "libs"
