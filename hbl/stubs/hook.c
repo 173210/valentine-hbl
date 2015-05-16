@@ -1563,7 +1563,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 			break;
 	}
 
-	if (return_to_xmb_on_exit) {
+	if (!return_to_xmb_on_exit) {
 		switch (nid) {
 			case 0x05572A5F:
 				return J_ASM(_hook_sceKernelExitGame);
