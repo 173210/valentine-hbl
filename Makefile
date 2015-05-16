@@ -13,13 +13,13 @@ all:
 	make -f Makefile_hbl $(FLAGS)
 
 H.BIN: Makefile_loader
-	make -f $< $(FLAGS)
+	make -f $< $@ $(FLAGS)
 
 H.PRX: Makefile_loader
-	make -f $< $(FLAGS)
+	make -f $< $@ $(FLAGS)
 
 HBL.PRX: Makefile_hbl
-	make -f $< $(FLAGS)
+	make -f $< $@ $(FLAGS)
 
 clean:
 	make -f Makefile_loader clean
