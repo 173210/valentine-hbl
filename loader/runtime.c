@@ -98,22 +98,22 @@ void load_utils()
 			}
 		else {
 #ifdef UTILITY_AV_AVCODEC_PATH
-			dbg_puts("%s: Loading " UTILITY_AV_AVCODEC_PATH "\n", __func__);
+			dbg_puts("%s: Loading " UTILITY_AV_AVCODEC_PATH, __func__);
 			avcodec_modid = sceKernelLoadModule(UTILITY_AV_AVCODEC_PATH, 0, NULL);
 			sceKernelStartModule(avcodec_modid, 0, NULL, NULL, NULL);
 #endif
 #ifdef UTILITY_AV_SASCORE_PATH
-			dbg_puts("%s: Loading " UTILITY_AV_SASCORE_PATH "\n", __func__);
+			dbg_puts("%s: Loading " UTILITY_AV_SASCORE_PATH, __func__);
 			sascore_modid = sceKernelLoadModule(UTILITY_AV_SASCORE_PATH, 0, NULL);
 			sceKernelStartModule(sascore_modid, 0, NULL, NULL, NULL);
 #endif
 #ifdef UTILITY_AV_ATRAC3PLUS_PATH
-			dbg_puts("%s: Loading " UTILITY_AV_ATRAC3PLUS_PATH "\n", __func__);
+			dbg_puts("%s: Loading " UTILITY_AV_ATRAC3PLUS_PATH, __func__);
 			atrac3plus_modid = sceKernelLoadModule(UTILITY_AV_ATRAC3PLUS_PATH, 0, NULL);
 			sceKernelStartModule(atrac3plus_modid, 0, NULL, NULL, NULL);
 #endif
 #ifdef UTILITY_AV_MPEGBASE_PATH
-			dbg_puts("%s: Loading " UTILITY_AV_MPEGBASE_PATH "\n", __func__);
+			dbg_puts("%s: Loading " UTILITY_AV_MPEGBASE_PATH, __func__);
 			mpegbase_modid = sceKernelLoadModule(UTILITY_AV_MPEGBASE_PATH, 0, NULL);
 			sceKernelStartModule(mpegbase_modid, 0, NULL, NULL, NULL);
 #endif

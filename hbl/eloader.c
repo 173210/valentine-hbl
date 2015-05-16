@@ -200,14 +200,14 @@ int module_start()
 	UnloadModules();
 #endif
 
-	scr_puts("Creating callback thread\n");
+	scr_puts("Creating callback thread");
 	thid = sceKernelCreateThread("HBLexitcbthread", callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, NULL);
 	if(thid > -1) {
-		dbg_printf("Callback thread created\n  thid=%08X\n", thid);
+		dbg_printf("Callback thread created\n  thid=%08X", thid);
 		sceKernelStartThread(thid, 0, 0);
 	}
 	else {
-		scr_printf("- Failed callback thread creation: 0x%08X\n", thid);
+		scr_printf("- Failed callback thread creation: 0x%08X", thid);
 	}
 	//...otherwise launch the menu
 	while (!exit) {
@@ -247,7 +247,7 @@ int module_start()
 			break;
 	}
 
-	scr_puts("Exiting\n");
+	scr_puts("Exiting");
 	if (isImported(sceKernelExitGame))
 		sceKernelExitGame();
 	else if (isImported(sceKernelExitGameWithStatus))

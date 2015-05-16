@@ -183,7 +183,7 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 
 	dbg_printf("Relocated entries: %d\n", ret);
 	if (!ret)
-		dbg_puts("WARNING: no entries to relocate on a relocatable ELF\n");
+		dbg_puts("WARNING: no entries to relocate on a relocatable ELF");
 
 	// Return size of total size copied in memory
 	return phdr.p_memsz;

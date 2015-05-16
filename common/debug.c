@@ -5,6 +5,11 @@
 #include <common/utils.h>
 #include <config.h>
 
+static int hblPutc(char c, SceUID fd)
+{
+	return sceIoWrite(fd, &c, sizeof(c));
+}
+
 void dbg_puts(const char *s)
 {
 	SceUID fd;
@@ -17,6 +22,10 @@ void dbg_puts(const char *s)
 	if (ret != len)
 		dbg_printf("%s: stdout writing failed 0x%08X\n",
 			__func__, ret);
+	ret = hblPutc('\n', PSPLINK_OUT);
+	if (ret < 0)
+		dbg_printf("%s: stdout writing failed 0x%08X\n",
+			__func__, ret);
 
 	fd = sceIoOpen(DBG_PATH, PSP_O_CREAT | PSP_O_WRONLY | PSP_O_APPEND, 0777);
 	if (fd < 0)
@@ -25,6 +34,10 @@ void dbg_puts(const char *s)
 	else {
 		ret = sceIoWrite(fd, s, len);
 		if (ret != len)
+			dbg_printf("%s: " DBG_PATH " writing failed 0x%08X\n",
+				__func__, ret);
+		ret = hblPutc('\n', fd);
+		if (ret < 0)
 			dbg_printf("%s: " DBG_PATH " writing failed 0x%08X\n",
 				__func__, ret);
 		ret = sceIoClose(fd);

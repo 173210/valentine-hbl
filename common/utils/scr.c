@@ -79,6 +79,8 @@ void scr_puts_col(const char *s, int col)
 		scr_putc_col(*s, col);
 		s++;
 	}
+
+	scr_putc_col('\n', col);
 }
 
 void scr_printf(const char *fmt, ...)

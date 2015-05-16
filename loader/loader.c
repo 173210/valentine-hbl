@@ -283,10 +283,10 @@ static void hook_init()
 int start_thread()
 {
 	// Free memory
-	scr_puts("Freeing memory\n");
+	scr_puts("Freeing memory");
 	free_game_memory();
 
-	scr_puts("Building NIDs table with utilities\n");
+	scr_puts("Building NIDs table with utilities");
 	load_utils();
 	p2_add_stubs();
 #ifdef DISABLE_UNLOAD_UTILITY_MODULES
@@ -295,10 +295,10 @@ int start_thread()
 	unload_utils();
 #endif
 
-	scr_puts("Building NIDs table with savedata utility\n");
+	scr_puts("Building NIDs table with savedata utility");
 	p5_add_stubs();
 
-	scr_puts("Initializing hook\n");
+	scr_puts("Initializing hook");
 	hook_init();
 
 #ifdef RESET_HOME_LANG
@@ -306,7 +306,7 @@ int start_thread()
 	resetHomeSettings();
 #endif
 
-	scr_puts("Loading HBL\n");
+	scr_puts("Loading HBL");
 	if (load_hbl()) {
 		if (isImported(sceKernelExitGame)) {
 			sceKernelExitGame();
@@ -315,7 +315,7 @@ int start_thread()
 			return sceKernelExitGameWithStatus(-1);
 	}
 
-	scr_puts("Running HBL\n");
+	scr_puts("Running HBL");
 	run_eloader();
 
 	return 0;
@@ -362,15 +362,15 @@ void _start()
 #endif
 
 	scr_init();
-	scr_puts("Starting HBL " VER_STR " http://code.google.com/p/valentine-hbl\n");
+	scr_puts("Starting HBL " VER_STR " http://code.google.com/p/valentine-hbl");
 #ifdef DEBUG
 #ifdef NID_DEBUG
-	scr_puts("DEBUG version (+NIDS)\n");
+	scr_puts("DEBUG version (+NIDS)");
 #else
-	scr_puts("DEBUG version\n");
+	scr_puts("DEBUG version");
 #endif
 #else
-	scr_puts_col("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!\n", 0x000000FF);
+	scr_puts_col("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
 #endif
 
 #ifdef PRE_LOADER_EXEC
@@ -382,9 +382,9 @@ void _start()
 	detectEmu();
 	scr_printf("Firmware version: 0x%08X", globals->module_sdk_version);
 	if (globals->isEmu)
-		scr_puts(" (emulator)");
+		scr_printf(" (emulator)");
 
-	scr_printf("\nFreeing game memory\n");
+	scr_puts("\nFreeing game memory");
 	preload_free_game_memory();
 
 	// Create and start eloader thread
