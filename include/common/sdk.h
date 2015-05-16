@@ -108,10 +108,6 @@ typedef unsigned char byte;
 #endif
 */
 
-#define EXIT sceKernelExitGame()
-#define CLEAR_CACHE sceKernelDcacheWritebackInvalidateAll()
-#define WAIT_SEMA sceKernelWaitSema
-
 #ifdef UNUSED
 #elif defined(__GNUC__)
 # define UNUSED(x) x __attribute__((unused))
