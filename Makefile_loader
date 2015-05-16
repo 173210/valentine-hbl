@@ -43,4 +43,4 @@ $(OBJS_LOADER): config.h
 
 clean:
 	rm -f config.h $(IMPORTS) $(OBJS_COMMON) $(OBJS_LOADER) H.elf H.BIN H.PRX PARAM.SFO EBOOT.PBP
-	make -C common/imports
+	make -C common/imports clean
