@@ -23,6 +23,8 @@ int num_pend_th = 0;
 int num_run_th = 0;
 int num_exit_th = 0;
 
+SceCtrlData pad;
+
 static void cleanup(u32 num_lib)
 {
 	threads_cleanup();
@@ -102,21 +104,18 @@ static void wait_for_eboot_end()
 	// Sleep until all threads have exited.
 	int lwait = 1;
 	int exit_callback_timeout = 0;
-	SceCtrlData pad;
 
 	while(lwait) {
 		//sceKernelWaitSema(gthSema, 1, 0);
 
 		//Check for force exit to the menu
-		if (force_exit_buttons) {
-			if (isImported(sceCtrlPeekBufferPositive))
-				sceCtrlPeekBufferPositive(&pad, 1);
-			else if (isImported(sceCtrlReadBufferPositive))
-				sceCtrlReadBufferPositive(&pad, 1);
+		if (isImported(sceCtrlReadBufferPositive))
+			sceCtrlReadBufferPositive(&pad, 1);
+		else if (isImported(sceCtrlPeekBufferPositive))
+			sceCtrlPeekBufferPositive(&pad, 1);
 
-			if (pad.Buttons == force_exit_buttons)
+		if (force_exit_buttons && pad.Buttons == force_exit_buttons)
 				exit_everything_but_me();
-		}
 
 		// Quit if the exit callback was called and has finished processing
 		if (hbl_exit_cb_called == 2) {
@@ -131,7 +130,7 @@ static void wait_for_eboot_end()
 		lwait = num_run_th + num_pend_th;
 		//sceKernelSignalSema(gthSema, 1);
 
-		sceKernelDelayThread(65536);
+		sceKernelDelayThread(16384);
 	}
 
 	scr_init();

@@ -21,4 +21,6 @@ extern int num_exit_th;
 extern u32 gp;
 extern u32 *entry_point;
 
+extern SceCtrlData pad;
+
 #endif

@@ -72,6 +72,15 @@ static int hblWaitSema(SceUID semaid, int signal, SceUInt *timeout)
 		return SCE_KERNEL_ERROR_ERROR;
 }
 
+static int _hook_sceCtrlReadBufferPositive(SceCtrlData *dst, int count)
+{
+	if (dst == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+
+	memcpy(dst, &pad, sizeof(SceCtrlData));
+	return 1;
+}
+
 // Thread hooks original code thanks to Noobz & Fanjita, adapted by wololo
 /*****************************************************************************/
 /* Special exitThread handling:                                              */
@@ -1509,6 +1518,8 @@ int _hook_sceUtilityOskInitStart (SceUtilityOskParams *params)
 u32 setup_hook(u32 nid, u32 existing_real_call)
 {
 	switch (nid) {
+		case 0x1F803938:
+			return J_ASM(_hook_sceCtrlReadBufferPositive);
 		case 0x237DBD4F:
 			return J_ASM(_hook_sceKernelAllocPartitionMemory);
 		case 0xB6D61D02:
@@ -1658,7 +1669,7 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 		//This will be slow and should not be active for high performance programs...
 		case 0x3A622550:
 			if (isImported(sceCtrlReadBufferPositive))
-				return J_ASM(sceCtrlReadBufferPositive);
+				return J_ASM(_hook_sceCtrlReadBufferPositive);
 			break;
 		case 0x383F7BCC: // sceKernelTerminateDeleteThread
 			return J_ASM(kill_thread);
