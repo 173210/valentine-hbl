@@ -17,5 +17,5 @@ HBL.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(IMPORTS)
 $(OBJS_HBL): config.h
 
 clean:
-	rm -f config.h $(IMPORTS) $(OBJS_COMMON) $(OBJS_HBL) HBL.elf HBL.PRX
+	rm -f config.h $(IMPORTS) $(OBJ_DEBUG) $(OBJ_CACHE) $(OBJS_COMMON) $(OBJS_HBL) HBL.elf HBL.PRX
 	make -C common/imports clean

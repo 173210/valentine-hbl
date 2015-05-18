@@ -14,9 +14,10 @@ ifneq ($(EXPLOIT),launcher)
 CFLAGS += -fomit-frame-pointer -fno-zero-initialized-in-bss
 endif
 
+OBJ_START := loader/start.o
 OBJS_LOADER := loader/loader.o loader/bruteforce.o loader/freemem.o loader/runtime.o
 ifneq ($(EXPLOIT),launcher)
-OBJS_LOADER += loader/start.o
+OBJS_LOADER += $(OBJ_START)
 endif
 
 ifeq ($(EXPLOIT),launcher)
@@ -42,5 +43,5 @@ H.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(IMPORTS)
 $(OBJS_LOADER): config.h
 
 clean:
-	rm -f config.h $(IMPORTS) $(OBJS_COMMON) $(OBJS_LOADER) H.elf H.BIN H.PRX PARAM.SFO EBOOT.PBP
+	rm -f config.h $(IMPORTS) $(OBJ_DEBUG) $(OBJ_CACHE) $(OBJS_COMMON) $(OBJ_START) $(OBJS_LOADER) H.elf H.BIN H.PRX PARAM.SFO EBOOT.PBP
 	make -C common/imports clean
