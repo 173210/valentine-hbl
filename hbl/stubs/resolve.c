@@ -11,44 +11,36 @@
 #include <hbl/eloader.h>
 #include <config.h>
 
-// Subsitutes the right instruction
-void resolve_call(int *call_to_resolve, u32 call_resolved)
+static int get_jump_from_export(int *dst, u32 nid, SceLibraryEntryTable *pexports)
 {
-	if (call_resolved & J_OPCODE) {
-		*call_to_resolve = call_resolved;
-		*(++call_to_resolve) = NOP_ASM;
-	} else {
-		// SYSCALL
-		*call_to_resolve = JR_ASM(REG_RA);
-		*(++call_to_resolve) = call_resolved;
-	}
-}
+	if (dst == NULL || pexports == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
 
-static u32 get_jump_from_export(u32 nid, SceLibraryEntryTable *pexports)
-{
-	if( pexports != NULL){
-		u32* pnids = (u32*)pexports->entrytable;
-		u32* pfunctions = (u32*)((u32)pexports->entrytable + (u16)pexports->stubcount * 4);
+	u32* pnids = (u32*)pexports->entrytable;
+	u32* pfunctions = (u32*)((u32)pexports->entrytable + (u16)pexports->stubcount * 4);
 
-		// Insert NIDs on NID table
-		int i;
-		for (i=0; i<(u16)pexports->stubcount; i++)
-		{
-			if( pnids[i] == nid){
-				dbg_printf("NID FOUND in %s: 0x%08X Function: 0x%08X\n",
-					pexports->libname, pnids[i], pfunctions[i]);
-				return J_ASM(pfunctions[i]);
-			}
+	// Insert NIDs on NID table
+	int i;
+	for (i=0; i<(u16)pexports->stubcount; i++)
+	{
+		if( pnids[i] == nid){
+			dbg_printf("NID FOUND in %s: 0x%08X Function: 0x%08X\n",
+				pexports->libname, pnids[i], pfunctions[i]);
+			dst[0] = J_ASM(pfunctions[i]);
+			dst[1] = NOP_ASM;
+
+			return 0;
 		}
 	}
-	return 0;
+
+	return SCE_KERNEL_ERROR_ERROR;
 }
 
 // Resolves imports in ELF's program section already loaded in memory
 // Returns number of resolves
 unsigned int resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_size)
 {
-	int i, j, nid_index;
+	int i, j, res, nid_index;
 	int *cur_nid;
 	int *cur_call;
 	int real_call;
@@ -79,46 +71,39 @@ unsigned int resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_s
 			// Get syscall/jump instruction for current NID
 			real_call = 0;
 
-			if( utility_exp != NULL){
-				real_call = get_jump_from_export( *cur_nid, utility_exp );
+			if (utility_exp != NULL) {
+				if (!get_jump_from_export(cur_call, *cur_nid, utility_exp))
+					goto cont;
 
 			}
 
-			if( real_call == 0){
-				nid_index = get_nid_index(*cur_nid);
-				if (nid_index >= 0) {
-					NID_DBG_PRINTF("Index for NID on table: %d\n", nid_index);
-					real_call = globals->nid_table[nid_index].call;
+			nid_index = get_nid_index(*cur_nid);
+			if (nid_index >= 0) {
+				NID_DBG_PRINTF("Index for NID on table: %d\n", nid_index);
+				real_call = globals->nid_table[nid_index].call;
+			}
+
+			res = setup_hook(cur_call, *cur_nid, real_call);
+			if (res) {
+				NID_DBG_PRINTF("Real call before finalization: 0x%08X\n", real_call);
+
+				/* If NID not found in game imports */
+				/* generic error/ok if syscall estimation is not available */
+				/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
+				if (globals->isEmu)
+					setup_default_nid(cur_call);
+				else {
+					if (!real_call)
+						real_call = estimate_syscall((char *)pstub_entry->lib_name, *cur_nid);
+
+					NID_DBG_PRINTF("Real call after finalization: 0x%08X\n", real_call);
+
+					cur_call[0] = JR_ASM(REG_RA);
+					cur_call[1] = real_call;
 				}
 			}
 
-
-			u32 hook_call = setup_hook(*cur_nid, real_call);
-
-			if (hook_call != 0)
-				real_call = hook_call;
-
-			NID_DBG_PRINTF("Real call before finalization: 0x%08X\n", real_call);
-
-			/* If NID not found in game imports */
-			/* generic error/ok if syscall estimation is not available */
-			/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
-			if (real_call == 0)
-				real_call = globals->isEmu ? setup_default_nid(*cur_nid) :
-					estimate_syscall((char *)pstub_entry->lib_name, *cur_nid);
-
-			NID_DBG_PRINTF("Real call after finalization: 0x%08X\n", real_call);
-
-			/* If it's an instruction, resolve it */
-			/* 0xC -> syscall 0 */
-			/* Jumps are always > 0xC */
-			if(real_call > 0xC)
-			{
-				/* Write it in ELF stubs memory */
-				resolve_call(cur_call, real_call);
-				resolving_count++;
-			}
-
+cont:
 			dbg_printf("Resolved stub 0x%08X: 0x%08X 0x%08X\n", (u32)cur_call, *cur_call, *(cur_call+1));
 
 			cur_nid++;

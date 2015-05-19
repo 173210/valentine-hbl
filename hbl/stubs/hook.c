@@ -1512,335 +1512,240 @@ int _hook_sceUtilityOskInitStart (SceUtilityOskParams *params)
 
 #endif
 
+typedef struct {
+	int nid;
+	int hook[2];
+} hook_t;
 
+static int resolveHook(int *dst, int nid, const hook_t *hook, size_t hookSize)
+{
+	int index;
+
+	if (dst == NULL || hook == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+
+	while (hookSize) {
+		if (hook->nid == nid) {
+			if (hook->hook[0] == JR_ASM(REG_RA)) {
+				dst[0] = hook->hook[0];
+				dst[1] = hook->hook[1];
+
+				return 0;
+			} else if (hook->hook[1]) {
+				index = get_nid_index(hook->hook[1]);
+				if (index >= 0) {
+					if (hook->hook[0]) {
+						dst[0] = hook->hook[0];
+						dst[1] = NOP_ASM;
+					} else {
+						dst[0] = JR_ASM(REG_RA);
+						dst[1] = globals->nid_table[index].call;
+					}
+
+					return 0;
+				}
+			} else {
+				dst[0] = hook->hook[0];
+				dst[1] = NOP_ASM;
+
+				return 0;
+			}
+		}
+
+resolveHook_cont:
+		hook++;
+		hookSize -= sizeof(hook_t);
+	}
+
+	return SCE_KERNEL_ERROR_ERROR;
+}
+
+#define HOOK_OK(nid) { (nid), { JR_ASM(REG_RA), LUI_ASM(REG_A0, 0) } }
+#define HOOK_ALT_FUNC(nid, alt, func) { (nid), { J_ASM(func), (alt) } }
+#define HOOK_FUNC(nid, func) HOOK_ALT_FUNC((nid), 0, (func))
+#define HOOK_ALT(nid, alt) HOOK_ALT_FUNC((nid), (alt), 0)
 
 // Returns a hooked call for the given NID or zero
-u32 setup_hook(u32 nid, u32 existing_real_call)
+int setup_hook(int *dst, int nid, u32 existing_real_call)
 {
-	switch (nid) {
-		case 0x1F803938:
-			return J_ASM(_hook_sceCtrlReadBufferPositive);
-		case 0x237DBD4F:
-			return J_ASM(_hook_sceKernelAllocPartitionMemory);
-		case 0xB6D61D02:
-			return J_ASM(_hook_sceKernelFreePartitionMemory);
-		case 0x446D8DE6:
-			return J_ASM(_hook_sceKernelCreateThread);
-		case 0xF475845D:
-			return J_ASM(_hook_sceKernelStartThread);
-		case 0xAA73C935:
-			return J_ASM(_hook_sceKernelExitThread);
-		case 0x809CE29B:
-			return J_ASM(_hook_sceKernelExitDeleteThread);
-		case 0x4C25EA72: //kuKernelLoadModule
-		case 0x977DE386: // sceKernelLoadModule
-			return J_ASM(_hook_sceKernelLoadModule);
-		case 0x50F0C1EC:
-			return J_ASM(_hook_sceKernelStartModule);
-		case 0xC629AF26:
-			return J_ASM(_hook_sceUtilityLoadAvModule);
-		case 0x0D5BC6D2:
-			dbg_printf(" Hook sceUtilityLoadUsbModule\n");
-			return J_ASM(_hook_generic_error);
-		case 0x1579a159:
-			return J_ASM(_hook_sceUtilityLoadNetModule);
-		case 0x2A2B3DE0:
-			return J_ASM(_hook_sceUtilityLoadModule);
-		case 0xF7D8D092: //sceUtilityUnloadAvModule
-		case 0xF64910F0: //sceUtilityUnloadUsbModule
-		case 0x64d50c56: //sceUtilityUnloadNetModule
-		case 0xE49BFE92: // sceUtilityUnloadModule
-			return J_ASM(_hook_generic_ok);
-		case 0x289D82FE:
-			if (get_nid_index(0xEEDA2E54) < 0)
-				return J_ASM(_hook_sceDisplaySetFrameBuf);
-			break;
-		case 0xE860E75E:
-			if (get_nid_index(0x06FB8A63) < 0)
-				return J_ASM(_hook_sceKernelUtilsMt19937Init);
-			break;
-		case 0x737486F2:
-			if (!(isImported(scePowerGetCpuClockFrequency)
-				|| isImported(scePowerGetCpuClockFrequencyInt))
-			|| !(isImported(scePowerGetBusClockFrequency)
-				|| isImported(scePowerGetBusClockFrequencyInt))) {
-				if (isImported(scePowerSetClockFrequency))
-					return J_ASM(_hook_scePowerSetClockFrequency);
-				else if (isImported(scePower_469989AD))
-					return J_ASM(_hook_scePowerSetClockFrequency_with_scePower_469989AD);
-				else if (isImported(scePower_EBD177D6))
-					return J_ASM(_hook_scePowerSetClockFrequency_with_scePower_EBD177D6);
-			}
-			break;
-	}
+	const hook_t forcedHook[] = {
+		HOOK_FUNC(0x1F803938, _hook_sceCtrlReadBufferPositive),
+		HOOK_FUNC(0x237DBD4F, _hook_sceKernelAllocPartitionMemory),
+		HOOK_FUNC(0xB6D61D02, _hook_sceKernelFreePartitionMemory),
+		HOOK_FUNC(0x446D8DE6, _hook_sceKernelCreateThread),
+		HOOK_FUNC(0xF475845D, _hook_sceKernelStartThread),
+		HOOK_FUNC(0xAA73C935, _hook_sceKernelExitThread),
+		HOOK_FUNC(0x809CE29B, _hook_sceKernelExitDeleteThread),
+		HOOK_FUNC(0x4C25EA72, _hook_sceKernelLoadModule), //kuKernelLoadModule
+		HOOK_FUNC(0x977DE386, _hook_sceKernelLoadModule), // sceKernelLoadModule
+		HOOK_FUNC(0x50F0C1EC, _hook_sceKernelStartModule),
+		HOOK_FUNC(0xC629AF26, _hook_sceUtilityLoadAvModule),
+		HOOK_FUNC(0x0D5BC6D2, _hook_generic_error), // sceUtilityLoadUsbModule
+		HOOK_FUNC(0x1579a159, _hook_sceUtilityLoadNetModule),
+		HOOK_FUNC(0x2A2B3DE0, _hook_sceUtilityLoadModule),
+		HOOK_OK(0xF7D8D092), //sceUtilityUnloadAvModule
+		HOOK_OK(0xF64910F0), //sceUtilityUnloadUsbModule
+		HOOK_OK(0x64d50c56), //sceUtilityUnloadNetModule
+		HOOK_OK(0xE49BFE92), // sceUtilityUnloadModule
+		HOOK_ALT_FUNC(0x289D82FE, 0xEEDA2E54, _hook_sceDisplaySetFrameBuf),
+		HOOK_ALT_FUNC(0xE860E75E, 0x06FB8A63, _hook_sceKernelUtilsMt19937Init)
+	};
 
-	if (!return_to_xmb_on_exit) {
-		switch (nid) {
-			case 0x05572A5F:
-				return J_ASM(_hook_sceKernelExitGame);
-			case 0xE81CAF8F:
-				return J_ASM(_hook_sceKernelCreateCallback);
-			case 0x4AC57943:
-				return J_ASM(_hook_sceKernelRegisterExitCallback);
-			case 0x6FC46853:
-				return J_ASM(_hook_sceAudioChRelease);
-			case 0x5EC81C55:
-				return J_ASM(_hook_sceAudioChReserve);
-		}
-	}
+	const hook_t forcedScePowerHook[] = {
+		HOOK_ALT_FUNC(0x737486F2, 0x737486F2, _hook_scePowerSetClockFrequency),
+		HOOK_ALT_FUNC(0x737486F2, 0x469989AD, _hook_scePowerSetClockFrequency_with_scePower_469989AD),
+		HOOK_ALT_FUNC(0x737486F2, 0xEBD177D6, _hook_scePowerSetClockFrequency_with_scePower_EBD177D6)
+	};
 
-	if (existing_real_call) {
-		switch (nid) {
-			case 0x109F50BC:
-				return J_ASM(_hook_sceIoOpen);
-			case 0x810C4BC3:
-				return J_ASM(_hook_sceIoClose);
-		}
+	const hook_t hblHook[] = {
+		HOOK_FUNC(0x05572A5F, _hook_sceKernelExitGame),
+		HOOK_FUNC(0xE81CAF8F, _hook_sceKernelCreateCallback),
+		HOOK_FUNC(0x4AC57943, _hook_sceKernelRegisterExitCallback),
+		HOOK_FUNC(0x6FC46853, _hook_sceAudioChRelease),
+		HOOK_FUNC(0x5EC81C55, _hook_sceAudioChReserve)
+	};
 
-		if (globals->isEmu || !globals->chdir_ok) {
-			switch (nid) {
-				case 0x55F4717D:
-					return J_ASM(_hook_sceIoChdir);
-				case 0x06A70004:
-					return J_ASM(_hook_sceIoMkdir);
-				case 0x779103A0:
-					return J_ASM(_hook_sceIoRename);
-				case 0xF27A9C51:
-					return J_ASM(_hook_sceIoRemove);
-				case 0xB29DDF9C:
-					return J_ASM(_hook_sceIoDopen);
-			}
 
-			if (globals->isEmu)
-				switch (nid) {
-					case 0xE3EB004C:
-						return J_ASM(sceIoDread_Vita);
-					case 0xEB092469:
-						return J_ASM(sceIoDclose_Vita);
-				}
-		}
+	const hook_t hookWithOrg[] = {
+		HOOK_FUNC(0x109F50BC, _hook_sceIoOpen),
+		HOOK_FUNC(0x810C4BC3, _hook_sceIoClose)
+	};
 
+	const hook_t chdirHook[] = {
+		HOOK_FUNC(0x55F4717D, _hook_sceIoChdir),
+		HOOK_FUNC(0x06A70004, _hook_sceIoMkdir),
+		HOOK_FUNC(0x779103A0, _hook_sceIoRename),
+		HOOK_FUNC(0xF27A9C51, _hook_sceIoRemove),
+		HOOK_FUNC(0xB29DDF9C, _hook_sceIoDopen)
+	};
+
+	const hook_t emuHook[] = {
+		HOOK_FUNC(0xE3EB004C, sceIoDread_Vita),
+		HOOK_FUNC(0xEB092469, sceIoDclose_Vita)
+	};
+
+	const hook_t hookWithoutOrg[] = {
+		HOOK_FUNC(0xEEDA2E54, _hook_sceDisplayGetFrameBuf),
+		HOOK_ALT_FUNC(0x82826F70, 0x68DA9E36, _hook_sceKernelSleepThreadCB),
+		HOOK_FUNC(0xC8186A58, _hook_sceKernelUtilsMd5Digest),
+		HOOK_FUNC(0x9E5C5086, _hook_sceKernelUtilsMd5BlockInit),
+		HOOK_FUNC(0x61E1E525, _hook_sceKernelUtilsMd5BlockUpdate),
+		HOOK_FUNC(0xB8D24E78, _hook_sceKernelUtilsMd5BlockResult),
+		HOOK_FUNC(0x3FC9AE6A, _hook_sceKernelDevkitVersion),
+		HOOK_FUNC(0xA291F107, hblKernelMaxFreeMemSize),
+		HOOK_FUNC(0x68963324, _hook_sceIoLseek32),
+		HOOK_ALT_FUNC(0x3A622550, 0x1F803938, _hook_sceCtrlReadBufferPositive),
+		HOOK_FUNC(0x383F7BCC, kill_thread), // sceKernelTerminateDeleteThread
+		HOOK_ALT_FUNC(0xD675EBB8, 0x8F2DF740, _hook_sceKernelSelfStopUnloadModule),
+		HOOK_ALT_FUNC(0x884C9F90, 0x876DBFAD, _hook_sceKernelTrySendMsgPipe),
+		HOOK_ALT_FUNC(0xDF52098F, 0x74829B76, _hook_sceKernelTryReceiveMsgPipe),
+		HOOK_ALT(0x74829B76, 0xDF52098F),
+		HOOK_ALT(0xD97F94D8, 0x617F3FE6), // Hook sceDmacTryMemcpy with sceDmacMemcpy
+		HOOK_FUNC(0xD97F94D8, memcpy), // sceDmacTryMemcpy
+		HOOK_FUNC(0x94AA61EE, _hook_sceKernelGetThreadCurrentPriority),
+		HOOK_OK(0x24331850), // kuKernelGetModel
+#ifdef HOOK_POWERFUNCTIONS
+		HOOK_ALT(0x737486F2, 0x469989AD), // scePowerSetClockFrequency
+		HOOK_ALT(0x737486F2, 0xEBD177D6), // scePowerSetClockFrequency
+		HOOK_FUNC(0xFEE03A2F, _hook_scePowerGetCpuClockFrequency), //scePowerGetCpuClockFrequency
+		HOOK_FUNC(0xFDB5BFE9, _hook_scePowerGetCpuClockFrequency), //scePowerGetCpuClockFrequencyInt
+		HOOK_FUNC(0x478FE6F5, _hook_scePowerGetBusClockFrequency), // scePowerGetBusClockFrequency
+		HOOK_FUNC(0xBD681969, _hook_scePowerGetBusClockFrequency), //scePowerGetBusClockFrequencyInt
+		HOOK_FUNC(0x8EFB3FA2, _hook_scePowerGetBatteryLifeTime),
+		HOOK_FUNC(0x2085D15D, _hook_scePowerGetBatteryLifePercent),
+		HOOK_OK(0x28E12023), // scePowerBatteryTemp (0 degree)
+		HOOK_OK(0xB4432BC8), // scePowerGetBatteryChargingStatus
+		HOOK_OK(0x0AFD0D8B), // scePowerIsBatteryExists
+		HOOK_OK(0x1E490401), // scePowerIsbatteryCharging
+		HOOK_OK(0xD3075926), // scePowerIsLowBattery
+		HOOK_OK(0x87440F5E), // scePowerIsPowerOnline
+		HOOK_OK(0x04B7766E), // scePowerRegisterCallback (Assuming it's already done by the game)
+		HOOK_OK(0xD6D016EF), // scePowerLock
+		HOOK_OK(0xEFD3C963), // scePowerTick
+		HOOK_OK(0xCA3D34C1), // scePowerUnlock
+#endif
+		HOOK_FUNC(0x1F6752AD, _hook_sceGeEdramGetSize),
+#ifdef HOOK_AUDIOFUNCTIONS
+		HOOK_FUNC(0x38553111, _hook_sceAudioSRCChReserve),
+		HOOK_FUNC(0x5C37C0AE, _hook_sceAudioSRCChRelease),
+		HOOK_ALT_FUNC(0xE0727056, 0x13F592BC, _hook_sceAudioSRCOutputBlocking_with_sceAudioOutputPannedBlocking),
+		HOOK_ALT_FUNC(0xE0727056, 0x136CAF51, _hook_sceAudioSRCOutputBlocking_with_sceAudioOutputBlocking),
+#endif
+		HOOK_ALT_FUNC(0x136CAF51, 0x13F592BC, _hook_sceAudioOutputBlocking),
+		HOOK_ALT_FUNC(0x13F592BC, 0x136CAF51, _hook_sceAudioOutputPannedBlocking),
+		HOOK_ALT(0xB011922F, 0xE9D97901), // Hook sceAudioGetChannelRestLength with sceAudioGetChannelRestLen
+		HOOK_OK(0xB011922F), // sceAudioGetChannelRestLength
+		HOOK_ALT(0xE9D97901, 0xB011922F), // Hook sceAudioGetChannelRestLen with sceAudioGetChannelRestLength
+		HOOK_OK(0xE9D97901), // sceAudioGetChannelRestLen
+		HOOK_ALT(0x8C1009B2, 0x136CAF51),
+		HOOK_ALT_FUNC(0x8C1009B2, 0x13F592BC, _hook_sceAudioOutputBlocking),
+		HOOK_ALT_FUNC(0xB435DEC5, 0x34B9FA9E, _hook_sceKernelDcacheWritebackInvalidateAll),
+		HOOK_ALT(0xB435DEC5, 0x79D1C3FA),
+		HOOK_ALT(0x876DBFAD, 0x884C9F90), // Hook sceKernelSendMsgPipe with sceKernelTrySendMsgPipe
+		HOOK_ALT_FUNC(0x647CEF33, 0xB011922F, _hook_sceAudioOutput2GetRestSample),
+		HOOK_FUNC(0x06FB8A63, _hook_sceKernelUtilsMt19937UInt),
+		HOOK_ALT(0x46F186C3, 0x984C27E7), // Hook sceDisplayWaitVblankStartCB with sceDisplayWaitVblankStart
+		HOOK_ALT(0x3EE30821, 0x79D1C3FA), // Hook sceKernelDcacheWritebackRange with sceKernelDcacheWritebackAll
+		HOOK_ALT(0x34B9FA9E, 0xB435DEC5), // Hook sceKernelDcacheWritebackInvalidateRange with sceKernelDcacheWritebackInvalidateAll
+		HOOK_ALT_FUNC(0x79D1C3FA, 0x3EE30821, _hook_sceKernelDcacheWritebackAll),
+		HOOK_ALT(0xE2D56B2D, 0x13F592BC), // Hook sceAudioOutputPanned with sceAudioOutputPannedBlocking
+		HOOK_ALT(0x616403BA, 0x383F7BCC), // Hook sceKernelTerminateThread with sceKernelTerminateDeleteThread
+		HOOK_FUNC(0xF919F628, hblKernelTotalFreeMemSize),
+		HOOK_OK(0x9C6EAAD7), // Hook sceDisplayGetVcount
+#ifdef HOOK_Osk
+		HOOK_FUNC(0xF6269B82, _hook_sceUtilityOskInitStart), // sceUtilityOskInitStart
+		HOOK_OK(0x3DFAEBA9), // sceUtilityOskShutdownStart
+		HOOK_OK(0x4B85C861), // sceUtilityOskUpdate
+		HOOK_OK(0xF3F76017), // sceUtilityOskGetStatus
+#endif
+		HOOK_FUNC(0xC41C2853, _hook_sceRtcGetTickResolution),
+		HOOK_ALT_FUNC(0x3F7AD767, 0xE7C27D1B, _hook_sceRtcGetCurrentTick),
+		HOOK_FUNC(0x7ED29E40, _hook_sceRtcSetTick),
+		HOOK_FUNC(0x6FF40ACC, _hook_sceRtcGetTick),
+		HOOK_OK(0x57726BC1), // sceRtcGetDayOfWeek returns always monday
+		HOOK_FUNC(0x34885E0D, _hook_sceRtcConvertUtcToLocalTime)
+	};
+
+	if (!resolveHook(dst, nid, forcedHook, sizeof(forcedHook)))
+		return 0;
+
+	if (!((isImported(scePowerGetCpuClockFrequency) || isImported(scePowerGetCpuClockFrequencyInt)) && (isImported(scePowerGetBusClockFrequency) || isImported(scePowerGetBusClockFrequencyInt)))
+		&& !resolveHook(dst, nid, forcedScePowerHook, sizeof(forcedScePowerHook)))
+	{
 		return 0;
 	}
 
-	switch (nid) {
-		case 0xEEDA2E54:
-			return J_ASM(_hook_sceDisplayGetFrameBuf);
-		case 0x82826F70:
-			if(isImported(sceKernelDelayThreadCB))
-				return J_ASM(_hook_sceKernelSleepThreadCB);
-			break;
-		/*
-		* Overrides to avoid syscall estimates.
-		* Those are not necessary but reduce estimate failures and improve compatibility for now
-		*/
-		case 0x06A70004: //	sceIoMkdir
-			if (override_sceIoMkdir == GENERIC_SUCCESS)
-				return J_ASM(_hook_generic_ok);
-			break;
-		case 0xC8186A58:
-			return J_ASM(_hook_sceKernelUtilsMd5Digest);
-		case 0x9E5C5086:
-			return J_ASM(_hook_sceKernelUtilsMd5BlockInit);
-		case 0x61E1E525:
-			return J_ASM(_hook_sceKernelUtilsMd5BlockUpdate);
-		case 0xB8D24E78:
-			return J_ASM(_hook_sceKernelUtilsMd5BlockResult);
-		case 0x3FC9AE6A:
-			return J_ASM(_hook_sceKernelDevkitVersion);
-		case 0xA291F107:
-			return J_ASM(hblKernelMaxFreeMemSize);
-		case 0xC41C2853:
-			return J_ASM(_hook_sceRtcGetTickResolution);
-		case 0x3F7AD767:
-			if (isImported(sceRtcGetCurrentClockLocalTime))
-				return J_ASM(_hook_sceRtcGetCurrentTick);
-			break;
-		case 0x7ED29E40:
-			return J_ASM(_hook_sceRtcSetTick);
-		case 0x6FF40ACC:
-			return J_ASM(_hook_sceRtcGetTick);
-		case 0x57726BC1: //	sceRtcGetDayOfWeek
-			return J_ASM(_hook_generic_ok); //always monday in my world
-		case 0x34885E0D:
-			return J_ASM(_hook_sceRtcConvertUtcToLocalTime);
-		case 0x68963324:
-			return J_ASM(_hook_sceIoLseek32);
-		//This will be slow and should not be active for high performance programs...
-		case 0x3A622550:
-			if (isImported(sceCtrlReadBufferPositive))
-				return J_ASM(_hook_sceCtrlReadBufferPositive);
-			break;
-		case 0x383F7BCC: // sceKernelTerminateDeleteThread
-			return J_ASM(kill_thread);
-		case 0xD675EBB8:
-			if (isImported(ModuleMgrForUser_8F2DF740))
-				return J_ASM(_hook_sceKernelSelfStopUnloadModule);
-			break;
-		case 0x884C9F90:
-			if (isImported(sceKernelSendMsgPipe))
-				return J_ASM(_hook_sceKernelTrySendMsgPipe);
-			break;
-		case 0xDF52098F:
-			if (isImported(sceKernelReceiveMsgPipe))
-				return J_ASM(_hook_sceKernelTryReceiveMsgPipe);
-			break;
-		case 0x74829B76:
-			if (isImported(sceKernelTryReceiveMsgPipe))
-				return J_ASM(sceKernelTryReceiveMsgPipe);
-			break;
-		case 0xD97F94D8: // sceDmacTryMemcpy
-			if (get_nid_index(0x617F3FE6) < 0)
-				return J_ASM(memcpy);
-			else
-				return J_ASM(sceDmacMemcpy);
-		case 0x94AA61EE:
-			return J_ASM(_hook_sceKernelGetThreadCurrentPriority);
-		case 0x24331850: // kuKernelGetModel
-			return J_ASM(_hook_generic_ok);
-#ifdef HOOK_POWERFUNCTIONS
-		case 0x737486F2:
-			dbg_printf("%s: Hook scePowerSetClockFrequency\n", __func__);
-			if (isImported(scePower_469989AD))
-				return J_ASM(scePower_469989AD);
-			else if (isImported(scePower_EBD177D6))
-				return J_ASM(scePower_EBD177D6);
-			break;
-		case 0xFEE03A2F: //scePowerGetCpuClockFrequency
-		case 0xFDB5BFE9: //scePowerGetCpuClockFrequencyInt
-			return J_ASM(_hook_scePowerGetCpuClockFrequency);
-		case 0x478FE6F5:// scePowerGetBusClockFrequency
-		case 0xBD681969: //scePowerGetBusClockFrequencyInt
-			return J_ASM(_hook_scePowerGetBusClockFrequency);
-		case 0x8EFB3FA2:
-			return J_ASM(_hook_scePowerGetBatteryLifeTime);
-			return J_ASM(_hook_generic_ok);
-		case 0x2085D15D:
-			return J_ASM(_hook_scePowerGetBatteryLifePercent);
-		case 0x28E12023: // scePowerBatteryTemp (0 degree)
-		case 0xB4432BC8: // scePowerGetBatteryChargingStatus
-		case 0x0AFD0D8B: // scePowerIsBatteryExists
-		case 0x1E490401: // scePowerIsbatteryCharging
-		case 0xD3075926: // scePowerIsLowBattery
-		case 0x87440F5E: // scePowerIsPowerOnline
-		case 0x04B7766E: // scePowerRegisterCallback (Assuming it's already done by the game)
-		case 0xD6D016EF: // scePowerLock
-		case 0xEFD3C963: // scePowerTick
-		case 0xCA3D34C1: // scePowerUnlock
-			return J_ASM(_hook_generic_ok);
-#endif
-		case 0x1F6752AD:
-			return J_ASM(_hook_sceGeEdramGetSize);
-#ifdef HOOK_AUDIOFUNCTIONS
-		case 0x38553111:
-			return J_ASM(_hook_sceAudioSRCChReserve);
-		case 0x5C37C0AE:
-			return J_ASM(_hook_sceAudioSRCChRelease);
-		case 0xE0727056:
-			if (isImported(sceAudioOutputPannedBlocking))
-				return J_ASM(_hook_sceAudioSRCOutputBlocking_with_sceAudioOutputPannedBlocking);
-			else if (isImported(sceAudioOutputBlocking))
-				return J_ASM(_hook_sceAudioSRCOutputBlocking_with_sceAudioOutputBlocking);
-			break;
-#endif
-		case 0x136CAF51:
-			if (isImported(sceAudioOutputPannedBlocking))
-				return J_ASM(_hook_sceAudioOutputBlocking);
-			break;
-		case 0x13F592BC:
-			if (isImported(sceAudioOutputBlocking))
-				return J_ASM(_hook_sceAudioOutputPannedBlocking);
-			break;
-		case 0xB011922F:
-			dbg_printf("%s: Hook sceAudioGetChannelRestLength\n", __func__);
-			if (isImported(sceAudioGetChannelRestLen))
-				return J_ASM(sceAudioGetChannelRestLen);
-			else
-				return J_ASM(_hook_generic_ok);
-		case 0xE9D97901:
-			dbg_printf("%s: Hook sceAudioGetChannelRestLen\n", __func__);
-			if (isImported(sceAudioGetChannelRestLength))
-				return J_ASM(sceAudioGetChannelRestLength);
-			else
-				return J_ASM(_hook_generic_ok);
-		case 0x8C1009B2:
-			if (isImported(sceAudioOutputBlocking))
-				return J_ASM(sceAudioOutputBlocking);
-			else if (isImported(sceAudioOutputPannedBlocking))
-				return J_ASM(_hook_sceAudioOutputBlocking);
-			break;
-		case 0xB435DEC5:
-			if (isImported(sceKernelDcacheWritebackInvalidateRange))
-				return J_ASM(_hook_sceKernelDcacheWritebackInvalidateAll);
-			else if (isImported(sceKernelDcacheWritebackAll))
-				return J_ASM(sceKernelDcacheWritebackAll);
-			break;
-		case 0x876DBFAD:
-			if (isImported(sceKernelTrySendMsgPipe)) {
-				dbg_printf("%s: Hook sceKernelSendMsgPipe\n", __func__);
-				return J_ASM(sceKernelTrySendMsgPipe);
-			}
-			break;
-		case 0x647CEF33:
-			if (isImported(sceAudioGetChannelRestLength))
-				return J_ASM(_hook_sceAudioOutput2GetRestSample);
-			break;
-		case 0x06FB8A63:
-			return J_ASM(_hook_sceKernelUtilsMt19937UInt);
-		case 0x46F186C3:
-			if (isImported(sceDisplayWaitVblankStart)) {
-				dbg_printf("%s: Hook sceDisplayWaitVblankStartCB\n",
-					__func__);
-				return J_ASM(sceDisplayWaitVblankStart);
-			}
-			break;
-		case 0x3EE30821:
-			if (isImported(sceKernelDcacheWritebackAll)) {
-				dbg_printf("%s: Hook sceKernelDcacheWritebackRange\n",
-					__func__);
-				return J_ASM(sceKernelDcacheWritebackAll);
-			}
-			break;
-		case 0x34B9FA9E:
-			if (isImported(sceKernelDcacheWritebackInvalidateAll)) {
-				dbg_printf("%s: Hook sceKernelDcacheWritebackInvalidateRange\n",
-					__func__);
-				return J_ASM(sceKernelDcacheWritebackInvalidateAll);
-			}
-			break;
-		case 0x79D1C3FA:
-			if (isImported(sceKernelDcacheWritebackRange))
-				return J_ASM(_hook_sceKernelDcacheWritebackAll);
-			break;
-		case 0xE2D56B2D:
-			if (isImported(sceAudioOutputPannedBlocking)) {
-				dbg_printf("%s: Hook sceAudioOutputPanned\n", __func__);
-				return J_ASM(sceAudioOutputPannedBlocking);
-			}
-			break;
-		case 0x616403BA:
-			if (isImported(sceKernelTerminateDeleteThread)) {
-				dbg_printf("%s: Hook sceKernelTerminateThread\n", __func__);
-				return J_ASM(sceKernelTerminateDeleteThread);
-			}
-			break;
-		case 0xF919F628:
-			return J_ASM(hblKernelTotalFreeMemSize);
-		case 0x9C6EAAD7:
-			dbg_printf("%s: Hook sceDisplayGetVcount\n", __func__);
-			return J_ASM(_hook_generic_ok);
-#ifdef HOOK_Osk
-		case 0xF6269B82: // sceUtilityOskInitStart
-			return J_ASM(_hook_sceUtilityOskInitStart);
-		case 0x3DFAEBA9: // sceUtilityOskShutdownStart
-		case 0x4B85C861: // sceUtilityOskUpdate
-		case 0xF3F76017: // sceUtilityOskGetStatus
-			return J_ASM(_hook_generic_ok);
-#endif
+	if (!return_to_xmb_on_exit
+		&& !resolveHook(dst, nid, hblHook, sizeof(hblHook)))
+	{
+		return 0;
 	}
 
-	dbg_printf("Missing function: 0x%08X\n\n", nid);
-	return 0;
+	if (existing_real_call) {
+		if (!resolveHook(dst, nid, hookWithOrg, sizeof(hookWithOrg)))
+			return 0;
+
+		if (globals->isEmu || !globals->chdir_ok) {
+			if (!resolveHook(dst, nid, chdirHook, sizeof(chdirHook)))
+				return 0;
+
+			if (globals->isEmu
+				&& !resolveHook(dst, nid, emuHook, sizeof(emuHook)))
+			{
+				return 0;
+			}
+		}
+
+		return SCE_KERNEL_ERROR_ERROR;
+	}
+
+	if (nid == 0x06A70004 && override_sceIoMkdir == GENERIC_SUCCESS) {
+		dst[0] = JR_ASM(REG_RA);
+		dst[1] = LUI_ASM(REG_A0, 0);
+		return 0;
+	}
+
+	return resolveHook(dst, nid, hookWithoutOrg, sizeof(hookWithoutOrg));
 }
 
 /**
@@ -1848,7 +1753,13 @@ u32 setup_hook(u32 nid, u32 existing_real_call)
 *  Only ment to give a ok for function that we don't make custom version from
 *  By Thecobra
 **/
-u32 setup_default_nid()
+int setup_default_nid(int *dst)
 {
-	return J_ASM(_hook_generic_error);
+	if (dst == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+
+	dst[0] = J_ASM(_hook_generic_error);
+	dst[1] = NOP_ASM;
+
+	return 0;
 }
