@@ -168,18 +168,6 @@ int add_stub(const tStubEntry *stub)
 	return num;
 }
 
-// Returns nid_table index where the call is found, -1 if not found
-int get_call_index(int call)
-{
-    	int i;
-
-	for (i = 0; i < globals->nid_num; i++)
-		if (globals->nid_table[i].call == call)
-			return i;
-
-	return -1;
-}
-
 // Returns lib_table index where the library is found, -1 if not found
 int get_lib_index(const char *name)
 {

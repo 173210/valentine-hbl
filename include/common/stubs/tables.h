@@ -29,9 +29,6 @@ int add_nid(int nid, int call, int lib);
 
 int add_stub(const tStubEntry *stub);
 
-// Returns nid_table index where the call is found, -1 if not found
-int get_call_index(int call);
-
 // Returns lib_table index where the library is found, -1 if not found
 int get_lib_index(const char *name);
 
