@@ -60,16 +60,6 @@ void subinterrupthandler_cleanup()
 
 void UnloadModules()
 {
-#ifdef KILL_MODULE_MEMSET
-	if( unload_memset_flag != 0){
-		dbg_printf("memory.c:memset start\n");
-		KILL_MODULE_MEMSET;
-		dbg_printf("memory.c:memset done\n");
-		unload_memset_flag = 0;
-	}
-#endif
-
-
 	// Set inital UID to -1 and the current UID to 0
 	int i;
 	SceUID uids[MAX_MODULES_TO_FREE];

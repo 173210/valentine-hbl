@@ -107,10 +107,6 @@ void DeleteAllSemaphores(void)
 }
 #endif
 
-#ifdef KILL_MODULE_MEMSET
-static int unload_memset_flag = 0;
-#endif
-
 #ifdef GAME_FREEMEM_ADDR
 void FreeMem()
 {
@@ -250,11 +246,6 @@ void free_game_memory()
 #ifdef FPL_ADDR_LIST
 	dbg_printf("%s: Freeing FPL\n", __func__);
 	FreeFpl();
-#endif
-
-
-#ifdef KILL_MODULE_MEMSET
-unload_memset_flag = 1;
 #endif
 
 #ifndef LAUNCHER
