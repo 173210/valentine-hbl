@@ -43,7 +43,8 @@ static int run_eboot(const char *path)
 	SceUID fd, mod_id;
 	SceOff off;
 	char cfg_path[256];
-	int ret;
+	char *lastSlash;
+	int i, ret;
 
 	if (path == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
@@ -59,8 +60,25 @@ static int run_eboot(const char *path)
 	}
 
 	//Load Game config overrides
-	_sprintf(cfg_path, "%s" HBL_CONFIG, path);
-	loadConfig(cfg_path);
+	lastSlash = NULL;
+	for (i = 0; i < sizeof(cfg_path); i++) {
+		if (path[i] == 0) {
+			if (lastSlash != NULL) {
+				strcpy(lastSlash + 1, HBL_CONFIG);
+				loadConfig(cfg_path);
+			}
+
+			break;
+		}
+
+		cfg_path[i] = path[i];
+		if (cfg_path[i] == '/') {
+			if (i >= sizeof(cfg_path) - sizeof(HBL_PATH))
+				break;
+
+			lastSlash = cfg_path + i;
+		}
+	} while (i);
 
 	// Extracts ELF from PBP
 	eboot_get_elf_off(fd, &off);
