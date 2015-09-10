@@ -361,7 +361,7 @@ void _start()
 #endif
 
 	scr_init();
-	scr_puts("Starting HBL " VER_STR " http://code.google.com/p/valentine-hbl");
+	scr_puts("Starting HBL " VER_STR " http://wololo.net/hbl/");
 #ifdef DEBUG
 #ifdef NID_DEBUG
 	scr_puts("DEBUG version (+NIDS)");

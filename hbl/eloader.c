@@ -86,7 +86,7 @@ static int run_eboot(const char *path)
 
 	dbg_printf("%s: Loading module\n", __func__);
 
-	//clean VRAM before running the homebrew (see : http://code.google.com/p/valentine-hbl/issues/detail?id=137 )
+	//clean VRAM before running the homebrew (see : https://github.com/173210/valentine-hbl/issues/137 )
 	//if the game does not import sceGeEdramGetAddr or sceGeEdramGetSize, it might be safer to hardcode those values.
 	// I don't think they change based on each psp model
 	memset(sceGeEdramGetAddr(), 0, isImported(sceGeEdramGetSize) ? sceGeEdramGetSize() : EDRAM_SIZE);

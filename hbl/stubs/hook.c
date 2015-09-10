@@ -1098,7 +1098,7 @@ int _hook_sceAudioSRCChReserve (int samplecount, int UNUSED(freq), int channels)
 	int format = PSP_AUDIO_FORMAT_STEREO;
 	if (channels == 1)
 		format = PSP_AUDIO_FORMAT_MONO;
-	//samplecount needs to be 64 bytes aligned, see http://code.google.com/p/valentine-hbl/issues/detail?id=270
+	//samplecount needs to be 64 bytes aligned, see https://github.com/173210/valentine-hbl/issues/270
 	int result =  _hook_sceAudioChReserve (PSP_AUDIO_NEXT_CHANNEL, PSP_AUDIO_SAMPLE_ALIGN(samplecount), format);
 	if (result >=0 && result < 8)
 	{
