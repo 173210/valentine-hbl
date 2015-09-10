@@ -90,25 +90,14 @@ void UnloadModules()
 	}
 
 	/* shutdown the modules in usermode */
-	i = cur_uid - 1;
-#ifdef DONT_UNLOAD_MAIN_MODULE
-	while (1)
-#else
-	while (i >= 0)
-#endif
+	for (i = cur_uid - 1; (int)i >= 0; i--)
 	{
 		sceKernelStopModule(uids[i], 0, NULL, NULL, NULL);
-#ifdef DONT_UNLOAD_MAIN_MODULE
-		if (i <= 0)
-			break;
-#endif
 		int ret = sceKernelUnloadModule(uids[i]);
 		if (ret < 0)
 		{
 			dbg_printf("--> ERROR 0x%08X UNLOADING MODULE ID 0x%08X\n", ret, uids[i]);
 		}
-
-		i--;
 	}
 }
 
