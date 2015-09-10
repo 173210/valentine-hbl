@@ -259,9 +259,6 @@ unload_memset_flag = 1;
 
 #ifndef LAUNCHER
 	dbg_printf("%s: Unloading modules\n", __func__);
-#ifndef LOAD_MODULES_FOR_SYSCALLS
-	unload_utils();
-#endif
 #ifdef SUSPEND_THEN_DELETE_THREADS
 	// Delete module here before cleaning the threads,
 	// otherwise the main module cannot be unloaded
