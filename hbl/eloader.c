@@ -61,7 +61,7 @@ static int run_eboot(const char *path)
 
 	//Load Game config overrides
 	lastSlash = NULL;
-	for (i = 0; i < sizeof(cfg_path); i++) {
+	for (i = 0; ; i++) {
 		if (path[i] == 0) {
 			if (lastSlash != NULL) {
 				strcpy(lastSlash + 1, HBL_CONFIG);
@@ -71,14 +71,18 @@ static int run_eboot(const char *path)
 			break;
 		}
 
+		if (i >= sizeof(cfg_path))
+			break;
+
 		cfg_path[i] = path[i];
+
 		if (cfg_path[i] == '/') {
 			if (i >= sizeof(cfg_path) - sizeof(HBL_PATH))
 				break;
 
 			lastSlash = cfg_path + i;
 		}
-	} while (i);
+	}
 
 	// Extracts ELF from PBP
 	eboot_get_elf_off(fd, &off);
