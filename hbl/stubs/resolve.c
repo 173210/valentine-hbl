@@ -113,6 +113,6 @@ cont:
 		pstub_entry++;
 	}
 
-    dbg_printf("RESOLVING IMPORTS: Done.");
+	dbg_puts("RESOLVING IMPORTS: Done.");
 	return resolving_count;
 }
