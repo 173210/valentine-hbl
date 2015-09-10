@@ -15,8 +15,6 @@
 
 HBL_MODULE_INFO("HBL", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
 
-static int hbl_exit_cb_called = 0;
-int hook_exit_cb_called = 0;
 SceKernelCallbackFunction hook_exit_cb = NULL;
 
 int num_pend_th = 0;
@@ -34,7 +32,6 @@ static void cleanup(u32 num_lib)
 
 	//cleanup globals
 	globals->lib_num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
-	hook_exit_cb_called = 0;
 	hook_exit_cb = NULL;
 }
 
@@ -121,13 +118,18 @@ static int run_eboot(const char *path)
 	return 0;
 }
 
+static int call_hook_exit_cb()
+{
+	if (hook_exit_cb == NULL)
+		return 0;
+
+	dbg_printf("Call exit CB: %08X\n", (int)hook_exit_cb);
+	return hook_exit_cb(0, 0, NULL);
+}
+
 static void wait_for_eboot_end()
 {
-	// Sleep until all threads have exited.
-	int lwait = 1;
-	int exit_callback_timeout = 0;
-
-	while(lwait) {
+	while (num_run_th > 0) {
 		//sceKernelWaitSema(gthSema, 1, 0);
 
 		//Check for force exit to the menu
@@ -136,24 +138,22 @@ static void wait_for_eboot_end()
 		else if (isImported(sceCtrlPeekBufferPositive))
 			sceCtrlPeekBufferPositive(&pad, 1);
 
-		if (force_exit_buttons && pad.Buttons == force_exit_buttons)
-				exit_everything_but_me();
-
-		// Quit if the exit callback was called and has finished processing
-		if (hbl_exit_cb_called == 2) {
-			// Increment the time the homebrew is taking to exit
-			exit_callback_timeout++;
-
-			// Force quit if the timeout is reached or no exit callback was defined
-			if (!hook_exit_cb || (exit_callback_timeout > 20))
-				exit_everything_but_me();
+		if (force_exit_buttons && pad.Buttons == force_exit_buttons) {
+			call_hook_exit_cb();
+			break;
 		}
 
-		lwait = num_run_th + num_pend_th;
+		if (_hook_sceKernelExitGame_IsCalled) {
+			_hook_sceKernelExitGame_IsCalled = 0;
+			break;
+		}
+
 		//sceKernelSignalSema(gthSema, 1);
 
 		sceKernelDelayThread(16384);
 	}
+
+	exit_everything();
 
 	scr_init();
 	dbg_printf("Threads are dead\n");
@@ -171,20 +171,8 @@ static void ramcheck(int expected_free_ram) {
 int hbl_exit_callback()
 {	
 	dbg_printf("HBL Exit Callback Called\n");
-
-	// Signal that the callback is being run now
-	hbl_exit_cb_called = 1;
-
-	if (hook_exit_cb) {
-		dbg_printf("Call exit CB: %08X\n", (int)hook_exit_cb);
-		hook_exit_cb_called = 1;
-		hook_exit_cb(0, 0, NULL);
-	}
-
-	// Signal that the callback has finished
-	hbl_exit_cb_called = 2;
-
-	return 0;
+	kill_thread(globals->hblThread);
+	return call_hook_exit_cb();
 }
 
 // HBL callback thread
@@ -246,7 +234,7 @@ int module_start()
 
 		cleanup(globals->lib_num);
 		ramcheck(init_free);
-		if (!strcmp("quit", hb_fname) || hbl_exit_cb_called)
+		if (!strcmp("quit", hb_fname))
 			break;
 		strcpy(path, hb_fname);
 		init_free = hblKernelTotalFreeMemSize();
@@ -264,8 +252,6 @@ int module_start()
 
 		cleanup(globals->lib_num);
 		ramcheck(init_free);
-		if (hbl_exit_cb_called)
-			break;
 	}
 
 	scr_puts("Exiting");

@@ -48,6 +48,8 @@ static unsigned int rdm_seed;
 void (* net_term_func[5])();
 int net_term_num = 0;
 
+int _hook_sceKernelExitGame_IsCalled = 0;
+
 static unsigned int _hook_sceGeEdramGetSize()
 {
 	return EDRAM_SIZE;
@@ -318,8 +320,6 @@ int _hook_sceKernelStartThread(SceUID thid, SceSize arglen, void *argp)
 //Cleans up Threads and allocated Ram
 void threads_cleanup()
 {
-
-	int lthisthread = sceKernelGetThreadId();
 	u32 i;
 	dbg_printf("Threads cleanup\n");
 	hblWaitSema(globals->thSema, 1, 0);
@@ -334,60 +334,32 @@ void threads_cleanup()
 	}
 #endif
 
-	dbg_printf("Running Threads cleanup\n");
+	dbg_printf("%d running threads remain\n", num_run_th);
 	while (num_run_th > 0)
 	{
-		dbg_printf("%d running threads remain\n", num_run_th);
-		if (running_th[num_run_th - 1] != lthisthread)
-		{
-			dbg_printf("Kill thread ID %08X\n", running_th[num_run_th - 1]);
-			kill_thread(running_th[num_run_th - 1]);
-		}
-		else
-		{
-			dbg_printf("Not killing myself - yet\n");
-		}
+		dbg_printf("Kill thread ID %08X\n", running_th[num_run_th - 1]);
+		kill_thread(running_th[num_run_th - 1]);
 		num_run_th--;
 	}
 
 
-	dbg_printf("Pending Threads cleanup\n");
+	dbg_printf("%d pending threads remain\n", num_pend_th);
 	while (num_pend_th > 0)
 	{
-		dbg_printf("%d pending threads remain\n", num_pend_th);
-		/*************************************************************************/
-		/* This test shouldn't really apply to pending threads, but do it        */
-		/* anyway                                                                */
-		/*************************************************************************/
-		if (pending_th[num_pend_th - 1] != lthisthread)
-		{
-			dbg_printf("Kill thread ID %08X\n", pending_th[num_pend_th - 1]);
-			sceKernelDeleteThread(pending_th[num_pend_th - 1]);
-		}
-		else
-		{
-			dbg_printf("Not killing myself - yet\n");
-		}
+		dbg_printf("Kill thread ID %08X\n", pending_th[num_pend_th - 1]);
+		sceKernelDeleteThread(pending_th[num_pend_th - 1]);
 		num_pend_th--;
 	}
 
 #ifdef DELETE_EXIT_THREADS
-	 dbg_printf("Sleeping Threads cleanup\n");
 	/***************************************************************************/
 	/* Delete the threads that exitted but haven't been deleted yet            */
 	/***************************************************************************/
+	dbg_printf("%d exited threads remain\n", num_exit_th);
 	 while (num_exit_th > 0)
 	 {
-		dbg_printf("%d exited threads remain\n", num_exit_th);
-		if (exited_th[num_exit_th - 1] != lthisthread)
-		{
-			dbg_printf("Delete thread ID %08X\n", exited_th[num_exit_th - 1]);
-			sceKernelDeleteThread(exited_th[num_exit_th - 1]);
-		}
-		else
-		{
-			dbg_printf("Not killing myself - yet\n");
-		}
+		dbg_printf("Delete thread ID %08X\n", exited_th[num_exit_th - 1]);
+		sceKernelDeleteThread(exited_th[num_exit_th - 1]);
 		num_exit_th--;
 	 }
 #endif
@@ -867,7 +839,7 @@ void ram_cleanup()
 }
 
 
-void exit_everything_but_me()
+void exit_everything()
 {
 	net_term();
 	audio_term();
@@ -880,21 +852,13 @@ void exit_everything_but_me()
 //To return to the menu instead of exiting the game
 void _hook_sceKernelExitGame()
 {
-	/***************************************************************************/
-	/* Call any exit callback first. Or not, it should only be called when     */
-	/* quitting through the HOME exit screen.                                  */
-	/***************************************************************************/
-/*
-	if (!hook_exit_cb_called && hook_exit_cb)
-	{
-		dbg_printf("Call exit CB: %08X\n", hook_exit_cb);
-		hook_exit_cb_called = 1;
-		hook_exit_cb(0,0,NULL);
-	}
-*/
 	dbg_printf("_hook_sceKernelExitGame called\n");
-	exit_everything_but_me();
-	sceKernelExitDeleteThread(0);
+	_hook_sceKernelExitGame_IsCalled = 1;
+
+	if (isImported(sceKernelExitDeleteThread))
+		_hook_sceKernelExitDeleteThread(0);
+	else if (isImported(sceKernelExitThread))
+		_hook_sceKernelExitThread(0);
 }
 
 SceUID _hook_sceKernelAllocPartitionMemory(SceUID partitionid, const char *name, int type, SceSize size, void *addr)
@@ -1575,7 +1539,8 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		HOOK_FUNC(0x446D8DE6, _hook_sceKernelCreateThread),
 		HOOK_FUNC(0xF475845D, _hook_sceKernelStartThread),
 		HOOK_FUNC(0xAA73C935, _hook_sceKernelExitThread),
-		HOOK_FUNC(0x809CE29B, _hook_sceKernelExitDeleteThread),
+		HOOK_ALT_FUNC(0x809CE29B, 0x809CE29B, _hook_sceKernelExitDeleteThread),
+		HOOK_ALT_FUNC(0x809CE29B, 0xAA73C935, _hook_sceKernelExitThread),
 		HOOK_FUNC(0x4C25EA72, _hook_sceKernelLoadModule), //kuKernelLoadModule
 		HOOK_FUNC(0x977DE386, _hook_sceKernelLoadModule), // sceKernelLoadModule
 		HOOK_FUNC(0x50F0C1EC, _hook_sceKernelStartModule),

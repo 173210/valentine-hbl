@@ -27,6 +27,7 @@
 typedef struct
 {
 	int chdir_ok; //1 if sceIoChdir is correctly estimated, 0 otherwise
+	SceUID hblThread;
 	SceUID memSema; 		
  	SceUID thSema; 		
  	SceUID cbSema; 		

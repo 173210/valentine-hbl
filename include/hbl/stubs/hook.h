@@ -35,6 +35,8 @@
 extern void (* net_term_func[])();
 extern int net_term_num;
 
+extern int _hook_sceKernelExitGame_IsCalled;
+
 //Own functions
 void threads_cleanup();
 void ram_cleanup();
@@ -50,7 +52,7 @@ int sceDmacMemcpy(void *dst, const void *src, size_t n);
 
 int setup_hook(int *dst, int nid, u32 existing_real_call);
 int setup_default_nid(int *dst);
-void exit_everything_but_me();
+void exit_everything();
 
 /* HOOKS */
 

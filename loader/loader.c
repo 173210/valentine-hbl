@@ -340,7 +340,6 @@ void _start() __attribute__ ((section (".text.start"), noreturn));
 void _start()
 #endif
 {
-	SceUID thid;
 	int ret;
 
 #ifdef DEBUG
@@ -389,14 +388,14 @@ void _start()
 
 	// Create and start eloader thread
 	scr_printf("Starting HBL thread\n");
-	thid = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0xF0000000, NULL);
+	globals->hblThread = sceKernelCreateThread("HBL", start_thread, 0x18, 0x10000, 0xF0000000, NULL);
 
-	if (thid < 0) {
-		scr_printf("Error creating HBL thread: 0x%08X\n", thid);
-		hblExitGameWithStatus(thid);
+	if (globals->hblThread < 0) {
+		scr_printf("Error creating HBL thread: 0x%08X\n", globals->hblThread);
+		hblExitGameWithStatus(globals->hblThread);
 	}
 
-	ret = sceKernelStartThread(thid, 0, NULL);
+	ret = sceKernelStartThread(globals->hblThread, 0, NULL);
 	if (ret) {
 		scr_printf("Error starting HBL thread: 0x%08X\n", ret);
 		hblExitGameWithStatus(ret);
@@ -405,11 +404,23 @@ void _start()
 #ifdef LAUNCHER
 	return ret;
 #else
-	ret = sceKernelExitDeleteThread(0);
+	if (isImported(sceKernelExitDeleteThread))
+		ret = sceKernelExitDeleteThread(0);
+	else if (isImported(sceKernelExitThread)) {
+		dbg_printf("%s: warning: only sceKernelExitThread available for suicide\n",
+			__func__);
+		ret = sceKernelExitThread(0);
+	} else {
+		dbg_printf("%s: warning: no function availabale for suicide\n",
+			__func__);
+		goto loop;
+	}
+
 	if (ret)
-		dbg_printf("%s: deleting current thread failed: 0x%08X\n",
+		dbg_printf("%s: exiting current thread failed: 0x%08X\n",
 			__func__, ret);
 
+loop:
 	// Never executed (hopefully)
 	while(1)
 		sceKernelDelayThread(0xFFFFFFFF);
