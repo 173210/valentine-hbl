@@ -45,10 +45,10 @@ static int run_eboot(const char *path)
 	char cfg_path[256];
 	int ret;
 
-	scr_init();
-
 	if (path == NULL)
-		ret = SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+
+	scr_init();
 
 	dbg_printf("EBOOT path: %s\n", path);
 
