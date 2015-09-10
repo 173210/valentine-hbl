@@ -211,7 +211,7 @@ void free_game_memory()
 {
 	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
 		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
-\
+
 #ifdef TH_ADDR_LIST
 	dbg_printf("%s: Deleting all threads\n", __func__);
 	DeleteAllThreads();
