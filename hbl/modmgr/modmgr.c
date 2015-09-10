@@ -255,8 +255,7 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 
 	dbg_printf("resolve stubs\n");
 	// Resolve ELF's stubs with game's stubs and syscall estimation
-	if (!resolve_imports(stubs, stubs_size))
-		dbg_printf("WARNING: no stubs found!!\n");
+	resolve_imports(stubs, stubs_size);
 
 	mod_table[modid].state = LOADED;
 
