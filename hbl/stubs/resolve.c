@@ -44,7 +44,6 @@ void resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_size)
 	int *cur_call;
 	int real_call;
 	SceLibraryEntryTable* utility_exp = NULL;
-	unsigned int resolving_count = 0;
 
 	dbg_printf("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
 	/* Browse ELF stub headers */
