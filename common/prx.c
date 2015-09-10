@@ -16,7 +16,7 @@ static void log_modinfo(SceModuleInfo *modinfo)
 		"Stubs end: 0x%08X\n"
 		"GP value: 0x%08X\n",
 		modinfo->modname,
-		modinfo->modversion[0], modinfo->modversion[1],
+		modinfo->modversion[1], modinfo->modversion[0],
 		modinfo->modattribute,
 		(int)modinfo->ent_top,
 		(int)modinfo->stub_top,
