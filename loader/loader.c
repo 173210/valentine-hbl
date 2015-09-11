@@ -321,17 +321,6 @@ int start_thread()
 	return 0;
 }
 
-static void hblExitGameWithStatus(int status) __attribute__ ((noreturn));
-static void hblExitGameWithStatus(int status)
-{
-	if (isImported(sceKernelExitGameWithStatus))
-		sceKernelExitGameWithStatus(status);
-	else if (isImported(sceKernelExitGame))
-		sceKernelExitGame();
-
-	__builtin_unreachable();
-}
-
 // Entry point
 #ifdef LAUNCHER
 int module_start()

@@ -16,6 +16,7 @@
 HBL_MODULE_INFO("HBL", PSP_MODULE_USER, MAJOR_VER, MINOR_VER);
 
 SceKernelCallbackFunction hook_exit_cb = NULL;
+int hbl_exit_callback_IsCalled = 0;
 
 int num_pend_th = 0;
 int num_run_th = 0;
@@ -138,15 +139,11 @@ static void wait_for_eboot_end()
 		else if (isImported(sceCtrlPeekBufferPositive))
 			sceCtrlPeekBufferPositive(&pad, 1);
 
-		if (force_exit_buttons && pad.Buttons == force_exit_buttons) {
-			call_hook_exit_cb();
+		if (force_exit_buttons && pad.Buttons == force_exit_buttons)
 			break;
-		}
 
-		if (_hook_sceKernelExitGame_IsCalled) {
-			_hook_sceKernelExitGame_IsCalled = 0;
+		if (_hook_sceKernelExitGame_IsCalled)
 			break;
-		}
 
 		//sceKernelSignalSema(gthSema, 1);
 
@@ -154,6 +151,7 @@ static void wait_for_eboot_end()
 	}
 
 	exit_everything();
+	_hook_sceKernelExitGame_IsCalled = 0;
 
 	scr_init();
 	dbg_printf("Threads are dead\n");
@@ -168,11 +166,13 @@ static void ramcheck(int expected_free_ram) {
 }
 
 // HBL exit callback
-int hbl_exit_callback()
+static int hbl_exit_callback() __attribute__((noreturn));
+static int hbl_exit_callback()
 {	
 	dbg_printf("HBL Exit Callback Called\n");
 	kill_thread(globals->hblThread);
-	return call_hook_exit_cb();
+	hbl_exit_callback_IsCalled = 1;
+	hblExitGameWithStatus(call_hook_exit_cb());
 }
 
 // HBL callback thread
@@ -255,10 +255,7 @@ int module_start()
 	}
 
 	scr_puts("Exiting");
-	if (isImported(sceKernelExitGame))
-		sceKernelExitGame();
-	else if (isImported(sceKernelExitGameWithStatus))
-		sceKernelExitGameWithStatus(0);
+	hblExitGameWithStatus(0);
 
 	return 0;
 }

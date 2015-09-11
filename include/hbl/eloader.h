@@ -12,6 +12,7 @@
 #define PRX_LOAD_ADDRESS 0x08900000
 
 extern SceKernelCallbackFunction hook_exit_cb;
+extern int hbl_exit_callback_IsCalled;
 
 extern int num_pend_th;
 extern int num_run_th;

@@ -849,10 +849,13 @@ void exit_everything()
 	files_cleanup();
 }
 
-//To return to the menu instead of exiting the game
 void _hook_sceKernelExitGame()
 {
 	dbg_printf("_hook_sceKernelExitGame called\n");
+
+	if (hbl_exit_callback_IsCalled)
+		hblExitGameWithStatus(0);
+
 	_hook_sceKernelExitGame_IsCalled = 1;
 
 	if (isImported(sceKernelExitDeleteThread))

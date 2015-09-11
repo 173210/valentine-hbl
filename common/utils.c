@@ -29,3 +29,13 @@ void *findw(int val, const void *p, size_t size)
         return NULL;
 }
 
+void hblExitGameWithStatus(int status)
+{
+	if (isImported(sceKernelExitGameWithStatus))
+		sceKernelExitGameWithStatus(status);
+	else if (isImported(sceKernelExitGame))
+		sceKernelExitGame();
+
+	__builtin_unreachable();
+}
+

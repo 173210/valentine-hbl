@@ -14,5 +14,7 @@ void *findstr(const char *s, const void *p, size_t size);
 // Returns pointer to value
 void *findw(int val, const void *p, size_t size);
 
+void hblExitGameWithStatus(int status) __attribute__ ((noreturn));
+
 #endif
 
