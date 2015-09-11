@@ -301,15 +301,11 @@ static void p5_close_savedata()
 	else
 		return;
 
-	dbg_printf("entering savedata dialog loop\n");
-
 	while(1) {
 		status = sceUtilitySavedataGetStatus();
 
-		if (status != last_status) {
-			dbg_printf("status changed from %d to %d\n", last_status, status);
+		if (status != last_status)
 			last_status = status;
-		}
 
 		switch(status)
 		{
@@ -322,7 +318,6 @@ static void p5_close_savedata()
 				break;
 
 			case PSP_UTILITY_DIALOG_NONE:
-				dbg_printf("dialog has shut down\n");
 				return;
 		}
 
@@ -388,20 +383,18 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 		nid = (int *)ent->nid_p;
 
 		for (i = 0; i < ent->stub_size; i++) {
-			dbg_printf("-Resolving import 0x%08X: 0x%08X\n",
-				(int)stub, *nid);
-
 			// Is it known by HBL?
 			ret = get_nid_index(*nid);
 
 			if (ret < 0) {
-				dbg_printf("HBL Function missing, this can lead to trouble\n");
+				dbg_printf("HBL Function (address: 0x%08X, NID: 0x%08X) missing\n",
+					(uintptr_t)stub, *nid);
+
 				*stub++ = JR_ASM(REG_RA);
 				*stub++ = globals->isEmu ?
 					NOP_ASM :
 					estimate_syscall(ent->lib_name, *nid);
 			} else {
-				dbg_printf("-Found in NID table, using real call\n");
 				call = globals->nid_table[ret].call;
 				if (call & 0x0C000000) {
 					*stub++ = call;

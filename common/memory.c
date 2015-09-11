@@ -108,7 +108,6 @@ SceSize hblKernelMaxFreeMemSize()
     SceSize size, sizeblock;
     SceUID uid;
 
-    dbg_printf("Call to hblKernelMaxFreeMemSize()\n");
     // Init variables
     size = 0;
     sizeblock = 1024 * 1024;
@@ -142,7 +141,6 @@ SceSize hblKernelTotalFreeMemSize()
     u32 count,i;
     SceSize size, x;
 
-    dbg_printf("Call to hblKernelTotalFreeMemSize()\n");
     // Init variables
     size = 0;
     count = 0;
