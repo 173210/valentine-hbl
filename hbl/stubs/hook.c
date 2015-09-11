@@ -1674,7 +1674,10 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 	if (!resolveHook(dst, nid, forcedHook, sizeof(forcedHook)))
 		return 0;
 
-	if (!((isImported(scePowerGetCpuClockFrequency) || isImported(scePowerGetCpuClockFrequencyInt)) && (isImported(scePowerGetBusClockFrequency) || isImported(scePowerGetBusClockFrequencyInt)))
+	if (!((isImported(scePowerGetCpuClockFrequency)
+			|| isImported(scePowerGetCpuClockFrequencyInt))
+		&& (isImported(scePowerGetBusClockFrequency)
+			|| isImported(scePowerGetBusClockFrequencyInt)))
 		&& !resolveHook(dst, nid, forcedScePowerHook, sizeof(forcedScePowerHook)))
 	{
 		return 0;
