@@ -20,6 +20,22 @@ void DeleteAllThreads(void)
 }
 #endif
 
+#ifdef VTIMER_ADDR_LIST
+void CancelAllVTimerHandlers()
+{
+	unsigned int i;
+	static const u32 addrs[] = VTIMER_ADDR_LIST;
+	int r;
+
+	for (i = 0; i < sizeof(addrs) / sizeof(u32); i++) {
+		r = sceKernelSetVTimerHandlerWide(*(SceUID *)addrs[i], 0, NULL, NULL);
+		if (r)
+			dbg_printf("--> ERROR 0x%08X CANCELING VTIMER HANDLER 0x%08X\n",
+				r, *(SceUID *)addrs[i]);
+	}
+}
+#endif
+
 #ifdef ALARM_ADDR_LIST
 void CancelAllAlarms(void)
 {
@@ -215,6 +231,11 @@ void free_game_memory()
 #ifdef TH_ADDR_LIST
 	dbg_printf("%s: Deleting all threads\n", __func__);
 	DeleteAllThreads();
+#endif
+
+#ifdef VTIMER_ADDR_LIST
+	dbg_printf("%s: Canceling all VTimer handlers\n", __func__);
+	CancelAllVTimerHandlers();
 #endif
 
 #ifdef ALARM_ADDR_LIST
