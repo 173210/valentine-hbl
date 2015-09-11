@@ -5,5 +5,7 @@ __It does NOT run ISO/CSO__
 
 __PLEASE RESPECT THE GPL LICENSE!!!__
 
+[FAQ](https://github.com/173210/valentine-hbl/wiki/FAQ)
+
 If you provide a compiled version of this software, please ALWAYS provide the sources!
 This site is for development only. Please abstain posting non-development comments, they will be erased.
