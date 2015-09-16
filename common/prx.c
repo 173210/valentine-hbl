@@ -98,6 +98,8 @@ static int relocSec(SceUID fd, SceOff off, const Elf32_Shdr *shdr, void *base)
 
 		switch (ELF32_R_TYPE(entry->r_info)) {
 			case R_MIPS_NONE:
+			case R_MIPS_GPREL16:
+			case R_MIPS_PC16:
 				break;
 
 			case R_MIPS_32:
