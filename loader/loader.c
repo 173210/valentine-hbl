@@ -53,27 +53,22 @@ static void *hblMalloc(const char *name, SceSize size, void *p)
 		return NULL;
 
 	if (p == NULL) {
-		blockid = sceKernelAllocPartitionMemory(2, name,
-			PSP_SMEM_Low, size + (1 << 16), NULL);
+		blockid = sceKernelAllocPartitionMemory(
+			2, name, PSP_SMEM_Low, size, NULL);
 		if (blockid < 0) {
 			dbg_printf("FAILED: 0x%08X\n", blockid);
 			return NULL;
 		}
 
 		p = sceKernelGetBlockHeadAddr(blockid);
-		if ((int)p & ((1 << 16) - 1))
-			p = (void *)(((int)p & ~((1 << 16) - 1)) + (1 << 16));
 
 		if ((int)p + size >= PRX_LOAD_ADDRESS) {
-			blockid = sceKernelAllocPartitionMemory(2, name,
-				PSP_SMEM_High, size + (1 << 16), NULL);
+			blockid = sceKernelAllocPartitionMemory(
+				2, name, PSP_SMEM_High, size, NULL);
 			if (blockid < 0) {
 				dbg_printf("FAILED: 0x%08X\n", blockid);
 				return NULL;
 			}
-
-			if ((int)p & ((1 << 16) - 1))
-				p = (void *)(((int)p & ~((1 << 16) - 1)) + (1 << 16));
 		}
 	} else {
 		blockid = sceKernelAllocPartitionMemory(2, name,

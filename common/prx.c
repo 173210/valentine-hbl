@@ -25,62 +25,126 @@ static void log_modinfo(SceModuleInfo *modinfo)
 }
 #endif
 
-// Relocates based on a MIPS relocation type
-// Returns 0 on success, -1 on fail
-static int reloc_entry(const tRelEntry *entry, void *addr)
+static uint32_t unalignLw(void *p)
 {
-	int *target = addr + (int)entry->r_offset;
-	int buf;
-
-	if (addr == NULL)
-		return -1;
-
-	memcpy(&buf, target, sizeof(int));
-
-	//Relocate depending on reloc type
-	switch(ELF32_R_TYPE(entry->r_info)) {
-		// Nothing
-		case R_MIPS_NONE:
-			return 0;
-
-		// Word address
-		case R_MIPS_32:
-			buf += (int)addr;
-			break;
-
-		// Jump instruction
-		case R_MIPS_26:
-			buf = (buf & 0xFC000000) | ((buf & 0x03FFFFFF) + ((int)addr >> 2));
-			break;
-
-		// Low 16 bits relocate as high 16 bits
-		case R_MIPS_HI16:
-			buf = (buf & 0xFFFF0000) | ((buf & 0x0000FFFF) + ((int)addr >> 16));
-			break;
-
-		// Low 16 bits relocate as low 16 bits
-		case R_MIPS_LO16:
-			buf = (buf & 0xFFFF0000) | ((buf + (int)addr) & 0x0000FFFF);
-			break;
-
-		default:
-			return -1;
-	}
-
-	memcpy(target, &buf, sizeof(int));
-
-	return 0;
+	uint8_t *_p = p;
+	return _p[0] | (_p[1] << 8) | (_p[2] << 16) | (_p[3] << 24);
 }
 
-// Relocates PRX sections that need to
-// Returns number of relocated entries
-static int reloc(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *addr)
+static int16_t unalignLh(void *p)
+{
+	uint8_t *_p = p;
+	return _p[0] | (_p[1] << 8);
+}
+
+static int16_t unalignLhu(void *p)
+{
+	uint8_t *_p = p;
+	return _p[0] | (_p[1] << 8);
+}
+
+static void unalignSw(void *p, uint32_t w)
+{
+	uint8_t *_p = p;
+
+	_p[0] = w & 0xFF;
+	_p[1] = (w >> 8) & 0xFF;
+	_p[2] = (w >> 16) & 0xFF;
+	_p[3] = (w >> 24) & 0xFF;
+}
+
+static void unalignSh(void *p, uint16_t h)
+{
+	uint8_t *_p = p;
+
+	_p[0] = h & 0xFF;
+	_p[1] = (h >> 8) & 0xFF;
+}
+
+static int relocSec(SceUID fd, SceOff off, const Elf32_Shdr *shdr, void *base)
+{
+	SceUID block;
+	tRelEntry *top, *entry;
+	void *dst;
+	Elf32_Word hiAdd, w;
+	int r;
+
+	if (shdr == NULL || base == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	off += shdr->sh_offset;
+	r = sceIoLseek(fd, off, PSP_SEEK_SET);
+	if (r < 0)
+		return r;
+
+	block = sceKernelAllocPartitionMemory(2, "HBL Relocation Section",
+		PSP_SMEM_Low, shdr->sh_size, NULL);
+	if (block < 0)
+		return block;
+
+	top = sceKernelGetBlockHeadAddr(block);
+	if (top == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+	r = sceIoRead(fd, top, shdr->sh_size);
+	if (r < 0)
+		return r;
+
+	hiAdd = 0;
+	entry = (void *)((uintptr_t)top + shdr->sh_size);
+	while ((uintptr_t)entry > (uintptr_t)top) {
+		entry--;
+		dst = (void *)((uintptr_t)base + entry->r_offset);
+
+		switch (ELF32_R_TYPE(entry->r_info)) {
+			case R_MIPS_NONE:
+				break;
+
+			case R_MIPS_32:
+				unalignSw(dst, unalignLw(dst) + (uint32_t)base);
+				break;
+
+			case R_MIPS_26:
+				w = unalignLw(dst);
+				unalignSw(dst, (w & 0xFC000000)
+					| ((((uint32_t)base >> 2) + w) & 0x03FFFFFF));
+				break;
+
+			case R_MIPS_HI16:
+				if (hiAdd == 0) {
+					dbg_puts("warning: corresponding R_MIPS_LO16"
+						"for R_MIPS_HI16 not found");
+					hiAdd = (uint32_t)base;
+				}
+
+				unalignSh(dst, unalignLhu(dst) + (hiAdd >> 16));
+				break;
+
+			case R_MIPS_LO16:
+				w = (uint32_t)base + unalignLh(dst);
+				hiAdd = w + 0x8000;
+				unalignSh(dst, w & 0xFFFF);
+				break;
+
+			default:
+				dbg_printf("warning: invalid r_info: 0x%X\n",
+					entry->r_info);
+				break;
+		}
+	}
+
+	return sceKernelFreePartitionMemory(block);
+}
+
+// Relocates all sections that need to
+static int relocAll(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *base)
 {
 	Elf32_Shdr shdr;
-	tRelEntry relentry;
 	SceOff cur;
-	int i, j;
-	int relocated = 0;
+	int i, r;
+
+	if (hdr == NULL || base == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	dbg_printf("relocate_sections\n");
 
@@ -88,8 +152,9 @@ static int reloc(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *addr)
 
 	// First section header
 	cur = off + hdr->e_shoff;
-	if (sceIoLseek(fd, cur, PSP_SEEK_SET) < 0)
-		return relocated;
+	r = sceIoLseek(fd, cur, PSP_SEEK_SET);
+	if (r < 0)
+		return r;
 
 	// Browse all section headers
 	for (i = 0; i < hdr->e_shnum; i++) {
@@ -100,26 +165,16 @@ static int reloc(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *addr)
 		cur += sizeof(Elf32_Shdr);
 		
 		if (shdr.sh_type == LOPROC) {
-			//dbg_printf("Relocating...\n");
-
-			if (sceIoLseek(fd, off + shdr.sh_offset, PSP_SEEK_SET) < 0)
-				continue;
-
-			for (j = 0; j < shdr.sh_size; j += sizeof(tRelEntry)) {
-				if (sceIoRead(fd, &relentry, sizeof(tRelEntry)) < 0)
-					continue;
-				if (reloc_entry(&relentry, addr))
-					continue;
-				relocated++;
-			}
-
-			if (sceIoLseek(fd, cur, PSP_SEEK_SET) < 0)
-				break;
+			dbg_printf("Relocating section %d\n", i);
+			relocSec(fd, off, &shdr, base);
+			r = sceIoLseek(fd, cur, PSP_SEEK_SET);
+			if (r < 0)
+				return r;
 		}
 	}
 
 	// All relocation section processed
-	return relocated;
+	return 0;
 }
 
 // Loads relocatable executable in memory using fixed address
@@ -179,11 +234,9 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 	dbg_printf("Before reloc -> Offset: 0x%08X\n", off);
 
 	//Relocate all sections that need to
-	ret = reloc(fd, off, hdr, *addr);
-
-	dbg_printf("Relocated entries: %d\n", ret);
-	if (!ret)
-		dbg_puts("WARNING: no entries to relocate on a relocatable ELF");
+	ret = relocAll(fd, off, hdr, *addr);
+	if (ret < 0)
+		dbg_printf("warning: relocation error: 0x%08X\n", ret);
 
 	// Return size of total size copied in memory
 	return phdr.p_memsz;
