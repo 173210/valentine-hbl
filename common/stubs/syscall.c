@@ -1,177 +1,107 @@
 #include <common/stubs/syscall.h>
-#include <common/stubs/tables.h>
-#include <common/debug.h>
-#include <common/globals.h>
+#include <common/utils/string.h>
+#include <common/memory.h>
 #include <common/sdk.h>
-#include <config.h>
+#include <hbl/modmgr/elf.h>
 
-// Searches for NID in a NIDS file and returns the index
-static int find_nid_file(SceUID fd, int nid)
+typedef struct {
+	tStubEntry *dst;
+	tStubEntry *src;
+} Arg;
+
+int loadNetCommon()
 {
-	int i = 0;
-	int cur, ret;
-
-	sceIoLseek(fd, 0, PSP_SEEK_SET);
-	while((ret = sceIoRead(fd, &cur, sizeof(cur))) > 0)
-		if (cur == nid)
-			return i;
-		else
-			i++;
-
-	return ret;
-}
-
-// Opens .nids file for a given library
-SceUID open_nids_file(const char *lib)
-{
-	const char lib_path[] = LIB_PATH;
-	const char lib_ext[] = LIB_EXT;
-	char file[sizeof(lib_path) + MAX_LIB_NAME_LEN + sizeof(lib_ext) + 3];
-	int fw_ver = globals->module_sdk_version;
-	int i, j, ret;
-
-	for (i = 0; lib_path[i]; i++)
-		file[i] = lib_path[i];
-
-	//We try to open a lib file base on the version of the firmware as precisely as possible,
-	//then fallback to less precise versions. for example,try in this order:
-	// libs_503, libs_50x, libs_5xx, libs
-	file[i++] = '_';
-
-	j = i + 2;
-	while (i <= j) {
-		fw_ver >>= 8;
-		file[i++] = '0' + (fw_ver & 0xF);
-	}
-
-	for (j = 0; lib[j]; j++) {
-		file[i++] = lib[j];
-	}
-
-	for (j = 0; lib_ext[j]; j++) {
-		file[i++] = lib_ext[j];
-	}
-
-	file[i] = '\0';
-
-	for (i = 0; i < 3; i++) {
-		ret = sceIoOpen(file, PSP_O_RDONLY, 0777);
-		if (ret > 0)
-			break;
-
-		file[j--] = 'x';
-	}
-
-	if (ret < 0) {
-		for (i = 0; lib[i]; i++) {
-			file[j++] = lib[i];
-		}
-
-		for (i = 0; lib_ext[i]; i++) {
-			file[j++] = lib_ext[i];
-		}
-
-		ret = sceIoOpen(file, PSP_O_RDONLY, 0777);
-	}
-
-	return ret;
-}
-
-// Estimate a syscall from library's closest known syscall
-static int estimate_syscall_closest(int lib_index, int nid_index, int nid, SceUID fd)
-{
-	int higher_nid_index, lower_nid_index;
-	int closest_index = -1;
-
-	int higher_file_index = -1;
-	int lower_file_index = -1;
-
-	int est_call;
-
-	dbg_printf("=> FROM CLOSEST\n");
-
-	// Get higher and lower known NIDs
-	higher_nid_index = get_higher_known_nid(lib_index, nid);
-	lower_nid_index = get_lower_known_nid(lib_index, nid);
-
-	if (lower_nid_index >= 0) {
-		lower_file_index = find_nid_file(fd, globals->nid_table[lower_nid_index].nid);
-		dbg_printf("Lower known NID: 0x%08X; index: %d\n",
-			globals->nid_table[lower_nid_index].nid, lower_file_index);
-	}
-
-	// Get higher and lower NID index on file
-	if (higher_nid_index >= 0) {
-		higher_file_index = find_nid_file(fd, globals->nid_table[higher_nid_index].nid);
-		dbg_printf("Higher known NID: 0x%08X; index: %d\n",
-			globals->nid_table[higher_nid_index].nid, higher_file_index);
-
-		// Check which one is closer
-		closest_index = higher_file_index < 0 ||
-			(lower_file_index >= 0 && higher_file_index - nid_index >= nid_index - lower_file_index) ?
-				lower_file_index : higher_file_index;
-	}
-
-	dbg_printf("Closest: %d\n", closest_index);
-
-	// Estimate based on closest known NID
-	if (closest_index > nid_index)
-		est_call = GET_SYSCALL_NUMBER(globals->nid_table[higher_nid_index].call)
-				+ nid_index - higher_file_index;
+	if (isImported(sceUtilityLoadNetModule))
+		return sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
+	else if (isImported(sceUtilityLoadModule))
+		return sceUtilityLoadModule(PSP_MODULE_NET_COMMON);
 	else
-		est_call = GET_SYSCALL_NUMBER(globals->nid_table[lower_nid_index].call)
-				+ nid_index - lower_file_index;
-
-	// Get syscall instruction
-	return SYSCALL_ASM(est_call);
+		return SCE_KERNEL_ERROR_ERROR;
 }
 
-// Estimate a syscall
-// Pass reference NID and distance from desidered function in the export table
-// Return syscall instruction
-// Syscall accuracy (%) = (exports known from library / total exports from library) x 100
-// m0skit0's implementation
-int estimate_syscall(const char *lib, int nid)
+int unloadNetCommon()
 {
-	SceUID fd;
-	int lib_index, nid_index, est_call;
+	if (isImported(sceUtilityUnloadNetModule))
+		return sceUtilityUnloadNetModule(PSP_NET_MODULE_COMMON);
+	else if (isImported(sceUtilityUnloadModule))
+		return sceUtilityUnloadModule(PSP_MODULE_NET_COMMON);
+	else
+		return SCE_KERNEL_ERROR_ERROR;
+}
 
-	dbg_printf("=> ESTIMATING %s : 0x%08X\n", lib, nid);
+static int store(SceSize args, const Arg *argp)
+{
+	while (1) {
+		argp->dst->lib_name = argp->src->lib_name;
+		argp->dst->import_flags = argp->src->import_flags;
+		argp->dst->lib_ver = argp->src->lib_ver;
+		argp->dst->import_stubs = argp->src->import_stubs;
+		argp->dst->stub_size = argp->src->stub_size;
+		argp->dst->nid_p = argp->src->nid_p;
 
-	// Finding the library on table
-	lib_index = get_lib_index(lib);
-	if (lib_index < 0) {
-		dbg_printf("->ERROR: LIBRARY NOT FOUND ON TABLE  %s\n", lib);
-		return 0;
+		sceKernelDelayThread(0);
+	}
+}
+
+tStubEntry *getNetLibStubInfo()
+{
+	uintptr_t p;
+
+	for (p = 0x08804000; p < 0x09FFFF00; p += 4)
+	{
+		if (!strcmp((char *)p, "sceNet_Library")
+			&& !strcmp((char *)p + 0x34, "sceNetIfhandle_lib"))
+		{
+			return (void *)(p - 0x80);
+		}
 	}
 
-	fd = open_nids_file(lib);
-	if (fd < 0) {
-		dbg_printf("->ERROR: couldn't open NIDS file for %s\n", lib);
-		return 0;
+	return NULL;
+}
+
+int resolveSyscall(tStubEntry *dst, tStubEntry *netLib)
+{
+	Arg arg;
+	SceUID thid;
+	int r;
+
+	if (dst == NULL || netLib == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	dst->import_flags = 0x0011;
+	dst->lib_ver = strcmp(dst->lib_name, "sceSuspendForUser") ? 0x4001 : 0x4000;
+
+	arg.src = dst;
+	arg.dst = netLib;
+
+	thid = sceKernelCreateThread("HBL Stub Information Injector",
+		(void *)store, 8, 512, THREAD_ATTR_USER, NULL);
+	if (thid < 0)
+		return thid;
+
+	r = unloadNetCommon();
+	if (r) {
+		sceKernelDeleteThread(thid);
+		return r;
 	}
-	
-	// Get NIDs index in file
-	nid_index = find_nid_file(fd, nid);
-	if (nid_index < 0) {
-		dbg_printf("->ERROR: NID NOT FOUND ON .NIDS FILE\n");
-		return 0;
+
+	r = sceKernelStartThread(thid, sizeof(arg), &arg);
+	if (r) {
+		sceKernelDeleteThread(thid);
+		return r;
 	}
-	dbg_printf("NID index in file: %d\n", nid_index);
 
-	est_call = estimate_syscall_closest(lib_index, nid_index, nid, fd);
+	r = loadNetCommon();
+	if (r) {
+		kill_thread(thid);
+		return r;
+	}
 
-	dbg_printf("--FIRST ESTIMATED SYSCALL: 0x%08X\n", est_call);
+	r = kill_thread(thid);
+	if (r)
+		return r;
 
-	// TODO: refresh library descriptor with more accurate information if any estimated syscalls already existed
+	memcpy(dst->jump_p, netLib->jump_p, dst->stub_size * 8);
 
-	dbg_printf("--FINAL ESTIMATED SYSCALL: 0x%08X\n", est_call);
-
-	sceIoClose(fd);
-
-	add_nid(nid, est_call, lib_index);
-
-	dbg_printf("Estimation done\n");
-
-	return est_call;
+	return 0;
 }

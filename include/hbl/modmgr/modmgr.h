@@ -25,6 +25,11 @@ typedef struct
 	char path[256];		// Path (do we need this?)
 } HBLModInfo;
 
+typedef const struct {
+	int id;
+	const char *name;
+} UtilModInfo;
+
 // Loads a module to memory
 SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off);
 
@@ -37,8 +42,10 @@ SceUID find_module_by_path(const char *modpath);
 
 void unload_modules();
 
+UtilModInfo *get_util_mod_info(const char *lib);
+
 // Loads and registers exports from an utility module
-SceLibraryEntryTable *load_export_util(const char* lib);
+SceLibraryEntryTable *load_export_util(UtilModInfo *util_mod, const char *lib);
 
 #endif
 

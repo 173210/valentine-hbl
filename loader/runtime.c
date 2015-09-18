@@ -207,6 +207,8 @@ int elf_check_stub_entry(const tStubEntry *pentry)
 		pentry->stub_size && pentry->stub_size < 256;
 }
 
+#ifdef NO_SYSCALL_RESOLVER
+
 int p2_add_stubs()
 {
 	const tStubEntry *pentry;
@@ -215,7 +217,7 @@ int p2_add_stubs()
 	pentry = (tStubEntry *)0x08800000;
 #else
 	for (pentry = (tStubEntry *)0x08800000;
-		pentry != libStubTop;
+		pentry != libStub;
 		pentry = (tStubEntry *)((int)pentry + 4)) {
 
 		while (elf_check_stub_entry(pentry)) {
@@ -231,7 +233,7 @@ int p2_add_stubs()
 		}
 	}
 
-	pentry = libStubBtm;
+	pentry = (void *)((uintptr_t)pentry + libStubSize);
 #endif
 	while ((int)pentry < 0x0A000000) {
 		while (elf_check_stub_entry(pentry)) {
@@ -367,22 +369,111 @@ int p5_add_stubs()
 	return num;
 }
 
-// Autoresolves HBL stubs
-int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
+#endif
+
+static void writebackDcacheLoaderStub()
 {
-	const tStubEntry *ent;
+	if (isImported(sceKernelDcacheWritebackRange))
+		sceKernelDcacheWritebackRange(stubText, (uintptr_t)stubTextSize);
+	else if (isImported(sceKernelDcacheWritebackAll))
+		sceKernelDcacheWritebackAll();
+}
+
+static void fillIcacheLoaderStub()
+{
+	hblIcacheFillRange(stubText,
+		(void *)((uintptr_t)stubText + (uintptr_t)stubTextSize));
+}
+
+void synciLoaderStub()
+{
+	writebackDcacheLoaderStub();
+	fillIcacheLoaderStub();
+}
+
+static int mergeStubsWithoutDcache(const tStubEntry *dst, const tStubEntry *src)
+{
+	const size_t stubSize = 8;
+	Elf32_Word i, j;
+
+	if (dst == NULL || src == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+	for (i = 0; i < src->stub_size; i++)
+		for (j = 0; j < dst->stub_size; j++)
+			if (((int32_t *)dst->nid_p)[j] == ((int32_t *)src->nid_p)[i])
+				memcpy((void *)(((uintptr_t)dst->jump_p | 0x40000000) + j * stubSize),
+					(void *)((uintptr_t)src->jump_p + i * stubSize),
+					stubSize);
+
+	return 0;
+}
+
+#if defined(DEBUG) || !defined(NO_SYSCALL_RESOLVER)
+void initLoaderStubs()
+{
+	const tStubEntry *src, *dst;
+	int num = 0;
+#ifdef LAUNCHER
+	src = (tStubEntry *)0x08800000;
+#else
+	for (src = (tStubEntry *)0x08800000;
+		src != libStub;
+		src = (tStubEntry *)((uintptr_t)src + 4)) {
+
+		while (elf_check_stub_entry(src)) {
+			if (src->import_flags == 0x11 || src->import_flags == 0)
+				for (dst = libStub;
+					(uintptr_t)dst < (uintptr_t)libStub + (uintptr_t)libStubSize;
+					dst++)
+				{
+					if (!strcmp(src->lib_name, dst->lib_name))
+						mergeStubsWithoutDcache(dst, src);
+				}
+
+			src++;
+		}
+	}
+
+	src = (void *)((uintptr_t)src + libStubSize);
+#endif
+	while ((uintptr_t)src < 0x0A000000) {
+		while (elf_check_stub_entry(src)) {
+			if (src->import_flags == 0x11 || src->import_flags == 0)
+				for (dst = libStub;
+					(uintptr_t)dst < (uintptr_t)libStub + (uintptr_t)libStubSize;
+					dst++)
+				{
+					if (!strcmp(src->lib_name, dst->lib_name))
+						mergeStubsWithoutDcache(dst, src);
+				}
+
+			src++;
+		}
+
+		src = (tStubEntry *)((int)src + 4);
+	}
+
+	fillIcacheLoaderStub();
+}
+#endif
+
+int resolveHblSyscall(tStubEntry *p, size_t n)
+{
+	uintptr_t btm;
+#ifdef NO_SYSCALL_RESOLVER
 	int i, ret;
 	int *stub, *nid;
 	int call;
 
-	if (top == NULL || end == NULL)
+	if (p == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-	for (ent = top; ent != end; ent++) {
-		stub = (int *)((int)ent->jump_p | 0x40000000);
-		nid = (int *)ent->nid_p;
+	for (btm = (uintptr_t)p + n; (uintptr_t)p < btm; p++) {
+		stub = (int *)((int)p->jump_p | 0x40000000);
+		nid = (int *)p->nid_p;
 
-		for (i = 0; i < ent->stub_size; i++) {
+		for (i = 0; i < p->stub_size; i++) {
 			// Is it known by HBL?
 			ret = get_nid_index(*nid);
 
@@ -391,9 +482,7 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 					(uintptr_t)stub, *nid);
 
 				*stub++ = JR_ASM(REG_RA);
-				*stub++ = globals->isEmu ?
-					NOP_ASM :
-					estimate_syscall(ent->lib_name, *nid);
+				*stub++ = NOP_ASM;
 			} else {
 				call = globals->nid_table[ret].call;
 				if (call & 0x0C000000) {
@@ -408,10 +497,25 @@ int resolve_hbl_stubs(const tStubEntry *top, const tStubEntry *end)
 			nid++;
 		}
 	}
+#else
+	tStubEntry *netLib;
+	int r;
 
-	dbg_printf(" ****STUBS SEARCHED\n");
-	end--;
-	hblIcacheFillRange(top->jump_p, (void *)(*(int *)end->jump_p + end->stub_size));
+	r = loadNetCommon();
+	if (r)
+		return r;
 
-	return 0;
+	netLib = getNetLibStubInfo();
+	if (netLib == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+	for (btm = (uintptr_t)p + n; (uintptr_t)p < btm; p++) {
+		r = resolveSyscall(p, netLib);
+		if (r)
+			dbg_printf("warning: failed to resolve syscall 0x%08X\n",
+				r);
+	}
+
+	return unloadNetCommon();
+#endif
 }

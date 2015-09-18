@@ -50,8 +50,7 @@ int ModuleMgrForUser_8F2DF740(int exitcode, SceSize argsize, void *argp, int *st
 int sceDmacMemcpy(void *dst, const void *src, size_t n);
 
 
-int setup_hook(int *dst, int nid, u32 existing_real_call);
-int setup_default_nid(int *dst);
+int hook(int *dst, int nid);
 void exit_everything();
 
 /* HOOKS */

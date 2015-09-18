@@ -23,18 +23,24 @@ endif
 ifdef DEBUG
 CFLAGS += -DDEBUG
 endif
+ifdef NO_SYSCALL_RESOLVER
+CFLAGS += -DNO_SYSCALL_RESOLVER
+endif
 
 OBJ_DEBUG := common/debug.o
 OBJ_CACHE := common/utils/cache.o
-OBJS_COMMON := \
-	common/stubs/syscall.o common/stubs/tables.o \
-	common/utils/fnt.o common/utils/scr.o common/utils/string.o \
+OBJS_COMMON := common/utils/fnt.o common/utils/scr.o common/utils/string.o \
 	common/memory.o common/prx.o common/utils.o
 ifdef DEBUG
 OBJS_COMMON += $(OBJ_DEBUG)
 endif
 ifneq ($(EXPLOIT),launcher)
 OBJS_COMMON += $(OBJ_CACHE)
+endif
+ifdef NO_SYSCALL_RESOLVER
+OBJS_COMMON += common/stubs/tables.o
+else
+OBJS_COMMON += common/stubs/syscall.o
 endif
 
 LIBS := -lpspaudio -lpspctrl -lpspdisplay -lpspge -lpsprtc -lpsputility

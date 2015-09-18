@@ -34,7 +34,7 @@ PARAM.SFO:
 	mksfo 'Half Byte Loader' $@
 
 H.BIN: H.elf
-	psp-objcopy -S -O binary -R .sceStub.text $< $@
+	psp-objcopy -S -O binary $< $@
 
 H.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(IMPORTS)
 	$(CC) $(CFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@

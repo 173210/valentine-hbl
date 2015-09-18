@@ -18,9 +18,6 @@
 
 #define MAX_OPEN_DIR_VITA 10
 
-// Max libraries to consider
-#define MAX_LIBRARIES 64
-
 // Size of NID-to-call table
 #define NID_TABLE_SIZE 1024
 
@@ -37,10 +34,10 @@ typedef struct
 	// firmware and model
 	int isEmu;
 	int module_sdk_version;
+#ifdef NO_SYSCALL_RESOLVER
 	int nid_num;
 	tNIDResolver nid_table[NID_TABLE_SIZE];
-	int lib_num;
-	tSceLibrary lib_table[MAX_LIBRARIES];
+#endif
 } tGlobals;
 
 #define GLOBALS_ADDR (0x14000 - sizeof(tGlobals))

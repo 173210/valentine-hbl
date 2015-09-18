@@ -37,17 +37,36 @@ static int get_jump_from_export(int *dst, u32 nid, SceLibraryEntryTable *pexport
 }
 
 // Resolves imports in ELF's program section already loaded in memory
-void resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_size)
+int resolve_imports(tStubEntry *pstub_entry, unsigned int stubs_size)
 {
-	int i, j, res, nid_index;
+	UtilModInfo *util_mod;
+	tStubEntry *netLib;
+	uintptr_t btm;
+	int i, res, nid_index;
 	int *cur_nid;
 	int *cur_call;
-	int real_call;
+#ifndef NO_SYSCALL_RESOLVER
+	int netCommonIsImported = 0;
+#endif
 	SceLibraryEntryTable* utility_exp = NULL;
 
 	dbg_printf("RESOLVING IMPORTS. Stubs size: %d\n", stubs_size);
-	/* Browse ELF stub headers */
-	for(i=0; i<stubs_size; i+=sizeof(tStubEntry))
+
+	if (pstub_entry == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+#ifndef NO_SYSCALL_RESOLVER
+	res = loadNetCommon();
+	if (res)
+		return res;
+
+	netLib = getNetLibStubInfo();
+	if (netLib == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+#endif
+
+	for (btm = (uintptr_t)pstub_entry + stubs_size;
+		(uintptr_t)pstub_entry < btm; pstub_entry++)
 	{
 		dbg_printf("Pointer to stub entry: 0x%08X\n", (u32)pstub_entry);
 
@@ -56,56 +75,56 @@ void resolve_imports(const tStubEntry *pstub_entry, unsigned int stubs_size)
 
 		dbg_printf("Current library: %s\n", (u32)pstub_entry->lib_name);
 
-		// Load utility if necessary
-		utility_exp = load_export_util(pstub_entry->lib_name);
-
-		/* For each stub header, browse all stubs */
-		for(j=0; j<pstub_entry->stub_size; j++)
-		{
-
-			dbg_printf("Current nid: 0x%08X\n", *cur_nid);
-			NID_DBG_PRINTF("Current call: 0x%08X\n", (u32)cur_call);
-
-			// Get syscall/jump instruction for current NID
-			real_call = 0;
-
-			if (utility_exp != NULL) {
-				if (!get_jump_from_export(cur_call, *cur_nid, utility_exp))
-					goto cont;
-
+		util_mod = get_util_mod_info(pstub_entry->lib_name);
+		if (util_mod != NULL) {
+#ifndef NO_SYSCALL_RESOLVER
+			if (util_mod->id == PSP_MODULE_NET_COMMON)
+				netCommonIsImported = 1;
+#endif
+			// Load utility if necessary
+			utility_exp = load_export_util(util_mod, pstub_entry->lib_name);
+			if (utility_exp == NULL) {
+				dbg_puts("warning: failed to load utility");
+				continue;
 			}
 
-			nid_index = get_nid_index(*cur_nid);
-			if (nid_index >= 0) {
-				NID_DBG_PRINTF("Index for NID on table: %d\n", nid_index);
-				real_call = globals->nid_table[nid_index].call;
+			for (i = 0; i < pstub_entry->stub_size; i++) {
+				get_jump_from_export(cur_call, *cur_nid, utility_exp);
+
+				cur_nid++;
+				cur_call += 2;
 			}
-
-			res = setup_hook(cur_call, *cur_nid, real_call);
-			if (res) {
-
-				/* If NID not found in game imports */
-				/* generic error/ok if syscall estimation is not available */
-				/* OR Syscall estimation if syscall estimation is ON (default)  and library available */
-				if (!globals->isEmu && !real_call)
-					real_call = estimate_syscall((char *)pstub_entry->lib_name, *cur_nid);
-
-				if (real_call) {
+		} else {
+#ifdef NO_SYSCALL_RESOLVER
+			for (i = 0; i < pstub_entry->stub_size; i++) {
+				nid_index = get_nid_index(*cur_nid);
+				if (nid_index >= 0) {
+					NID_DBG_PRINTF("Index for NID on table: %d\n", nid_index);
 					cur_call[0] = JR_ASM(REG_RA);
-					cur_call[1] = real_call;
+					cur_call[1] = globals->nid_table[nid_index].call;
 				} else
-					setup_default_nid(cur_call);
+					hook(cur_call, *cur_nid);
+
+				cur_nid++;
+				cur_call += 2;
 			}
+#else
+			res = resolveSyscall(pstub_entry, netLib);
+			if (res)
+				dbg_printf("warning: failed to resolve syscall: 0x%08X\n", res);
 
-cont:
-			dbg_printf("Resolved stub 0x%08X: 0x%08X 0x%08X\n", (u32)cur_call, *cur_call, *(cur_call+1));
-
-			cur_nid++;
-			cur_call += 2;
+			for (i = 0; i < pstub_entry->stub_size; i++)
+				hook((int32_t *)pstub_entry->jump_p + i * 2,
+					((int32_t *)pstub_entry->nid_p)[i]);
+#endif
 		}
-
-		pstub_entry++;
 	}
 
+#ifndef NO_SYSCALL_RESOLVER
+	if (!netCommonIsImported)
+		return unloadNetCommon();
+#endif
+
 	dbg_puts("RESOLVING IMPORTS: Done.");
+	return 0;
 }

@@ -15,11 +15,6 @@
 #include <hbl/settings.h>
 #include <config.h>
 
-typedef const struct {
-	int id;
-	const char *name;
-} UtilModInfo;
-
 static UtilModInfo av_mpegbase = {
 	PSP_MODULE_AV_MPEGBASE,
 	"sceMpeg_library"
@@ -162,7 +157,7 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 {
 	_sceModuleInfo modinfo;
 	Elf32_Ehdr ehdr;
-	const tStubEntry *stubs;
+	tStubEntry *stubs;
 	SceUID modid = mod_loaded_num;
 	size_t mod_size, stubs_size;
 	int i, ret;
@@ -507,7 +502,7 @@ void unload_modules()
 	mod_loaded_num = 0;
 }
 
-static UtilModInfo *get_util_mod_info(const char *lib)
+UtilModInfo *get_util_mod_info(const char *lib)
 {
 	const struct {
 		UtilModInfo *mod;
@@ -608,18 +603,13 @@ static SceLibraryEntryTable *find_exports(const char *module, const char *lib)
 }
 
 // Loads and registers exports from an utility module
-SceLibraryEntryTable *load_export_util(const char *lib)
+SceLibraryEntryTable *load_export_util(UtilModInfo *util_mod, const char *lib)
 {
 	SceLibraryEntryTable *exports;
-	UtilModInfo *util_mod;
 	int *p;
 	int ret, nid;
 
-	if (lib == NULL)
-		return NULL;
-
-	util_mod = get_util_mod_info(lib);
-	if (util_mod == NULL)
+	if (util_mod == NULL || lib == NULL)
 		return NULL;
 
 	dbg_printf("Loading utility module for library %s\n", lib);

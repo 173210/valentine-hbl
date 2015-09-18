@@ -1,4 +1,7 @@
 #include <common/stubs/syscall.h>
+#ifdef NO_SYSCALL_RESOLVER
+#include <common/stubs/tables.h>
+#endif
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
@@ -1498,6 +1501,7 @@ static int resolveHook(int *dst, int nid, const hook_t *hook, size_t hookSize)
 				dst[1] = hook->hook[1];
 
 				return 0;
+#ifdef NO_SYSCALL_RESOLVER
 			} else if (hook->hook[1]) {
 				index = get_nid_index(hook->hook[1]);
 				if (index >= 0) {
@@ -1511,6 +1515,7 @@ static int resolveHook(int *dst, int nid, const hook_t *hook, size_t hookSize)
 
 					return 0;
 				}
+#endif
 			} else {
 				dst[0] = hook->hook[0];
 				dst[1] = NOP_ASM;
@@ -1532,8 +1537,7 @@ resolveHook_cont:
 #define HOOK_FUNC(nid, func) HOOK_ALT_FUNC((nid), 0, (func))
 #define HOOK_ALT(nid, alt) HOOK_ALT_FUNC((nid), (alt), 0)
 
-// Returns a hooked call for the given NID or zero
-int setup_hook(int *dst, int nid, u32 existing_real_call)
+int hook(int *dst, int nid)
 {
 	const hook_t forcedHook[] = {
 		HOOK_FUNC(0x1F803938, _hook_sceCtrlReadBufferPositive),
@@ -1542,8 +1546,12 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		HOOK_FUNC(0x446D8DE6, _hook_sceKernelCreateThread),
 		HOOK_FUNC(0xF475845D, _hook_sceKernelStartThread),
 		HOOK_FUNC(0xAA73C935, _hook_sceKernelExitThread),
+#ifdef NO_SYSCALL_RESOLVER
 		HOOK_ALT_FUNC(0x809CE29B, 0x809CE29B, _hook_sceKernelExitDeleteThread),
 		HOOK_ALT_FUNC(0x809CE29B, 0xAA73C935, _hook_sceKernelExitThread),
+#else
+		HOOK_FUNC(0x809CE29B, _hook_sceKernelExitDeleteThread),
+#endif
 		HOOK_FUNC(0x4C25EA72, _hook_sceKernelLoadModule), //kuKernelLoadModule
 		HOOK_FUNC(0x977DE386, _hook_sceKernelLoadModule), // sceKernelLoadModule
 		HOOK_FUNC(0x50F0C1EC, _hook_sceKernelStartModule),
@@ -1555,16 +1563,18 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		HOOK_OK(0xF64910F0), //sceUtilityUnloadUsbModule
 		HOOK_OK(0x64d50c56), //sceUtilityUnloadNetModule
 		HOOK_OK(0xE49BFE92), // sceUtilityUnloadModule
-		HOOK_ALT_FUNC(0x289D82FE, 0xEEDA2E54, _hook_sceDisplaySetFrameBuf),
+#ifdef NO_SYSCALL_RESOLVER
 		HOOK_ALT_FUNC(0xE860E75E, 0x06FB8A63, _hook_sceKernelUtilsMt19937Init)
+#endif
 	};
 
+#ifdef NO_SYSCALL_RESOLVER
 	const hook_t forcedScePowerHook[] = {
 		HOOK_ALT_FUNC(0x737486F2, 0x737486F2, _hook_scePowerSetClockFrequency),
 		HOOK_ALT_FUNC(0x737486F2, 0x469989AD, _hook_scePowerSetClockFrequency_with_scePower_469989AD),
 		HOOK_ALT_FUNC(0x737486F2, 0xEBD177D6, _hook_scePowerSetClockFrequency_with_scePower_EBD177D6)
 	};
-
+#endif
 	const hook_t hblHook[] = {
 		HOOK_FUNC(0x05572A5F, _hook_sceKernelExitGame),
 		HOOK_FUNC(0xE81CAF8F, _hook_sceKernelCreateCallback),
@@ -1592,6 +1602,7 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		HOOK_FUNC(0xEB092469, sceIoDclose_Vita)
 	};
 
+#ifdef NO_SYSCALL_RESOLVER
 	const hook_t hookWithoutOrg[] = {
 		HOOK_FUNC(0xEEDA2E54, _hook_sceDisplayGetFrameBuf),
 		HOOK_ALT_FUNC(0x82826F70, 0x68DA9E36, _hook_sceKernelSleepThreadCB),
@@ -1673,9 +1684,21 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		HOOK_OK(0x57726BC1), // sceRtcGetDayOfWeek returns always monday
 		HOOK_FUNC(0x34885E0D, _hook_sceRtcConvertUtcToLocalTime)
 	};
+#endif
+
+	if (dst == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	if (!resolveHook(dst, nid, forcedHook, sizeof(forcedHook)))
 		return 0;
+
+#ifdef NO_SYSCALL_RESOLVER
+	if (!isImported(sceDisplayGetFrameBuf) && nid == 0x289D82FE) {
+		dst[0] = J_ASM(_hook_sceKernelUtilsMt19937Init);
+		dst[1] = NOP_ASM;
+
+		return 0;
+	}
 
 	if (!((isImported(scePowerGetCpuClockFrequency)
 			|| isImported(scePowerGetCpuClockFrequencyInt))
@@ -1685,6 +1708,7 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 	{
 		return 0;
 	}
+#endif
 
 	if (!return_to_xmb_on_exit
 		&& !resolveHook(dst, nid, hblHook, sizeof(hblHook)))
@@ -1692,7 +1716,7 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		return 0;
 	}
 
-	if (existing_real_call) {
+	if (dst[1] != NOP_ASM) {
 		if (!resolveHook(dst, nid, hookWithOrg, sizeof(hookWithOrg)))
 			return 0;
 
@@ -1710,24 +1734,16 @@ int setup_hook(int *dst, int nid, u32 existing_real_call)
 		return SCE_KERNEL_ERROR_ERROR;
 	}
 
+#ifdef NO_SYSCALL_RESOLVER
 	if (nid == 0x06A70004 && override_sceIoMkdir == GENERIC_SUCCESS) {
 		dst[0] = JR_ASM(REG_RA);
 		dst[1] = LUI_ASM(REG_A0, 0);
 		return 0;
 	}
 
-	return resolveHook(dst, nid, hookWithoutOrg, sizeof(hookWithoutOrg));
-}
-
-/**
-*  Setup a Default Nid for Firmware 6.60 where the Kernel Syscall Estimation doesn't work
-*  Only ment to give a ok for function that we don't make custom version from
-*  By Thecobra
-**/
-int setup_default_nid(int *dst)
-{
-	if (dst == NULL)
-		return SCE_KERNEL_ERROR_ILLEGAL_ADDRESS;
+	if (!resolveHook(dst, nid, hookWithoutOrg, sizeof(hookWithoutOrg)))
+		return 0;
+#endif
 
 	dst[0] = J_ASM(_hook_generic_error);
 	dst[1] = NOP_ASM;

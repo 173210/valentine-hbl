@@ -3,6 +3,8 @@ OUTPUT_ARCH(mips)
 
 ENTRY(_start)
 
+module_start = 0;
+
 SECTIONS
 {
 	. = __executable_start;
@@ -12,22 +14,30 @@ SECTIONS
 	.text : {
 		*(.text)
 	}
+	.sceStub.text : {
+		stubText = .;
+		*(.sceStub.text)
+		*(SORT(.sceStub.text.*))
+	}
 	.rodata : {
 		*(.rodata)
+	}
+	.rodata.sceNid : {
+		KEEP (*(.rodata.sceNid))
+	}
+	.rodata.sceResident : {
+		*(.rodata.sceResident)
 	}
 	.lib.stub.top : {
 		*(.lib.stub.top)
 	}
 	.lib.stub : {
-		libStubTop = .;
+		libStub = .;
 		*(.lib.stub)
-		libStubBtm = .;
 	}
+	libStubSize = SIZEOF(.lib.stub);
 	.lib.stub.btm : {
 		*(.lib.stub.btm)
-	}
-	.rodata.sceNid : {
-		KEEP (*(.rodata.sceNid))
 	}
 	.data : {
 		*(.data)
@@ -35,15 +45,9 @@ SECTIONS
 	.bss : {
 		*(.bss)
 	}
-	.sceStub.text : {
-		*(.sceStub.text)
-		*(SORT(.sceStub.text.*))
-	}
+	stubTextSize = SIZEOF(.sceStub.text);
 
 	.rodata.sceModuleInfo (NOLOAD) : {
 		*(.rodata.sceModuleInfo)
-	}
-	.rodata.sceResident (NOLOAD) : {
-		*(.rodata.sceResident)
 	}
 }

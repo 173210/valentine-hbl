@@ -24,15 +24,13 @@ int num_exit_th = 0;
 
 SceCtrlData pad;
 
-static void cleanup(u32 num_lib)
+static void cleanup()
 {
 	threads_cleanup();
 	ram_cleanup();
 
 	unload_modules();
 
-	//cleanup globals
-	globals->lib_num = num_lib; //reinit with only the initial libraries, removing the ones loaded outside
 	hook_exit_cb = NULL;
 }
 
@@ -110,7 +108,7 @@ static int run_eboot(const char *path)
 	ret = start_module(mod_id);
 	if (ret < 0) {
 		scr_printf("ERROR 0x%08X starting main module\n", mod_id);
-		cleanup(globals->lib_num);
+		cleanup();
 		return ret;
 	}
 
@@ -232,7 +230,7 @@ int module_start()
 		}
 		wait_for_eboot_end();
 
-		cleanup(globals->lib_num);
+		cleanup();
 		ramcheck(init_free);
 		if (!strcmp("quit", hb_fname))
 			break;
@@ -250,7 +248,7 @@ int module_start()
 		}
 		wait_for_eboot_end();
 
-		cleanup(globals->lib_num);
+		cleanup();
 		ramcheck(init_free);
 	}
 

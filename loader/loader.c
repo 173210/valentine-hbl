@@ -113,7 +113,12 @@ static int load_hbl()
 	sceIoClose(fd);
 
 	dbg_printf(" Resolving Stubs...\n");
-	resolve_hbl_stubs((void *)(modinfo.stub_top + (int)p), (void *)(modinfo.stub_end + (int)p));
+	ret = resolveHblSyscall((void *)(modinfo.stub_top + (uintptr_t)p),
+		modinfo.stub_end - modinfo.stub_top);
+	if (ret) {
+		scr_printf(" ERROR RESOLVING STUBS 0x%08X\n", ret);
+		return ret;
+	}
 
 	run_eloader = (void *)((int)ehdr.e_entry + (int)p);
 
@@ -280,19 +285,20 @@ int start_thread()
 	// Free memory
 	scr_puts("Freeing memory");
 	free_game_memory();
-
+#ifdef NO_SYSCALL_RESOLVER
 	scr_puts("Building NIDs table with utilities");
 	load_utils();
 	p2_add_stubs();
+#endif
 #ifdef DISABLE_UNLOAD_UTILITY_MODULES
 	UnloadModules();
 #else
 	unload_utils();
 #endif
-
+#ifdef NO_SYSCALL_RESOLVER
 	scr_puts("Building NIDs table with savedata utility");
 	p5_add_stubs();
-
+#endif
 	scr_puts("Initializing hook");
 	hook_init();
 
@@ -326,19 +332,29 @@ void _start()
 {
 	int ret;
 
-#ifdef DEBUG
-#ifndef LAUNCHER
-	dbg_init();
+#if !defined(LAUNCHER) && (defined(DEBUG) || !defined(NO_SYSCALL_RESOLVER))
+	initLoaderStubs();
 #endif
+#ifdef DEBUG
 	log_init();
 #endif
 
 #ifndef LAUNCHER
 	globals->isEmu = 1;
+#ifdef NO_SYSCALL_RESOLVER
 	globals->nid_num = 0;
-	globals->lib_num = 0;
+
 	p2_add_stubs();
-	resolve_hbl_stubs(libStubTop, libStubBtm);
+#else
+	ret = unloadNetCommon();
+	if (ret != 0 && ret != 0x80110803)
+		dbg_printf("warning: failed to unload a module 0x%08X\n", ret);
+#endif
+	ret = resolveHblSyscall(libStub, (size_t)libStubSize);
+	if (ret)
+		dbg_printf("warning: failed to resolve HBL stub 0x%08X\n", ret);
+
+	synciLoaderStub();
 #endif
 #if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();

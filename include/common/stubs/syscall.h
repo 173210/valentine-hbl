@@ -1,18 +1,12 @@
-#ifndef ELOADER_SYSCALL
-#define ELOADER_SYSCALL
+#ifndef COMMON_SYSCALL_H
+#define COMMON_SYSCALL_H
 
 #include <common/sdk.h>
+#include <hbl/modmgr/elf.h>
 
-// Path for NID libraries
-#define LIB_PATH HBL_ROOT "libs"
-#define LIB_EXT ".nid"
-
-SceUID open_nids_file(const char *lib);
-
-/* Estimate a syscall */
-/* Pass library name and NID */
-/* Return syscall number */
-int estimate_syscall(const char *lib, int nid);
+int loadNetCommon(void);
+int unloadNetCommon(void);
+tStubEntry *getNetLibStubInfo(void);
+int resolveSyscall(tStubEntry *dst, tStubEntry *netLib);
 
 #endif
-
