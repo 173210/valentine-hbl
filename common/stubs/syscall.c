@@ -88,12 +88,14 @@ int resolveSyscall(tStubEntry *dst, tStubEntry *netLib)
 	r = sceKernelStartThread(thid, sizeof(arg), &arg);
 	if (r) {
 		sceKernelDeleteThread(thid);
+		loadNetCommon();
 		return r;
 	}
 
 	r = loadNetCommon();
 	if (r) {
 		kill_thread(thid);
+		loadNetCommon();
 		return r;
 	}
 
