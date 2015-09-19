@@ -368,8 +368,6 @@ void _start()
 #else
 	scr_puts("DEBUG version");
 #endif
-#else
-	scr_puts_col("DO NOT POST LOG FILES OR BUG REPORTS FOR THIS VERSION!!!", 0x000000FF);
 #endif
 
 #ifdef PRE_LOADER_EXEC
