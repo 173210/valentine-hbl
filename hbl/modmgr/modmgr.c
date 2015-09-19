@@ -584,22 +584,27 @@ UtilModInfo *get_util_mod_info(const char *lib)
 static SceLibraryEntryTable *find_exports(const char *module, const char *lib)
 {
 	// Search for module name
-	char *p = findstr(module, (void*)GAME_MEMORY_START, (unsigned int)GAME_MEMORY_SIZE);
+	char *p, *foundModule;
 
-	if (p == NULL) {
-		dbg_printf("->ERROR: could not find module %s\n", module);
-		return NULL;
-	}
+	foundModule = (void *)GAME_MEMORY_START;
+	do {
+		foundModule = findstr(module, foundModule,
+			0x0A000000 - (uintptr_t)foundModule);
+		if (foundModule == NULL) {
+			return NULL;
+		}
 
-	// Search for library name next to module name (1 KiB size enough I guess)
-	p = findstr(lib, p, 1024);
-	if (p == NULL) {
-		dbg_printf("->ERROR: could not find library name %s\n", lib);
-		return NULL;
-	}
+		// Search for library name next to module name (1 KiB size enough I guess)
+		p = findstr(lib, foundModule, 1024);
+		if (p != NULL) {
+			// Search for pointer to library name close to library name
+			p = findw((uintptr_t)p, (void *)(p - 1024), 1024);
+		}
 
-	// Search for pointer to library name close to library name
-	return (SceLibraryEntryTable *)findw((int)p, (void *)(p - 1024), 1024);
+		foundModule += 1024;
+	} while (p == NULL);
+
+	return (void *)p;
 }
 
 // Loads and registers exports from an utility module
