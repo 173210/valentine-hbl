@@ -9,6 +9,8 @@ typedef struct {
 	tStubEntry *src;
 } Arg;
 
+static void * const jump_p = (void *)0x10000;
+
 int loadNetCommon()
 {
 	if (isImported(sceUtilityLoadNetModule))
@@ -38,6 +40,7 @@ static int store(SceSize args, const Arg *argp)
 		argp->dst->import_stubs = argp->src->import_stubs;
 		argp->dst->stub_size = argp->src->stub_size;
 		argp->dst->nid_p = argp->src->nid_p;
+		argp->dst->jump_p = jump_p;
 
 		sceKernelDelayThread(0);
 	}
@@ -63,10 +66,13 @@ int resolveSyscall(tStubEntry *dst, tStubEntry *netLib)
 {
 	Arg arg;
 	SceUID thid;
+	size_t jump_size;
 	int r;
 
 	if (dst == NULL || netLib == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	jump_size = dst->stub_size * 8;
 
 	dst->import_flags = 0x0011;
 	dst->lib_ver = strcmp(dst->lib_name, "sceSuspendForUser") ? 0x4001 : 0x4000;
@@ -103,7 +109,7 @@ int resolveSyscall(tStubEntry *dst, tStubEntry *netLib)
 	if (r)
 		return r;
 
-	memcpy(dst->jump_p, netLib->jump_p, dst->stub_size * 8);
+	memcpy(dst->jump_p, jump_p, jump_size);
 
 	return 0;
 }
