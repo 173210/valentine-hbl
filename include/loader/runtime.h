@@ -22,8 +22,9 @@ int p2_add_stubs();
 int p5_add_stubs();
 #endif
 
-void synciLoaderStub();
 void initLoaderStubs();
+int resolveLoaderSyscall();
+int resolveHblSyscall(tStubEntry *p, size_t n);
 
 #define PSP_MODULE_NET_UPNP             0x0107
 #define PSP_MODULE_NET_GAMEUPDATE       0x0108

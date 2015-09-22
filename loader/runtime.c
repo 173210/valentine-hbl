@@ -385,12 +385,6 @@ static void fillIcacheLoaderStub()
 		(void *)((uintptr_t)stubText + (uintptr_t)stubTextSize));
 }
 
-void synciLoaderStub()
-{
-	writebackDcacheLoaderStub();
-	fillIcacheLoaderStub();
-}
-
 static int mergeStubsWithoutDcache(const tStubEntry *dst, const tStubEntry *src)
 {
 	const size_t stubSize = 8;
@@ -458,7 +452,7 @@ void initLoaderStubs()
 }
 #endif
 
-int resolveHblSyscall(tStubEntry *p, size_t n)
+static int initResolveSyscall(tStubEntry *p, size_t n)
 {
 	uintptr_t btm;
 #ifdef NO_SYSCALL_RESOLVER
@@ -515,7 +509,44 @@ int resolveHblSyscall(tStubEntry *p, size_t n)
 			dbg_printf("warning: failed to resolve syscall 0x%08X\n",
 				r);
 	}
+#endif
 
+	return 0;
+}
+
+static int deinitSyscall()
+{
+#ifdef NO_SYSCALL_RESOLVER
+	return 0;
+#else
 	return unloadNetCommon();
 #endif
+}
+
+int resolveLoaderSyscall()
+{
+	int r;
+
+	r = initResolveSyscall(libStub, (size_t)libStubSize);
+	if (r)
+		return r;
+
+	writebackDcacheLoaderStub();
+	fillIcacheLoaderStub();
+
+	return deinitSyscall();
+}
+
+int resolveHblSyscall(tStubEntry *p, size_t n)
+{
+	int r;
+
+	if (p == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+	r = initResolveSyscall(p, n);
+	if (r)
+		return r;
+
+	return deinitSyscall();
 }

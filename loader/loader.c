@@ -350,11 +350,10 @@ void _start()
 	if (ret != 0 && ret != 0x80110803)
 		dbg_printf("warning: failed to unload a module 0x%08X\n", ret);
 #endif
-	ret = resolveHblSyscall(libStub, (size_t)libStubSize);
+	ret = resolveLoaderSyscall();
 	if (ret)
 		dbg_printf("warning: failed to resolve HBL stub 0x%08X\n", ret);
 
-	synciLoaderStub();
 #endif
 #if !defined(DEBUG) && defined(FORCE_FIRST_LOG)
 	log_init();
