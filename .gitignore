@@ -1,6 +1,9 @@
 *.o
 *.a
 *.elf
+*.prx
+*.SFO
+*.PBP
 *.PRX
 *.BIN
 
