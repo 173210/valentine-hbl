@@ -124,13 +124,7 @@ static int load_hbl()
 
 	dbg_printf("HBL loaded to allocated memory @ 0x%08X\n", (int)run_eloader);
 
-	// Commit changes to RAM
-	if (isImported(sceKernelDcacheWritebackRange))
-		sceKernelDcacheWritebackRange(run_eloader, ret);
-	else
-		sceKernelDcacheWritebackAll();
-
-	hblIcacheFillRange(run_eloader, (void *)((int)run_eloader + ret));
+	synci(run_eloader, (void *)((int)run_eloader + ret));
 
 	return 0;
 }
@@ -145,48 +139,6 @@ static void log_init()
 	sceIoWrite(fd, FIRST_LOG, sizeof(FIRST_LOG) - sizeof(char));
 
 	sceIoClose(fd);
-}
-#endif
-
-#if defined(DEBUG) && !defined(LAUNCHER)
-static void dbg_init()
-{
-	tStubEntry *entry;
-	int i, j;
-
-	i = 0;
-	for (entry = (tStubEntry *)0x08800000;
-		(int)entry < 0x0A000000;
-		entry = (tStubEntry *)((int)entry + 4)) {
-
-		while (elf_check_stub_entry(entry)) {
-			if (!strcmp(entry->lib_name, "IoFileMgrForUser"))
-				for (j = 0; j < entry->stub_size; j++) {
-					switch (((int *)entry->nid_p)[j]) {
-						case 0x109F50BC:
-							memcpy((void *)((int)sceIoOpen | 0x40000000), entry->jump_p + j * 8, 8);
-							i++;
-							break;
-						case 0x810C4BC3:
-							memcpy((void *)((int)sceIoClose | 0x40000000), entry->jump_p + j * 8, 8);
-							i++;
-							break;
-						case 0x42EC03AC:
-							memcpy((void *)((int)sceIoWrite | 0x40000000), entry->jump_p + j * 8, 8);
-							i++;
-							break;
-					}
-					if (i >= 3)
-						return;
-				}
-
-			entry++;
-		}
-	}
-
-	hblIcacheFillRange(sceIoOpen, (void *)sceIoOpen + 8);
-	hblIcacheFillRange(sceIoClose, (void *)sceIoClose + 8);
-	hblIcacheFillRange(sceIoWrite, (void *)sceIoWrite + 8);
 }
 #endif
 

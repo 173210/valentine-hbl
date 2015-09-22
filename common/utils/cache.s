@@ -1,19 +1,24 @@
 	.text
 	.align	2
+	.set	noat
 	.set	nomips16
 	.set	noreorder
 
-	.globl	hblIcacheFillRange
-	.ent	hblIcacheFillRange
-	.type	hblIcacheFillRange, @function
-hblIcacheFillRange:
+	.globl	synci
+	.ent	synci
+	.type	synci, @function
+synci:
+	li	$at, 0xFFFFFFC0
+	and	$a0, $a0, $at
+loop:
 	addiu	$a0, $a0, 64
-	sltu	$a2, $a0, $a1
-	bnez	$a2, hblIcacheFillRange
-	cache	0x14, -64($a0)
+	cache	0x1A, -64($a0)
+	sltu	$at, $a0, $a1
+	bnez	$at, loop
+	cache	0x8, -64($a0)
 
 	jr	$ra
 	nop
 
-	.end	hblIcacheFillRange
-	.size	hblIcacheFillRange, .-hblIcacheFillRange
+	.end	synci
+	.size	synci, .-synci

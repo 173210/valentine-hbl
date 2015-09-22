@@ -265,12 +265,7 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 	log_mod_entry(mod_table[modid]);
 #endif
 
-	if (isImported(sceKernelDcacheWritebackRange))
-		sceKernelDcacheWritebackRange(addr, mod_size);
-	else if (isImported(sceKernelDcacheWritebackAll))
-		sceKernelDcacheWritebackAll();
-
-	hblIcacheFillRange(addr, addr + mod_size);
+	synci(addr, addr + mod_size);
 
 	return modid;
 }

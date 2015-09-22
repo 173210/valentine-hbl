@@ -371,21 +371,13 @@ int p5_add_stubs()
 
 #endif
 
-static void writebackDcacheLoaderStub()
+static void loaderStubSynci()
 {
-	if (isImported(sceKernelDcacheWritebackRange))
-		sceKernelDcacheWritebackRange(stubText, (uintptr_t)stubTextSize);
-	else if (isImported(sceKernelDcacheWritebackAll))
-		sceKernelDcacheWritebackAll();
-}
-
-static void fillIcacheLoaderStub()
-{
-	hblIcacheFillRange(stubText,
+	synci(stubText,
 		(void *)((uintptr_t)stubText + (uintptr_t)stubTextSize));
 }
 
-static int mergeStubsWithoutDcache(const tStubEntry *dst, const tStubEntry *src)
+static int mergeStubs(const tStubEntry *dst, const tStubEntry *src)
 {
 	const size_t stubSize = 8;
 	Elf32_Word i, j;
@@ -396,7 +388,7 @@ static int mergeStubsWithoutDcache(const tStubEntry *dst, const tStubEntry *src)
 	for (i = 0; i < src->stub_size; i++)
 		for (j = 0; j < dst->stub_size; j++)
 			if (((int32_t *)dst->nid_p)[j] == ((int32_t *)src->nid_p)[i])
-				memcpy((void *)(((uintptr_t)dst->jump_p | 0x40000000) + j * stubSize),
+				memcpy((void *)((uintptr_t)dst->jump_p + j * stubSize),
 					(void *)((uintptr_t)src->jump_p + i * stubSize),
 					stubSize);
 
@@ -422,7 +414,7 @@ void initLoaderStubs()
 					dst++)
 				{
 					if (!strcmp(src->lib_name, dst->lib_name))
-						mergeStubsWithoutDcache(dst, src);
+						mergeStubs(dst, src);
 				}
 
 			src++;
@@ -439,7 +431,7 @@ void initLoaderStubs()
 					dst++)
 				{
 					if (!strcmp(src->lib_name, dst->lib_name))
-						mergeStubsWithoutDcache(dst, src);
+						mergeStubs(dst, src);
 				}
 
 			src++;
@@ -448,7 +440,7 @@ void initLoaderStubs()
 		src = (tStubEntry *)((int)src + 4);
 	}
 
-	fillIcacheLoaderStub();
+	loaderStubSynci();
 }
 #endif
 
@@ -531,8 +523,7 @@ int resolveLoaderSyscall()
 	if (r)
 		return r;
 
-	writebackDcacheLoaderStub();
-	fillIcacheLoaderStub();
+	loaderStubSynci();
 
 	return deinitSyscall();
 }
