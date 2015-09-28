@@ -141,38 +141,47 @@ static int relocSec(SceUID fd, SceOff off, const Elf32_Shdr *shdr, void *base)
 // Relocates all sections that need to
 static int relocAll(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *base)
 {
-	Elf32_Shdr shdr;
-	SceOff cur;
-	int i, r;
+	SceSize size;
+	SceUID block;
+	Elf32_Shdr *p, *btm;
+	int r;
 
 	if (hdr == NULL || base == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-	cur = off + hdr->e_shoff;
-	r = sceIoLseek(fd, cur, PSP_SEEK_SET);
+	size = hdr->e_shnum * sizeof(Elf32_Shdr);
+
+	r = sceIoLseek(fd, off + hdr->e_shoff, PSP_SEEK_SET);
 	if (r < 0)
 		return r;
 
-	for (i = 0; i < hdr->e_shnum; i++) {
-		r = sceIoRead(fd, &shdr, sizeof(Elf32_Shdr));
-		if (r < 0)
-			return r;
+	block = sceKernelAllocPartitionMemory(2, "HBL Module Section Headers",
+		PSP_SMEM_Low, size, NULL);
+	if (block < 0)
+		return block;
 
-		cur += sizeof(Elf32_Shdr);
-		
-		if (shdr.sh_type == LOPROC) {
-			r = relocSec(fd, off, &shdr, base);
-			if (r)
-				dbg_printf("warning: relocating failed 0x%08X\n",
-					r);
-
-			r = sceIoLseek(fd, cur, PSP_SEEK_SET);
-			if (r < 0)
-				return r;
-		}
+	p = sceKernelGetBlockHeadAddr(block);
+	if (p == NULL) {
+		sceKernelFreePartitionMemory(block);
+		return SCE_KERNEL_ERROR_ERROR;
 	}
 
-	return 0;
+	r = sceIoRead(fd, p, size);
+	if (r < 0) {
+		sceKernelFreePartitionMemory(block);
+		return r;
+	}
+
+	for (btm = p + hdr->e_shnum; p != btm; p++) {
+		if (p->sh_type != LOPROC)
+			continue;
+
+		r = relocSec(fd, off, p, base);
+		if (r)
+			dbg_printf("warning: relocating failed 0x%08X\n", r);
+	}
+
+	return sceKernelFreePartitionMemory(block);
 }
 
 // Loads relocatable executable in memory using fixed address
