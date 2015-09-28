@@ -72,8 +72,7 @@ static int relocSec(SceUID fd, SceOff off, const Elf32_Shdr *shdr, void *base)
 	if (shdr == NULL || base == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-	off += shdr->sh_offset;
-	r = sceIoLseek(fd, off, PSP_SEEK_SET);
+	r = sceIoLseek(fd, off + shdr->sh_offset, PSP_SEEK_SET);
 	if (r < 0)
 		return r;
 
