@@ -37,7 +37,7 @@ static int16_t unalignLh(void *p)
 	return _p[0] | (_p[1] << 8);
 }
 
-static int16_t unalignLhu(void *p)
+static uint16_t unalignLhu(void *p)
 {
 	uint8_t *_p = p;
 	return _p[0] | (_p[1] << 8);
