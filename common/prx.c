@@ -179,14 +179,14 @@ static int relocAll(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *base)
 // Loads address of first stub header in stub
 // Returns total size copied in memory
 int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modinfo, void **addr,
-	void *(* malloc)(const char *name, SceSize, void *))
+	void *(* allocForModule)(const char *name, SceSize, void *))
 {
 	Elf32_Phdr phdr;
 	int excess, ret;
 
 	//dbg_printf("prx_load_program -> Offset: 0x%08X\n", off);
 
-	if (hdr == NULL || addr == NULL || malloc == NULL)
+	if (hdr == NULL || addr == NULL || allocForModule == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	// Read the program header
@@ -213,7 +213,7 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 	log_modinfo(modinfo);
 #endif
 
-	*addr = malloc(modinfo->modname, phdr.p_memsz, *addr);
+	*addr = allocForModule(modinfo->modname, phdr.p_memsz, *addr);
 	if (*addr == NULL)
 		return SCE_KERNEL_ERROR_NO_MEMORY;
 
