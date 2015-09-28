@@ -157,9 +157,11 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 {
 	_sceModuleInfo modinfo;
 	Elf32_Ehdr ehdr;
+	Elf32_Phdr *phdrs;
 	tStubEntry *stubs;
+	SceUID phdrs_block;
 	SceUID modid = mod_loaded_num;
-	size_t mod_size, stubs_size;
+	size_t phdrs_size, mod_size, stubs_size;
 	int i, ret;
 
 	dbg_printf("\n\n->Entering load_module...\n");
@@ -174,7 +176,6 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 
 	//dbg_printf("mod_table address: 0x%08X\n", mod_table);
 
-	dbg_printf("Reading ELF header...\n");
 	// Read ELF header
 	sceIoLseek(fd, off, PSP_SEEK_SET);
 	sceIoRead(fd, &ehdr, sizeof(ehdr));
@@ -201,38 +202,72 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 		ehdr.e_shentsize,
 		ehdr.e_shnum);
 
+	phdrs_size = ehdr.e_phentsize * ehdr.e_phnum;
+
+	ret = sceKernelAllocPartitionMemory(
+		2, "HBL Module Program Headers", PSP_SMEM_High, phdrs_size, NULL);
+	if (ret < 0)
+		goto fail;
+	else
+		phdrs_block = ret;
+
+	phdrs = sceKernelGetBlockHeadAddr(phdrs_block);
+	if (phdrs == NULL) {
+		ret = SCE_KERNEL_ERROR_ERROR;
+		goto fail;
+	}
+
+	ret = sceIoLseek(fd, off + ehdr.e_phoff, PSP_SEEK_SET);
+	if (ret < 0)
+		goto fail;
+
+	ret = sceIoRead(fd, phdrs, phdrs_size);
+	if (ret < 0)
+		goto fail;
+
 	switch (ehdr.e_type) {
 		case ELF_STATIC:
-			if (modid > 0)
-				return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
+			if (modid > 0) {
+				ret = SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
+				goto fail;
+			}
 
 			// Load ELF program section into memory
-			mod_size = elf_load(fd, off, &ehdr, modmgrMalloc);
-			if (mod_size < 0)
-				return mod_size;
+			ret = elf_load(fd, off, phdrs, ehdr.e_phnum, modmgrMalloc);
+			if (ret < 0)
+				goto fail;
+			else
+				mod_size = ret;
 
 			// Locate ELF's .lib.stubs section
 			stubs = elf_find_imports(fd, off, &ehdr, &stubs_size);
-			if (stubs == NULL)
-				return SCE_KERNEL_ERROR_ERROR;
+			if (stubs == NULL) {
+				ret = SCE_KERNEL_ERROR_ERROR;
+				goto fail;
+			}
 
 			mod_table[modid].text_entry = (u32 *)ehdr.e_entry;
 			ret = elf_get_gp(fd, off, &ehdr, &mod_table[modid].gp);
 			if (ret < 0)
-				return ret;
+				goto fail;
 
 			break;
 
 		case ELF_RELOC:
-			if (modid >= MAX_MODULES)
-				return SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
+			if (modid >= MAX_MODULES) {
+				ret = SCE_KERNEL_ERROR_EXCLUSIVE_LOAD;
+				goto fail;
+			}
 
 			dbg_printf("load_module -> Offset: 0x%08X\n", off);
 
 			// Load PRX program section
-			mod_size = prx_load(fd, off, &ehdr, &modinfo, &addr, modmgrMalloc);
-			if (mod_size < 0)
-				return mod_size;
+			ret = prx_load(fd, off, &ehdr, phdrs,
+				&modinfo, &addr, modmgrMalloc);
+			if (ret < 0)
+				goto fail;
+			else
+				mod_size = ret;
 
 			stubs = (void *)((int)modinfo.stub_top + (int)addr);
 			stubs_size = (int)modinfo.stub_end - (int)modinfo.stub_top;
@@ -245,7 +280,8 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 
 		default:
 			dbg_printf("Uknown ELF type: 0x%08X\n", ehdr.e_type);
-			return SCE_KERNEL_ERROR_ERROR;
+			ret = SCE_KERNEL_ERROR_UNSUPPORTED_PRX_TYPE;
+			goto fail;
 	}
 
 	dbg_printf("resolve stubs\n");
@@ -267,7 +303,10 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 
 	synci(addr, addr + mod_size);
 
-	return modid;
+	ret = modid;
+fail:
+	sceKernelFreePartitionMemory(phdrs_block);
+	return ret;
 }
 
 /*

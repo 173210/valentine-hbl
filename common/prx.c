@@ -186,31 +186,23 @@ static int relocAll(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, void *base)
 // Loads relocatable executable in memory using fixed address
 // Loads address of first stub header in stub
 // Returns total size copied in memory
-int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modinfo, void **addr,
+int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *ehdr, const Elf32_Phdr *phdrs,
+	_sceModuleInfo *modinfo, void **addr,
 	void *(* allocForModule)(const char *name, SceSize, void *))
 {
-	Elf32_Phdr phdr;
 	int excess, ret;
 
 	//dbg_printf("prx_load_program -> Offset: 0x%08X\n", off);
 
-	if (hdr == NULL || addr == NULL || allocForModule == NULL)
+	if (ehdr == NULL || addr == NULL || allocForModule == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-
-	// Read the program header
-	ret = sceIoLseek(fd, off + hdr->e_phoff, PSP_SEEK_SET);
-	if (ret < 0)
-		return ret;
-	ret = sceIoRead(fd, &phdr, sizeof(Elf32_Phdr));
-	if (ret < 0)
-		return ret;
     
 	// Check if kernel mode
-	if ((int)phdr.p_paddr & 0x80000000)
+	if ((uintptr_t)phdrs->p_paddr & 0x80000000)
 		return SCE_KERNEL_ERROR_UNSUPPORTED_PRX_TYPE;
 
 	// Read module info from PRX
-	ret = sceIoLseek(fd, off + (int)phdr.p_paddr, PSP_SEEK_SET);
+	ret = sceIoLseek(fd, off + (uintptr_t)phdrs->p_paddr, PSP_SEEK_SET);
 	if (ret < 0)
 		return ret;
 	ret = sceIoRead(fd, modinfo, sizeof(_sceModuleInfo));
@@ -221,29 +213,29 @@ int prx_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr, _sceModuleInfo *modin
 	log_modinfo(modinfo);
 #endif
 
-	*addr = allocForModule(modinfo->modname, phdr.p_memsz, *addr);
+	*addr = allocForModule(modinfo->modname, phdrs->p_memsz, *addr);
 	if (*addr == NULL)
 		return SCE_KERNEL_ERROR_NO_MEMORY;
 
 	// Loads program segment
-	ret = sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET);
+	ret = sceIoLseek(fd, off + phdrs->p_off, PSP_SEEK_SET);
 	if (ret < 0)
 		return ret;
-	ret = sceIoRead(fd, *addr, phdr.p_filesz);
+	ret = sceIoRead(fd, *addr, phdrs->p_filesz);
 	if (ret < 0)
 		return ret;
 
-	excess = phdr.p_memsz - ret;
+	excess = phdrs->p_memsz - ret;
 	if (excess > 0)
 		memset((void *)((int)*addr + ret + 1), 0, excess);
 
 	dbg_printf("Before reloc -> Offset: 0x%08X\n", off);
 
 	//Relocate all sections that need to
-	ret = relocAll(fd, off, hdr, *addr);
+	ret = relocAll(fd, off, ehdr, *addr);
 	if (ret < 0)
 		dbg_printf("warning: relocation error: 0x%08X\n", ret);
 
 	// Return size of total size copied in memory
-	return phdr.p_memsz;
+	return phdrs->p_memsz;
 }

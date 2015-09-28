@@ -10,42 +10,33 @@
 /*****************/
 // Loads static executable in memory using virtual address
 // Returns total size copied in memory
-int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr,
+int elf_load(SceUID fd, SceOff off, const Elf32_Phdr *phdrs, Elf32_Word phnum,
 	void *(* malloc)(const char *name, SceSize, void *))
 {
-	Elf32_Phdr phdr;
 	size_t size, read;
 	int excess;
 	int i;
 
-	if (hdr == NULL || malloc == NULL)
+	if (phdrs == NULL || malloc == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	size = 0;
-	for (i = 0; i < hdr->e_phnum; i++) {
-		dbg_printf("Reading program section %d of %d\n", i, hdr->e_phnum);
-
-		// Read the program header
-		if (sceIoLseek(fd, off + hdr->e_phoff + i * sizeof(Elf32_Phdr), PSP_SEEK_SET) < 0)
-			continue;
-		if (sceIoRead(fd, &phdr, sizeof(Elf32_Phdr)) < 0)
-			continue;
-
+	for (i = 0; i < phnum; i++) {
 		// Loads program segment at virtual address
-		if (sceIoLseek(fd, off + phdr.p_off, PSP_SEEK_SET) < 0)
+		if (sceIoLseek(fd, off + phdrs[i].p_off, PSP_SEEK_SET) < 0)
 			continue;
-		if (malloc("ELF", phdr.p_memsz, phdr.p_vaddr) == NULL)
+		if (malloc("ELF", phdrs[i].p_memsz, phdrs[i].p_vaddr) == NULL)
 			continue;
-		read = sceIoRead(fd, phdr.p_vaddr, phdr.p_filesz);
+		read = sceIoRead(fd, phdrs[i].p_vaddr, phdrs[i].p_filesz);
 		if (read < 0)
 			continue;
 
 		// Fills excess memory with zeroes
-		excess = phdr.p_memsz - read;
+		excess = phdrs[i].p_memsz - read;
 		if (excess > 0)
-			memset(phdr.p_vaddr + read, 0, excess);
+			memset(phdrs[i].p_vaddr + read, 0, excess);
 
-		size += phdr.p_memsz;
+		size += phdrs[i].p_memsz;
 	}
 
 	return size;

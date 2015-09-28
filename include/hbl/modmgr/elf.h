@@ -195,8 +195,8 @@ typedef struct
 /**************/
 /* Load static executable in memory using virtual address */
 /* Returns total size copied in memory */
-int elf_load(SceUID fd, SceOff off, const Elf32_Ehdr *hdr,
-	void *(* malloc)(const char *name, SceSize size, void *p));
+int elf_load(SceUID fd, SceOff off, const Elf32_Phdr *phdrs, Elf32_Word phnum,
+	void *(* malloc)(const char *name, SceSize, void *));
 
 /* Returns size and address (pstub) of ".lib.stub" section (imports) */
 tStubEntry *elf_find_imports(SceUID fd, SceOff off, const Elf32_Ehdr* hdr, size_t *size);

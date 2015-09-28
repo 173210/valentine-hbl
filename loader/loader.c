@@ -87,7 +87,9 @@ static int load_hbl()
 {
 	_sceModuleInfo modinfo;
 	Elf32_Ehdr ehdr;
-	SceUID fd;
+	Elf32_Phdr *phdrs;
+	Elf32_Word phdrs_size;
+	SceUID fd, phdrs_block;
 	void *p = NULL;
 	int ret;
 
@@ -102,12 +104,33 @@ static int load_hbl()
 	dbg_printf(" Reading ELF header...\n");
 	sceIoRead(fd, &ehdr, sizeof(ehdr));
 
+	phdrs_size = ehdr.e_phentsize * ehdr.e_phnum;
+
+	phdrs_block = sceKernelAllocPartitionMemory(
+		2, "HBL Module Program Headers", PSP_SMEM_High, phdrs_size, NULL);
+	if (phdrs_block < 0)
+		return phdrs_block;
+
+	phdrs = sceKernelGetBlockHeadAddr(phdrs_block);
+	if (phdrs == NULL) {
+		ret = SCE_KERNEL_ERROR_ERROR;
+		goto fail;
+	}
+
+	ret = sceIoLseek(fd, ehdr.e_phoff, PSP_SEEK_SET);
+	if (ret < 0)
+		goto fail;
+
+	ret = sceIoRead(fd, phdrs, phdrs_size);
+	if (ret < 0)
+		goto fail;
+
 	dbg_printf(" Loading PRX...\n");
-	ret = prx_load(fd, 0, &ehdr, &modinfo, &p, hblMalloc);
+	ret = prx_load(fd, 0, &ehdr, phdrs, &modinfo, &p, hblMalloc);
 	if (ret <= 0) {
 		scr_printf(" ERROR READING HBL 0x%08X\n", ret);
 		sceIoClose(fd);
-		return ret;
+		goto fail;
 	}
 
 	sceIoClose(fd);
@@ -117,7 +140,7 @@ static int load_hbl()
 		modinfo.stub_end - modinfo.stub_top);
 	if (ret) {
 		scr_printf(" ERROR RESOLVING STUBS 0x%08X\n", ret);
-		return ret;
+		goto fail;
 	}
 
 	run_eloader = (void *)((int)ehdr.e_entry + (int)p);
@@ -126,7 +149,11 @@ static int load_hbl()
 
 	synci(run_eloader, (void *)((int)run_eloader + ret));
 
-	return 0;
+	ret = 0;
+
+fail:
+	sceKernelFreePartitionMemory(phdrs_block);
+	return ret;
 }
 
 #if defined(DEBUG) || defined(FORCE_FIRST_LOG)
