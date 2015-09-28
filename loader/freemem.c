@@ -195,10 +195,18 @@ void CloseFiles()
 
 void ReleaseAudioCh()
 {
-	int i;
+	int i, r;
 
-	for (i = 0; i <= PSP_AUDIO_CHANNEL_MAX; i++)
-		sceAudioChRelease(i);
+	for (i = 0; i < PSP_AUDIO_CHANNEL_MAX; i++) {
+		// Continue to try to release the channel if it is busy
+		while ((r = sceAudioChRelease(i)) == 0x80260002)
+			sceKernelDelayThread(0);
+
+		// If it had any error whose cause is unreserved channel
+		if (r != 0 && r != 0x80260008)
+			dbg_printf("%s: tried release channel %d: result 0x%08X\n",
+				__func__, i, r);
+	}
 }
 
 void preload_free_game_memory()
@@ -227,6 +235,9 @@ void free_game_memory()
 {
 	dbg_printf("%s: Before cleaning: %d (max: %d)\n", __func__,
 		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
+
+	dbg_printf("%s: Releasing audio channels\n", __func__);
+	ReleaseAudioCh();
 
 #ifdef TH_ADDR_LIST
 	dbg_printf("%s: Deleting all threads\n", __func__);
@@ -276,9 +287,6 @@ void free_game_memory()
 
 	dbg_printf("%s: Closing files\n", __func__);
 	CloseFiles();
-
-	dbg_printf("%s: Releasing audio channels\n", __func__);
-	ReleaseAudioCh();
 
 	dbg_printf("%s: After cleaning: %d (max: %d)\n", __func__,
 		hblKernelTotalFreeMemSize(), hblKernelMaxFreeMemSize());
