@@ -820,7 +820,10 @@ static void audio_term()
 {
 	// sceAudioSRCChRelease
 #ifdef HOOK_AUDIOFUNCTIONS
-	_hook_sceAudioSRCChRelease();
+	if (isImported(sceAudioSRCChRelease))
+		sceAudioSRCChRelease();
+	else if (!isImported(sceAudioSRCChReserve))
+		_hook_sceAudioSRCChRelease();
 #else
 	sceAudioSRCChRelease();
 #endif
