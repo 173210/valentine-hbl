@@ -11,11 +11,11 @@ OBJS_HBL := hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
 	hbl/eloader.o hbl/settings.o
 
 HBL.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(IMPORTS)
-	$(CC) $(CFLAGS) $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
+	$(LINK.o) $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
 	$(FIXUP) $@
 
 $(OBJS_HBL): config.h
 
 clean:
 	rm -f config.h $(IMPORTS) $(OBJ_DEBUG) $(OBJ_CACHE) $(OBJS_COMMON) $(OBJS_HBL) HBL.elf HBL.PRX
-	make -C common/imports clean
+	$(MAKE) -C common/imports clean

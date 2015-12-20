@@ -37,11 +37,11 @@ H.BIN: H.elf
 	psp-objcopy -S -O binary $< $@
 
 H.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(IMPORTS)
-	$(CC) $(CFLAGS) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
+	$(LINK.o) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
 	$(FIXUP) $@
 
 $(OBJS_LOADER): config.h
 
 clean:
 	rm -f config.h $(IMPORTS) $(OBJ_DEBUG) $(OBJ_CACHE) $(OBJS_COMMON) $(OBJ_START) $(OBJS_LOADER) H.elf H.BIN H.PRX PARAM.SFO EBOOT.PBP
-	make -C common/imports clean
+	$(MAKE) -C common/imports clean

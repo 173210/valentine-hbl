@@ -10,7 +10,8 @@ PRX_LDSCRIPT := -Wl,-T$(PSPSDK)/lib/linkfile.prx
 INCDIR := -I$(PSPSDK)/include -Iinclude -I.
 LIBDIR := -L$(PSPSDK)/lib
 
-CFLAGS := $(INCDIR) -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fno-pic -flto
+CFLAGS := $(INCDIR) -G1 -Os -Werror -nostdlib -mno-abicalls -fno-pic -flto
+LDFLAGS	:= -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fno-pic -flto
 ASFLAGS := $(INCDIR)
 
 ifeq ($(EXPLOIT),launcher)
@@ -50,7 +51,7 @@ IMPORTS := common/imports/imports.a
 $(OBJS_COMMON): config.h
 
 $(IMPORTS): common/imports
-	make -C $<
+	$(MAKE) -C $<
 
 %.PRX: %.elf
 	psp-prxgen $< $@

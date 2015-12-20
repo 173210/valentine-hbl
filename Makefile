@@ -8,21 +8,21 @@ FLAGS += DEBUG=1
 endif
 
 all:
-	make -f Makefile_loader $(FLAGS)
+	$(MAKE) -f Makefile_loader $(FLAGS)
 	rm -f $(OBJS_COMMON)
-	make -f Makefile_hbl $(FLAGS)
+	$(MAKE) -f Makefile_hbl $(FLAGS)
 
 H.BIN: Makefile_loader
-	make -f $< $@ $(FLAGS)
+	$(MAKE) -f $< $@ $(FLAGS)
 
 H.PRX: Makefile_loader
-	make -f $< $@ $(FLAGS)
+	$(MAKE) -f $< $@ $(FLAGS)
 
 HBL.PRX: Makefile_hbl
-	make -f $< $@ $(FLAGS)
+	$(MAKE) -f $< $@ $(FLAGS)
 
 clean:
-	make -f Makefile_loader clean
-	make -f Makefile_hbl clean
+	$(MAKE) -f Makefile_loader clean
+	$(MAKE) -f Makefile_hbl clean
 
 include common.mk
