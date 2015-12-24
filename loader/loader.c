@@ -1,6 +1,8 @@
 /* Half Byte Loader loader :P */
 /* This initializes and loads HBL on memory */
 
+#include <stdint.h>
+
 #include <common/stubs/syscall.h>
 #include <common/stubs/tables.h>
 #include <common/utils/cache.h>
@@ -170,10 +172,39 @@ static void log_init()
 #endif
 
 #if !defined(NO_SYSCALL_RESOLVER) && defined(UTILITY_NET_COMMON_UID_ADDR)
+#ifdef UTILITY_NET_COMMON_DEPS_ADDR_LIST
+static void stopNetCommonDeps()
+{
+	static const uintptr_t a[] = UTILITY_NET_COMMON_DEPS_ADDR_LIST;
+	unsigned int i;
+	int res, interRes;
+	uintptr_t p;
+	SceUID id;
+
+	for (i = 0; i < sizeof(a) / sizeof(uintptr_t); i++) {
+		p = a[i];
+		id = *(SceUID *)p;
+		res = sceKernelStopModule(p, 0, NULL, &interRes, NULL);
+		if (interRes)
+			dbg_printf("warning: %s: the internal routine of module 0x%08X @ 0x%08X\n"
+				"warning: failed to stop it: 0x%08X\n",
+				__func__, id, p, interRes);
+
+		if (res)
+			dbg_printf("warning: %s: failed to stop module 0x%08X @ 0x%08X: 0x%08X\n",
+				__func__, id, p, res);
+	}
+}
+#endif
+
 static int kernelDeinitNetCommon()
 {
 	SceUID id;
 	int r, s;
+
+#ifdef UTILITY_NET_COMMON_DEPS_ADDR_LIST
+	stopNetCommonDeps();
+#endif
 
 	id = *(SceUID *)UTILITY_NET_COMMON_UID_ADDR;
 	r = sceKernelStopModule(id, 0, NULL, &s, NULL);
