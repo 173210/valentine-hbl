@@ -444,10 +444,10 @@ void initLoaderStubs()
 }
 #endif
 
+#ifdef NO_SYSCALL_RESOLVER
 static int initResolveSyscall(tStubEntry *p, size_t n)
 {
 	uintptr_t btm;
-#ifdef NO_SYSCALL_RESOLVER
 	int i, ret;
 	int *stub, *nid;
 	int call;
@@ -483,61 +483,78 @@ static int initResolveSyscall(tStubEntry *p, size_t n)
 			nid++;
 		}
 	}
+
+	return 0;
+}
 #else
-	tStubEntry *netLib;
+static int initResolveSyscall(tStubEntry *p, size_t n, struct syscallResolver *ctx)
+{
+	uintptr_t btm;
 	int r;
 
-	r = loadNetCommon();
-	if (r)
-		return r;
-
-	netLib = getNetLibStubInfo();
-	if (netLib == NULL)
-		return SCE_KERNEL_ERROR_ERROR;
+	if (p == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
 	for (btm = (uintptr_t)p + n; (uintptr_t)p < btm; p++) {
-		r = resolveSyscall(p, netLib);
+		r = resolveSyscall(p, ctx);
 		if (r)
 			dbg_printf("warning: failed to resolve syscall 0x%08X\n",
 				r);
 	}
-#endif
 
 	return 0;
 }
-
-static int deinitSyscall()
-{
-#ifdef NO_SYSCALL_RESOLVER
-	return 0;
-#else
-	return unloadNetCommon();
 #endif
-}
 
 int resolveLoaderSyscall()
 {
 	int r;
+#ifndef NO_SYSCALL_RESOLVER
+	struct syscallResolver ctx;
+#endif
 
+#ifdef NO_SYSCALL_RESOLVER
 	r = initResolveSyscall(libStub, (size_t)libStubSize);
+#else
+	r = initSyscallResolver(&ctx);
+	if (r)
+		return r;
+
+	r = initResolveSyscall(libStub, (size_t)libStubSize, &ctx);
+#endif
 	if (r)
 		return r;
 
 	loaderStubSynci();
 
-	return deinitSyscall();
+#ifdef NO_SYSCALL_RESOLVER
+	return 0;
+#else
+	return deinitSyscallResolver(&ctx);
+#endif
 }
 
 int resolveHblSyscall(tStubEntry *p, size_t n)
 {
 	int r;
+#ifndef NO_SYSCALL_RESOLVER
+	struct syscallResolver ctx;
+#endif
 
 	if (p == NULL)
 		return SCE_KERNEL_ERROR_ERROR;
 
-	r = initResolveSyscall(p, n);
+#ifdef NO_SYSCALL_RESOLVER
+	return initResolveSyscall(p, n);
+#else
+	r = initSyscallResolver(&ctx);
 	if (r)
 		return r;
 
-	return deinitSyscall();
+	r = initResolveSyscall(p, n, &ctx);
+	if (r)
+		return r;
+
+	return deinitSyscallResolver(&ctx);
+#endif
 }

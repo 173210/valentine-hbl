@@ -4,9 +4,18 @@
 #include <common/sdk.h>
 #include <hbl/modmgr/elf.h>
 
-int loadNetCommon(void);
-int unloadNetCommon(void);
-tStubEntry *getNetLibStubInfo(void);
-int resolveSyscall(tStubEntry *dst, tStubEntry *netLib);
+struct syscallResolver {
+	SceUID module;
+	tStubEntry *lib;
+};
+
+#ifndef UTILITY_NET_COMMON_PATH
+int utilityLoadNetCommon(void);
+int utilityUnloadNetCommon(void);
+#endif
+
+int initSyscallResolver(struct syscallResolver *ctx);
+int deinitSyscallResolver(struct syscallResolver *ctx);
+int resolveSyscall(tStubEntry *dst, struct syscallResolver *ctx);
 
 #endif

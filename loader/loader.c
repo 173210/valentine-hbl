@@ -169,6 +169,27 @@ static void log_init()
 }
 #endif
 
+#if !defined(NO_SYSCALL_RESOLVER) && defined(UTILITY_NET_COMMON_UID_ADDR)
+static int kernelDeinitNetCommon()
+{
+	SceUID id;
+	int r, s;
+
+	id = *(SceUID *)UTILITY_NET_COMMON_UID_ADDR;
+	r = sceKernelStopModule(id, 0, NULL, &s, NULL);
+
+	if (s)
+		dbg_printf("%s: warning: the internal routine failed to stop the module: 0x%08X\n",
+			__func__, s);
+
+	if (r)
+		dbg_printf("%s: warning: failed to stop the module: 0x%08X\n",
+			__func__, r);
+
+	return sceKernelUnloadModule(id);
+}
+#endif
+
 static int test_sceIoChdir()
 {
 	SceUID fd;
@@ -325,7 +346,11 @@ void _start()
 
 	p2_add_stubs();
 #else
-	ret = unloadNetCommon();
+#ifdef UTILITY_NET_COMMON_UID_ADDR
+	ret = kernelDeinitNetCommon();
+#else
+	ret = utilityUnloadNetCommon();
+#endif
 	if (ret != 0 && ret != 0x80110803)
 		dbg_printf("warning: failed to unload a module 0x%08X\n", ret);
 #endif
