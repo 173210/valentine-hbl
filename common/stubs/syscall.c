@@ -5,7 +5,7 @@
 #include <hbl/modmgr/elf.h>
 
 typedef struct {
-	tStubEntry *dst;
+	volatile tStubEntry *dst;
 	tStubEntry *src;
 } Arg;
 
@@ -31,19 +31,19 @@ int unloadNetCommon()
 		return SCE_KERNEL_ERROR_ERROR;
 }
 
-static int store(SceSize args, const Arg *argp)
+static int store(SceSize args, Arg *argp)
 {
-	while (1) {
-		argp->dst->lib_name = argp->src->lib_name;
-		argp->dst->import_flags = argp->src->import_flags;
-		argp->dst->lib_ver = argp->src->lib_ver;
-		argp->dst->import_stubs = argp->src->import_stubs;
-		argp->dst->stub_size = argp->src->stub_size;
-		argp->dst->nid_p = argp->src->nid_p;
-		argp->dst->jump_p = jump_p;
-
+	argp->dst->jump_p = NULL;
+	while (argp->dst->jump_p == NULL)
 		sceKernelDelayThread(0);
-	}
+
+	argp->dst->lib_name = argp->src->lib_name;
+	argp->dst->import_flags = argp->src->import_flags;
+	argp->dst->lib_ver = argp->src->lib_ver;
+	argp->dst->import_stubs = argp->src->import_stubs;
+	argp->dst->stub_size = argp->src->stub_size;
+	argp->dst->nid_p = argp->src->nid_p;
+	argp->dst->jump_p = jump_p;
 }
 
 tStubEntry *getNetLibStubInfo()
@@ -105,7 +105,7 @@ int resolveSyscall(tStubEntry *dst, tStubEntry *netLib)
 		return r;
 	}
 
-	r = kill_thread(thid);
+	r = sceKernelDeleteThread(thid);
 	if (r)
 		return r;
 
