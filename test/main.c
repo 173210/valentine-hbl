@@ -1,10 +1,12 @@
+#include <string.h>
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspdebug.h>
 #include <pspctrl.h>
 #include <psppower.h>
 
-#define printf pspDebugScreenPrintf
+#define printf	pspDebugScreenPrintf
+#define puts	pspDebugScreenPuts
 
 PSP_MODULE_INFO("HBL Tester", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
@@ -113,9 +115,45 @@ static int testMd5()
 	return 0;
 }
 
+static int testIoDread(const char *path)
+{
+	SceIoDirent ent;
+	SceUID uid;
+	int r, trial;
+
+	printf("sceIoDopen(\"%s\")...", path);
+	uid = sceIoDopen(path);
+	if (uid < 0) {
+		printf("error: 0x%08X\n", uid);
+		return uid;
+	}
+	puts("OK\n");
+
+	trial = 0;
+	do {
+		trial++;
+		printf("sceIoDread (trial: %d)...", trial);
+		r = sceIoDread(uid, &ent);
+		if (r < 0)
+			printf("error: 0x%08X\n", r);
+		else
+			puts("OK\n");
+	} while (r > 0);
+
+	puts("sceIoDclose...");
+	r = sceIoDclose(uid);
+	if (r)
+		printf("error: 0x%08X\n", r);
+	else
+		puts("OK\n");
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	SceCtrlData pad;
+	char *dir, *slash;
 
 	pspDebugScreenInit();
 	pspDebugScreenClear();
@@ -126,6 +164,21 @@ int main(int argc, char *argv[])
     testFrequencies();
     testMd5();
 
+	dir = argv[0];
+	if (dir == NULL) {
+		puts("error: argv[0] == NULL");
+		goto skipDread;
+	}
+
+	slash = strrchr(dir, '/');
+	if (slash == NULL) {
+		printf("error: no slash in argv[0]: %s\n", dir);
+		goto skipDread;
+	}
+
+	*slash = 0;
+	testIoDread(dir);
+skipDread:
 
 	printf("\nPress X to exit\n\n");
 
