@@ -2,24 +2,24 @@
 # make DEBUG=1 to compile with debug info
 EXPLOIT ?= launcher
 
-FLAGS := EXPLOIT=$(EXPLOIT)
+export EXPLOIT
 ifdef DEBUG
-FLAGS += DEBUG=1
+export DEBUG=1
 endif
 
 all:
-	$(MAKE) -f Makefile_loader $(FLAGS)
+	$(MAKE) -f Makefile_loader
 	rm -f $(OBJS_COMMON)
-	$(MAKE) -f Makefile_hbl $(FLAGS)
+	$(MAKE) -f Makefile_hbl
 
 H.BIN: Makefile_loader
-	$(MAKE) -f $< $@ $(FLAGS)
+	$(MAKE) -f $< $@
 
 H.PRX: Makefile_loader
-	$(MAKE) -f $< $@ $(FLAGS)
+	$(MAKE) -f $< $@
 
 HBL.PRX: Makefile_hbl
-	$(MAKE) -f $< $@ $(FLAGS)
+	$(MAKE) -f $< $@
 
 clean:
 	$(MAKE) -f Makefile_loader clean
