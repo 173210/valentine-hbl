@@ -1,6 +1,8 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
-all: HBL.PRX
+all: $(O)/HBL.PRX
+
+O_PRIV := $(O)/hbl
 
 include common.mk
 
@@ -10,12 +12,13 @@ OBJS_HBL := hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
 	hbl/stubs/hook.o hbl/stubs/md5.o hbl/stubs/resolve.o \
 	hbl/eloader.o hbl/settings.o
 
-HBL.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_HBL) $(IMPORTS)
+OBJS := $(addprefix $(O_PRIV)/,$(OBJS_COMMON) $(OBJS_HBL))
+
+$(call DEPDIR,$(OBJS) $(O_PRIV)/HBL.elf $(O_PRIV)/HBL.PRX)
+
+$(O_PRIV)/HBL.elf: $(PRXEXPORTS) $(OBJS) $(IMPORTS)
 	$(LINK.o) $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
 	$(FIXUP) $@
 
-$(OBJS_HBL): config.h
-
-clean:
-	rm -f config.h $(IMPORTS) $(OBJ_DEBUG) $(OBJ_CACHE) $(OBJS_COMMON) $(OBJS_HBL) HBL.elf HBL.PRX
-	$(MAKE) -C common/imports clean
+clean: clean-imports
+	rm -rf $(O_PRIV) $(O)/config.h $(O)/HBL.PRX

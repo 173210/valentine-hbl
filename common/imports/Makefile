@@ -1,7 +1,3 @@
-TARGET = imports.a
-
-all: $(TARGET)
-
 CC = psp-gcc
 AR = psp-ar
 RANLIB = psp-ranlib
@@ -50,48 +46,33 @@ $(SYSMEM_OBJS) \
 $(THREADMAN_OBJS) \
 $(UTILS_OBJS)
 
-$(TARGET): $(OBJS)
-	psp-ar q $(TARGET) $(OBJS)
-	psp-ranlib $(TARGET)
+$(O)/imports.a: $(addprefix $(O)/,$(OBJS))
+	psp-ar q $@ $^
+	psp-ranlib $@
 
-$(DMAC_OBJS): sceDmac.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
+$(addprefix $(O)/,$(OBJS) imports.a): | $(O)
 
-$(IMPOSE_OBJS): sceImpose.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
+$(O):
+	mkdir -p $@
 
-$(POWER_OBJS): scePower.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
+define RULE
+$(eval $(addprefix $(O)/,$(1)): $(2)
+	$(COMPILE.c) -DF_$$(notdir $$*) $$< $$(OUTPUT_OPTION))
+endef
 
-$(INTERRUPT_OBJS): InterruptManager.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(IO_OBJS): IoFileMgrForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(KERNEL_OBJS): Kernel_Library.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(LOADEXEC_OBJS): LoadExecForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(MODMGR_OBJS): ModuleMgrForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(STDIO_OBJS): StdioForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(SUSPEND_OBJS): sceSuspendForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(SYSMEM_OBJS): SysMemUserForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(THREADMAN_OBJS): ThreadManForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
-
-$(UTILS_OBJS): UtilsForUser.S
-	$(CC) $(CFLAGS) -DF_$* $< -c -o $@
+$(call RULE,$(DMAC_OBJS),sceDmac.S)
+$(call RULE,$(IMPOSE_OBJS),sceImpose.S)
+$(call RULE,$(POWER_OBJS),scePower.S)
+$(call RULE,$(INTERRUPT_OBJS),InterruptManager.S)
+$(call RULE,$(IO_OBJS),IoFileMgrForUser.S)
+$(call RULE,$(KERNEL_OBJS),Kernel_Library.S)
+$(call RULE,$(LOADEXEC_OBJS),LoadExecForUser.S)
+$(call RULE,$(MODMGR_OBJS),ModuleMgrForUser.S)
+$(call RULE,$(STDIO_OBJS),StdioForUser.S)
+$(call RULE,$(SUSPEND_OBJS),sceSuspendForUser.S)
+$(call RULE,$(SYSMEM_OBJS),SysMemUserForUser.S)
+$(call RULE,$(THREADMAN_OBJS),ThreadManForUser.S)
+$(call RULE,$(UTILS_OBJS),UtilsForUser.S)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf $(O)

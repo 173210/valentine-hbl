@@ -1,12 +1,12 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
 ifeq ($(EXPLOIT),launcher)
-TARGET := H.PRX
+all: $(O)/H.PRX
 else
-TARGET := H.BIN
+all: $(O)/H.BIN
 endif
 
-all: $(TARGET)
+O_PRIV := $(O)/loader
 
 include common.mk
 
@@ -26,22 +26,23 @@ else
 LOADER_LDSCRIPT := -Wl,-Tloader.ld
 endif
 
-EBOOT.PBP: PARAM.SFO assets/ICON0.PNG assets/PIC1.PNG H.PRX
-	pack-pbp EBOOT.PBP PARAM.SFO assets/ICON0.PNG NULL \
+OBJS := $(addprefix $(O_PRIV)/,$(OBJS_COMMON) $(OBJS_LOADER))
+
+$(call DEPDIR,$(OBJS) $(addprefix $(O)/,H.elf PARAM.SFO) $(addpefix $(O_PRIV)/,H.BIN, H.PRX, EBOOT.PBP))
+
+$(O)/EBOOT.PBP: $(O_PRIV)/PARAM.SFO assets/ICON0.PNG assets/PIC1.PNG $(O)/H.PRX
+	pack-pbp EBOOT.PBP $(O_PRIV)/PARAM.SFO assets/ICON0.PNG NULL \
 		NULL assets/PIC1.PNG NULL H.PRX NULL
 
-PARAM.SFO:
+$(O_PRIV)/PARAM.SFO:
 	mksfo 'Half Byte Loader' $@
 
-H.BIN: H.elf
+$(O)/H.BIN: $(O_PRIV)/H.elf
 	psp-objcopy -S -O binary $< $@
 
-H.elf: $(PRXEXPORTS) $(OBJS_COMMON) $(OBJS_LOADER) $(IMPORTS)
+$(O_PRIV)/H.elf: $(PRXEXPORTS) $(OBJS) $(IMPORTS)
 	$(LINK.o) $(LOADER_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
 	$(FIXUP) $@
 
-$(OBJS_LOADER): config.h
-
-clean:
-	rm -f config.h $(IMPORTS) $(OBJ_DEBUG) $(OBJ_CACHE) $(OBJS_COMMON) $(OBJ_START) $(OBJS_LOADER) H.elf H.BIN H.PRX PARAM.SFO EBOOT.PBP
-	$(MAKE) -C common/imports clean
+clean: clean-imports
+	rm -rf $(O_PRIV) $(O)/config.h $(O)/H.BIN $(O)/H.PRX $(O)/EBOOT.PBP

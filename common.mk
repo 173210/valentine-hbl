@@ -7,7 +7,7 @@ PSPSDK := $(shell psp-config --pspsdk-path)
 PRXEXPORTS := $(PSPSDK)/lib/prxexports.o
 PRX_LDSCRIPT := -Wl,-T$(PSPSDK)/lib/linkfile.prx
 
-INCDIR := -I$(PSPSDK)/include -Iinclude -I.
+INCDIR := -I$(PSPSDK)/include -Iinclude -I$(O)
 LIBDIR := -L$(PSPSDK)/lib
 
 CFLAGS := $(INCDIR) -G1 -Os -Werror -nostdlib -mno-abicalls -fno-pic -flto
@@ -46,15 +46,34 @@ endif
 
 LIBS := -lpspaudio -lpspctrl -lpspdisplay -lpspge -lpsprtc -lpsputility
 
-IMPORTS := common/imports/imports.a
+IMPORTS := $(O)/imports/imports.a
 
-$(OBJS_COMMON): config.h
+$(addprefix $(O_PRIV)/,$(OBJS_COMMON)): $(O)/config.h
 
 $(IMPORTS): common/imports
-	$(MAKE) -C $<
+	$(MAKE) -C $< O=../../$(dir $@)
 
-%.PRX: %.elf
+.PHONY: clean-imports
+clean-imports:
+	rm -rf $(dir $(IMPORTS))
+
+$(O)/%.PRX: $(O_PRIV)/%.elf
 	psp-prxgen $< $@
 
-config.h: include/exploits/$(EXPLOIT).h
+$(O_PRIV)/%.o: %.c $(O)/config.h
+	$(COMPILE.c) $< $(OUTPUT_OPTION)
+
+$(O_PRIV)/%.o: %.S $(O)/config.h
+	$(COMPILE.c) $< $(OUTPUT_OPTION)
+
+$(O_PRIV)/%.o: %.s
+	$(COMPILE.s) $< $(OUTPUT_OPTION)
+
+$(O)/config.h: include/exploits/$(EXPLOIT).h | $(O)/D
 	cp -f $< $@
+
+DEPDIR = $(foreach f,$1,$(eval $f : | $(dir $f)D))
+
+.PHONY:
+%/D:
+	$(call Q,MKDIR,$(dir $@))mkdir -p $(dir $@)
