@@ -11,7 +11,7 @@ INCDIR := -I$(PSPSDK)/include -Iinclude -I.
 LIBDIR := -L$(PSPSDK)/lib
 
 CFLAGS := $(INCDIR) -G1 -Os -Werror -nostdlib -mno-abicalls -fno-pic -flto
-LDFLAGS	:= -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fno-pic -flto
+LDFLAGS	:= -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fno-pic -flto -fwhole-program
 ASFLAGS := $(INCDIR)
 
 ifeq ($(EXPLOIT),launcher)
