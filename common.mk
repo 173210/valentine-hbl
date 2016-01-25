@@ -60,11 +60,16 @@ clean-imports:
 $(O)/%.PRX: $(O_PRIV)/%.elf
 	psp-prxgen $< $@
 
-$(O_PRIV)/%.o: %.c $(O)/config.h
+define COMPILE_C_RULE
 	$(COMPILE.c) $< $(OUTPUT_OPTION)
+	@$(COMPILE.c) -MM $< -MT $@ > $(O_PRIV)/.deps/$(basename $<).d
+endef
+
+$(O_PRIV)/%.o: %.c $(O)/config.h
+	$(COMPILE_C_RULE)
 
 $(O_PRIV)/%.o: %.S $(O)/config.h
-	$(COMPILE.c) $< $(OUTPUT_OPTION)
+	$(COMPILE_C_RULE)
 
 $(O_PRIV)/%.o: %.s
 	$(COMPILE.s) $< $(OUTPUT_OPTION)

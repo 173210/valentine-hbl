@@ -13,8 +13,9 @@ OBJS_HBL := hbl/modmgr/elf.o hbl/modmgr/modmgr.o \
 	hbl/eloader.o hbl/settings.o
 
 OBJS := $(addprefix $(O_PRIV)/,$(OBJS_COMMON) $(OBJS_HBL))
+DEPS := $(addprefix $(O_PRIV)/.deps/,$(patsubst %.o,%.d,$(OBJS_COMMON) $(OBJS_HBL)))
 
-$(call DEPDIR,$(OBJS) $(O_PRIV)/HBL.elf $(O_PRIV)/HBL.PRX)
+$(call DEPDIR,$(OBJS) $(DEPS) $(O_PRIV)/HBL.elf $(O_PRIV)/HBL.PRX)
 
 $(O_PRIV)/HBL.elf: $(PRXEXPORTS) $(OBJS) $(IMPORTS)
 	$(LINK.o) $(PRX_LDSCRIPT) $(LIBDIR) $^ $(LIBS) -o $@
@@ -22,3 +23,5 @@ $(O_PRIV)/HBL.elf: $(PRXEXPORTS) $(OBJS) $(IMPORTS)
 
 clean: clean-imports
 	rm -rf $(O_PRIV) $(O)/config.h $(O)/HBL.PRX
+
+-include $(DEPS)

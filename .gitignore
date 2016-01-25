@@ -1,10 +1,1 @@
-*.o
-*.a
-*.elf
-*.prx
-*.SFO
-*.PBP
-*.PRX
-*.BIN
-
-config.h
+output

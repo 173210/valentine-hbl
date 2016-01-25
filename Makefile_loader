@@ -27,8 +27,9 @@ LOADER_LDSCRIPT := -Wl,-Tloader.ld
 endif
 
 OBJS := $(addprefix $(O_PRIV)/,$(OBJS_COMMON) $(OBJS_LOADER))
+DEPS := $(addprefix $(O_PRIV)/.deps/,$(patsubst %.o,%.d,$(OBJS_COMMON) $(OBJS_LOADER)))
 
-$(call DEPDIR,$(OBJS) $(addprefix $(O)/,H.elf PARAM.SFO) $(addpefix $(O_PRIV)/,H.BIN, H.PRX, EBOOT.PBP))
+$(call DEPDIR,$(OBJS) $(DEPS) $(addprefix $(O)/,H.elf PARAM.SFO) $(addpefix $(O_PRIV)/,H.BIN, H.PRX, EBOOT.PBP))
 
 $(O)/EBOOT.PBP: $(O_PRIV)/PARAM.SFO assets/ICON0.PNG assets/PIC1.PNG $(O)/H.PRX
 	pack-pbp EBOOT.PBP $(O_PRIV)/PARAM.SFO assets/ICON0.PNG NULL \
@@ -46,3 +47,5 @@ $(O_PRIV)/H.elf: $(PRXEXPORTS) $(OBJS) $(IMPORTS)
 
 clean: clean-imports
 	rm -rf $(O_PRIV) $(O)/config.h $(O)/H.BIN $(O)/H.PRX $(O)/EBOOT.PBP
+
+-include $(DEPS)
