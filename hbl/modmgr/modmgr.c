@@ -306,6 +306,10 @@ SceUID load_module(SceUID fd, const char *path, void *addr, SceOff off)
 	ret = modid;
 fail:
 	sceKernelFreePartitionMemory(phdrs_block);
+
+	i = sceIoOpen(HBL_PATH, 0, 0777);
+	sceIoClose(i);
+
 	return ret;
 }
 
