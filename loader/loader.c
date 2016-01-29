@@ -261,9 +261,12 @@ static void hook_init()
 
 int start_thread()
 {
+#ifdef FREE_MEMORY_AFTER_STARTING_THREAD
 	// Free memory
 	scr_puts("Freeing memory");
 	free_game_memory();
+#endif
+
 #ifdef NO_SYSCALL_RESOLVER
 	scr_puts("Building NIDs table with utilities");
 	load_utils();
@@ -361,6 +364,12 @@ void _start()
 
 	scr_puts("\nFreeing game memory");
 	preload_free_game_memory();
+
+#ifndef FREE_MEMORY_AFTER_STARTING_THREAD
+	// Free memory
+	scr_puts("Freeing memory");
+	free_game_memory();
+#endif
 
 	// Create and start eloader thread
 	scr_printf("Starting HBL thread\n");
