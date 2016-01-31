@@ -721,6 +721,8 @@ static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 		if (ret < 0)
 			return ret;
 
+		/* This is a trick to write EBOOT.PBP/PBOOT.PBP on ePSP.
+		 * It works up to 3.55. */
 		if (globals->isEmu && ret < PATH_MAX
 			&& mode & PSP_O_WRONLY
 			&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
@@ -728,7 +730,7 @@ static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 				|| resolved[ret - 9] == 'e'
 				|| resolved[ret - 9] == 'P'
 				|| resolved[ret - 9] == 'p')) {
-			resolved[ret] = '.';
+			resolved[ret] = '/';
 			resolved[ret + 1] = 0;
 		}
 
