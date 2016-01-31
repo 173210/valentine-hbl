@@ -18,7 +18,7 @@
 #define STROF(str) _STROF(str)
 
 #define MAJOR_VER 0
-#define MINOR_VER 11
+#define MINOR_VER 12
 #define VER_STR STROF(MAJOR_VER) "." STROF(MINOR_VER)
 
 /* Declare a module.  This must be specified in the source of a library or executable. */
