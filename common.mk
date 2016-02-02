@@ -10,7 +10,7 @@ PRX_LDSCRIPT := -Wl,-T$(PSPSDK)/lib/linkfile.prx
 INCDIR := -I$(PSPSDK)/include -Iinclude -I$(O)
 LIBDIR := -L$(PSPSDK)/lib
 
-CFLAGS := $(INCDIR) -G1 -Os -Werror -nostdlib -mno-abicalls -fno-pic -flto
+CFLAGS := $(INCDIR) -G1 -Os -Werror -nostdlib -mno-abicalls -fno-pic -flto -std=c99
 LDFLAGS	:= -G1 -Os -Werror -Wl,-q -nostdlib -mno-abicalls -fno-pic -flto -fwhole-program
 ASFLAGS := $(INCDIR)
 

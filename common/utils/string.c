@@ -1,3 +1,4 @@
+#include <common/utils/ctype.h>
 #include <common/utils/string.h>
 
 static char *_sprintf_dst;
@@ -67,14 +68,6 @@ int strncmp(const char *s1, const char *s2, size_t n)
 	}
 
 	return *(unsigned char *)s1 - *(unsigned char *)s2;
-}
-
-static int toupper(int c)
-{
-	if (c > 96 && c < 123)
-		c -= 32;
-
-	return c;
 }
 
 int strcasecmp(const char *s1, const char *s2)

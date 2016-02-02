@@ -2,6 +2,7 @@
 #ifdef NO_SYSCALL_RESOLVER
 #include <common/stubs/tables.h>
 #endif
+#include <common/utils/ctype.h>
 #include <common/utils/string.h>
 #include <common/debug.h>
 #include <common/globals.h>
@@ -17,17 +18,23 @@
 #include <hbl/settings.h>
 #include <config.h>
 
+#include <limits.h>
+
 //Note: most of the Threads monitoring code largely inspired (a.k.a. copy/pasted) by Noobz-Fanjita-Ditlew. Thanks guys!
 
 // Hooks for some functions used by Homebrews
 // Hooks are put in place by resolve_imports() calling setup_hook()
 
-#define PATH_MAX 260
 #define SIZE_THREAD_TRACKING_ARRAY 32
 #define MAX_CALLBACKS 32
 
 static int dirLen;
-static char mod_chdir[PATH_MAX] = HBL_ROOT; //cwd of the currently running module
+
+/* cwd of the currently running module with '/'
+ * The max path length of Windows is 260. ms0:/ is 3 characters longer than X:.
+ */
+static char mod_chdir[263] = HBL_ROOT;
+
 static int cur_cpufreq = 0; //current cpu frequency
 static int cur_busfreq = 0; //current bus frequency
 static SceUID running_th[SIZE_THREAD_TRACKING_ARRAY];
@@ -374,22 +381,15 @@ void threads_cleanup()
 //
 // File I/O manager Hooks
 //
-// returns 1 if a string is an absolute file path, 0 otherwise
-static int path_is_absolute(const char *path)
-{
-	if (path != NULL)
-		while (*path != '/' && *path != '\0') {
-			if (*path == ':')
-				return 1;
-			path++;
-		}
 
-	return 0;
+static int realpathMax(const char *p)
+{
+	return p == NULL ?
+		SCE_KERNEL_ERROR_ILLEGAL_ADDR : sizeof(mod_chdir) + strlen(p);
 }
 
-// converts a relative path to an absolute one based on cwd
-// returns the length of resolved_path
-static int realpath(const char *path, char *resolved_path)
+static int realnpath(char * restrict resolved_path, const char * restrict path,
+	size_t n)
 {
 	const char *src;
 	int i = 0;
@@ -397,13 +397,10 @@ static int realpath(const char *path, char *resolved_path)
 	if (path == NULL || resolved_path == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-	if (!path_is_absolute(path))
-		for (src = mod_chdir; *src; src++) {
-			resolved_path[i] = *src;
-			i++;
-		}
+	if (n > INT_MAX)
+		n = INT_MAX;
 
-	while (i < PATH_MAX) {
+	while (i < n) {
 		if (resolved_path[i - 1] == '/') {
 			if (path[0] == '/') {
 				path++;
@@ -429,70 +426,78 @@ static int realpath(const char *path, char *resolved_path)
 		}
 
 		resolved_path[i] = path[0];
-		i++;
 		if (!path[0])
 			return i;
+		i++;
 		path++;
 	}
 
 	return SCE_KERNEL_ERROR_NAMETOOLONG;
 }
 
+static int writepathMax(const char *p)
+{
+	return p == NULL ?
+		SCE_KERNEL_ERROR_ILLEGAL_ADDR : realpathMax(p) + 1;
+}
+
+static int writenpath(char * restrict dst, const char * restrict src,
+	size_t n)
+{
+	static const char boot[] = "BOOT.PBP";
+	const size_t bootLen = sizeof(boot) - 1;
+	int c, r;
+
+	if (dst == NULL || src == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
+	r = realnpath(dst, src, n);
+	if (r >= 0 && r + 1 < n && globals->isEmu) {
+		c = toupper(dst[r - bootLen - 1]);
+		if (((c == 'E' || c == 'P') && !strcasecmp(dst + r - bootLen, boot))
+			|| !strcasecmp(dst, "ms0:/PSP"))
+		{
+			dst[r] = '/';
+			r++;
+			dst[r] = 0;
+		}
+	}
+
+	return r;
+}
+
 //hook this ONLY if test_sceIoChdir() fails!
 SceUID _hook_sceIoDopen(const char *dirname)
 {
-	char resolved_path[PATH_MAX];
-	int ret;
+	SceUID uid;
+	char *resolved;
+	int n;
 
 	if (dirname == NULL)
 		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-	if (!path_is_absolute(dirname)) {
-		ret = realpath(dirname, resolved_path);
-		if (ret < 0)
-			return ret;
-		dirname = resolved_path;
-	}
-	return globals->isEmu ?
-		sceIoDopen_Vita(dirname) :
-		sceIoDopen(dirname);
-}
+	n = realpathMax(dirname);
+	resolved = __builtin_alloca(n);
+	n = realnpath(resolved, dirname, n);
+	if (n < 0)
+		return n;
 
-
-// Adds Vita's missing "." / ".." entries
-
-SceUID sceIoDopen_Vita(const char *dirname)
-{
-	dbg_printf("sceIoDopen_Vita start\n");
-	SceUID id = sceIoDopen(dirname);
-
-	if (id >= 0)
+	uid = sceIoDopen(resolved);
+	if (uid >= 0 && globals->isEmu
+		&& resolved[n - 1] != ':' && resolved[n - 2] != ':')
 	{
-		int dirname_len = strlen(dirname);
+		for (n = 0; n < dirLen && globals->dirFix[n][0] >= 0; n++);
 
-		// If directory isn't "ms0:" or "ms0:/", add "." & ".." entries
-		if (dirname[dirname_len - 1] != ':' && dirname[dirname_len - 2] != ':')
-		{
-			int i = 0;
+		if (n < MAX_OPEN_DIR_VITA) {
+			globals->dirFix[n][0] = uid;
+			globals->dirFix[n][1] = 2;
 
-			while (i < dirLen && globals->dirFix[i][0] >= 0)
-				++i;
-
-			if (i < MAX_OPEN_DIR_VITA)
-			{
-				globals->dirFix[i][0] = id;
-				globals->dirFix[i][1] = 2;
-
-				if (i == dirLen)
-					dirLen++;
-			}
+			if (n == dirLen)
+				dirLen++;
 		}
-
 	}
 
-
-	dbg_printf("sceIoDopen_Vita Done\n");
-	return id;
+	return uid;
 }
 
 
@@ -556,155 +561,118 @@ int sceIoDclose_Vita(SceUID id)
 
 static int _hook_sceIoMkdir(const char *dir, SceMode mode)
 {
-	int ret;
-	char resolved[PATH_MAX];
+	char *resolved;
+	int r, qsp;
 
-	if (globals->isEmu || !path_is_absolute(dir)) {
-		ret = realpath(dir, resolved);
-		if (ret < 0)
-			return ret;
-		dir = resolved;
+	if (dir == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-		if (globals->isEmu &&!strcasecmp("ms0:/PSP/GAME", resolved)) {
-			resolved[5] = 'Q';
+	r = realpathMax(dir);
+	resolved = __builtin_alloca(r);
+	r = realnpath(resolved, dir, r);
+	if (r < 0)
+		return r;
 
-			ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
-			if (ret)
-				return ret;
+	if (globals->isEmu && !strcasecmp("ms0:/PSP/GAME", resolved)) {
+		resolved[5] = 'Q';
 
-			ret = sceIoMkdir(resolved, mode);
+		qsp = sceIoRename("ms0:/PSP.", "ms0:/QSP");
 
+		r = sceIoMkdir(resolved, mode);
+
+		if (!qsp)
 			while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
 
-			return ret;
-		}
+		return r;
+	} else {
+		return sceIoMkdir(dir, mode);
 	}
-
-	return sceIoMkdir(dir, mode);
 }
 
-static int _hook_sceIoRename(const char *oldname, const char *newname)
+static int _hook_sceIoRename(const char *old, const char *new)
 {
-	char oldResolved[PATH_MAX];
-	char newResolved[PATH_MAX];
-	int oldLen, i, ret;
+	char *oldResolved;
+	char *newResolved;
+	int n, r, qsp;
 
-	if (globals->isEmu || !path_is_absolute(oldname)) {
-		oldLen = realpath(oldname, oldResolved);
-		if (oldLen < 0)
-			return oldLen;
-		oldname = oldResolved;
+	if (old == NULL || new == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-		if (globals->isEmu) {
-			if (oldLen < PATH_MAX
-				&& !strcasecmp(oldResolved + oldLen -  8, "BOOT.PBP")
-				&& (oldResolved[oldLen - 9] == 'E'
-					|| oldResolved[oldLen - 9] == 'e'
-					|| oldResolved[oldLen - 9] == 'P'
-					|| oldResolved[oldLen - 9] == 'p')) {
-				oldResolved[oldLen] = '.';
-				oldResolved[oldLen + 1] = 0;
-			}
+	n = writepathMax(old);
+	oldResolved = __builtin_alloca(n);
+	n = writenpath(oldResolved, old, n);
+	if (n < 0)
+		return n;
 
-			for (i = 0; i < PATH_MAX - 1; i++) {
-				if (!newname[i]) {
-					if (!strcasecmp(newResolved + i -  8, "BOOT.PBP")
-						&& (newResolved[i - 9] == 'E'
-							|| newResolved[i - 9] == 'e'
-							|| newResolved[i - 9] == 'P'
-							|| newResolved[i - 9] == 'p')) {
-						newResolved[i] = '.';
-						newResolved[i + 1] = 0;
-						newname = newResolved;
-					}
-					break;
-				}
-				newResolved[i] = newname[i];
-			}
+	n = writepathMax(new);
+	newResolved = __builtin_alloca(n);
+	n = writenpath(newResolved, new, n);
+	if (n < 0)
+		return n;
 
-			if (!strcasecmp("ms0:/PSP/GAME", oldResolved)) {
-				oldResolved[5] = 'Q';
+	if (!strcasecmp("ms0:/PSP/GAME", oldResolved)) {
+		oldResolved[5] = 'Q';
+		qsp = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+		r = sceIoRename(oldResolved, newResolved);
+		if (!qsp)
+			while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
 
-				ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
-				if (ret)
-					return ret;
-
-				ret = sceIoRename(oldResolved, newname);
-
-				while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
-
-				return ret;
-			} else if (!strcasecmp(oldResolved, "ms0:/PSP")) {
-				oldResolved[oldLen] = '.';
-				oldResolved[oldLen + 1] = 0;
-			}
-		}
+		return r;
+	} else {
+		return sceIoRename(oldResolved, newResolved);
 	}
-
-	return sceIoRename(oldname, newname);
 }
 
 static int _hook_sceIoRemove(const char *file)
 {
-	int ret;
-	char resolved[PATH_MAX];
+	char *resolved;
+	int n, r, qsp;
 
-	if (globals->isEmu || !path_is_absolute(file)) {
-		ret = realpath(file, resolved);
-		if (ret < 0)
-			return ret;
-		file = resolved;
+	if (file == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-		if (globals->isEmu) {
-			if (ret < PATH_MAX
-				&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
-				&& (resolved[ret - 9] == 'E'
-					|| resolved[ret - 9] == 'e'
-					|| resolved[ret - 9] == 'P'
-					|| resolved[ret - 9] == 'p')) {
-				resolved[ret] = '.';
-				resolved[ret + 1] = 0;
-			}
+	n = writepathMax(file);
+	resolved = __builtin_alloca(n);
+	r = writenpath(resolved, file, n);
+	if (r < 0)
+		return r;
 
-			if (!strcasecmp("ms0:/PSP/GAME", file)) {
-				resolved[5] = 'Q';
+	if (!strcasecmp("ms0:/PSP/GAME", resolved)) {
+		resolved[5] = 'Q';
+		qsp = sceIoRename("ms0:/PSP.", "ms0:/QSP");
+		r = sceIoRemove(resolved);
+		if (!qsp)
+			while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
 
-				ret = sceIoRename("ms0:/PSP.", "ms0:/QSP");
-				if (ret)
-					return ret;
-
-				ret = sceIoRemove(resolved);
-
-				while (sceIoRename("ms0:/QSP", "ms0:/PSP."));
-
-				return ret;
-			}
-		}
+		return r;
+	} else {
+		return sceIoRemove(resolved);
 	}
-	return sceIoRemove(file);
 }
 
 
 //hook this ONLY if test_sceIoChdir() fails!
 int _hook_sceIoChdir(const char *dirname)
 {
-	char resolved_path[PATH_MAX];
-	int ret;
+	char resolved[sizeof(mod_chdir)];
+	int r;
 
 	dbg_printf("_hook_sceIoChdir start\n");
 
-	ret = realpath(dirname, resolved_path);
-	if (ret < 0)
-		return ret;
-	else if (ret >= PATH_MAX)
-		return SCE_KERNEL_ERROR_NAMETOOLONG;
+	r = realnpath(resolved, dirname, sizeof(resolved));
+	if (r < 0)
+		return r;
 
-		// save chDir into global variable
-	strcpy(mod_chdir, resolved_path);
-	if (mod_chdir[ret - 1] != '/') {
-		mod_chdir[ret] = '/';
-		mod_chdir[ret + 1] = '\0';
+	if (mod_chdir[r - 1] != '/') {
+		if (r >= sizeof(mod_chdir))
+			return SCE_KERNEL_ERROR_NAMETOOLONG;
+
+		mod_chdir[r] = '/';
+		mod_chdir[r + 1] = 0;
 	}
+
+	// save chDir into global variable
+	strcpy(mod_chdir, resolved);
 
 	dbg_printf("_hook_sceIoChdir: %s becomes %s\n", dirname, mod_chdir);
 	return 0;
@@ -712,41 +680,39 @@ int _hook_sceIoChdir(const char *dirname)
 
 static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 {
-	SceUID ret;
+	SceUID r;
 	unsigned i;
-	char resolved[PATH_MAX];
+	char *resolved;
 
-	if (globals->isEmu || (!globals->chdir_ok && !path_is_absolute(file))) {
-		ret = realpath(file, resolved);
-		if (ret < 0)
-			return ret;
+	if (file == NULL)
+		return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-		/* This is a trick to write EBOOT.PBP/PBOOT.PBP on ePSP.
-		 * It works up to 3.55. */
-		if (globals->isEmu && ret < PATH_MAX
-			&& mode & PSP_O_WRONLY
-			&& !strcasecmp(resolved + ret -  8, "BOOT.PBP")
-			&& (resolved[ret - 9] == 'E'
-				|| resolved[ret - 9] == 'e'
-				|| resolved[ret - 9] == 'P'
-				|| resolved[ret - 9] == 'p')) {
-			resolved[ret] = '/';
-			resolved[ret + 1] = 0;
+	if (!globals->chdir_ok) {
+		if (flags & PSP_O_WRONLY) {
+			r = writepathMax(file);
+			resolved = __builtin_alloca(r);
+			r = writenpath(resolved, file, r);
+		} else {
+			r = realpathMax(file);
+			resolved = __builtin_alloca(r);
+			r = realnpath(resolved, file, r);
 		}
 
-		dbg_printf("sceIoOpen override: %s become %s\n", file, resolved);
+		if (r < 0)
+			return r;
+
 		file = resolved;
 	}
 
-	ret = sceIoOpen(file, flags, mode);
+	r = sceIoOpen(file, flags, mode);
 
-	if (ret >= 0) {
+	if (r >= 0) {
 		hblWaitSema(globals->ioSema, 1, 0);
 
 		if (numOpenFiles < sizeof(openFiles) / sizeof(SceUID) - 1)
 			for (i = 0; i < sizeof(openFiles) / sizeof(SceUID); i++)
 				if (openFiles[i] == 0) {
-					openFiles[i] = ret;
+					openFiles[i] = r;
 					numOpenFiles++;
 					break;
 				}
@@ -756,7 +722,7 @@ static SceUID _hook_sceIoOpen(const char *file, int flags, SceMode mode)
 		sceKernelSignalSema(globals->ioSema, 1);
 	}
 
-	return ret;
+	return r;
 }
 
 
