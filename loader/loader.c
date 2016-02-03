@@ -178,7 +178,6 @@ static int test_sceIoChdir()
 	fd = sceIoOpen(HBL_PRX, PSP_O_RDONLY, 0777);
 	if (fd > 0) {
 		sceIoClose(fd);
-		dbg_printf("sceIoChdir failed!\n");
 		return 1;
 	}
 
