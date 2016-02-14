@@ -371,79 +371,6 @@ int p5_add_stubs()
 
 #endif
 
-static void loaderStubSynci()
-{
-	synci(stubText,
-		(void *)((uintptr_t)stubText + (uintptr_t)stubTextSize));
-}
-
-static int mergeStubs(const tStubEntry *dst, const tStubEntry *src)
-{
-	const size_t stubSize = 8;
-	Elf32_Word i, j;
-
-	if (dst == NULL || src == NULL)
-		return SCE_KERNEL_ERROR_ERROR;
-
-	for (i = 0; i < src->stub_size; i++)
-		for (j = 0; j < dst->stub_size; j++)
-			if (((int32_t *)dst->nid_p)[j] == ((int32_t *)src->nid_p)[i])
-				memcpy((void *)((uintptr_t)dst->jump_p + j * stubSize),
-					(void *)((uintptr_t)src->jump_p + i * stubSize),
-					stubSize);
-
-	return 0;
-}
-
-#if defined(DEBUG) || !defined(NO_SYSCALL_RESOLVER)
-void initLoaderStubs()
-{
-	const tStubEntry *src, *dst;
-	int num = 0;
-#ifdef LAUNCHER
-	src = (tStubEntry *)0x08800000;
-#else
-	for (src = (tStubEntry *)0x08800000;
-		src != libStub;
-		src = (tStubEntry *)((uintptr_t)src + 4)) {
-
-		while (elf_check_stub_entry(src)) {
-			if (src->import_flags == 0x11 || src->import_flags == 0)
-				for (dst = libStub;
-					(uintptr_t)dst < (uintptr_t)libStub + (uintptr_t)libStubSize;
-					dst++)
-				{
-					if (!strcmp(src->lib_name, dst->lib_name))
-						mergeStubs(dst, src);
-				}
-
-			src++;
-		}
-	}
-
-	src = (void *)((uintptr_t)src + libStubSize);
-#endif
-	while ((uintptr_t)src < 0x0A000000) {
-		while (elf_check_stub_entry(src)) {
-			if (src->import_flags == 0x11 || src->import_flags == 0)
-				for (dst = libStub;
-					(uintptr_t)dst < (uintptr_t)libStub + (uintptr_t)libStubSize;
-					dst++)
-				{
-					if (!strcmp(src->lib_name, dst->lib_name))
-						mergeStubs(dst, src);
-				}
-
-			src++;
-		}
-
-		src = (tStubEntry *)((int)src + 4);
-	}
-
-	loaderStubSynci();
-}
-#endif
-
 static int initResolveSyscall(tStubEntry *p, size_t n)
 {
 	uintptr_t btm;
@@ -515,6 +442,76 @@ static int deinitSyscall()
 #endif
 }
 
+#ifndef LAUNCHER
+static void loaderStubSynci()
+{
+	synci(stubText,
+		(void *)((uintptr_t)stubText + (uintptr_t)stubTextSize));
+}
+
+#if (defined(DEBUG) || !defined(NO_SYSCALL_RESOLVER))
+static int mergeStubs(const tStubEntry *dst, const tStubEntry *src)
+{
+	const size_t stubSize = 8;
+	Elf32_Word i, j;
+
+	if (dst == NULL || src == NULL)
+		return SCE_KERNEL_ERROR_ERROR;
+
+	for (i = 0; i < src->stub_size; i++)
+		for (j = 0; j < dst->stub_size; j++)
+			if (((int32_t *)dst->nid_p)[j] == ((int32_t *)src->nid_p)[i])
+				memcpy((void *)((uintptr_t)dst->jump_p + j * stubSize),
+					(void *)((uintptr_t)src->jump_p + i * stubSize),
+					stubSize);
+
+	return 0;
+}
+
+void initLoaderStubs()
+{
+	const tStubEntry *src, *dst;
+	int num = 0;
+	for (src = (tStubEntry *)0x08800000;
+		src != libStub;
+		src = (tStubEntry *)((uintptr_t)src + 4)) {
+
+		while (elf_check_stub_entry(src)) {
+			if (src->import_flags == 0x11 || src->import_flags == 0)
+				for (dst = libStub;
+					(uintptr_t)dst < (uintptr_t)libStub + (uintptr_t)libStubSize;
+					dst++)
+				{
+					if (!strcmp(src->lib_name, dst->lib_name))
+						mergeStubs(dst, src);
+				}
+
+			src++;
+		}
+	}
+
+	src = (void *)((uintptr_t)src + libStubSize);
+	while ((uintptr_t)src < 0x0A000000) {
+		while (elf_check_stub_entry(src)) {
+			if (src->import_flags == 0x11 || src->import_flags == 0)
+				for (dst = libStub;
+					(uintptr_t)dst < (uintptr_t)libStub + (uintptr_t)libStubSize;
+					dst++)
+				{
+					if (!strcmp(src->lib_name, dst->lib_name))
+						mergeStubs(dst, src);
+				}
+
+			src++;
+		}
+
+		src = (tStubEntry *)((int)src + 4);
+	}
+
+	loaderStubSynci();
+}
+#endif
+
 int resolveLoaderSyscall()
 {
 	int r;
@@ -527,6 +524,7 @@ int resolveLoaderSyscall()
 
 	return deinitSyscall();
 }
+#endif
 
 int resolveHblSyscall(tStubEntry *p, size_t n)
 {

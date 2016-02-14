@@ -1,7 +1,7 @@
 # make  to compile without debug info
 # make DEBUG=1 to compile with debug info
 ifeq ($(EXPLOIT),launcher)
-all: $(O)/H.PRX
+all: $(O)/EBOOT.PBP
 else
 all: $(O)/H.BIN
 endif
@@ -32,8 +32,8 @@ DEPS := $(addprefix $(O_PRIV)/.deps/,$(patsubst %.o,%.d,$(OBJS_COMMON) $(OBJS_LO
 $(call DEPDIR,$(OBJS) $(DEPS) $(addprefix $(O)/,H.elf PARAM.SFO) $(addpefix $(O_PRIV)/,H.BIN, H.PRX, EBOOT.PBP))
 
 $(O)/EBOOT.PBP: $(O_PRIV)/PARAM.SFO assets/ICON0.PNG assets/PIC1.PNG $(O)/H.PRX
-	pack-pbp EBOOT.PBP $(O_PRIV)/PARAM.SFO assets/ICON0.PNG NULL \
-		NULL assets/PIC1.PNG NULL H.PRX NULL
+	pack-pbp $@ $(O_PRIV)/PARAM.SFO assets/ICON0.PNG NULL \
+		NULL assets/PIC1.PNG NULL $(O)/H.PRX NULL
 
 $(O_PRIV)/PARAM.SFO:
 	mksfo 'Half Byte Loader' $@
